@@ -1,0 +1,19 @@
+# Rust
+/target
+Cargo.lock
+
+# Node / Tauri
+node_modules
+/apps/desktop/dist
+/apps/desktop/src-tauri/target
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+*.log
+
+# Databases
+*.db
+*.db-wal
+*.db-shm
