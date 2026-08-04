@@ -29,9 +29,9 @@
 - **Note (docs):** `ContextSwitchRate` есть в `docs/02-domain-model.md`, но **нет** секции в `docs/06-feature-catalog.md` (там только FocusScore / Stress / Fatigue). Код + handoff достаточны для AC; PM может добавить catalog entry при удобном docs-pass (не блокирует Done).
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P3-E2-T2 → Done; Ready → **P3-E2-T3**; refresh Active assignment / execution order
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG (E2-T2 done → E2-T3 next)
-- [ ] Other docs (optional): `docs/06-feature-catalog.md` — секция `ContextSwitchRate` + v1 note для FocusScore inputs; `docs/12-development.md` entrypoint `register_focus_v1` если ещё не отражено
+- [x] `/docs/SPRINT_ROADMAP.md` — P3-E2-T2 → Done; Ready → **P3-E2-T3**; refresh Active assignment / execution order
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG (E2-T2 done → E2-T3 next)
+- [x] Other docs: `docs/06-feature-catalog.md` — секция `ContextSwitchRate` + v1 note для FocusScore; `docs/12-development.md` entrypoint `register_focus_v1`; brief `P3-E2-T3-pm-brief.md`
 
 ## Suggested next Ready task
 - **P3-E2-T3** — `StressIndex` + `FatigueIndex` (v1) + High_Stress Signal · Dev · `feature-engine` (+ `bio-spec` Severity)
