@@ -20,6 +20,15 @@
 
 Шаблоны: `docs/handoffs/TEMPLATE-*.md`.
 
+## Git / PR (после каждого спринта)
+
+1. Ветка `phase/N-…` или `sprint/N-…` (не `main`).  
+2. В конце спринта — PR → `main`.  
+3. Merge только после зелёного GitHub Actions CI.  
+4. Прямой push в `main` — запрещён (исключение: Phase 1 foundation уже в истории).
+
+Команды: `docs/12-development.md` § Git workflow.
+
 ## Сейчас в очереди
 
 См. Kanban в `/docs/SPRINT_ROADMAP.md` и canvas execution board.

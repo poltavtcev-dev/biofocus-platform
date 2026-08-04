@@ -40,3 +40,5 @@ Requires Node.js >= 20, pnpm, and platform Tauri prerequisites
 ## CI
 
 GitHub Actions: `.github/workflows/ci.yml` (push/PR to `main` or `master`).
+
+From Phase 2 onward: land work via **PR** (see `docs/12-development.md` § Git workflow) — do not push straight to `main`.
