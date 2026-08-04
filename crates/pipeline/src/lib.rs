@@ -1,21 +1,30 @@
 //! Data quality, deduplication, and normalization pipeline.
 //!
-//! Phase 3 entrypoint: accept [`bio_spec::Observation`] batches for processing.
-//! Later stages (dedupe → normalize → feature hook) land in subsequent tasks.
+//! Phase 3: accept [`bio_spec::Observation`] batches, then dedupe (normalize →
+//! feature hook land in subsequent tasks).
 //!
-//! # Entrypoint (P3-E1-T1)
+//! # Entrypoint
 //!
-//! - [`accept_observations`] — primary API (`&[Observation]` → [`AcceptedBatch`])
-//! - [`accept_owned`] / [`accept_iter`] — owned / iterator helpers
+//! - [`accept_observations`] — intake (`&[Observation]` → [`AcceptedBatch`])
+//! - [`dedupe_observations`] / [`dedupe_accepted`] — dedupe against [`DedupeState`]
 //!
-//! Empty batches return [`Ok`] (idle-friendly). Success stage is
-//! [`PipelineStage::AcceptedForProcessing`].
+//! Empty batches return [`Ok`] (idle-friendly) at every stage.
+//!
+//! # Deduplication rule (P3-E1-T2)
+//!
+//! See [`dedupe`] module: drop when same `id` **or** same
+//! `(provider_id, data_type, timestamp, payload JSON)` already seen in the
+//! in-memory window. First wins; SQLite rows are never rewritten.
 
 #![forbid(unsafe_code)]
 
+mod dedupe;
 mod error;
 mod intake;
 
+pub use dedupe::{
+    dedupe_accepted, dedupe_observations, dedupe_owned, DedupedBatch, DedupeState,
+};
 pub use error::{PipelineError, PipelineResult};
 pub use intake::{accept_iter, accept_observations, accept_owned, AcceptedBatch};
 
@@ -24,9 +33,11 @@ pub const CRATE_NAME: &str = "pipeline";
 
 /// Marker for how far a batch has progressed through the pipeline.
 ///
-/// Additional variants (e.g. `Deduped`, `Normalized`) will be added in T2/T3.
+/// Additional variants (e.g. `Normalized`) will be added in T3.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PipelineStage {
     /// Intake completed; batch is accepted for downstream processing.
     AcceptedForProcessing,
+    /// Deduplication completed; kept Observations are unique in the seen window.
+    Deduped,
 }

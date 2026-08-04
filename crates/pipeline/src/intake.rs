@@ -6,8 +6,8 @@ use crate::{PipelineResult, PipelineStage};
 
 /// Owned batch that passed intake and is ready for downstream stages.
 ///
-/// Observations are a passthrough of the input (order preserved). Dedupe and
-/// normalize are out of scope for T1 (`P3-E1-T2` / `P3-E1-T3`).
+/// Observations are a passthrough of the input (order preserved). Pass to
+/// [`crate::dedupe_accepted`] for dedupe; normalize is `P3-E1-T3`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AcceptedBatch {
     observations: Vec<Observation>,
