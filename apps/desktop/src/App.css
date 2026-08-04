@@ -7,6 +7,9 @@
   --bf-dot-idle: #8e8e93;
   --bf-dot-ready: #5a7a6a;
   --bf-dot-error: #a15c5c;
+  --bf-alert-green: #5a7a6a;
+  --bf-alert-yellow: #b08a3c;
+  --bf-alert-red: #a15c5c;
   --bf-retry-fg: #1d1d1f;
   --bf-retry-border: #c7c7cc;
   --bf-focus: #5b6b8c;
@@ -32,6 +35,9 @@
     --bf-dot-idle: #8e8e93;
     --bf-dot-ready: #7a9a88;
     --bf-dot-error: #c48a8a;
+    --bf-alert-green: #7a9a88;
+    --bf-alert-yellow: #c4a45a;
+    --bf-alert-red: #c48a8a;
     --bf-retry-fg: #f5f5f7;
     --bf-retry-border: #48484a;
     --bf-focus: #8e9bb8;
@@ -91,6 +97,32 @@ body {
 
 .status-dot--error {
   background: var(--bf-dot-error);
+}
+
+.alert-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.alert-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--bf-alert-green);
+}
+
+.alert-dot--green {
+  background: var(--bf-alert-green);
+}
+
+.alert-dot--yellow {
+  background: var(--bf-alert-yellow);
+}
+
+.alert-dot--red {
+  background: var(--bf-alert-red);
 }
 
 .status-label {

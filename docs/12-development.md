@@ -31,6 +31,8 @@ pnpm tauri dev
 
 # QA mock statuses (webview)
 # http://localhost:…/?mockStatus=idle|ready|error
+# http://localhost:…/?mockAlert=green|yellow|red
+# combine: ?mockStatus=ready&mockAlert=yellow
 ```
 
 Ingest (Phase 2): loopback **`127.0.0.1:8787`**, crate `crates/ingest`.
@@ -48,7 +50,8 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **Focus catalog (T2):** `feature_engine::register_focus_v1(&mut engine)` — `ContextSwitchRate` → `FocusScore` (window 15m / step 1m; see `/docs/06-feature-catalog.md`).
 - **Stress/Fatigue (T3):** `feature_engine::register_stress_v1(&mut engine)` — `StressIndex` + `FatigueIndex` (needs FocusScore already registered); contiguous StressIndex > 75 for > 5m → transient `Signal` `High_Stress` (`Severity::High`). Full catalog: `feature_engine::register_catalog_v1` = focus + stress.
 - **Alert level (E3-T1):** `feature_engine::map_alert_level(&EngineOutput) → AlertLevel` — Red if `High_Stress`; Yellow if latest StressIndex or FatigueIndex > 60; else Green (empty → Green).
-- **IPC alert (E3-T2):** Desktop `get_status` includes `alertLevel` (`green`/`yellow`/`red`). Feature Worker hook runs catalog → map → shared `AlertState`. Idle/Ready/Error (`dbStatus`) unchanged. UI reads via IPC only (Menubar colors → T3).
+- **IPC alert (E3-T2):** Desktop `get_status` includes `alertLevel` (`green`/`yellow`/`red`). Feature Worker hook runs catalog → map → shared `AlertState`. Idle/Ready/Error (`dbStatus`) unchanged. UI reads via IPC only.
+- **Menubar alert UX (E3-T3):** Shell shows calm Steady/Elevated/High indicator (color + copy) from `alertLevel`; tray tooltip includes the label. Poll ~5s. QA: `?mockAlert=green|yellow|red`.
 ```bash
 cargo test -p feature-engine
 cargo test -p desktop
@@ -168,5 +171,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1–E2 Done**; **P3-E3-T1–T2 Done** (`map_alert_level` + IPC `alertLevel`). Ready **P3-E3-T3** (Menubar traffic-light).  
-**Git policy:** few **code** PRs; handoffs/docs are not PR triggers (see above).
+**Status (2026-08-04):** Phase 2 **merged**. Phase 3: **P3-E1–E3 Done** (alerts: map + IPC + Menubar UX). Next: Phase 4 when opened.  
+**Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.
