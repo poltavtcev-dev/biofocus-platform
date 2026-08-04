@@ -21,28 +21,28 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P3-E1-T4** (next) |
+| **Ready** | **P3-E2-T1** (next) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **Phase 2** (E0–E3, [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **P3-E1-T1** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6)) · **P3-E1-T2** ([PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8) code · [PR #9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9) QA handoff) · **P3-E1-T3** ([PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11) code · QA Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **Phase 2** (E0–E3, [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **P3-E1-T1** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6)) · **P3-E1-T2** ([PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8) code · [PR #9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9) QA handoff) · **P3-E1-T3** ([PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11) code · QA Pass with notes) · **P3-E1-T4** ([PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13) code · QA Pass with notes) |
 
-**Epic status:** P3-E1 ◐ (T1–T3 Done) · P3-E2 ⬜ · P3-E3 ⬜
+**Epic status:** P3-E1 ✅ (T1–T4 Done) · P3-E2 ⬜ · P3-E3 ⬜
 
 **Phase 3 on `/docs/14-roadmap.md`:** ☐ open (Sprint 5–6)
 
 **Рекомендуемый порядок:**  
-~~P3-E1-T1~~ → ~~E1-T2~~ → ~~E1-T3~~ → **E1-T4** → E2-T1 → E2-T2 → E2-T3 → E2-T4 → E3-T1 → E3-T2 → E3-T3 → cluster PR
+~~P3-E1-T1~~ → ~~E1-T2~~ → ~~E1-T3~~ → ~~E1-T4~~ → **E2-T1** → E2-T2 → E2-T3 → E2-T4 → E3-T1 → E3-T2 → E3-T3 → cluster PR
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
-**Suggested branch:** `phase/3-pipeline-features` (или `epic/p3-e1-pipeline` для E1 T4).
+**Suggested branch:** `phase/3-pipeline-features` (или `epic/p3-e2-feature-engine` для E2).
 
 ### Active assignment (PM → Dev)
 
-**Task:** **P3-E1-T4** — Runtime Feature Worker wire (idle-safe)  
-**Brief:** `docs/handoffs/P3-E1-T4-pm-brief.md`  
-**Role:** Dev · **Modules:** `crates/runtime`, `pipeline`, host/`apps/desktop/src-tauri`
+**Task:** **P3-E2-T1** — DAG scheduler skeleton  
+**Brief:** `docs/handoffs/P3-E2-T1-pm-brief.md`  
+**Role:** Dev · **Modules:** `crates/feature-engine`
 
 ---
 
@@ -203,7 +203,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 1. ~~P3-E1-T1~~ — Done (PR #5 + #6)  
 2. ~~P3-E1-T2~~ — Done (QA Pass with notes; PR #8 + #9)  
 3. ~~P3-E1-T3~~ — Done (QA Pass with notes; PR #11 code)  
-4. **P3-E1-T4** — Runtime worker wire ← **start here**  
+4. ~~P3-E1-T4~~ — Done (QA Pass with notes; PR #13 code)  
+5. **P3-E2-T1** — DAG scheduler skeleton ← **start here**  
 
-**Next after E1:** P3-E2-T1 (DAG skeleton).  
-**Git:** branch `phase/3-pipeline-features` → related commits → PR when E1 (or E1+E2) cluster Done.
+**Next after E2-T1:** P3-E2-T2 (`ContextSwitchRate` + `FocusScore` v1).  
+**Git:** branch `phase/3-pipeline-features` → related commits → PR when E2 (or E1+E2) cluster unit ready.

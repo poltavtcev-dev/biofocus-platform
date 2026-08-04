@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes → PM close 2026-08-04)  
 **Date:** 2026-08-04  
-**Closed previous:** P3-E1-T3 (QA Pass with notes; PR #11 code · QA/PM docs close)
+**Closed previous:** P3-E1-T3 (QA Pass with notes; PR #11 code · QA/PM docs close)  
+**Evidence:** [PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13) (code) · `P3-E1-T4-qa-to-pm.md` (QA/PM docs close)
 
 ## Task
 **P3-E1-T4 — Runtime Feature Worker wire (idle-safe)**
