@@ -5,8 +5,8 @@
 
 ## Implementation snapshot
 - **Phase 1:** Done (E1–E4, 2026-08-04).
-- **Phase 2:** **Epic P2-E0 Done**; **Epic P2-E1 Done**; **Epic P2-E2 Done**; **Epic P2-E3 Done** (2026-08-04). **Sprint gate open** — branch `phase/2-ingest-http` → PR → `main`.
-- **Open follow-up:** merge after CI; then mark Phase 2 ☐→☑ on roadmap if product accepts.
+- **Phase 2:** **Done on `main`** via [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2) (2026-08-04) — E0–E3 (ingest, collector, companion/pairing, `dbError` hygiene).
+- **Open follow-up:** Phase 3 not started; git = classic related-work PRs (`docs/12-development.md`).
 - Phase 3+ not started.
 
 ## Core Decisions

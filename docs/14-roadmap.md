@@ -5,7 +5,7 @@
   - Workspace setup (`bio-spec`, `runtime`, `storage`).
   - SQLite WAL migration script & Repositories.
   - Basic Menubar UI via Tauri v2.
-- [ ] **Phase 2: Ingestion & Context Collector (Sprint 3-4)** — E0–E3 Done on branch; **sprint PR** next
+- [x] **Phase 2: Ingestion & Context Collector (Sprint 3-4)** — merged to `main` ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2), 2026-08-04)
   - Local HTTP Server (`/v1/ingest`) + host wire + `/v1/status` — **shipped (E1)**.
   - macOS collectors + integration/idle tests — **shipped (E2)**.
   - Companion sample + pairing UX (copy/QR) — **shipped (E3)**.
@@ -18,5 +18,5 @@
   - Local LLM Prompt Generator (Ollama / OpenAI API).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
-**Phase 2:** `docs/SPRINT_ROADMAP.md` — E0–E3 Done; Ready **sprint gate** (`docs/handoffs/P2-E0-T1-qa-to-pm.md`)  
-**Git:** branch `phase/2-ingest-http`; **commit after build**; **PR → `main` per sprint**.
+**Phase 2:** merged [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2) · `docs/SPRINT_ROADMAP.md`  
+**Git:** related-work branches → PR (classic); see `docs/12-development.md`.
