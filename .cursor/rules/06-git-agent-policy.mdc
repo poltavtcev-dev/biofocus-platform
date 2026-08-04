@@ -1,47 +1,52 @@
 ---
-description: Git policy for agents — related work → commit → PR (classic).
+description: Git policy for agents — few code PRs; docs/handoffs are not PR triggers.
 alwaysApply: true
 ---
 # Git policy (agents)
 
-**Classic flow:** related tasks share a branch → few meaningful commits → PR when that cluster is ready.  
+**Classic flow:** related tasks share a branch → few meaningful commits → **one PR when the code cluster is ready**.  
 Never push directly to `main`. Prefer **squash merge** so `main` stays readable.
 
 ## Branch
 
-- `phase/N-short-slug`, `epic/P?-E?-short`, or `feat/…` for a **coherent cluster** (one epic or several related tasks).
-- Do **not** open a separate PR for every micro-task unless the user asks.
+- `phase/N-short-slug`, `epic/P?-E?-short`, or `feat/…` for a **coherent code cluster**.
+- Do **not** open a separate PR for every micro-task, handoff, or PM docs pass.
 
 ## Commits
 
-- Commit when a **coherent unit** is ready to share (code + handoffs + docs for that unit).
-- **OK to batch** related Task IDs in one commit (e.g. epic T1–T3, or Dev+QA+PM docs for one task).
-- Subject: Task/Epic IDs + short why (`P2-E1: loopback ingest + pairing`).
-- **Do not** require a commit after every handoff or every PM Done if work continues on the same cluster — leave the tree dirty until the unit (or PR) is ready.
-- Still commit before push/PR (no huge uncommitted dump without review).
+- Commit when a **coherent unit** is ready (prefer batching related Task IDs).
+- Handoff files are **required on disk** for the role pipeline — they do **not** require their own commit or PR.
+- Leave the tree dirty across Dev→QA→PM on the same cluster until the unit (or PR) is ready.
+- Still commit before push/PR (no huge unreviewed dump).
 
 ## When to open a PR
 
-Open **push + `gh pr create --base main`** when:
+Open **push + `gh pr create --base main`** only when **all** of these hold:
 
-1. The **related tasks in the cluster are Done** (QA Pass + PM docs/canvas), **or**
-2. The user says «PR» / «открой PR» / «закрой epic», **or**
-3. The next work is unrelated (switch cluster → finish current PR first).
+1. There is **substantive code** (crates / apps) in the branch vs `main`, **and**
+2. Either the **code cluster is Done** (QA Pass + enough to ship), **or** the user explicitly says «PR» / «открой PR» / «закрой epic», **and**
+3. There is **no open PR** already for this head branch.
 
-**Not required:** one PR for the entire sprint. Prefer **smaller PRs of related work** over a mega-sprint PR with dozens of commits.
+**Do not open a PR for:**
+- handoffs only (`docs/handoffs/*`)
+- roadmap / canvas / status docs only
+- a second PR that duplicates an existing open/merged PR on the same branch tip
+- stale `SPRINT-GATE` / `PR-GATE` markers that are already MERGED/ARCHIVED
+
+**Docs separately:** PM can update `SPRINT_ROADMAP.md`, `12-development.md`, catalog notes, canvas **without** a dedicated PR — fold into the next code PR, or a small docs commit later when the user asks. Handoffs may land with that same docs/code commit.
 
 ## Roles (git only)
 
 | Role | Git expectation |
 | :--- | :--- |
-| Dev/UX | Handoff files always. Commit when unit ready or before PR — not mandatory after every build. |
-| QA | Usually no commit; if fixing tests, fold into the cluster commit or a small `qa:` commit. |
-| PM | Docs/canvas may ride in the same PR commit as the cluster close. |
+| Dev/UX | Handoff on disk. Commit with the code unit — not after every build. |
+| QA | Handoff on disk. Usually no commit; fold test fixes into the cluster. |
+| PM | Docs/canvas on disk. No PR just to mark Done; ride next code PR or docs batch. |
 
 ## Orchestrated multi-role runs
 
-`прогони pipeline` / `сделай сам`: still emit handoff files per role. Git: **one (or few) commits** for the finished cluster, then PR if the cluster is the ship unit — not commit-per-role by default.
+`прогони pipeline` / `сделай сам`: emit handoff files per role. Git: **one (or few) commits** for the finished **code** cluster, then **at most one** PR — not commit-per-role and not PR-per-handoff.
 
 ## Hook
 
-`.cursor/hooks/git-policy-stop.sh` nudges only when the tree is **very dirty** or a PR was requested — not after every handoff.
+`.cursor/hooks/git-policy-stop.sh` may nudge on a **very dirty** tree with **code** changes, or an **active** (non-archived) gate + user intent. It must **not** treat handoff-only dirt or archived gates as «open a PR now».

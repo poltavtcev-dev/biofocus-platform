@@ -11,4 +11,5 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+feature-engine = { workspace = true }
 uuid = { workspace = true }

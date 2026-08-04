@@ -1,0 +1,122 @@
+[
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890001",
+    "timestamp": 900,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890002",
+    "timestamp": 960,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890003",
+    "timestamp": 1020,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890004",
+    "timestamp": 1080,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890005",
+    "timestamp": 1140,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890006",
+    "timestamp": 1200,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890007",
+    "timestamp": 1260,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890007",
+    "timestamp": 1260,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "hrv",
+    "payload": { "rmssd": 15.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890010",
+    "timestamp": 900,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "context_window",
+    "payload": { "bundleId": "com.dev.ide", "appName": "IDE" },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890011",
+    "timestamp": 1080,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "context_window",
+    "payload": { "bundleId": "com.dev.ide", "appName": "IDE" },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890012",
+    "timestamp": 1260,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "context_window",
+    "payload": { "bundleId": "com.dev.ide", "appName": "IDE" },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890020",
+    "timestamp": 1100,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "keystrokes",
+    "payload": { "count": 120, "window_seconds": 60 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890030",
+    "timestamp": 950,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "heart_rate",
+    "payload": { "hr": 62.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890031",
+    "timestamp": 1200,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "heart_rate",
+    "payload": { "hr": 68.0 },
+    "confidence": 1.0
+  },
+  {
+    "id": "0190ecb5-7c2a-7123-8901-234567890040",
+    "timestamp": 1000,
+    "provider_id": "com.biofocus.e2e",
+    "data_type": "custom.debug",
+    "payload": { "note": "unknown-type-pass-through" },
+    "confidence": 1.0
+  }
+]
