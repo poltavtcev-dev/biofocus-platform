@@ -1,15 +1,16 @@
 //! Local HTTP ingest for BioFocus (`POST /v1/ingest`).
 //!
 //! Binds **only** to loopback (`127.0.0.1`). Accepts a JSON array of
-//! [`bio_spec::Observation`], authenticates via Bearer pairing token, and
-//! enqueues into a bounded Observation channel. Persistence of Observations
-//! is out of scope until P2-E1-T3 (`docs/SPRINT_ROADMAP.md`).
+//! [`bio_spec::Observation`], authenticates via Bearer pairing token, enqueues
+//! into a bounded Observation channel, and (via [`spawn_persist_worker`])
+//! appends to SQLite through [`storage::ObservationRepository`].
 
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 mod auth;
 mod config;
 mod error;
+mod persist;
 mod routes;
 mod server;
 mod token;
@@ -19,7 +20,8 @@ pub use config::{
     INGEST_TOKEN_ENV,
 };
 pub use error::{IngestError, IngestResult};
-pub use routes::{ingest_router, IngestResponse, IngestState};
+pub use persist::spawn_persist_worker;
+pub use routes::{ingest_router, IngestResponse, IngestState, QueuePressureBody};
 pub use server::{bind_loopback, serve_listener, serve_with_shutdown};
 pub use token::{
     default_pairing_token_path, generate_pairing_token, load_or_create_pairing_token,

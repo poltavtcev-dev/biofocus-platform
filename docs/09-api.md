@@ -5,12 +5,35 @@
 Default bind (skeleton): **`127.0.0.1:8787`** (`crates/ingest`). Loopback only until pairing/LAN epic.
 
 ### `POST /v1/ingest`
-- **Description:** Приём `Observation` от companion/collectors (локально).
+- **Description:** Приём `Observation` от companion/collectors (локально). Enqueue в bounded channel; async worker пишет через `ObservationRepository::insert` (immutable append).
 - **Headers:** `Authorization: Bearer <PAIRING_TOKEN>` (token from `~/.biofocus/pairing_token` or `BIOFOCUS_INGEST_TOKEN`; see `docs/10-security.md`)
 - **Request Body:** `Array<Observation>`
-- **Response:** `202 Accepted` → `{"status": "queued", "count": N}`
-- **Errors:** `401` missing/wrong token; `400` invalid JSON / domain; `503` queue full/closed (mid-batch semantics → **P2-E1-T3**)
-- **Status:** Pairing token persistence → **P2-E1-T2**. Persist Observations → **P2-E1-T3**.
+- **Response:** `202 Accepted` → `{"status": "queued", "count": N}` (все элементы batch приняты в канал)
+- **Errors:**
+  - `401` missing/wrong token → `{"error":"unauthorized"}`
+  - `400` invalid JSON / domain → `{"error":"invalid_json"}` (и аналоги)
+  - `503` backpressure / closed channel (см. mid-batch ниже)
+- **Persist:** duplicate PK при insert → явный `StorageError::DuplicateObservation` (log, **без overwrite**); HTTP `202` означает «принято в очередь», не «уже закоммичено в SQLite».
+- **Status:** Pairing + persist path shipped (T1–T3). Host wire (`IngestConfig::load` at app start) → **P2-E1-T4**.
+
+#### Mid-batch / queue full (contract **C**)
+
+Bounded `try_send` per item. If a later item in the same request hits a full (or closed) channel after some earlier items were enqueued:
+
+1. **Stop** further enqueue for this request (already-queued items stay in the channel — no rollback).
+2. Respond **`503 Service Unavailable`** with counts:
+
+```json
+{"error":"queue_full","accepted":N,"rejected":M}
+```
+
+| Field | Meaning |
+| :--- | :--- |
+| `error` | `"queue_full"` or `"queue_closed"` |
+| `accepted` | Items from this request successfully enqueued before stop |
+| `rejected` | Remaining items in this request not enqueued (`accepted + rejected = batch length`) |
+
+Same shape when the channel is full on the **first** item (`accepted: 0`). Collectors should back off and retry rejected Observations (new request).
 
 ### `GET /v1/status`
 - **Description:** Статус Core / ingest (HTTP; wire in **P2-E1-T4**).

@@ -17,5 +17,5 @@
   - Local LLM Prompt Generator (Ollama / OpenAI API).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
-**Phase 2:** `docs/SPRINT_ROADMAP.md` — **P2-E1-T1/T2** Done; Ready **P2-E1-T3** (`docs/handoffs/P2-E1-T3-pm-brief.md`)  
-**Git:** branch → PR → `main` after CI — **`phase/2-ingest-http` PR still pending**.
+**Phase 2:** `docs/SPRINT_ROADMAP.md` — **P2-E1-T1…T3** Done; Ready **P2-E1-T4** (`docs/handoffs/P2-E1-T4-pm-brief.md`)  
+**Git:** commits on `phase/2-ingest-http`; **PR → `main` at end of sprint / epic E1**.

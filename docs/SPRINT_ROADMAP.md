@@ -19,17 +19,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P2-E1-T3** (persist + mid-batch 503) |
+| **Ready** | **P2-E1-T4** (host wire + `/v1/status` + idle) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1-T1** · **P2-E1-T2** (2026-08-04, Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1-T1** · **P2-E1-T2** · **P2-E1-T3** (2026-08-04, Pass with notes) |
 
-**Epic status:** P2-E1 ▶️ (T1 ✅ T2 ✅) · P2-E2 ○ · P2-E3 ○ · P2-E0 ○ (hygiene)
+**Epic status:** P2-E1 ▶️ (T1–T3 ✅) · P2-E2 ○ · P2-E3 ○ · P2-E0 ○ (hygiene)
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (ingest + pairing on branch; **PR pending**)
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (persist + contract C on branch; sprint PR later)
 
 **Рекомендуемый порядок:**  
-`P2-E1-T3` → `T4` → `P2-E2-*` → `P2-E3-*`  
+`P2-E1-T4` → Epic E1 Done → `P2-E2-*` → `P2-E3-*`  
 Параллельно: `P2-E0-T1` sanitize `dbError` (∥)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
@@ -38,11 +38,11 @@
 
 ### Active assignment (PM → Dev)
 
-**Task:** `P2-E1-T3` — Persist ingest → `ObservationRepository` (+ mid-batch contract)  
+**Task:** `P2-E1-T4` — Host wire + `GET /v1/status` + `IngestConfig::load` + idle DoD  
 **Assignee:** Dev  
-**Brief:** `docs/handoffs/P2-E1-T3-pm-brief.md`  
-**Branch:** `phase/2-ingest-http` → **commit + PR urgently** (T1+T2 still uncommitted)  
-**Carry notes:** host `IngestConfig::load()` → **T4**; mid-batch 503 → **T3** (this task).
+**Brief:** `docs/handoffs/P2-E1-T4-pm-brief.md`  
+**Branch:** `phase/2-ingest-http` (commit T3 on branch; **PR to `main` at end of sprint/E1**)  
+**Locked:** mid-batch **contract C** (`503` + `accepted`/`rejected`); duplicate → persist-time log, not HTTP 409.
 
 ---
 
@@ -184,7 +184,6 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **P2-E1-T3** — Persist + mid-batch 503 ← **берите сейчас**  
-2. Затем **P2-E1-T4** (host `IngestConfig::load`)  
-3. Опционально ∥ **P2-E0-T1** sanitize `dbError`  
-4. ~~T1~~ ~~T2~~ Done — **сначала commit+PR `phase/2-ingest-http`**
+1. **P2-E1-T4** — Host wire + status + idle ← **берите сейчас**  
+2. Затем Epic E1 Done → **P2-E2-T1** (или ∥ **P2-E0-T1**)  
+3. ~~T1~~ ~~T2~~ ~~T3~~ Done — commit T3 на ветку; sprint PR позже

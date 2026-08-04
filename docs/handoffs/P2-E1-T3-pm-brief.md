@@ -2,9 +2,11 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready (assigned)  
+**Status:** Done (QA Pass with notes 2026-08-04)  
 **Date:** 2026-08-04  
-**Closed previous:** P2-E1-T2 — QA Pass with notes (`docs/handoffs/P2-E1-T2-qa-to-pm.md`)
+**Closed previous:** P2-E1-T2 — QA Pass with notes (`docs/handoffs/P2-E1-T2-qa-to-pm.md`)  
+**QA:** `docs/handoffs/P2-E1-T3-qa-to-pm.md`  
+**Locked:** mid-batch contract **C**; duplicate at persist-time (log, not HTTP 409).
 
 ## Task
 **P2-E1-T3 — Persist ingest → `ObservationRepository` (+ mid-batch 503 contract)**

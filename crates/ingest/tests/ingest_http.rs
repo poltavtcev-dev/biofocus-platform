@@ -8,7 +8,8 @@ use axum::http::{Request, StatusCode};
 use bio_spec::Observation;
 use http::header::AUTHORIZATION;
 use ingest::{
-    bind_loopback, ingest_router, IngestConfig, IngestResponse, IngestState, INGEST_BIND_HOST,
+    bind_loopback, ingest_router, IngestConfig, IngestResponse, IngestState, QueuePressureBody,
+    INGEST_BIND_HOST,
 };
 use runtime::observation_channel;
 use serde_json::json;
@@ -172,6 +173,114 @@ async fn post_ingest_returns_202_and_enqueues() {
         Uuid::parse_str("0190ecb5-7c2a-7123-8901-23456789abcd").expect("uuid")
     );
     assert_eq!(obs.data_type, "heart_rate");
+}
+
+#[tokio::test]
+async fn post_ingest_mid_batch_queue_full_returns_503_with_counts() {
+    let (state, mut rx) = test_state(1);
+    let app = ingest_router(state);
+
+    let a = json!({
+        "id": "0190ecb5-7c2a-7123-8901-23456789abcd",
+        "timestamp": 1721990400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "heart_rate",
+        "payload": { "bpm": 74.0 },
+        "confidence": 0.98
+    });
+    let b = json!({
+        "id": "0190ecb5-7c2a-7123-8901-23456789abce",
+        "timestamp": 1721990401,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "heart_rate",
+        "payload": { "bpm": 75.0 },
+        "confidence": 0.97
+    });
+    let body = json!([a, b]);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(body.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: QueuePressureBody = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed, QueuePressureBody::queue_full(1, 1));
+
+    let first = rx.try_recv().expect("first enqueued");
+    assert_eq!(
+        first.id,
+        Uuid::parse_str("0190ecb5-7c2a-7123-8901-23456789abcd").expect("uuid")
+    );
+    assert!(rx.try_recv().is_err(), "second item must not be enqueued");
+}
+
+#[tokio::test]
+async fn post_ingest_queue_full_on_first_item_accepted_zero() {
+    let (tx, mut rx) = observation_channel(1).expect("channel");
+    // Saturate so the next try_send fails immediately.
+    tx.try_send(serde_json::from_value(sample_observation_json()).expect("obs"))
+        .expect("prefill");
+
+    let state = IngestState {
+        token: Arc::from(TOKEN),
+        tx,
+    };
+    let app = ingest_router(state);
+
+    let body = json!([
+        {
+            "id": "0190ecb5-7c2a-7123-8901-23456789abcf",
+            "timestamp": 1721990500,
+            "provider_id": "com.biofocus.applehealth",
+            "data_type": "heart_rate",
+            "payload": { "bpm": 80.0 },
+            "confidence": 0.9
+        },
+        {
+            "id": "0190ecb5-7c2a-7123-8901-23456789abd0",
+            "timestamp": 1721990501,
+            "provider_id": "com.biofocus.applehealth",
+            "data_type": "heart_rate",
+            "payload": { "bpm": 81.0 },
+            "confidence": 0.9
+        }
+    ]);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(body.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: QueuePressureBody = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed, QueuePressureBody::queue_full(0, 2));
+
+    // Prefill still present; neither new item accepted.
+    let _ = rx.try_recv().expect("prefill");
+    assert!(rx.try_recv().is_err());
 }
 
 #[tokio::test]

@@ -70,5 +70,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **P2-E1-T1/T2** Done; Ready **P2-E1-T3**.  
-**Follow-up:** PR `phase/2-ingest-http`; sanitize `dbError` (**P2-E0-T1**); host load (**T4**).
+**Status (2026-08-04):** Phase 2 — **P2-E1-T1…T3** Done; Ready **P2-E1-T4**.  
+**Follow-up:** commit T3 on branch; sprint PR later; sanitize `dbError` (**P2-E0-T1**).
