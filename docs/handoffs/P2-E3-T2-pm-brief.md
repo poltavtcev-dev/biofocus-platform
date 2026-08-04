@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** UX (lead) + Dev  
-**Status:** Ready (assigned)  
+**Status:** Done (2026-08-04)  
 **Date:** 2026-08-04  
 **Closed previous:** P2-E3-T1 — QA Pass with notes (`docs/handoffs/P2-E3-T1-qa-to-pm.md`)
 
@@ -32,5 +32,5 @@ Companion can POST with a Bearer token, but users have no in-app way to move `~/
 ## Hygiene
 - Commit after build; push only at sprint gate (`SPRINT-GATE.md`).
 
-## After QA Pass
-PM may Ready **P2-E0-T1** (hygiene) or declare Sprint 3–4 gate / PR if E3 epic complete enough.
+## Closed this
+QA Pass with notes → `docs/handoffs/P2-E3-T2-qa-to-pm.md`. Epic **P2-E3** ✅. Ready **P2-E0-T1**.

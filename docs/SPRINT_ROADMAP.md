@@ -19,31 +19,29 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P2-E3-T2** (pairing UX — token share) |
+| **Ready** | **P2-E0-T1** (sanitize IPC `dbError`) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4) · **P2-E2** (T1–T3) · **P2-E3-T1** (2026-08-04; Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4) · **P2-E2** (T1–T3) · **P2-E3** (T1–T2, 2026-08-04; T2 Pass with notes) |
 
-**Epic status:** P2-E1 ✅ · P2-E2 ✅ · P2-E3 ▶️ (T1 ✅) · P2-E0 ○ (hygiene)
+**Epic status:** P2-E1 ✅ · P2-E2 ✅ · P2-E3 ✅ · P2-E0 ▶️ (hygiene)
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E1–E2 Done; E3-T1 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E1–E3 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
 
 **Рекомендуемый порядок:**  
-Epic E1 ✅ → Epic E2 ✅ → E3-T1 ✅ → `P2-E3-T2`  
-Параллельно: `P2-E0-T1` sanitize `dbError` (∥; optionally extend to HTTP `/v1/status` `db_error`)
+Epic E1 ✅ → Epic E2 ✅ → Epic E3 ✅ → `P2-E0-T1` (hygiene) → sprint gate PR
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: commit after build; push at sprint gate (`SPRINT-GATE.md`).
 
-### Active assignment (PM → UX/Dev)
+### Active assignment (PM → Dev)
 
-**Task:** `P2-E3-T2` — Pairing UX (token share)  
-**Assignee:** UX (lead) + Dev  
-**Brief:** `docs/handoffs/P2-E3-T2-pm-brief.md`  
+**Task:** `P2-E0-T1` — Sanitize IPC `dbError` paths  
+**Assignee:** Dev  
 **Branch:** `phase/2-ingest-http` (local commits per task; **push + PR at sprint end**)  
-**Locked:** Companion sample path (`apps/companion`); ingest Bearer pairing.  
-**Note:** before sprint PR — manual smokes for window stream + companion CLI; E2 epic closed; E3-T1 stub notes apply.
+**Locked:** Pairing UX shipped (E3-T2). Optional: also sanitize HTTP `/v1/status` `db_error`.  
+**Note:** before sprint PR — manual smokes for Companion Copy/QR + window stream + companion CLI.
 
 ---
 
@@ -152,6 +150,7 @@ Epic E1 ✅ → Epic E2 ✅ → E3-T1 ✅ → `P2-E3-T2`
 | **Modules** | Desktop shell + companion |
 | **Depends on** | P2-E1-T2, P2-E3-T1 |
 | **AC** | Пользователь может перенести pairing token на телефон (QR или copy). Без облачного аккаунта. |
+| **Done** | 2026-08-04 — QA Pass with notes (`docs/handoffs/P2-E3-T2-qa-to-pm.md`). Ship: IPC `get_pairing_token` + Companion Show/Copy/QR. |
 
 ---
 
@@ -189,8 +188,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **P2-E3-T2** — Pairing UX (token share) ← **берите сейчас**  
-2. Параллельно (опционально): **P2-E0-T1** sanitize `dbError`  
-3. ~~P2-E3-T1~~ Done — companion sample path committed on branch  
-4. ~~Epic P2-E2 (T1–T3)~~ Done — committed on branch  
-5. ~~Epic P2-E1 (T1–T4)~~ Done — **sprint PR → `main`** в конце Sprint 3–4
+1. **P2-E0-T1** — Sanitize IPC `dbError` ← **берите сейчас**  
+2. ~~P2-E3-T2~~ Done — pairing Copy/QR via IPC  
+3. ~~P2-E3-T1~~ Done — companion sample path  
+4. ~~Epic P2-E2 (T1–T3)~~ Done  
+5. ~~Epic P2-E1 (T1–T4)~~ Done — **sprint PR → `main`** в конце Sprint 3–4 (E3 ✅; hygiene optional before gate)
