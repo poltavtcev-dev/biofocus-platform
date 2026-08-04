@@ -18,6 +18,7 @@ cargo test -p storage
 cargo test -p ingest
 cargo test -p macos-collector
 cargo test -p companion
+cargo test -p pipeline
 cargo test -p desktop
 
 # Desktop (Epic E3 Done)
@@ -32,6 +33,8 @@ pnpm tauri dev
 
 Ingest (Phase 2): loopback **`127.0.0.1:8787`**, crate `crates/ingest`.
 Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and stops it on exit.
+
+**Pipeline intake (P3-E1-T1):** crate `crates/pipeline`. Primary API: `pipeline::accept_observations(&[Observation])` → `AcceptedBatch` (`PipelineStage::AcceptedForProcessing`). Empty batch = **Ok** (idle-friendly). Helpers: `accept_owned`, `accept_iter`. Dedupe / normalize / runtime worker — later Phase 3 tasks.
 
 **Active window collector (P2-E2-T1):** on macOS, Desktop also starts `ActiveWindowPlugin` (poll ≥1s → `context_window` Observations on the same channel → persist worker). No Accessibility permission. Payload: `bundle_id` + `app_name` only.
 
@@ -87,7 +90,7 @@ IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; U
 
 GitHub Actions (no CD): `.github/workflows/ci.yml`
 
-- **rust-core** (`ubuntu-latest`): `cargo check --workspace --exclude desktop`, `cargo test -p bio-spec -p runtime -p storage -p ingest`
+- **rust-core** (`ubuntu-latest`): `cargo check --workspace --exclude desktop`, `cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p plugin-sdk -p macos-collector -p companion`
 - **desktop** (`macos-latest`): `cargo test -p desktop`, `pnpm install` + `pnpm build`, UI↛DB boundary grep
 
 Triggers: push/PR to `main` or `master`.
@@ -126,5 +129,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged** via [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2) (`phase/2-ingest-http` → `main`). E0–E3 on `main`.  
+**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3 open: **P3-E1-T1 Done** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5) / [PR #6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6)); Ready **P3-E1-T2**.  
 **Git policy:** classic related-work PRs (see above) — supersedes commit-per-task / sprint-only push.

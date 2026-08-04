@@ -28,10 +28,10 @@
 - Нет блокирующих. Note: код уже в `main` через merge PR #5, при этом Kanban/docs всё ещё показывают Ready — закрытие формально за PM.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P3-E1-T1 → Done; Ready = **P3-E1-T2**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs: `docs/ARCHITECTURE_STATUS.md` (Ready pointer), при необходимости `docs/14-roadmap.md` / `docs/12-development.md` (pipeline entrypoint)
-- [ ] Учесть: ветка/PR уже смержены — не нужен отдельный PR на T1; следующий коммит/PR — кластер E1 (T2+)
+- [x] `/docs/SPRINT_ROADMAP.md` — P3-E1-T1 → Done; Ready = **P3-E1-T2**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/ARCHITECTURE_STATUS.md`, `docs/12-development.md` (pipeline entrypoint); brief `P3-E1-T2-pm-brief.md`
+- [x] Учесть: T1 уже в `main` (PR #5/#6); следующий коммит/PR — кластер E1 (T2+)
 
 ## Suggested next Ready task
 - **P3-E1-T2** — Deduplication stage
