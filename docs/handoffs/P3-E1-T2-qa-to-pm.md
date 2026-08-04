@@ -29,10 +29,10 @@
 - Нет блокирующих.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P3-E1-T2 → Done; Ready = **P3-E1-T3**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs (по необходимости): `docs/ARCHITECTURE_STATUS.md` / `docs/12-development.md` (dedupe entrypoint); brief для T3
-- [ ] Git: код на `phase/3-pipeline-features` (`0453aa1`); PR по политике кластера E1 (T2+), не обязателен на один handoff
+- [x] `/docs/SPRINT_ROADMAP.md` — P3-E1-T2 → Done; Ready = **P3-E1-T3**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/ARCHITECTURE_STATUS.md` / `docs/12-development.md` (dedupe entrypoint); brief `P3-E1-T3-pm-brief.md`
+- [x] Git: код в `main` via PR #8; QA handoff PR #9; PM close docs → PR #10
 
 ## Suggested next Ready task
 - **P3-E1-T3** — Normalization & calibration
