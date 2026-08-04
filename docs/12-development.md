@@ -129,5 +129,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **E1–E3 Done**; Ready **P2-E0-T1** (sanitize `dbError`) on `phase/2-ingest-http`.  
-**Git:** commit-after-build on branch; **sprint PR** at Sprint 3–4 gate (`docs/handoffs/SPRINT-GATE.md`). Follow-up: sanitize `dbError` (**P2-E0-T1**).
+**Status (2026-08-04):** Phase 2 — **E0–E3 Done** on `phase/2-ingest-http`; Ready **sprint gate**.  
+**Git:** commit-after-build done per task; next: `docs/handoffs/SPRINT-GATE.md` + push + `gh pr create --base main`.

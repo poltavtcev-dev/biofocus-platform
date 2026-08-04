@@ -30,10 +30,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P2-E0-T1 → Done; Epic P2-E0 Done; clear Ready / set sprint gate next
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs: `docs/ARCHITECTURE_STATUS.md`, `docs/12-development.md`, `docs/14-roadmap.md` — clear open follow-up / Ready for hygiene task
-- [ ] Note: Phase 2 hygiene closed → **sprint gate** (push + PR → `main`) is next unless PM defers
+- [x] `/docs/SPRINT_ROADMAP.md` — P2-E0-T1 → Done; Epic P2-E0 Done; clear Ready / set sprint gate next
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/ARCHITECTURE_STATUS.md`, `docs/12-development.md`, `docs/14-roadmap.md` — clear open follow-up / Ready for hygiene task
+- [x] Note: Phase 2 hygiene closed → **sprint gate** (push + PR → `main`) is next unless PM defers
 
 ## Suggested next Ready task
 - **Sprint gate** — `docs/handoffs/SPRINT-GATE.md` + push `phase/2-ingest-http` + `gh pr create --base main`  
