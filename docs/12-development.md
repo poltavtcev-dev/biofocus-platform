@@ -165,5 +165,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done**; **P3-E2 Done** (T1–T4; T3: [PR #20](https://github.com/poltavtcev-dev/biofocus-platform/pull/20)/[#21](https://github.com/poltavtcev-dev/biofocus-platform/pull/21); T4: pipeline E2E suite). Ready **P3-E3-T1** (alert level mapping).  
+**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done**; **P3-E2 Done** (T1–T4; T3: [PR #20](https://github.com/poltavtcev-dev/biofocus-platform/pull/20)/[#21](https://github.com/poltavtcev-dev/biofocus-platform/pull/21); T4: [PR #22](https://github.com/poltavtcev-dev/biofocus-platform/pull/22)). Ready **P3-E3-T1** (alert level mapping).  
 **Git policy:** few **code** PRs; handoffs/docs are not PR triggers (see above).
