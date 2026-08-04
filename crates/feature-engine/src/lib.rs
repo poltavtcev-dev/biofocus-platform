@@ -6,6 +6,8 @@
 //!
 //! - [`FeatureEngine::register`] — add a [`FeatureNode`]
 //! - [`catalog::register_focus_v1`] — `ContextSwitchRate` + `FocusScore` (v1)
+//! - [`catalog::register_stress_v1`] — `StressIndex` + `FatigueIndex` (v1; needs Focus)
+//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue together
 //! - [`FeatureEngine::run`] — topo compute → [`EngineOutput`]
 //!
 //! Empty DAG / empty snapshot → [`Ok`] with empty output (idle-friendly).
@@ -22,8 +24,10 @@ mod node;
 pub use bio_spec::{Feature, Observation, Signal};
 
 pub use catalog::{
-    register_focus_v1, ContextSwitchRateNode, FocusScoreNode, CONTEXT_SWITCH_RATE_ID,
-    FOCUS_SCORE_ID, STEP_SECS, WINDOW_SECS,
+    register_catalog_v1, register_focus_v1, register_stress_v1, ContextSwitchRateNode,
+    FatigueIndexNode, FocusScoreNode, StressIndexNode, CONTEXT_SWITCH_RATE_ID, FATIGUE_INDEX_ID,
+    FOCUS_SCORE_ID, HIGH_STRESS_MIN_DURATION_SECS, HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD,
+    STEP_SECS, STRESS_INDEX_ID, WINDOW_SECS,
 };
 pub use engine::{EngineOutput, FeatureEngine};
 pub use error::{FeatureEngineError, FeatureEngineResult};
