@@ -1,0 +1,35 @@
+---
+description: Мультиагентный конвейер Dev→QA→PM — обязательный handoff, запрет на чужие артефакты.
+alwaysApply: true
+---
+# Agent Team Workflow (обязательно)
+
+Работа идёт **по ролям**, не «всем сразу». Один активный исполнитель за шаг.
+
+## Pipeline
+
+```text
+PM (задача Ready) → Dev|UX (сборка) → QA (проверка) → PM (docs + canvas)
+```
+
+1. **PM** выдаёт/уточняет задачу из `/docs/SPRINT_ROADMAP.md` (AC, роль, crates).
+2. **Dev** или **UX** делает только реализацию. По завершении **обязан** создать handoff для QA (см. ниже). **Не** двигает задачу в Done. **Не** правит execution canvas.
+3. **QA** проверяет по handoff + AC. По завершении **обязан** создать отчёт для PM. **Не** правит roadmap Done и canvas.
+4. **PM** по отчёту QA обновляет `/docs/SPRINT_ROADMAP.md`, при необходимости другие docs, и canvas `biofocus-execution-board.canvas.tsx`. Только после этого задача = **Done**.
+
+## Handoff files
+
+Каталог: `/docs/handoffs/`  
+Шаблоны: `TEMPLATE-dev-to-qa.md`, `TEMPLATE-qa-to-pm.md`  
+Имя файла: `{TASK_ID}-{dev-to-qa|qa-to-pm}.md` (пример: `P1-E2-T2-dev-to-qa.md`).
+
+## Запреты
+
+- Dev/UX/QA **не** обновляют Kanban Done и execution canvas.
+- Не стартовать следующую задачу, пока PM не закрыл handoff предыдущей (кроме явно параллельных, напр. T4∥T2).
+- Не смешивать роли в одном ответе: закончил шаг → явный handoff → стоп.
+
+## Как вызывать в чате
+
+Пользователь пишет роль: `как Dev: …` / `как QA: …` / `как PM: …` / `как UX: …`.  
+Без роли — определить по файлам (globs) или спросить.

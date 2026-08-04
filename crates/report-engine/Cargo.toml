@@ -1,0 +1,9 @@
+[package]
+name = "report-engine"
+description = "Markdown reports and optional LLM prompt generation (Phase 4)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bio-spec = { workspace = true }

@@ -1,0 +1,9 @@
+[package]
+name = "plugin-sdk"
+description = "Capability-based plugin traits for BioFocus providers (Phase 2+)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bio-spec = { workspace = true }

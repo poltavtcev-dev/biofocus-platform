@@ -1,0 +1,282 @@
+//! Storage integration tests for ObservationRepository (P1-E2-T4).
+//!
+//! Covers Integration layer from `/docs/11-testing.md` plus documented edge errors.
+
+use bio_spec::{Observation, SpecError, UnixTimestamp};
+use serde_json::json;
+use storage::{Database, ObservationRepository, StorageError};
+use uuid::Uuid;
+
+fn sample_observation(id: &str, timestamp: i64, data_type: &str) -> Observation {
+    Observation::try_new(
+        Uuid::parse_str(id).expect("uuid"),
+        UnixTimestamp::from_secs(timestamp),
+        "com.biofocus.applehealth",
+        data_type,
+        json!({ "bpm": 74.0, "source": "Apple Watch Series 9" }),
+        0.98,
+    )
+    .expect("valid observation")
+}
+
+fn insert_raw_row(
+    db: &Database,
+    id: &str,
+    timestamp: i64,
+    data_type: &str,
+    payload: &str,
+    confidence: f64,
+) {
+    db.connection()
+        .execute(
+            "INSERT INTO observations
+                (id, timestamp, provider_id, data_type, payload, confidence, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            rusqlite::params![
+                id,
+                timestamp,
+                "com.biofocus.applehealth",
+                data_type,
+                payload,
+                confidence,
+                1_721_990_400_i64,
+            ],
+        )
+        .expect("raw sql insert");
+}
+
+#[test]
+fn insert_then_get_by_id_round_trip() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    let obs = sample_observation("0190ecb5-7c2a-7123-8901-23456789abcd", 1_721_990_400, "heart_rate");
+    repo.insert(&obs).expect("insert");
+
+    let loaded = repo
+        .get_by_id(obs.id)
+        .expect("get")
+        .expect("must exist");
+    assert_eq!(loaded, obs);
+
+    let created_at: i64 = db
+        .connection()
+        .query_row(
+            "SELECT created_at FROM observations WHERE id = ?1",
+            [obs.id.to_string()],
+            |row| row.get(0),
+        )
+        .expect("created_at");
+    assert!(created_at > 0);
+    assert_ne!(created_at, obs.timestamp.as_secs());
+}
+
+#[test]
+fn get_by_id_missing_returns_none() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+    let id = Uuid::parse_str("0190ecb5-7c2a-7123-8901-23456789abcd").expect("uuid");
+
+    let loaded = repo.get_by_id(id).expect("get");
+    assert!(loaded.is_none());
+}
+
+#[test]
+fn insert_duplicate_pk_returns_explicit_error() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    let obs = sample_observation("0190ecb5-7c2a-7123-8901-23456789abcd", 1_721_990_400, "heart_rate");
+    repo.insert(&obs).expect("first insert");
+
+    let err = repo.insert(&obs).expect_err("duplicate must fail");
+    match err {
+        StorageError::DuplicateObservation { id } => assert_eq!(id, obs.id),
+        other => panic!("expected DuplicateObservation, got {other:?}"),
+    }
+
+    let count: i64 = db
+        .connection()
+        .query_row("SELECT COUNT(*) FROM observations", [], |row| row.get(0))
+        .expect("count");
+    assert_eq!(count, 1, "duplicate must not overwrite");
+}
+
+#[test]
+fn list_by_time_range_inclusive_bounds_and_order() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    let before = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc0", 99, "heart_rate");
+    let start = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc1", 100, "heart_rate");
+    let mid = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc2", 150, "hrv");
+    let end = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc3", 200, "heart_rate");
+    let after = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc4", 201, "heart_rate");
+
+    for obs in [&before, &start, &mid, &end, &after] {
+        repo.insert(obs).expect("insert");
+    }
+
+    let ranged = repo
+        .list_by_time_range(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(200))
+        .expect("range");
+    assert_eq!(ranged, vec![start, mid, end], "window is inclusive on both ends");
+}
+
+#[test]
+fn list_by_time_range_empty_when_no_rows_in_window() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    let obs = sample_observation("0190ecb5-7c2a-7123-8901-23456789abcd", 500, "heart_rate");
+    repo.insert(&obs).expect("insert");
+
+    let ranged = repo
+        .list_by_time_range(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(200))
+        .expect("range");
+    assert!(ranged.is_empty());
+}
+
+#[test]
+fn list_by_time_range_single_instant_window() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    let hit = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc1", 100, "heart_rate");
+    let miss = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc2", 101, "heart_rate");
+    repo.insert(&hit).expect("insert hit");
+    repo.insert(&miss).expect("insert miss");
+
+    let ranged = repo
+        .list_by_time_range(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(100))
+        .expect("point window");
+    assert_eq!(ranged, vec![hit]);
+}
+
+#[test]
+fn list_by_time_range_end_before_start_is_invalid() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    let err = repo
+        .list_by_time_range(UnixTimestamp::from_secs(200), UnixTimestamp::from_secs(100))
+        .expect_err("end < start");
+
+    match err {
+        StorageError::InvalidTimeRange { start, end } => {
+            assert_eq!(start, 200);
+            assert_eq!(end, 100);
+        }
+        other => panic!("expected InvalidTimeRange, got {other:?}"),
+    }
+}
+
+#[test]
+fn list_by_data_type_filters_and_empty() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    let a = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc1", 100, "heart_rate");
+    let b = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc2", 200, "hrv");
+    let c = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc3", 300, "heart_rate");
+    repo.insert(&a).expect("insert a");
+    repo.insert(&b).expect("insert b");
+    repo.insert(&c).expect("insert c");
+
+    let hr = repo.list_by_data_type("heart_rate").expect("by type");
+    assert_eq!(hr, vec![a, c]);
+
+    let empty = repo.list_by_data_type("sleep").expect("missing type");
+    assert!(empty.is_empty());
+}
+
+#[test]
+fn observation_try_new_rejects_invalid_confidence() {
+    let err = Observation::try_new(
+        Uuid::parse_str("0190ecb5-7c2a-7123-8901-23456789abcd").expect("uuid"),
+        UnixTimestamp::from_secs(1_721_990_400),
+        "com.biofocus.applehealth",
+        "heart_rate",
+        json!({ "bpm": 74.0 }),
+        1.5,
+    )
+    .expect_err("confidence out of range");
+
+    assert_eq!(err, SpecError::InvalidConfidence(1.5));
+}
+
+#[test]
+fn get_by_id_invalid_confidence_in_db_maps_to_domain_error() {
+    let db = Database::open_in_memory().expect("open");
+    let id = "0190ecb5-7c2a-7123-8901-23456789abcd";
+    insert_raw_row(
+        &db,
+        id,
+        1_721_990_400,
+        "heart_rate",
+        r#"{"bpm":74.0}"#,
+        1.5,
+    );
+
+    let repo = ObservationRepository::new(&db);
+    let err = repo
+        .get_by_id(Uuid::parse_str(id).expect("uuid"))
+        .expect_err("invalid confidence must fail read");
+
+    match err {
+        StorageError::Domain(SpecError::InvalidConfidence(value)) => {
+            assert_eq!(value, 1.5);
+        }
+        other => panic!("expected Domain(InvalidConfidence), got {other:?}"),
+    }
+}
+
+#[test]
+fn get_by_id_corrupt_payload_json_returns_deserialize_error() {
+    let db = Database::open_in_memory().expect("open");
+    let id = "0190ecb5-7c2a-7123-8901-23456789abcd";
+    insert_raw_row(
+        &db,
+        id,
+        1_721_990_400,
+        "heart_rate",
+        "{not-json",
+        0.9,
+    );
+
+    let repo = ObservationRepository::new(&db);
+    let err = repo
+        .get_by_id(Uuid::parse_str(id).expect("uuid"))
+        .expect_err("corrupt payload must fail read");
+
+    match err {
+        StorageError::PayloadDeserialize { .. } => {}
+        other => panic!("expected PayloadDeserialize, got {other:?}"),
+    }
+}
+
+#[test]
+fn list_by_time_range_stops_on_corrupt_payload() {
+    let db = Database::open_in_memory().expect("open");
+    let good = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc1", 100, "heart_rate");
+    ObservationRepository::new(&db).insert(&good).expect("insert good");
+
+    insert_raw_row(
+        &db,
+        "0190ecb5-7c2a-7123-8901-23456789abc2",
+        150,
+        "heart_rate",
+        "{broken",
+        0.9,
+    );
+
+    let repo = ObservationRepository::new(&db);
+    let err = repo
+        .list_by_time_range(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(200))
+        .expect_err("corrupt row must fail list");
+
+    match err {
+        StorageError::PayloadDeserialize { .. } => {}
+        other => panic!("expected PayloadDeserialize, got {other:?}"),
+    }
+}

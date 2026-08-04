@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-core:
+    name: Rust core (check + test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo check (workspace, exclude desktop)
+        run: cargo check --workspace --exclude desktop
+
+      - name: cargo test (bio-spec, runtime, storage)
+        run: cargo test -p bio-spec -p runtime -p storage
+
+  desktop:
+    name: Desktop (Rust + frontend)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: cargo test -p desktop
+        run: cargo test -p desktop
+
+      - name: pnpm install + build
+        working-directory: apps/desktop
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Boundary — UI must not touch SQLite
+        run: |
+          set -euo pipefail
+          if grep -RInE 'rusqlite|CREATE TABLE|biofocus_main\.db' \
+            apps/desktop/src apps/desktop/dist; then
+            echo "::error::UI↛DB boundary violated (rusqlite / SQL / db filename in frontend)"
+            exit 1
+          fi
+          echo "Boundary clean."

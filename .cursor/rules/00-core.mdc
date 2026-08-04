@@ -1,0 +1,14 @@
+---
+description: Глобальные архитектурные и инженерные ограничения BioFocus (всегда активны).
+alwaysApply: true
+---
+# BioFocus Core Directives
+
+1. **Architecture Compliance:** Перед кодом читай `/docs/`. Соблюдай границы, контракты и crate-архитектуру.
+2. **Domain Terms:** Ubiquitous Language из `/docs/16-glossary.md`: `Observation`, `Signal`, `Feature`, `Insight`.
+3. **No Architecture Breaking:** Схемы БД, API-контракты и доменные сущности — только через ADR + approve пользователя.
+4. **Error Handling:** В production запрещены `unwrap()` / `expect()`. `thiserror` + явный `Result`.
+5. **No Direct UI-DB Access:** UI ↔ Tauri IPC ↔ Core. UI не ходит в SQLite.
+6. **Scope Guard:** Не брать Phase 2+ / Future Scope, пока Phase 1 Foundation не закрыт.
+7. **Status Source:** `/docs/ARCHITECTURE_STATUS.md`, `/docs/decision-log.md`.
+8. **Team Workflow:** Обязателен конвейер Dev|UX → QA → PM из `05-agent-workflow.mdc`. Без handoff задача не Done.

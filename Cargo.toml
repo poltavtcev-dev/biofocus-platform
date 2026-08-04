@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bio-spec",
+    "crates/runtime",
+    "crates/storage",
+    "crates/pipeline",
+    "crates/feature-engine",
+    "crates/knowledge-engine",
+    "crates/report-engine",
+    "crates/plugin-sdk",
+    "apps/desktop/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-only"
+repository = "https://github.com/poltavtcev-dev/biofocus-platform"
+authors = ["BioFocus Contributors"]
+
+[workspace.dependencies]
+bio-spec = { path = "crates/bio-spec" }
+runtime = { path = "crates/runtime" }
+storage = { path = "crates/storage" }
+pipeline = { path = "crates/pipeline" }
+feature-engine = { path = "crates/feature-engine" }
+knowledge-engine = { path = "crates/knowledge-engine" }
+report-engine = { path = "crates/report-engine" }
+plugin-sdk = { path = "crates/plugin-sdk" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v7", "serde"] }
+rusqlite = { version = "0.32", features = ["bundled"] }

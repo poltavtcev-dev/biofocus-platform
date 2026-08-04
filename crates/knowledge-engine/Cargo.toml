@@ -1,0 +1,9 @@
+[package]
+name = "knowledge-engine"
+description = "Evidence and insight generation (Phase 3–4)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bio-spec = { workspace = true }

@@ -1,0 +1,139 @@
+:root {
+  --bf-fg: #1d1d1f;
+  --bf-muted: #6e6e73;
+  --bf-meta: #86868b;
+  --bf-bg: #f5f5f7;
+  --bf-bg-accent: #e8e8ed;
+  --bf-dot-idle: #8e8e93;
+  --bf-dot-ready: #5a7a6a;
+  --bf-dot-error: #a15c5c;
+  --bf-retry-fg: #1d1d1f;
+  --bf-retry-border: #c7c7cc;
+  --bf-focus: #5b6b8c;
+
+  color: var(--bf-fg);
+  background-color: var(--bf-bg);
+  font-family: "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bf-fg: #f5f5f7;
+    --bf-muted: #a1a1a6;
+    --bf-meta: #8e8e93;
+    --bf-bg: #1c1c1e;
+    --bf-bg-accent: #2c2c2e;
+    --bf-dot-idle: #8e8e93;
+    --bf-dot-ready: #7a9a88;
+    --bf-dot-error: #c48a8a;
+    --bf-retry-fg: #f5f5f7;
+    --bf-retry-border: #48484a;
+    --bf-focus: #8e9bb8;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bf-bg);
+}
+
+.shell {
+  min-height: 100vh;
+  padding: 1.1rem 1.15rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background:
+    radial-gradient(120% 80% at 0% 0%, var(--bf-bg-accent) 0%, transparent 55%),
+    var(--bf-bg);
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.status-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--bf-dot-idle);
+}
+
+.status-dot--ready {
+  background: var(--bf-dot-ready);
+}
+
+.status-dot--error {
+  background: var(--bf-dot-error);
+}
+
+.status-label {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.status-detail {
+  margin: 0;
+  color: var(--bf-muted);
+}
+
+.status-meta {
+  margin: 0.35rem 0 0;
+  color: var(--bf-meta);
+  font-size: 0.78rem;
+}
+
+.retry {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid var(--bf-retry-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bf-retry-fg);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.retry:hover:not(:disabled) {
+  background: var(--bf-bg-accent);
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--bf-focus);
+  outline-offset: 2px;
+}
+
+.retry:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

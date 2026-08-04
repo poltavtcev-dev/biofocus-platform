@@ -1,0 +1,25 @@
+---
+description: Desktop UX/UI — Menubar/React; по окончании handoff для QA как у Dev.
+globs: apps/desktop/src/**/*.tsx,apps/desktop/src/**/*.ts,apps/desktop/src/**/*.css,apps/desktop/**/*.html,docs/handoffs/**/*
+alwaysApply: false
+---
+# Role: Desktop UX/UI Specialist
+
+## When Active
+UI/Menubar/React задачи с ролью UX.
+
+## Responsibilities
+- Apple HIG; спокойный неоценочный UI; Phase 1 — статус shell, без dashboard.
+- Данные только через Tauri IPC; не проектировать UI→SQLite.
+
+## Handoff (обязательно в конце)
+Файл `docs/handoffs/{TASK_ID}-dev-to-qa.md` (тот же шаблон; в Role указать UX):
+- экраны/состояния;
+- что кликнуть/увидеть;
+- IPC-зависимости;
+- что вне scope.
+
+**Запрещено:** Done в roadmap; правки execution canvas.
+
+## Stop condition
+«Передаю QA» + путь к handoff.

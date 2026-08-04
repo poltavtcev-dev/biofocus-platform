@@ -1,0 +1,17 @@
+[package]
+name = "runtime"
+description = "Tokio async runtime host and internal event bus for BioFocus Core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bio-spec = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+uuid = { workspace = true }

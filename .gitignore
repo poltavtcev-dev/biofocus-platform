@@ -1,9 +1,9 @@
 # Rust
 /target
-Cargo.lock
 
 # Node / Tauri
 node_modules
+.pnpm-store
 /apps/desktop/dist
 /apps/desktop/src-tauri/target
 

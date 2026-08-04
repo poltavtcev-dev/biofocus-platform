@@ -1,0 +1,9 @@
+[package]
+name = "feature-engine"
+description = "Feature DAG compute runtime (Focus, Stress, Fatigue) — Phase 3"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bio-spec = { workspace = true }
