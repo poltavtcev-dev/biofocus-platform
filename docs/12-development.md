@@ -44,7 +44,8 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **Feature Worker (T4):** `runtime::spawn_feature_worker(source, hook, config)` — idle-safe poll (`recv_timeout` ≥1s when empty); desktop `feature_host::{start,stop}_feature_host` with app lifecycle. Hook stub: `NoopFeatureHook` until Feature Engine (E2). Storage cursor: `ObservationRepository::list_after_created_cursor` (no new schema; launch at DB tip).
 
 **Feature Engine (Phase 3 E2):** crate `crates/feature-engine`.
-- **DAG skeleton (T1):** `FeatureEngine::register` + `FeatureEngine::run(&[Observation])` → `EngineOutput { features, signals }`. Nodes implement `FeatureNode` (`id` / `depends_on` / `compute`). Kahn topo; errors via `thiserror` (duplicate / unknown dep / cycle / node failed). Empty DAG/snapshot → `Ok` empty. Catalog formulas → T2+.
+- **DAG skeleton (T1):** `FeatureEngine::register` + `FeatureEngine::run(&[Observation])` → `EngineOutput { features, signals }`. Nodes implement `FeatureNode` (`id` / `depends_on` / `compute`). Kahn topo; errors via `thiserror` (duplicate / unknown dep / cycle / node failed). Empty DAG/snapshot → `Ok` empty.
+- **Focus catalog (T2):** `feature_engine::register_focus_v1(&mut engine)` регистрирует `ContextSwitchRate` → `FocusScore` (window 15m / step 1m; see `/docs/06-feature-catalog.md`). Stress/Fatigue + High_Stress → T3.
 ```bash
 cargo test -p feature-engine
 ```
@@ -142,5 +143,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done** (T1–T4: [PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6), [PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8)/[#9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9), [PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11), [PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13)); **P3-E2-T1 Done** (DAG skeleton — this PR); Ready **P3-E2-T2**.  
+**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done** (T1–T4: [PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6), [PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8)/[#9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9), [PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11), [PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13)); **P3-E2-T1 Done** (DAG skeleton); **P3-E2-T2 Done** (CSR + FocusScore v1 — this PR); Ready **P3-E2-T3**.  
 **Git policy:** classic related-work PRs (see above) — supersedes commit-per-task / sprint-only push.
