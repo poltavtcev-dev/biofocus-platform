@@ -2,7 +2,8 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass; PM close 2026-08-04)  
+ 
 **Date:** 2026-08-04  
 **Closed previous:** P3-E1-T4 (QA Pass with notes; PR #13 code · QA/PM docs close)
 
