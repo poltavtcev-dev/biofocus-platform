@@ -5,8 +5,8 @@
 
 ## Implementation snapshot
 - **Phase 1:** Done (E1–E4, 2026-08-04).
-- **Phase 2:** **Epic P2-E0 Done**; **Epic P2-E1 Done**; **Epic P2-E2 Done**; **Epic P2-E3 Done** (2026-08-04) — hygiene `dbError` + ingest + collector + companion/pairing. Next: **sprint gate** (push + PR → `main`). Branch `phase/2-ingest-http`.
-- **Open follow-up:** none for Phase 2 task queue — open `docs/handoffs/SPRINT-GATE.md` when closing the sprint.
+- **Phase 2:** **Epic P2-E0 Done**; **Epic P2-E1 Done**; **Epic P2-E2 Done**; **Epic P2-E3 Done** (2026-08-04). **Sprint gate open** — branch `phase/2-ingest-http` → PR → `main`.
+- **Open follow-up:** merge after CI; then mark Phase 2 ☐→☑ on roadmap if product accepts.
 - Phase 3+ not started.
 
 ## Core Decisions

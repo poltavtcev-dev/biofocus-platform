@@ -19,8 +19,8 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **Sprint gate** (`SPRINT-GATE.md` → push + PR → `main`) |
-| **In Progress** | — |
+| **Ready** | — (sprint gate in flight — see `SPRINT-GATE.md`) |
+| **In Progress** | **Sprint gate** (push + PR → `main`) |
 | **Blocked** | — |
 | **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E0** (T1) · **P2-E1** (T1–T4) · **P2-E2** (T1–T3) · **P2-E3** (T1–T2, 2026-08-04; T2 Pass with notes) |
 
@@ -38,10 +38,10 @@ Epic E1 ✅ → Epic E2 ✅ → Epic E3 ✅ → Epic E0 ✅ → **sprint gate PR
 ### Active assignment (PM → any role)
 
 **Task:** Sprint gate — push `phase/2-ingest-http` + `gh pr create --base main`  
-**Assignee:** any role closing the sprint (user: «закрой спринт» / «PR»)  
+**Assignee:** closing now (2026-08-04)  
 **Branch:** `phase/2-ingest-http`  
-**Locked:** E0–E3 Done on branch (`P2-E0-T1` sanitize shipped).  
-**Note:** before merge — manual smokes for Companion Copy/QR + window stream + companion CLI; write `docs/handoffs/SPRINT-GATE.md`.
+**Marker:** `docs/handoffs/SPRINT-GATE.md`  
+**Note:** merge after CI; manual smokes listed in gate file.
 
 ---
 

@@ -129,5 +129,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **E0–E3 Done** on `phase/2-ingest-http`; Ready **sprint gate**.  
-**Git:** commit-after-build done per task; next: `docs/handoffs/SPRINT-GATE.md` + push + `gh pr create --base main`.
+**Status (2026-08-04):** Phase 2 — **E0–E3 Done** on `phase/2-ingest-http`; **sprint gate open** (`docs/handoffs/SPRINT-GATE.md`).  
+**Git:** push + PR → `main` (merge after CI green).
