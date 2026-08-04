@@ -30,8 +30,8 @@ jobs:
       - name: cargo check (workspace, exclude desktop)
         run: cargo check --workspace --exclude desktop
 
-      - name: cargo test (bio-spec, runtime, storage, ingest, pipeline, plugin-sdk, macos-collector, companion)
-        run: cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p plugin-sdk -p macos-collector -p companion
+      - name: cargo test (bio-spec, runtime, storage, ingest, pipeline, feature-engine, plugin-sdk, macos-collector, companion)
+        run: cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p feature-engine -p plugin-sdk -p macos-collector -p companion
 
   desktop:
     name: Desktop (Rust + frontend)
