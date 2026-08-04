@@ -76,3 +76,61 @@ pub enum StorageError {
     #[error(transparent)]
     Domain(#[from] SpecError),
 }
+
+impl StorageError {
+    /// Short UI / IPC / HTTP status message **without filesystem paths**.
+    ///
+    /// Use for surfaces that may reach the shell (`dbError`) or companions
+    /// (`db_error`). Full [`Display`] may still include paths for logs.
+    #[must_use]
+    pub fn public_message(&self) -> String {
+        match self {
+            Self::CreateDir { .. } => "Could not create local data directory.".into(),
+            Self::HomeDirUnavailable => "Could not locate local data directory.".into(),
+            Self::Sqlite(_) => "Could not open local database.".into(),
+            Self::PragmaMismatch { .. } => "Database configuration check failed.".into(),
+            Self::Clock { .. } => "System clock unavailable.".into(),
+            Self::DuplicateObservation { .. } => "Observation already exists.".into(),
+            Self::InvalidTimeRange { .. } => "Invalid time range.".into(),
+            Self::InvalidObservationId { .. } => "Invalid observation id.".into(),
+            Self::PayloadSerialize { .. } => "Could not serialize observation payload.".into(),
+            Self::PayloadDeserialize { .. } => "Could not read observation payload.".into(),
+            Self::Domain(_) => "Invalid observation data.".into(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io;
+
+    #[test]
+    fn public_message_create_dir_hides_path() {
+        let err = StorageError::CreateDir {
+            path: PathBuf::from("/Users/secret/.biofocus/data"),
+            source: io::Error::new(io::ErrorKind::PermissionDenied, "denied"),
+        };
+        let msg = err.public_message();
+        assert_eq!(msg, "Could not create local data directory.");
+        assert!(!msg.contains("/Users"));
+        assert!(!msg.contains(".biofocus"));
+        // Display may still leak for logs — public surface must not.
+        assert!(err.to_string().contains("/Users/secret"));
+    }
+
+    #[test]
+    fn public_message_home_and_sqlite_are_short() {
+        assert_eq!(
+            StorageError::HomeDirUnavailable.public_message(),
+            "Could not locate local data directory."
+        );
+        let sqlite = StorageError::Sqlite(rusqlite::Error::InvalidPath(
+            PathBuf::from("/tmp/hidden/biofocus_main.db"),
+        ));
+        let msg = sqlite.public_message();
+        assert_eq!(msg, "Could not open local database.");
+        assert!(!msg.contains("/tmp"));
+        assert!(!msg.contains("biofocus_main"));
+    }
+}

@@ -40,8 +40,33 @@ impl StatusResponse {
 }
 
 /// Opens (or creates) a DB at `path` with WAL + migrate; soft-fails as `Err(String)`.
+///
+/// Error strings use [`storage::StorageError::public_message`] (no filesystem paths).
 pub fn probe_db_at(path: impl AsRef<Path>) -> Result<(), String> {
     storage::Database::open(path.as_ref())
         .map(|_| ())
-        .map_err(|err| err.to_string())
+        .map_err(|err| err.public_message())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io;
+    use std::path::PathBuf;
+
+    #[test]
+    fn from_probe_error_keeps_safe_message() {
+        let err = storage::StorageError::CreateDir {
+            path: PathBuf::from("/Users/secret/.biofocus/data"),
+            source: io::Error::new(io::ErrorKind::PermissionDenied, "denied"),
+        };
+        let status = StatusResponse::from_probe("0.1.0", Err(err.public_message()));
+        assert_eq!(status.db_status, "error");
+        let msg = status.db_error.as_deref().expect("db_error");
+        assert_eq!(msg, "Could not create local data directory.");
+        assert!(!msg.contains('/'));
+        let json = serde_json::to_string(&status).expect("serialize");
+        assert!(!json.contains("/Users"));
+        assert!(!json.contains(".biofocus"));
+    }
 }

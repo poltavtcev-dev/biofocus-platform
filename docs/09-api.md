@@ -58,7 +58,7 @@ Same shape when the channel is full on the **first** item (`accepted: 0`). Colle
 | :--- | :--- | :--- |
 | `version` | string | Host / desktop package version |
 | `db_status` | `"ok"` \| `"error"` | Soft-fail probe (open + WAL + migrate) |
-| `db_error` | string? | Present only when `db_status` is `"error"` |
+| `db_error` | string? | Present only when `db_status` is `"error"`; short + **no absolute filesystem paths** |
 
 - **Host:** Desktop starts ingest on app launch via `IngestConfig::load()` (pairing file / `BIOFOCUS_INGEST_TOKEN`) and stops accept + persist worker on exit.
 
@@ -92,7 +92,7 @@ Example failure:
 {
   "version": "0.1.0",
   "dbStatus": "error",
-  "dbError": "cannot resolve home directory for default BioFocus data path"
+  "dbError": "Could not locate local data directory."
 }
 ```
 
@@ -100,7 +100,7 @@ Example failure:
 | :--- | :--- | :--- |
 | `version` | string | Desktop package version (`CARGO_PKG_VERSION`) |
 | `dbStatus` | `"ok"` \| `"error"` | Result of storage probe |
-| `dbError` | string? | Present only when `dbStatus` is `"error"` |
+| `dbError` | string? | Present only when `dbStatus` is `"error"`; short + **no absolute filesystem paths** (`StorageError::public_message`) |
 
 ### `core_ping` (legacy fallback)
 

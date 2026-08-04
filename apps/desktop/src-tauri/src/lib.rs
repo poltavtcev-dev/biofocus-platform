@@ -144,13 +144,14 @@ fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
 }
 
 /// Probes a DB path (create + WAL + migrate-on-open). Soft-fail via `Err`.
+/// Error strings are path-free ([`storage::StorageError::public_message`]).
 fn probe_database_at(path: &Path) -> Result<(), String> {
-    let _db = storage::Database::open(path).map_err(|err| err.to_string())?;
+    let _db = storage::Database::open(path).map_err(|err| err.public_message())?;
     Ok(())
 }
 
 fn probe_default_database() -> Result<(), String> {
-    let path = storage::default_db_path().map_err(|err| err.to_string())?;
+    let path = storage::default_db_path().map_err(|err| err.public_message())?;
     probe_database_at(&path)
 }
 
@@ -272,6 +273,25 @@ mod tests {
         let status = build_status(Err("disk full".into()));
         assert_eq!(status.db_status, "error");
         assert_eq!(status.db_error.as_deref(), Some("disk full"));
+    }
+
+    #[test]
+    fn storage_public_message_hides_paths_in_db_error() {
+        use std::io;
+        use std::path::PathBuf;
+
+        let err = storage::StorageError::CreateDir {
+            path: PathBuf::from("/Users/secret/.biofocus/data"),
+            source: io::Error::new(io::ErrorKind::PermissionDenied, "denied"),
+        };
+        let status = build_status(Err(err.public_message()));
+        let msg = status.db_error.as_deref().expect("dbError");
+        assert_eq!(msg, "Could not create local data directory.");
+        assert!(!msg.contains('/'));
+        assert!(!msg.contains(".biofocus"));
+        let json = serde_json::to_string(&status).expect("serialize");
+        assert!(!json.contains("/Users"));
+        assert!(!json.contains(".biofocus"));
     }
 
     #[test]
