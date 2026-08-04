@@ -19,4 +19,12 @@ pub enum RuntimeError {
     /// Tracing subscriber could not be installed.
     #[error("failed to initialize tracing subscriber: {0}")]
     TracingInit(String),
+
+    /// Feature Worker poll interval must be > 0.
+    #[error("feature worker poll interval must be greater than 0")]
+    InvalidFeaturePollInterval,
+
+    /// Observation source for the Feature Worker failed.
+    #[error("feature worker observation source: {0}")]
+    FeatureWorkerSource(String),
 }

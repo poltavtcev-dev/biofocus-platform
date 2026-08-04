@@ -8,8 +8,9 @@
 //! - [`accept_observations`] — intake (`&[Observation]` → [`AcceptedBatch`])
 //! - [`dedupe_observations`] / [`dedupe_accepted`] — dedupe against [`DedupeState`]
 //! - [`normalize_observations`] / [`normalize_deduped`] — canonical payloads
+//! - [`run_quality_pipeline`] — accept → dedupe → normalize in one call
 //!
-//! Typical flow: `accept_*` → `dedupe_*` → `normalize_*`.
+//! Typical flow: `accept_*` → `dedupe_*` → `normalize_*` (or [`run_quality_pipeline`]).
 //!
 //! Empty batches return [`Ok`] (idle-friendly) at every stage.
 //!
@@ -31,6 +32,7 @@ mod dedupe;
 mod error;
 mod intake;
 mod normalize;
+mod quality;
 
 pub use dedupe::{
     dedupe_accepted, dedupe_observations, dedupe_owned, DedupedBatch, DedupeState,
@@ -41,6 +43,7 @@ pub use normalize::{
     normalize_deduped, normalize_observations, normalize_owned, NormalizedBatch,
     DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES,
 };
+pub use quality::run_quality_pipeline;
 
 /// Crate identity used by dependents and status payloads.
 pub const CRATE_NAME: &str = "pipeline";

@@ -31,10 +31,17 @@
 //! spawns the persist worker, and serves loopback ingest (`127.0.0.1:8787`).
 //! Companion/debug use `GET /v1/status`; the shell UI still uses IPC `get_status`.
 //!
+//! ## Feature Worker (Phase 3)
+//!
+//! A Core Feature Worker polls new Observations from SQLite, runs pipeline
+//! quality stages (accept → dedupe → normalize), and invokes a noop Feature
+//! Engine hook until P3-E2. Started/stopped with the desktop process.
+//!
 //! See also `docs/09-api.md`.
 
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
+mod feature_host;
 mod ingest_host;
 
 use std::path::Path;
@@ -232,6 +239,7 @@ pub fn run() -> DesktopResult<()> {
                 .build(app)?;
 
             ingest_host::start_ingest_host(app.handle());
+            feature_host::start_feature_host(app.handle());
 
             Ok(())
         })
@@ -244,6 +252,7 @@ pub fn run() -> DesktopResult<()> {
 
     app.run(|app_handle, event| {
         if let RunEvent::ExitRequested { .. } = event {
+            feature_host::stop_feature_host(app_handle);
             ingest_host::stop_ingest_host(app_handle);
         }
     });

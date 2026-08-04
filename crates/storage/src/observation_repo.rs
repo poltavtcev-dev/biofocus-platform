@@ -108,6 +108,61 @@ impl<'db> ObservationRepository<'db> {
         let rows = stmt.query_map(params![data_type], read_observation_columns)?;
         collect_observations(rows)
     }
+
+    /// Highest `(created_at, id)` cursor in the table, if any rows exist.
+    ///
+    /// Used by the Feature Worker to skip historical backlog and only follow
+    /// inserts after worker start (no schema change; uses existing `created_at`).
+    pub fn max_created_cursor(&self) -> StorageResult<Option<(i64, String)>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT created_at, id FROM observations
+             ORDER BY created_at DESC, id DESC
+             LIMIT 1",
+        )?;
+        let row = stmt
+            .query_row([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
+            .optional()?;
+        Ok(row)
+    }
+
+    /// Lists Observations strictly after `(after_created_at, after_id)` in
+    /// `(created_at, id)` order, up to `limit`.
+    ///
+    /// Empty when no newer rows (idle-friendly). `limit == 0` → empty `Ok`.
+    /// Does not mutate rows. Enables incremental Feature Worker polls without
+    /// a new SQLite table.
+    pub fn list_after_created_cursor(
+        &self,
+        after_created_at: i64,
+        after_id: &str,
+        limit: usize,
+    ) -> StorageResult<Vec<ObservationCreated>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut stmt = self.conn.prepare(
+            "SELECT id, timestamp, provider_id, data_type, payload, confidence, created_at
+             FROM observations
+             WHERE created_at > ?1 OR (created_at = ?1 AND id > ?2)
+             ORDER BY created_at ASC, id ASC
+             LIMIT ?3",
+        )?;
+        let rows = stmt.query_map(
+            params![after_created_at, after_id, limit as i64],
+            read_observation_created_columns,
+        )?;
+        collect_observations_created(rows)
+    }
+}
+
+/// Observation plus append-time `created_at` (not part of [`Observation`]).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ObservationCreated {
+    /// Domain Observation row.
+    pub observation: Observation,
+    /// Unix UTC seconds written at insert time.
+    pub created_at: i64,
 }
 
 struct ObservationColumns {
@@ -140,6 +195,20 @@ impl ObservationColumns {
     }
 }
 
+struct ObservationCreatedColumns {
+    base: ObservationColumns,
+    created_at: i64,
+}
+
+impl ObservationCreatedColumns {
+    fn into_observation_created(self) -> StorageResult<ObservationCreated> {
+        Ok(ObservationCreated {
+            observation: self.base.into_observation()?,
+            created_at: self.created_at,
+        })
+    }
+}
+
 fn read_observation_columns(row: &Row<'_>) -> rusqlite::Result<ObservationColumns> {
     Ok(ObservationColumns {
         id: row.get(0)?,
@@ -151,12 +220,29 @@ fn read_observation_columns(row: &Row<'_>) -> rusqlite::Result<ObservationColumn
     })
 }
 
+fn read_observation_created_columns(row: &Row<'_>) -> rusqlite::Result<ObservationCreatedColumns> {
+    Ok(ObservationCreatedColumns {
+        base: read_observation_columns(row)?,
+        created_at: row.get(6)?,
+    })
+}
+
 fn collect_observations(
     rows: impl Iterator<Item = Result<ObservationColumns, rusqlite::Error>>,
 ) -> StorageResult<Vec<Observation>> {
     let mut out = Vec::new();
     for row in rows {
         out.push(row?.into_observation()?);
+    }
+    Ok(out)
+}
+
+fn collect_observations_created(
+    rows: impl Iterator<Item = Result<ObservationCreatedColumns, rusqlite::Error>>,
+) -> StorageResult<Vec<ObservationCreated>> {
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row?.into_observation_created()?);
     }
     Ok(out)
 }
