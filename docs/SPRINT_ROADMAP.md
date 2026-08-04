@@ -19,31 +19,31 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P2-E2-T2** (keystroke / input aggregates, privacy-safe) |
+| **Ready** | **P2-E2-T3** (collector integration tests + pause idle) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4) · **P2-E2-T1** (2026-08-04; Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4) · **P2-E2-T1** · **P2-E2-T2** (2026-08-04; Pass with notes) |
 
-**Epic status:** P2-E1 ✅ · P2-E2 ▶️ (T1 ✅) · P2-E3 ○ · P2-E0 ○ (hygiene)
+**Epic status:** P2-E1 ✅ · P2-E2 ▶️ (T1–T2 ✅) · P2-E3 ○ · P2-E0 ○ (hygiene)
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E1 Done; E2-T1 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E1 Done; E2-T1/T2 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
 
 **Рекомендуемый порядок:**  
-Epic E1 ✅ → `P2-E2-T1` ✅ → `P2-E2-T2` → `P2-E2-T3` → `P2-E3-*`  
+Epic E1 ✅ → E2-T1 ✅ → E2-T2 ✅ → `P2-E2-T3` → `P2-E3-*`  
 Параллельно: `P2-E0-T1` sanitize `dbError` (∥; optionally extend to HTTP `/v1/status` `db_error`)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
-**Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`.
+**Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: commit after build; push at sprint gate (`SPRINT-GATE.md`).
 
-### Active assignment (PM → Dev)
+### Active assignment (PM → QA/Dev)
 
-**Task:** `P2-E2-T2` — Keystroke / input aggregates (privacy-safe)  
-**Assignee:** Dev (+ PM privacy check)  
-**Brief:** `docs/handoffs/P2-E2-T2-pm-brief.md`  
+**Task:** `P2-E2-T3` — Collector integration tests + pause idle  
+**Assignee:** QA (lead) + Dev  
+**Brief:** `docs/handoffs/P2-E2-T3-pm-brief.md`  
 **Branch:** `phase/2-ingest-http` (local commits per task; **push + PR at sprint end**)  
-**Locked:** E1 ingest contracts; T1 `context_window` = `bundle_id` + `app_name` only (no Accessibility).  
-**Note (T1):** before sprint PR — one manual GUI→SQLite smoke (`pnpm tauri dev` → switch apps → `context_window` rows).
+**Locked:** T1 `context_window`; T2 `keystrokes` aggregates opt-in via `BIOFOCUS_INPUT_AGGREGATES`.  
+**Note:** before sprint PR — manual smokes for window stream + (optional) Accessibility aggregates.
 
 ---
 
@@ -112,13 +112,14 @@ Epic E1 ✅ → `P2-E2-T1` ✅ → `P2-E2-T2` → `P2-E2-T3` → `P2-E3-*`
 | **AC** | Смена активного приложения/окна → Observation с `data_type` согласованным со схемой (`docs/04-storage.md`). Polling/event interval не чаще разумного (напр. ≥1s или event-driven). Stop/pause останавливает работу. Idle без лишней нагрузки. |
 | **Done** | 2026-08-04 — QA Pass with notes (`docs/handoffs/P2-E2-T1-qa-to-pm.md`). Ship: `ActiveWindowPlugin` → `context_window` via channel→persist. Manual GUI smoke deferred to sprint PR. |
 
-### P2-E2-T2 — Keystroke / input aggregates (privacy-safe)
+### P2-E2-T2 — Keystroke / input aggregates (privacy-safe) ✅
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev (+ PM privacy check) |
 | **Modules** | macOS collector |
 | **Depends on** | P2-E2-T1 |
 | **AC** | Только **агрегаты** (counts / rates в окне), **не** символы/текст. Документированы разрешения Accessibility. Отключение collector — одна настройка/флаг. |
+| **Done** | 2026-08-04 — QA Pass with notes (`docs/handoffs/P2-E2-T2-qa-to-pm.md`). Opt-in `BIOFOCUS_INPUT_AGGREGATES`; payload counts/rates only. |
 
 ### P2-E2-T3 — Collector integration tests + pause idle
 | Field | Value |
@@ -186,7 +187,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **P2-E2-T2** — Keystroke / input aggregates (privacy-safe) ← **берите сейчас**  
+1. **P2-E2-T3** — Collector integration tests + pause idle ← **берите сейчас**  
 2. Параллельно (опционально): **P2-E0-T1** sanitize `dbError`  
-3. ~~P2-E2-T1~~ Done — commit on branch before next task  
-4. ~~Epic P2-E1 (T1–T4)~~ Done — **sprint PR → `main`** в конце Sprint 3–4
+3. ~~P2-E2-T2~~ Done — committed on branch  
+4. ~~P2-E2-T1~~ Done — committed on branch  
+5. ~~Epic P2-E1 (T1–T4)~~ Done — **sprint PR → `main`** в конце Sprint 3–4

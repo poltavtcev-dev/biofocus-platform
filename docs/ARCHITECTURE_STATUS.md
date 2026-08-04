@@ -5,7 +5,7 @@
 
 ## Implementation snapshot
 - **Phase 1:** Done (E1–E4, 2026-08-04).
-- **Phase 2:** **Epic P2-E1 Done** (T1–T4); **P2-E2-T1 Done** (2026-08-04, Pass with notes) — `macos-collector` → `context_window` (`bundle_id`/`app_name`) on Desktop channel→persist. Next Ready: **P2-E2-T2** keystroke/input aggregates (privacy-safe). Branch `phase/2-ingest-http` (commit per task; **sprint PR → `main` at sprint gate**).
+- **Phase 2:** **Epic P2-E1 Done**; **P2-E2-T1/T2 Done** (2026-08-04) — active window + opt-in keystroke aggregates. Next Ready: **P2-E2-T3** collector tests/pause idle. Branch `phase/2-ingest-http` (commit after build; **sprint PR → `main` at sprint gate**).
 - **Open follow-up:** sanitize IPC `dbError` → **P2-E0-T1** (optionally HTTP `db_error` too).
 - Phase 3+ not started.
 
