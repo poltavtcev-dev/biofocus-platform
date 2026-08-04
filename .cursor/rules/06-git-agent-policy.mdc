@@ -1,0 +1,40 @@
+---
+description: Git policy for agents — commit after build, push only at sprint gate.
+alwaysApply: true
+---
+# Git policy (agents)
+
+Branch: `phase/N-…` or `sprint/N-…`. Never push directly to `main`.
+
+## After build (Dev / UX)
+
+When handoff `docs/handoffs/{TASK}-dev-to-qa.md` is written and tests/check are green:
+
+1. **Immediately `git commit`** (Task ID in subject), including code + that handoff.
+2. **Do not push** yet.
+3. Then stop: «Передаю QA».
+
+## After QA report
+
+QA writes `*-qa-to-pm.md` only. **No commit required** from QA unless QA added failing-test fixes (then commit those with Task ID + `qa:` prefix).
+
+## After PM Done
+
+PM updates roadmap/docs/canvas. Then **`git commit`** remaining docs/handoffs for the task (if dirty). Still **no push** unless this close is the sprint/epic gate.
+
+## Sprint / epic gate (any role that closes it)
+
+When closing the sprint (user: «закрой спринт» / «PR», or roadmap epic gate):
+
+1. Write marker `docs/handoffs/SPRINT-GATE.md` (short note: which sprint, branch, PR title).
+2. Commit any leftover dirty files.
+3. **`git push -u origin HEAD`**
+4. **`gh pr create --base main`** (title/body per `docs/12-development.md`)
+5. Merge only after CI green — do not force-push `main`.
+6. Delete or archive the SPRINT-GATE marker in the PR commit if desired.
+
+The stop hook (`.cursor/hooks/git-policy-stop.sh`) nudges commit after fresh handoffs and push when `SPRINT-GATE.md` exists.
+
+## Orchestrated multi-role runs
+
+If the user says «сделай сам / от разных лиц / прогони pipeline» — one conversation may run Dev→QA→PM **in sequence**, but still emit each handoff file and **commit after each Dev build** (and after PM Done). Push only at sprint gate.

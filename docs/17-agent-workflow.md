@@ -23,12 +23,16 @@
 ## Git / PR
 
 1. Ветка `phase/N-…` или `sprint/N-…` (не `main`).  
-2. **Commit на каждую задачу** после PM Done (код + handoffs + docs задачи).  
-3. **Push + PR → `main` — раз на спринт** (или epic gate), не на каждую задачу.  
+2. **Commit сразу после Dev/UX билда** (код + `*-dev-to-qa.md`); при необходимости ещё один после PM Done.  
+3. **Push + PR → `main` — раз на спринт** (или epic gate) — делает роль, которая закрывает спринт.  
 4. Merge только после зелёного GitHub Actions CI.  
 5. Прямой push в `main` — запрещён (исключение: Phase 1 foundation уже в истории).
 
-Команды: `docs/12-development.md` § Git workflow.
+Команды: `docs/12-development.md` § Git workflow · правило `.cursor/rules/06-git-agent-policy.mdc` · hook `.cursor/hooks/git-policy-stop.sh`.
+
+## Оркестрация «от разных лиц»
+
+Фраза вроде `прогони pipeline` / `сделай сам от разных лиц` разрешает одному чату пройти Dev→QA→PM подряд. Handoff-файлы и коммиты после билда обязательны; push — только на sprint gate.
 
 ## Сейчас в очереди
 

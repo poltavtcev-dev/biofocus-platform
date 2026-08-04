@@ -20,7 +20,10 @@ alwaysApply: false
 - AC checklist для QA;
 - известные риски / не покрыто.
 
-**Запрещено:** ставить задачу Done; править execution canvas; «заодно» закрывать QA/PM-шаги.
+## Git (после билда)
+Сразу после handoff + зелёных тестов: **`git commit`** с Task ID (код + handoff). **Не push**, пока не sprint gate. См. `06-git-agent-policy.mdc`.
+
+**Запрещено:** ставить задачу Done; править execution canvas; «заодно» закрывать QA/PM-шаги (кроме оркестрации по явному запросу пользователя).
 
 ## Stop condition
-Написать в ответе: «Передаю QA» + путь к handoff. Ждать роль QA.
+Commit выполнен → «Передаю QA» + путь к handoff. Ждать роль QA (или продолжить QA в оркестрации).

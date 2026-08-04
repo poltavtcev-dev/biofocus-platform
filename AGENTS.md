@@ -12,5 +12,7 @@ Handoffs: `docs/handoffs/`.
 ## Git / PR
 
 С Phase 2: работа в ветке (`phase/N-…` или `sprint/N-…`).  
-**Commit на каждую задачу** после PM Done; **push + PR в `main` — раз на спринт** (после зелёного CI).  
-Прямой push в `main` запрещён (Phase 1 foundation — исключение). Детали: `docs/12-development.md` § Git workflow.
+- **Commit сразу после Dev/UX билда** (код + `*-dev-to-qa.md`); ещё один commit после PM Done, если docs dirty.  
+- **Push + PR → `main` — раз на спринт / epic gate** (любая роль, которая закрывает спринт).  
+Прямой push в `main` запрещён. Детали: `docs/12-development.md`, `.cursor/rules/06-git-agent-policy.mdc`.  
+Hook: `.cursor/hooks/git-policy-stop.sh` напоминает о commit/push, если дерево dirty.

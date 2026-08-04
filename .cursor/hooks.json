@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": ".cursor/hooks/git-policy-stop.sh",
+        "timeout": 15,
+        "loop_limit": 2
+      }
+    ]
+  }
+}
