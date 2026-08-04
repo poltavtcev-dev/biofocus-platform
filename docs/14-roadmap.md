@@ -5,7 +5,7 @@
   - Workspace setup (`bio-spec`, `runtime`, `storage`).
   - SQLite WAL migration script & Repositories.
   - Basic Menubar UI via Tauri v2.
-- [ ] **Phase 2: Ingestion & Context Collector (Sprint 3-4)**
+- [ ] **Phase 2: Ingestion & Context Collector (Sprint 3-4)** — decomposed 2026-08-04; implementation not started
   - Local HTTP Server (`/v1/ingest`).
   - macOS active window & keystroke collector.
   - iOS Companion app (HealthKit webhook).
@@ -16,5 +16,6 @@
   - Local React Dashboard with Recharts.
   - Local LLM Prompt Generator (Ollama / OpenAI API).
 
-**Evidence:** `docs/handoffs/P1-E4-T1-acceptance.md` · T2 close: `docs/handoffs/P1-E4-T2-qa-to-pm.md` · Kanban: `docs/SPRINT_ROADMAP.md`  
-**Next (not started):** Phase 2 Ready list only — no implementation until PM assigns. CI: `.github/workflows/ci.yml`.
+**Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
+**Phase 2 plan:** `docs/SPRINT_ROADMAP.md` · first Ready: **P2-E1-T1** (`docs/handoffs/P2-E1-T1-pm-brief.md`)  
+**Git:** branch → PR → `main` after CI (`docs/12-development.md`).

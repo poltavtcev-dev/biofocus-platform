@@ -3,11 +3,11 @@
 **Current Version:** MVP 1.0  
 **Status:** Frozen (Зафиксировано)
 
-## Implementation snapshot (Phase 1)
-- **Epic E1–E3:** Done (2026-08-03) — crates foundation, SQLite WAL + `ObservationRepository`, Tauri v2 Menubar + IPC `get_status`.
-- **Epic E4:** Done — T1 acceptance (`docs/handoffs/P1-E4-T1-acceptance.md`) + T2 doc sync (`docs/handoffs/P1-E4-T2-qa-to-pm.md`, 2026-08-04).
-- **`docs/14-roadmap.md` Phase 1:** **[x] Done** (user approve 2026-08-03). Phase 2+ not started.
-- **Open follow-up (non-architecture):** sanitize IPC `dbError` so absolute DB paths are not shown in UI (from E3-T4 notes).
+## Implementation snapshot
+- **Phase 1:** Done (E1–E4, 2026-08-04).
+- **Phase 2:** Decomposed in `docs/SPRINT_ROADMAP.md`. First Ready: **P2-E1-T1** ingest HTTP skeleton. Implementation not started until Dev picks brief.
+- **Open follow-up:** sanitize IPC `dbError` paths → **P2-E0-T1**.
+- Phase 3+ not started.
 
 ## Core Decisions
 - Local First Architecture

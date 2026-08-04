@@ -1,209 +1,188 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> Technical PM decomposition of **Phase 1: Foundation** from `/docs/14-roadmap.md`.  
-> Out of scope here: Phase 2+ (ingest HTTP, collectors, iOS, pipeline DAG, dashboard, LLM).
+> Active: **Phase 2: Ingestion & Context Collector** (Sprint 3–4) from `/docs/14-roadmap.md`.  
+> Phase 1 Foundation: **Done** (2026-08-04). Out of scope until Phase 3: pipeline DAG, Features, dashboard, LLM.
 
-**Phase goal:** поднятый Cargo workspace, канонические типы, SQLite WAL + repositories, минимальный Tauri Menubar shell с IPC-границей.
+**Phase 2 goal:** локальный приём `Observation` (HTTP ingest + pairing), macOS context collector, мост iOS/HealthKit → ingest. Ядро математики Features — **не** в этой фазе.
 
 **Global DoD (каждая задача):**
-- [ ] Соответствует freeze в `/docs/ARCHITECTURE_STATUS.md`
-- [ ] Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight`)
-- [ ] Нет `unwrap()` / `expect()` в production-путях
-- [ ] UI не обращается к SQLite напрямую
-- [ ] Релевантные тесты зелёные; `cargo check` по workspace проходит
+- [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language
+- [ ] Нет `unwrap()` / `expect()` в production
+- [ ] UI ↛ SQLite (только IPC); ingest пишет через Core/`storage`
+- [ ] Тесты зелёные; `cargo check` / релевантный CI
+- [ ] **Idle footprint:** нет busy-loop; sleep/wake по событиям или редкому таймеру; при простое CPU ≈ idle OS
+- [ ] Ветка → **PR → `main`** после зелёного CI (`docs/12-development.md`)
 
 ---
 
-## Kanban Overview (Phase 1 = Sprint 1–2)
+## Kanban Overview (Phase 2 = Sprint 3–4)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | — *(next: PM Phase 2 decomposition — no code)* |
+| **Ready** | **P2-E1-T1** (ingest HTTP skeleton) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Epic E1** · **Epic E2** · **Epic E3** · **Epic E4** (T1 2026-08-03 · **T2 2026-08-04**) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) |
 
-**Epic status:** E1 ✅ · E2 ✅ · E3 ✅ · E4 ✅
+**Epic status:** P2-E1 ▶️ · P2-E2 ○ · P2-E3 ○ · P2-E0 ○ (hygiene)
 
-**Phase 1 on `/docs/14-roadmap.md`:** ✅ Done (user approve 2026-08-03) · Sprint Kanban fully closed 2026-08-04
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ not started (decomposition Ready)
 
 **Рекомендуемый порядок:**  
-Phase 1 closed → push CI → PM decomposes Phase 2 (ingest / collectors; idle footprint constraint; no code until assigned)
+`P2-E1-T1` → `T2` → `T3` → `T4` → `P2-E2-*` → `P2-E3-*`  
+Параллельно (маленький): `P2-E0-T1` sanitize `dbError` (после T1 или ∥ T2)
 
-**Live board:** open the Cursor Canvas [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx) beside chat.
+**Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`.
 
-### Active assignment
+### Active assignment (PM → Dev)
 
-**None** — Phase 1 complete.  
-**Close note:** `docs/handoffs/P1-E4-T2-qa-to-pm.md`
-
----
-
-## Epic P1-E1 — Cargo Workspace & Spec Crate
-
-**Цель:** воспроизводимый monorepo skeleton и канонические типы из контрактов.
-
-### P1-E1-T1 — Bootstrap Cargo workspace
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev (lead), PM (scope check) |
-| **Modules** | root `Cargo.toml`, `crates/*` stubs |
-| **Depends on** | — |
-| **AC** | Корневой workspace включает members: как минимум `bio-spec`, `runtime`, `storage`. `cargo check` на пустых/stub crates проходит. Структура совпадает с `/docs/13-project-structure.md` (без обязательного создания всех Phase 2+ crates в Sprint 1 — допускается stub-only для остальных). |
-
-### P1-E1-T2 — `bio-spec`: domain types & serialization
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `crates/bio-spec` |
-| **Depends on** | P1-E1-T1 |
-| **AC** | Типы `Observation`, `Signal`, `Feature`, `Insight` (минимальные поля по `/docs/02-domain-model.md` + `/docs/07-contracts.md`). Serde JSON round-trip для sample Observation из контракта. UUIDv7 / timestamp UTC задокументированы в API типов. Публичный API crate стабилен для `storage`/`runtime`. |
-
-### P1-E1-T3 — `runtime`: Tokio host skeleton
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `crates/runtime` |
-| **Depends on** | P1-E1-T1, P1-E1-T2 |
-| **AC** | Crate поднимает multi-thread Tokio runtime; есть bounded channel placeholder для будущих Observation; `tracing` subscriber инициализируется. Нет зависимости от Tauri. Нет ingest HTTP (Phase 2). |
-
-### P1-E1-T4 — Workspace hygiene & LICENSE
-| Field | Value |
-| :--- | :--- |
-| **Role** | PM + Dev |
-| **Modules** | root, `.gitignore`, `LICENSE` (AGPLv3) |
-| **Depends on** | P1-E1-T1 |
-| **AC** | `LICENSE` = AGPLv3 (ADR-004). `.gitignore` покрывает `target/`, Node/Tauri артефакты. README или `docs/12-development.md` отражает команды `cargo check` / будущий `pnpm tauri dev`. |
+**Task:** `P2-E1-T1` — Local ingest HTTP skeleton (`POST /v1/ingest`)  
+**Assignee:** Dev  
+**Brief:** `docs/handoffs/P2-E1-T1-pm-brief.md`  
+**Branch:** `phase/2-ingest-http` (PR to `main`)
 
 ---
 
-## Epic P1-E2 — Storage: SQLite WAL & Repositories
+## Epic P2-E0 — Host hygiene (carry-over)
 
-**Цель:** локальная БД и репозиторий Observations по схеме `/docs/04-storage.md`.
-
-### P1-E2-T1 — DB open + WAL pragmas
+### P2-E0-T1 — Sanitize IPC `dbError` paths
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/storage` |
-| **Depends on** | P1-E1-T1 |
-| **AC** | Открытие DB по пути `~/.biofocus/data/biofocus_main.db` (или test path). Pragmas: `journal_mode=WAL`, `synchronous=NORMAL`. Ошибки — через typed `Result`, без panic. |
+| **Modules** | `apps/desktop/src-tauri`, optionally `crates/storage` error mapping |
+| **Depends on** | Phase 1 |
+| **AC** | UI/`get_status` не показывает абсолютный filesystem path в `dbError`. Сообщение короткое и безопасное. Тест(ы) на mapping. |
+| **Note** | Из E3-T4 follow-up. Можно ∥ после P2-E1-T1. |
 
-### P1-E2-T2 — Migration: `observations` table
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev, QA (review) |
-| **Modules** | `crates/storage` (migrations) |
-| **Depends on** | P1-E2-T1 |
-| **AC** | Миграция создаёт таблицу и индексы из `/docs/04-storage.md`. Повторный запуск идемпотентен (`IF NOT EXISTS` / versioned migrations). Schema change только через будущий ADR — текущая схема freeze. |
+---
 
-### P1-E2-T3 — `ObservationRepository`
+## Epic P2-E1 — Local Ingest API
+
+**Цель:** дверь для Observation — Axum на loopback, Bearer pairing, запись в SQLite через Core.
+
+### P2-E1-T1 — Ingest HTTP skeleton
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/storage`, depends on `bio-spec` |
-| **Depends on** | P1-E2-T2, P1-E1-T2 |
-| **AC** | `insert` (immutable), `get_by_id`, `list_by_time_range` / `list_by_data_type`. Insert дубликата PK → явная ошибка (не silent overwrite). Payload хранится как JSON. |
+| **Modules** | новый crate или `runtime`/`ingest` module; без Tauri UI |
+| **Depends on** | Phase 1 (`bio-spec`, `runtime`) |
+| **AC** | Сервер слушает **только** `127.0.0.1` (порт из конфига/константы). `POST /v1/ingest` принимает JSON array `Observation`, требует `Authorization: Bearer …` (токен пока из env/const для скелета). Успех → `202` + `{"status":"queued","count":N}`. Без токена / битый JSON → 4xx. Idle: после bind нет spin-loop (tokio accept). Unit/integration тест на bind + auth reject + 202. Нет Feature/pipeline. |
+| **Out of scope** | Wi‑Fi LAN bind, QR pairing UI, iOS, macOS collector, persist (→ T3) |
 
-### P1-E2-T4 — Storage integration tests
+### P2-E1-T2 — Pairing token persistence
+| Field | Value |
+| :--- | :--- |
+| **Role** | Dev |
+| **Modules** | storage or local config under `~/.biofocus/` |
+| **Depends on** | P2-E1-T1 |
+| **AC** | Токен генерируется при первом старте, хранится локально (не в git). Ingest отклоняет неверный Bearer. Документ: где лежит секрет (`docs/10-security.md` / `12-development`). Нет QR UI (можно позже E3). |
+
+### P2-E1-T3 — Persist ingest → `ObservationRepository`
+| Field | Value |
+| :--- | :--- |
+| **Role** | Dev |
+| **Modules** | ingest path + `storage` + bounded channel |
+| **Depends on** | P2-E1-T1, P1-E2-T3 |
+| **AC** | Принятые Observation асинхронно пишутся через `ObservationRepository::insert` (immutable). Duplicate PK → явная ошибка/ответ без silent overwrite. Backpressure: bounded channel; при full — предсказуемый 503 или drop+metric (зафиксировать в handoff). Тесты round-trip ingest→DB. |
+
+### P2-E1-T4 — Host wire + `GET /v1/status` + idle DoD
+| Field | Value |
+| :--- | :--- |
+| **Role** | Dev |
+| **Modules** | `apps/desktop/src-tauri`, ingest lifecycle |
+| **Depends on** | P2-E1-T2, P2-E1-T3 |
+| **AC** | Desktop стартует/останавливает ingest с приложением. `GET /v1/status` (local) отдаёт version + db ok\|error **без** Observation payload. Нет busy-loop в idle. UI по-прежнему только IPC для статуса shell (HTTP status — для companion/debug, не сырой биометрии). |
+
+---
+
+## Epic P2-E2 — macOS Context Collector
+
+**Цель:** локальный контекст работы → Observation (`context_window` / агрегаты ввода). Не keylogger содержимого.
+
+### P2-E2-T1 — Active window Observation stream
+| Field | Value |
+| :--- | :--- |
+| **Role** | Dev |
+| **Modules** | `plugin-sdk` + macOS collector adapter |
+| **Depends on** | P2-E1-T3 (куда писать) или channel→repo |
+| **AC** | Смена активного приложения/окна → Observation с `data_type` согласованным со схемой (`docs/04-storage.md`). Polling/event interval не чаще разумного (напр. ≥1s или event-driven). Stop/pause останавливает работу. Idle без лишней нагрузки. |
+
+### P2-E2-T2 — Keystroke / input aggregates (privacy-safe)
+| Field | Value |
+| :--- | :--- |
+| **Role** | Dev (+ PM privacy check) |
+| **Modules** | macOS collector |
+| **Depends on** | P2-E2-T1 |
+| **AC** | Только **агрегаты** (counts / rates в окне), **не** символы/текст. Документированы разрешения Accessibility. Отключение collector — одна настройка/флаг. |
+
+### P2-E2-T3 — Collector integration tests + pause idle
 | Field | Value |
 | :--- | :--- |
 | **Role** | QA (lead), Dev |
-| **Modules** | `crates/storage` tests (in-memory / temp dir) |
-| **Depends on** | P1-E2-T3 |
-| **AC** | Тесты: миграция, insert+read round-trip, duplicate id, range query. Битый JSON / invalid confidence обрабатываются предсказуемо. Соответствует слою Integration из `/docs/11-testing.md`. |
+| **Modules** | collector + storage |
+| **Depends on** | P2-E2-T1 (T2 если готов) |
+| **AC** | Тесты на emit Observation / pause. Подтверждение: paused collector ≈ нет периодической работы. |
 
 ---
 
-## Epic P1-E3 — Tauri v2 Menubar Shell
+## Epic P2-E3 — iOS Companion → Ingest
 
-**Цель:** desktop-процесс с Menubar и IPC-границей к Core (без dashboard).
+**Цель:** HealthKit факты уходят на desktop `POST /v1/ingest` с pairing token. Не облако.
 
-### P1-E3-T1 — Scaffold `apps/desktop` (Tauri v2 + React)
+### P2-E3-T1 — Companion contract + minimal HealthKit sample path
 | Field | Value |
 | :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `apps/desktop`, `apps/desktop/src-tauri` |
-| **Depends on** | P1-E1-T1 (желательно P1-E1-T3) |
-| **AC** | `pnpm install` + `pnpm tauri build`/`dev` поднимают окно/tray. `src-tauri` зависит от workspace crates (`runtime`/`storage` stub wiring допустим). Нет прямых SQL-вызовов из frontend. |
+| **Role** | Dev (iOS) |
+| **Modules** | `apps/` companion (новое) или stub + docs |
+| **Depends on** | P2-E1-T2, P2-E1-T3 |
+| **AC** | Минимальный путь: sample `heart_rate` Observation → HTTP ingest на reachable host. Контракт body = array Observation. Ошибки сети/401 обработаны. Нет Feature math. |
 
-### P1-E3-T2 — Menubar status UX (minimal)
+### P2-E3-T2 — Pairing UX (token share)
 | Field | Value |
 | :--- | :--- |
-| **Role** | UX (lead), Dev (wire) |
-| **Modules** | `apps/desktop/src/**` |
-| **Depends on** | P1-E3-T1 |
-| **AC** | Menubar/tray показывает нейтральный статус Core (например Idle / Ready / Error). Без графиков, без dashboard widgets (Phase 4). Состояния читаемы по HIG; нет оценочных формулировок («ты выгорел»). |
-
-### P1-E3-T3 — IPC: `get_status` command
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev, UX (consumer) |
-| **Modules** | `apps/desktop/src-tauri`, frontend invoke |
-| **Depends on** | P1-E3-T1, P1-E1-T3 |
-| **AC** | Команда IPC возвращает версию/статус DB (ok|error) без сырых Observation. UI обновляет Menubar только через IPC. Контракт задокументирован кратко в коде или `docs/09-api.md` (internal IPC note). |
-
-### P1-E3-T4 — Smoke: UI ↔ Core boundary
-| Field | Value |
-| :--- | :--- |
-| **Role** | QA, UX |
-| **Modules** | `apps/desktop` |
-| **Depends on** | P1-E3-T2, P1-E3-T3 |
-| **AC** | Чеклист: Menubar виден; статус меняется при mock error; в frontend-бандле нет `rusqlite`/прямых путей к `biofocus_main.db`. |
+| **Role** | UX + Dev |
+| **Modules** | Desktop shell + companion |
+| **Depends on** | P2-E1-T2, P2-E3-T1 |
+| **AC** | Пользователь может перенести pairing token на телефон (QR или copy). Без облачного аккаунта. |
 
 ---
 
-## Epic P1-E4 — Phase 1 Exit & Handoff
+## Phase 1 archive (Done)
 
-### P1-E4-T1 — Phase 1 acceptance checklist
-| Field | Value |
-| :--- | :--- |
-| **Role** | PM (lead), QA |
-| **Modules** | docs / CI notes |
-| **Depends on** | P1-E1…P1-E3 |
-| **AC** | Чеклист Phase 1 закрыт: workspace check, storage tests, Menubar smoke. Обновлён статус в `/docs/14-roadmap.md` (Phase 1 → done) только после явного approve. Зафиксирован список Ready для Phase 2 без старта реализации Phase 2. |
+<details>
+<summary>Phase 1 Kanban & epics (closed 2026-08-04)</summary>
 
-### P1-E4-T2 — Dev environment doc sync
-| Field | Value |
-| :--- | :--- |
-| **Role** | PM, Dev |
-| **Modules** | `docs/12-development.md` |
-| **Depends on** | P1-E1-T1, P1-E3-T1 |
-| **AC** | Команды установки и проверки актуальны (`cargo check`, `cargo test -p storage`, `pnpm tauri dev`). Нет ссылок на несуществующие скрипты. |
+**Done:** Epic E1–E4. Evidence: `docs/handoffs/P1-E4-T1-acceptance.md`, `P1-E4-T2-qa-to-pm.md`.
+
+Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` → Tauri Menubar + `get_status` → exit docs.
+
+</details>
 
 ---
 
-## Role × Module Matrix (Phase 1)
+## Role × Module Matrix (Phase 2)
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P1-E1-T1 Workspace bootstrap | ○ | ● | | | root, crates stubs |
-| P1-E1-T2 bio-spec types | | ● | ○ | | `bio-spec` |
-| P1-E1-T3 runtime skeleton | | ● | | | `runtime` |
-| P1-E1-T4 LICENSE / hygiene | ● | ● | | | root |
-| P1-E2-T1 WAL open | | ● | | | `storage` |
-| P1-E2-T2 migrations | | ● | ○ | | `storage` |
-| P1-E2-T3 repository | | ● | | | `storage`, `bio-spec` |
-| P1-E2-T4 storage tests | ○ | ○ | ● | | `storage` |
-| P1-E3-T1 Tauri scaffold | | ● | | ○ | `apps/desktop` |
-| P1-E3-T2 Menubar UX | | ○ | | ● | `apps/desktop/src` |
-| P1-E3-T3 IPC get_status | | ● | | ○ | `src-tauri` + UI |
-| P1-E3-T4 boundary smoke | ○ | | ● | ● | `apps/desktop` |
-| P1-E4-T1 Phase exit | ● | | ● | | docs |
-| P1-E4-T2 Dev guide sync | ● | ● | | | `docs/12-development.md` |
+| P2-E0-T1 sanitize dbError | | ● | ○ | | desktop / storage |
+| P2-E1-T1 ingest HTTP skeleton | ○ | ● | ○ | | runtime / ingest |
+| P2-E1-T2 pairing token | | ● | ○ | | ~/.biofocus config |
+| P2-E1-T3 persist Observations | | ● | ○ | | storage + channel |
+| P2-E1-T4 host wire + status | | ● | ○ | | desktop + ingest |
+| P2-E2-T1 active window | | ● | | | plugin-sdk / collector |
+| P2-E2-T2 keystroke aggregates | ● | ● | | | collector |
+| P2-E2-T3 collector tests | | ○ | ● | | collector |
+| P2-E3-T1 HealthKit → ingest | | ● | ○ | | iOS companion |
+| P2-E3-T2 pairing UX | ○ | ○ | | ● | desktop + iOS |
 
 ● = owner · ○ = collaborator
 
 ---
 
-## Sprint 1 — Ready Now (take first)
+## Sprint 3 — Ready Now
 
-1. **P1-E1-T1** — Bootstrap Cargo workspace  
-2. **P1-E1-T2** — `bio-spec` domain types  
-3. **P1-E1-T4** — LICENSE (AGPLv3) + hygiene *(можно параллельно с T2)*  
-4. **P1-E1-T3** — `runtime` skeleton  
-5. **P1-E2-T1** — SQLite WAL open  
-
-Следующий batch (конец Sprint 1 / Sprint 2): `P1-E2-T2` → `T3` → `T4`, затем `P1-E3-*`.
+1. **P2-E1-T1** — Ingest HTTP skeleton ← **берите сейчас**  
+2. Затем **P2-E1-T2** → **T3** → **T4**  
+3. Опционально ∥ **P2-E0-T1** sanitize `dbError`
