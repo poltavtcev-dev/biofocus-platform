@@ -22,4 +22,7 @@ objc2-app-kit = { version = "0.3", features = ["NSWorkspace", "NSRunningApplicat
 objc2-foundation = { version = "0.3", features = ["NSString"] }
 
 [dev-dependencies]
+ingest = { workspace = true }
+storage = { workspace = true }
+tempfile = "3"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync"] }

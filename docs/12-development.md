@@ -36,6 +36,21 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 
 **Input aggregates (P2-E2-T2, opt-in):** `export BIOFOCUS_INPUT_AGGREGATES=1` then restart Desktop. Requires Accessibility. Emits `keystrokes` Observations (`count` / `window_secs` / `rate_per_min`) on the same channel. Default off.
 
+### Collector test suite (P2-E2-T3)
+
+```bash
+# Unit + integration (mock probes; no Accessibility / NSWorkspace required)
+cargo test -p macos-collector
+
+# Integration only: emit Observation → channel → persist → SQLite + stop/idle
+cargo test -p macos-collector --test collector_integration
+
+# Broader Phase 2 ingest path (HTTP + persist), optional:
+cargo test -p ingest
+```
+
+Integration coverage (`tests/collector_integration.rs`): `context_window` and `keystrokes` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
+
 **HTTP status (companion/debug):** `curl -s http://127.0.0.1:8787/v1/status` → `version` + `db_status` (no Observation payload). Menubar still uses IPC `get_status`.
 
 **Pairing token**
@@ -90,5 +105,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **P2-E2-T1/T2 Done**; Ready **P2-E2-T3** (collector tests) on `phase/2-ingest-http`; Epic E1 Done.  
+**Status (2026-08-04):** Phase 2 — **P2-E2-T1/T2 Done**; **P2-E2-T3** in progress (collector integration + idle) on `phase/2-ingest-http`; Epic E1 Done.  
 **Git:** commit-after-build on branch; **sprint PR** at Sprint 3–4 gate (`docs/handoffs/SPRINT-GATE.md`). Follow-up: sanitize `dbError` (**P2-E0-T1**).
