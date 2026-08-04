@@ -7,8 +7,8 @@ pub type PipelineResult<T> = Result<T, PipelineError>;
 
 /// Errors raised while accepting or processing Observation batches.
 ///
-/// Intake / dedupe default paths do not reject; variants below reserve structured
-/// failure paths for policy / later stages (normalize).
+/// Intake / dedupe / normalize default paths do not reject; variants below reserve
+/// structured failure paths for policy / later stages.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum PipelineError {
     /// Batch rejected at intake (validation / policy). Unused by default intake path.
@@ -18,8 +18,9 @@ pub enum PipelineError {
         reason: &'static str,
     },
 
-    /// A downstream stage failed (dedupe / normalize). Reserved; default T2 dedupe
-    /// always succeeds ([`Ok`]).
+    /// A downstream stage failed (dedupe / normalize). Reserved; default T2/T3
+    /// paths always succeed ([`Ok`]) — unparseable known types are skipped at
+    /// normalize, not errored.
     #[error("pipeline stage `{stage}` failed: {message}")]
     StageFailed {
         /// Stage name (e.g. `dedupe`, `normalize`).
