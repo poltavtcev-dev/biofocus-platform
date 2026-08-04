@@ -96,7 +96,7 @@ impl NodeOutput {
 /// One node in the Feature calculation DAG.
 ///
 /// Implementors compute Features / Signals from the Observation snapshot and
-/// upstream outputs. Catalog formulas land in later tasks (P3-E2-T2+).
+/// upstream outputs. Catalog v1 nodes live in [`crate::catalog`].
 pub trait FeatureNode: Send {
     /// Unique node id within one [`crate::FeatureEngine`].
     fn id(&self) -> &str;
