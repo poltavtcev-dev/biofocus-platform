@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes → PM close 2026-08-04)  
 **Date:** 2026-08-04  
-**Closed previous:** P3-E1-T1 (QA Pass with notes; PR #5 code · PR #6 handoff)
+**Closed previous:** P3-E1-T1 (QA Pass with notes; PR #5 code · PR #6 handoff)  
+**Evidence:** PR #8 (code) · PR #9 (QA handoff) · `P3-E1-T2-qa-to-pm.md`
 
 ## Task
 **P3-E1-T2 — Deduplication stage**
