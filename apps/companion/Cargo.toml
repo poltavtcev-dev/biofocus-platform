@@ -1,0 +1,25 @@
+[package]
+name = "companion"
+description = "Minimal companion client: sample heart_rate Observation → local ingest"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "biofocus-companion-sample"
+path = "src/main.rs"
+
+[dependencies]
+bio-spec = { workspace = true }
+ingest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+[dev-dependencies]
+axum = { workspace = true }
+runtime = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "net"] }

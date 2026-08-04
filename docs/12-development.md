@@ -17,6 +17,7 @@ cargo test
 cargo test -p storage
 cargo test -p ingest
 cargo test -p macos-collector
+cargo test -p companion
 cargo test -p desktop
 
 # Desktop (Epic E3 Done)
@@ -50,6 +51,18 @@ cargo test -p ingest
 ```
 
 Integration coverage (`tests/collector_integration.rs`): `context_window` and `keystrokes` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
+
+### Companion sample path (P2-E3-T1)
+
+```bash
+cargo test -p companion
+
+# Live Desktop ingest (token from file or env):
+export BIOFOCUS_INGEST_TOKEN="$(cat ~/.biofocus/pairing_token)"
+cargo run -p companion --bin biofocus-companion-sample -- 74
+```
+
+Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN needs a reachable host (loopback bind today — LAN later). Pairing QR/copy → **P2-E3-T2**.
 
 **HTTP status (companion/debug):** `curl -s http://127.0.0.1:8787/v1/status` → `version` + `db_status` (no Observation payload). Menubar still uses IPC `get_status`.
 
@@ -105,5 +118,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **Epics E1–E2 Done**; Ready **P2-E3-T1** (HealthKit → ingest) on `phase/2-ingest-http`.  
+**Status (2026-08-04):** Phase 2 — **Epics E1–E2 Done**; **P2-E3-T1** in progress (companion sample path) on `phase/2-ingest-http`.  
 **Git:** commit-after-build on branch; **sprint PR** at Sprint 3–4 gate (`docs/handoffs/SPRINT-GATE.md`). Follow-up: sanitize `dbError` (**P2-E0-T1**).

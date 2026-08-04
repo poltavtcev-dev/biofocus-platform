@@ -51,3 +51,14 @@ Metadata only: **no** window title, keystrokes, clipboard, or screenshots. Front
 ```
 
 Aggregates only: **never** characters, reconstructable key codes, clipboard, or screenshots. Opt-in via `BIOFOCUS_INPUT_AGGREGATES=1`. Requires macOS Accessibility for live counts; deny → idle (no panic).
+
+## Companion → ingest (P2-E3-T1)
+
+Same Observation JSON; companion posts a **JSON array** to `POST /v1/ingest`.
+
+| Path | Location |
+| :--- | :--- |
+| Rust client + CLI | `apps/companion` (`cargo test -p companion`, `biofocus-companion-sample`) |
+| iOS HealthKit stub | `apps/companion/ios/` (Swift; Xcode / device) |
+
+Default host for same-machine / Simulator: `http://127.0.0.1:8787`. See `apps/companion/README.md`.

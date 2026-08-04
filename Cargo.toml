@@ -11,6 +11,7 @@ members = [
     "crates/report-engine",
     "crates/plugin-sdk",
     "crates/macos-collector",
+    "apps/companion",
     "apps/desktop/src-tauri",
 ]
 
@@ -32,6 +33,7 @@ knowledge-engine = { path = "crates/knowledge-engine" }
 report-engine = { path = "crates/report-engine" }
 plugin-sdk = { path = "crates/plugin-sdk" }
 macos-collector = { path = "crates/macos-collector" }
+companion = { path = "apps/companion" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

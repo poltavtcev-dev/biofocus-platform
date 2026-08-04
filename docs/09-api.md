@@ -4,6 +4,12 @@
 
 Default bind (skeleton): **`127.0.0.1:8787`** (`crates/ingest`). Loopback only until pairing/LAN epic.
 
+### Companion sample path (P2-E3-T1)
+- Rust: `apps/companion` — `CompanionClient::post_sample_heart_rate` / CLI `biofocus-companion-sample`
+- iOS stub: `apps/companion/ios/` — HealthKit one-shot → same body
+- Auth errors: client maps **`401` → unauthorized** (must not be swallowed); transport failures → network error
+- Docs / smoke: `apps/companion/README.md`, `docs/12-development.md`
+
 ### `POST /v1/ingest`
 - **Description:** Приём `Observation` от companion/collectors (локально). Enqueue в bounded channel; async worker пишет через `ObservationRepository::insert` (immutable append).
 - **Headers:** `Authorization: Bearer <PAIRING_TOKEN>` (token from `~/.biofocus/pairing_token` or `BIOFOCUS_INGEST_TOKEN`; see `docs/10-security.md`)

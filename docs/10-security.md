@@ -18,6 +18,9 @@
 
 QR / copy UX for sharing the token with a companion device → **P2-E3-T2**. Host auto-start of ingest → shipped in **P2-E1-T4**.
 
+### Companion client (P2-E3-T1)
+`apps/companion` posts Observations with Bearer auth. Wrong token → explicit unauthorized (CLI exit `3` / Swift `IngestClientError.unauthorized`). Sample path is local-only; no cloud.
+
 ## 3. Context collector privacy
 
 ### Active window (P2-E2-T1)
