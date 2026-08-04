@@ -8,7 +8,7 @@ use std::sync::Mutex;
 
 use runtime::{
     feature_source_error, spawn_feature_worker, FeatureWorkerConfig, FeatureWorkerHandle,
-    NoopFeatureHook, ObservationSource, DEFAULT_FEATURE_BATCH_LIMIT,
+    NoopFeatureHook, Observation, ObservationSource, DEFAULT_FEATURE_BATCH_LIMIT,
 };
 use storage::{Database, ObservationRepository};
 use tauri::{AppHandle, Manager, Runtime};
@@ -63,7 +63,7 @@ impl SqliteObservationSource {
 }
 
 impl ObservationSource for SqliteObservationSource {
-    fn poll_new(&mut self) -> Result<Vec<bio_spec::Observation>, runtime::RuntimeError> {
+    fn poll_new(&mut self) -> Result<Vec<Observation>, runtime::RuntimeError> {
         let repo = ObservationRepository::new(&self.db);
         let page = repo
             .list_after_created_cursor(self.after_created_at, &self.after_id, self.batch_limit)

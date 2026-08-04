@@ -29,7 +29,7 @@ pub use feature_worker::{
 pub use host::{CoreRuntime, RuntimeConfig};
 pub use tracing_init::init_tracing;
 
-pub use bio_spec::CRATE_NAME as SPEC_CRATE_NAME;
+pub use bio_spec::{Observation, CRATE_NAME as SPEC_CRATE_NAME};
 
 /// Crate identity used by dependents and IPC status payloads.
 pub const CRATE_NAME: &str = "runtime";
