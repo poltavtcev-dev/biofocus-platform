@@ -32,4 +32,22 @@
 }
 ```
 
-Metadata only: **no** window title, keystrokes, clipboard, or screenshots. Frontmost app via `NSWorkspace` (no Accessibility). Window title / input aggregates → later E2 tasks.
+Metadata only: **no** window title, keystrokes, clipboard, or screenshots. Frontmost app via `NSWorkspace` (no Accessibility).
+
+### `keystrokes` payload (macOS input aggregates, P2-E2-T2)
+```json
+{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abcd",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.input",
+  "data_type": "keystrokes",
+  "payload": {
+    "count": 120,
+    "window_secs": 60,
+    "rate_per_min": 120.0
+  },
+  "confidence": 1.0
+}
+```
+
+Aggregates only: **never** characters, reconstructable key codes, clipboard, or screenshots. Opt-in via `BIOFOCUS_INPUT_AGGREGATES=1`. Requires macOS Accessibility for live counts; deny → idle (no panic).

@@ -2,13 +2,16 @@
 //!
 //! Startup: open default DB → [`IngestConfig::load`] → Observation channel →
 //! persist worker → loopback Axum serve → active window collector (same `tx`).
-//! Shutdown stops collector, then accept loop, then joins the worker.
+//! Opt-in input aggregates when `BIOFOCUS_INPUT_AGGREGATES=1`.
+//! Shutdown stops collectors, then accept loop, then joins the worker.
 
 use std::sync::Mutex;
 use std::time::Duration;
 
 use ingest::{serve_with_shutdown, spawn_persist_worker, IngestConfig, IngestState};
-use macos_collector::ActiveWindowPlugin;
+use macos_collector::{
+    input_aggregates_enabled, ActiveWindowPlugin, KeystrokeAggregatePlugin,
+};
 use plugin_sdk::BioFocusPlugin;
 use runtime::{observation_channel, DEFAULT_OBSERVATION_BUFFER};
 use std::sync::Arc;
@@ -22,11 +25,22 @@ pub struct IngestHost {
     server_done: Mutex<Option<std::sync::mpsc::Receiver<()>>>,
     worker: Mutex<Option<std::thread::JoinHandle<()>>>,
     collector: Mutex<Option<Arc<ActiveWindowPlugin>>>,
+    input_collector: Mutex<Option<Arc<KeystrokeAggregatePlugin>>>,
 }
 
 impl IngestHost {
     /// Signals graceful HTTP shutdown, waits briefly for the server task, joins worker.
     pub fn shutdown(&self) {
+        if let Ok(mut guard) = self.input_collector.lock() {
+            if let Some(plugin) = guard.take() {
+                match tauri::async_runtime::block_on(plugin.stop_stream()) {
+                    Ok(()) => info!("keystroke aggregate collector stopped"),
+                    Err(plugin_sdk::PluginError::NotRunning) => {}
+                    Err(err) => warn!(error = %err, "keystroke aggregate collector stop failed"),
+                }
+            }
+        }
+
         if let Ok(mut guard) = self.collector.lock() {
             if let Some(plugin) = guard.take() {
                 match tauri::async_runtime::block_on(plugin.stop_stream()) {
@@ -138,7 +152,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
     info!(%port, host = "127.0.0.1", "ingest HTTP starting on loopback (idle on accept)");
 
     let collector = Arc::new(ActiveWindowPlugin::system_default());
-    match tauri::async_runtime::block_on(collector.start_stream(collector_tx)) {
+    match tauri::async_runtime::block_on(collector.start_stream(collector_tx.clone())) {
         Ok(()) => info!(
             plugin = collector.id(),
             "active window collector armed (poll ≥1s, emit on change)"
@@ -148,11 +162,35 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         }
     }
 
+    let input_collector = if input_aggregates_enabled() {
+        let plugin = Arc::new(KeystrokeAggregatePlugin::system_default());
+        match tauri::async_runtime::block_on(plugin.start_stream(collector_tx)) {
+            Ok(()) => {
+                info!(
+                    plugin = plugin.id(),
+                    "keystroke aggregate collector armed (opt-in, aggregates only)"
+                );
+                Some(plugin)
+            }
+            Err(err) => {
+                warn!(error = %err, "keystroke aggregate collector failed to start");
+                None
+            }
+        }
+    } else {
+        info!(
+            flag = macos_collector::ENABLE_ENV,
+            "keystroke aggregate collector off (set env=1 to enable; requires Accessibility)"
+        );
+        None
+    };
+
     app.manage(IngestHost {
         shutdown_tx: Mutex::new(Some(shutdown_tx)),
         server_done: Mutex::new(Some(done_rx)),
         worker: Mutex::new(Some(worker)),
         collector: Mutex::new(Some(collector)),
+        input_collector: Mutex::new(input_collector),
     });
 }
 

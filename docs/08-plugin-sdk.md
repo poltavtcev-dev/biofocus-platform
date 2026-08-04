@@ -40,4 +40,19 @@ Idle DoD: plugins must not busy-loop; stop must join background work.
 
 Non-macOS builds: probe returns `None` (collector still compiles; no OS emissions).
 
-Window title / keystroke aggregates → **P2-E2-T2** (may require Accessibility — document then).
+Window title capture remains deferred.
+
+## 3. macOS input aggregates (P2-E2-T2)
+
+| Item | Value |
+| :--- | :--- |
+| Crate | `crates/macos-collector` |
+| Plugin id | `com.biofocus.macos.input` |
+| `data_type` | `keystrokes` |
+| Probe | Listen-only `CGEventTap` key-down counter — **Accessibility required** |
+| Payload | `count`, `window_secs`, `rate_per_min` only (see `docs/07-contracts.md`) |
+| Enable | `BIOFOCUS_INPUT_AGGREGATES=1` (default **off**) |
+| Window | default 60s; emit when count > 0 |
+| Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
+
+Non-macOS / Accessibility denied: probe returns 0 (idle).
