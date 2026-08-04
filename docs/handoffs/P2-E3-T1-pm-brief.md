@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev (iOS)  
-**Status:** Ready (assigned)  
+**Status:** Closed (Done)  
 **Date:** 2026-08-04  
 **Closed previous:** P2-E2-T3 — QA Pass with notes (`docs/handoffs/P2-E2-T3-qa-to-pm.md`); Epic **P2-E2** ✅
+**Closed this:** QA Pass with notes → `docs/handoffs/P2-E3-T1-qa-to-pm.md`; Ready **P2-E3-T2**
 
 ## Task
 **P2-E3-T1 — Companion contract + minimal HealthKit sample path**

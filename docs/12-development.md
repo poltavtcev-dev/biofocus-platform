@@ -118,5 +118,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **Epics E1–E2 Done**; **P2-E3-T1** in progress (companion sample path) on `phase/2-ingest-http`.  
+**Status (2026-08-04):** Phase 2 — **E1–E2 + E3-T1 Done**; Ready **P2-E3-T2** (pairing UX) on `phase/2-ingest-http`.  
 **Git:** commit-after-build on branch; **sprint PR** at Sprint 3–4 gate (`docs/handoffs/SPRINT-GATE.md`). Follow-up: sanitize `dbError` (**P2-E0-T1**).
