@@ -7,13 +7,14 @@
 //!
 //! ## `get_status`
 //!
-//! Returns app version + DB probe result (`ok` | `error`). Never includes
-//! raw Observation or biometric payloads.
+//! Returns app version + DB probe result (`ok` | `error`) + Menubar
+//! `alertLevel` (`green` | `yellow` | `red`). Never includes raw Observation
+//! or biometric payloads.
 //!
 //! Example (camelCase JSON):
 //! ```json
-//! { "version": "0.1.0", "dbStatus": "ok" }
-//! { "version": "0.1.0", "dbStatus": "error", "dbError": "…" }
+//! { "version": "0.1.0", "dbStatus": "ok", "alertLevel": "green" }
+//! { "version": "0.1.0", "dbStatus": "error", "dbError": "…", "alertLevel": "green" }
 //! ```
 //!
 //! ## `core_ping`
@@ -34,24 +35,29 @@
 //! ## Feature Worker (Phase 3)
 //!
 //! A Core Feature Worker polls new Observations from SQLite, runs pipeline
-//! quality stages (accept → dedupe → normalize), and invokes a noop Feature
-//! Engine hook until P3-E2. Started/stopped with the desktop process.
+//! quality stages (accept → dedupe → normalize), then catalog Feature Engine +
+//! [`feature_engine::map_alert_level`] into shared [`alert_state::AlertState`]
+//! for IPC. Started/stopped with the desktop process.
 //!
 //! See also `docs/09-api.md`.
 
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
+mod alert_state;
 mod feature_host;
 mod ingest_host;
 
 use std::path::Path;
 
+use feature_engine::AlertLevel;
 use qrcode::render::svg;
 use qrcode::QrCode;
 use serde::Serialize;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Manager, RunEvent};
+use tauri::{AppHandle, Manager, RunEvent};
 use thiserror::Error;
+
+use crate::alert_state::AlertState;
 
 /// Errors from the desktop host bootstrap (no panics on the production path).
 #[derive(Debug, Error)]
@@ -77,6 +83,9 @@ struct CoreStatus {
     /// Short storage error when `db_status == "error"`.
     #[serde(skip_serializing_if = "Option::is_none")]
     db_error: Option<String>,
+    /// Menubar traffic-light level (`green` / `yellow` / `red`). Independent of
+    /// Idle/Ready/Error (`db_status`); defaults to green without Feature evidence.
+    alert_level: String,
 }
 
 /// Placeholder IPC payload kept for T2 fallback until consumers drop it.
@@ -162,26 +171,35 @@ fn probe_default_database() -> Result<(), String> {
     probe_database_at(&path)
 }
 
-fn build_status(probe: Result<(), String>) -> CoreStatus {
+fn build_status(probe: Result<(), String>, alert: AlertLevel) -> CoreStatus {
     let version = env!("CARGO_PKG_VERSION").to_string();
+    let alert_level = alert.as_str().to_owned();
     match probe {
         Ok(()) => CoreStatus {
             version,
             db_status: "ok".into(),
             db_error: None,
+            alert_level,
         },
         Err(message) => CoreStatus {
             version,
             db_status: "error".into(),
             db_error: Some(message),
+            alert_level,
         },
     }
 }
 
+fn current_alert_level(app: &AppHandle) -> AlertLevel {
+    app.try_state::<AlertState>()
+        .map(|state| state.current())
+        .unwrap_or(AlertLevel::Green)
+}
+
 /// Core status for Menubar/UI. Soft-fails DB problems into `dbStatus: "error"`.
 #[tauri::command]
-fn get_status() -> CoreStatus {
-    build_status(probe_default_database())
+fn get_status(app: AppHandle) -> CoreStatus {
+    build_status(probe_default_database(), current_alert_level(&app))
 }
 
 /// Trivial Core link check (T1). Does not open SQLite or expose Observation rows.
@@ -271,17 +289,26 @@ mod tests {
 
     #[test]
     fn build_status_ok_has_no_db_error() {
-        let status = build_status(Ok(()));
+        let status = build_status(Ok(()), AlertLevel::Green);
         assert_eq!(status.db_status, "ok");
         assert_eq!(status.db_error, None);
+        assert_eq!(status.alert_level, "green");
         assert_eq!(status.version, env!("CARGO_PKG_VERSION"));
     }
 
     #[test]
-    fn build_status_error_keeps_reason() {
-        let status = build_status(Err("disk full".into()));
+    fn build_status_error_keeps_reason_and_alert() {
+        let status = build_status(Err("disk full".into()), AlertLevel::Yellow);
         assert_eq!(status.db_status, "error");
         assert_eq!(status.db_error.as_deref(), Some("disk full"));
+        assert_eq!(status.alert_level, "yellow");
+    }
+
+    #[test]
+    fn build_status_alert_independent_of_db_ok() {
+        let status = build_status(Ok(()), AlertLevel::Red);
+        assert_eq!(status.db_status, "ok");
+        assert_eq!(status.alert_level, "red");
     }
 
     #[test]
@@ -293,7 +320,7 @@ mod tests {
             path: PathBuf::from("/Users/secret/.biofocus/data"),
             source: io::Error::new(io::ErrorKind::PermissionDenied, "denied"),
         };
-        let status = build_status(Err(err.public_message()));
+        let status = build_status(Err(err.public_message()), AlertLevel::Green);
         let msg = status.db_error.as_deref().expect("dbError");
         assert_eq!(msg, "Could not create local data directory.");
         assert!(!msg.contains('/'));
@@ -325,15 +352,20 @@ mod tests {
     }
 
     #[test]
-    fn status_json_has_no_observation_fields() {
-        let status = build_status(Ok(()));
+    fn status_json_has_alert_level_without_observation_fields() {
+        let status = build_status(Ok(()), AlertLevel::Yellow);
         let json = serde_json::to_value(&status).expect("serialize status");
         let obj = json.as_object().expect("object");
         assert!(obj.contains_key("version"));
         assert!(obj.contains_key("dbStatus"));
+        assert_eq!(
+            obj.get("alertLevel").and_then(|v| v.as_str()),
+            Some("yellow")
+        );
         assert!(!obj.contains_key("observations"));
         assert!(!obj.contains_key("payload"));
         assert!(!obj.contains_key("hrv"));
+        assert!(!obj.contains_key("stressIndex"));
     }
 
     #[test]

@@ -1,18 +1,20 @@
-//! Feature Worker lifecycle owned by the desktop host (P3-E1-T4).
+//! Feature Worker lifecycle owned by the desktop host (P3-E1-T4 / P3-E3-T2).
 //!
 //! Startup: open default DB (separate WAL connection) → cursor at tip →
-//! [`runtime::spawn_feature_worker`] with SQLite source + noop Feature hook.
+//! [`runtime::spawn_feature_worker`] with SQLite source + catalog alert hook.
 //! Shutdown stops the worker with the app (idle freeze after stop).
 
 use std::sync::Mutex;
 
 use runtime::{
     feature_source_error, spawn_feature_worker, FeatureWorkerConfig, FeatureWorkerHandle,
-    NoopFeatureHook, Observation, ObservationSource, DEFAULT_FEATURE_BATCH_LIMIT,
+    Observation, ObservationSource, DEFAULT_FEATURE_BATCH_LIMIT,
 };
 use storage::{Database, ObservationRepository};
 use tauri::{AppHandle, Manager, Runtime};
 use tracing::{error, info, warn};
+
+use crate::alert_state::{AlertState, CatalogAlertHook};
 
 /// Managed handle so Tauri exit can stop the Feature Worker.
 pub struct FeatureHost {
@@ -110,13 +112,12 @@ pub fn start_feature_host<R: Runtime>(app: &AppHandle<R>) {
         }
     };
 
-    let handle = spawn_feature_worker(
-        source,
-        NoopFeatureHook,
-        FeatureWorkerConfig::default(),
-    );
-    info!("feature worker armed (poll ≥1s when idle; pipeline → noop feature hook)");
+    let alert_state = AlertState::new();
+    let hook = CatalogAlertHook::new(alert_state.share());
+    let handle = spawn_feature_worker(source, hook, FeatureWorkerConfig::default());
+    info!("feature worker armed (poll ≥1s when idle; pipeline → catalog alert hook)");
 
+    app.manage(alert_state);
     app.manage(FeatureHost {
         worker: Mutex::new(Some(handle)),
     });

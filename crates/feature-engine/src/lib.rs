@@ -1,6 +1,6 @@
 //! Feature calculation engine (FocusScore, StressIndex, FatigueIndex).
 //!
-//! Phase 3 (P3-E2): DAG scheduler + catalog v1 nodes.
+//! Phase 3 (P3-E2 / E3): DAG scheduler + catalog v1 nodes + alert mapping.
 //!
 //! # Entrypoint
 //!
@@ -9,18 +9,21 @@
 //! - [`catalog::register_stress_v1`] — `StressIndex` + `FatigueIndex` (v1; needs Focus)
 //! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue together
 //! - [`FeatureEngine::run`] — topo compute → [`EngineOutput`]
+//! - [`map_alert_level`] — [`EngineOutput`] → [`AlertLevel`] { Green, Yellow, Red }
 //!
 //! Empty DAG / empty snapshot → [`Ok`] with empty output (idle-friendly).
-//! No UI, no SQLite schema, no busy-loop.
+//! Empty / calm output → [`AlertLevel::Green`]. No UI, no SQLite schema, no busy-loop.
 
 #![forbid(unsafe_code)]
 
+pub mod alert;
 pub mod catalog;
 
 mod engine;
 mod error;
 mod node;
 
+pub use alert::{map_alert_level, AlertLevel, YELLOW_FEATURE_THRESHOLD};
 pub use bio_spec::{Feature, Observation, Signal};
 
 pub use catalog::{

@@ -658,8 +658,11 @@ dependencies = [
 name = "desktop"
 version = "0.1.0"
 dependencies = [
+ "bio-spec",
+ "feature-engine",
  "ingest",
  "macos-collector",
+ "pipeline",
  "plugin-sdk",
  "qrcode",
  "runtime",
@@ -671,6 +674,7 @@ dependencies = [
  "thiserror 2.0.19",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
