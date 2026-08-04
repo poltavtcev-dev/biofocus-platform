@@ -1,16 +1,66 @@
 # 09. Internal REST & Ingestion API
 
-## 1. Endpoints (Phase 2 — not implemented in Phase 1)
+## 1. Endpoints (Phase 2)
+
+Default bind (skeleton): **`127.0.0.1:8787`** (`crates/ingest`). Loopback only until pairing/LAN epic.
+
+### Companion sample path (P2-E3-T1)
+- Rust: `apps/companion` — `CompanionClient::post_sample_heart_rate` / CLI `biofocus-companion-sample`
+- iOS stub: `apps/companion/ios/` — HealthKit one-shot → same body
+- Auth errors: client maps **`401` → unauthorized** (must not be swallowed); transport failures → network error
+- Docs / smoke: `apps/companion/README.md`, `docs/12-development.md`
 
 ### `POST /v1/ingest`
-- **Description:** Прием биометрии от мобильных мостов/компаньонов по локальной сети.
-- **Headers:** `Authorization: Bearer <PAIRING_TOKEN>`
+- **Description:** Приём `Observation` от companion/collectors (локально). Enqueue в bounded channel; async worker пишет через `ObservationRepository::insert` (immutable append).
+- **Headers:** `Authorization: Bearer <PAIRING_TOKEN>` (token from `~/.biofocus/pairing_token` or `BIOFOCUS_INGEST_TOKEN`; see `docs/10-security.md`)
 - **Request Body:** `Array<Observation>`
-- **Response:** `202 Accepted` -> `{"status": "queued", "count": 1}`
+- **Response:** `202 Accepted` → `{"status": "queued", "count": N}` (все элементы batch приняты в канал)
+- **Errors:**
+  - `401` missing/wrong token → `{"error":"unauthorized"}`
+  - `400` invalid JSON / domain → `{"error":"invalid_json"}` (и аналоги)
+  - `503` backpressure / closed channel (см. mid-batch ниже)
+- **Persist:** duplicate PK при insert → явный `StorageError::DuplicateObservation` (log, **без overwrite**); HTTP `202` означает «принято в очередь», не «уже закоммичено в SQLite».
+- **Status:** Host wire shipped (**P2-E1-T4**): Desktop starts/stops ingest with the app.
+
+#### Mid-batch / queue full (contract **C**)
+
+Bounded `try_send` per item. If a later item in the same request hits a full (or closed) channel after some earlier items were enqueued:
+
+1. **Stop** further enqueue for this request (already-queued items stay in the channel — no rollback).
+2. Respond **`503 Service Unavailable`** with counts:
+
+```json
+{"error":"queue_full","accepted":N,"rejected":M}
+```
+
+| Field | Meaning |
+| :--- | :--- |
+| `error` | `"queue_full"` or `"queue_closed"` |
+| `accepted` | Items from this request successfully enqueued before stop |
+| `rejected` | Remaining items in this request not enqueued (`accepted + rejected = batch length`) |
+
+Same shape when the channel is full on the **first** item (`accepted: 0`). Collectors should back off and retry rejected Observations (new request).
 
 ### `GET /v1/status`
-- **Description:** Проверка статуса Core Daemon и активных подключений (HTTP; Phase 2).
-- **Response:** `200 OK` -> `{"version": "1.0.0", "db_status": "ok", "active_plugins": 2}`
+- **Description:** Статус Core / ingest для companion/debug (loopback). Shell UI uses IPC `get_status`, not this endpoint.
+- **Auth:** none (loopback-only bind).
+- **Response:** `200 OK` — **без** Observation / biometric payload:
+
+```json
+{"version":"0.1.0","db_status":"ok"}
+```
+
+```json
+{"version":"0.1.0","db_status":"error","db_error":"…"}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `version` | string | Host / desktop package version |
+| `db_status` | `"ok"` \| `"error"` | Soft-fail probe (open + WAL + migrate) |
+| `db_error` | string? | Present only when `db_status` is `"error"`; short + **no absolute filesystem paths** |
+
+- **Host:** Desktop starts ingest on app launch via `IngestConfig::load()` (pairing file / `BIOFOCUS_INGEST_TOKEN`) and stops accept + persist worker on exit.
 
 ---
 
@@ -42,7 +92,7 @@ Example failure:
 {
   "version": "0.1.0",
   "dbStatus": "error",
-  "dbError": "cannot resolve home directory for default BioFocus data path"
+  "dbError": "Could not locate local data directory."
 }
 ```
 
@@ -50,7 +100,7 @@ Example failure:
 | :--- | :--- | :--- |
 | `version` | string | Desktop package version (`CARGO_PKG_VERSION`) |
 | `dbStatus` | `"ok"` \| `"error"` | Result of storage probe |
-| `dbError` | string? | Present only when `dbStatus` is `"error"` |
+| `dbError` | string? | Present only when `dbStatus` is `"error"`; short + **no absolute filesystem paths** (`StorageError::public_message`) |
 
 ### `core_ping` (legacy fallback)
 
@@ -68,3 +118,28 @@ compatibility until consumers drop the fallback path.
 ```
 
 Does **not** open SQLite. Do not treat `dbFile` as a frontend open path.
+
+### `get_pairing_token` (P2-E3-T2)
+
+- **Invoke:** `invoke("get_pairing_token")`
+- **Purpose:** Expose the local pairing Bearer token for companion share (copy / QR).
+- **Source:** same resolution as ingest — `BIOFOCUS_INGEST_TOKEN` if set, else load-or-create `~/.biofocus/pairing_token` (host-side only).
+- **Never returns** filesystem paths, Observation rows, or cloud credentials.
+
+```json
+{
+  "token": "…64 hex…",
+  "ingestBaseUrl": "http://127.0.0.1:8787",
+  "fromEnv": false,
+  "qrSvg": "<svg …>…</svg>"
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `token` | string | Bearer value for `Authorization` |
+| `ingestBaseUrl` | string | Loopback ingest base (Simulator / same Mac) |
+| `fromEnv` | bool | `true` when env override is active |
+| `qrSvg` | string | SVG QR encoding the token |
+
+Errors are short UI-safe strings (no absolute paths).

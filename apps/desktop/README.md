@@ -26,6 +26,12 @@ Compact window + tray tooltip show a neutral Core state: **Idle** / **Ready** /
 
 QA mock (no DB): open with `?mockStatus=idle|ready|error` to force a state.
 
+## Companion pairing (P2-E3-T2)
+
+The shell **Companion** section loads the local pairing token via IPC
+`get_pairing_token` (Show / Copy / QR). Paste into the companion CLI or iOS stub.
+No cloud account; frontend never opens `~/.biofocus` itself.
+
 ## Boundary
 
 UI talks to Core only through Tauri IPC. The frontend must not import

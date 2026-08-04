@@ -19,7 +19,13 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 runtime = { workspace = true }
 storage = { workspace = true }
+ingest = { workspace = true }
+plugin-sdk = { workspace = true }
+macos-collector = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 tauri = { version = "2", features = ["tray-icon"] }
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }

@@ -20,15 +20,30 @@
 //!
 //! Legacy scaffold probe (T1). UI prefers `get_status`; kept as fallback.
 //!
-//! See also `docs/09-api.md` § Desktop Tauri IPC.
+//! ## `get_pairing_token`
+//!
+//! Returns the local pairing Bearer token (+ QR SVG) for companion share.
+//! Never returns filesystem paths. UI must not read `~/.biofocus` itself.
+//!
+//! ## Local ingest HTTP (Phase 2)
+//!
+//! On startup the host opens the default DB, loads [`ingest::IngestConfig`],
+//! spawns the persist worker, and serves loopback ingest (`127.0.0.1:8787`).
+//! Companion/debug use `GET /v1/status`; the shell UI still uses IPC `get_status`.
+//!
+//! See also `docs/09-api.md`.
 
-#![forbid(unsafe_code)]
+#![cfg_attr(not(test), forbid(unsafe_code))]
+
+mod ingest_host;
 
 use std::path::Path;
 
+use qrcode::render::svg;
+use qrcode::QrCode;
 use serde::Serialize;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 use thiserror::Error;
 
 /// Errors from the desktop host bootstrap (no panics on the production path).
@@ -68,14 +83,75 @@ struct CorePing {
     schema_version: u32,
 }
 
+/// IPC payload for [`get_pairing_token`]. Local secret only — no cloud, no paths.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct PairingTokenInfo {
+    /// Bearer token value (64 hex chars when from file generation).
+    token: String,
+    /// Loopback ingest base URL companions should use on the same Mac / Simulator.
+    ingest_base_url: String,
+    /// `true` when `BIOFOCUS_INGEST_TOKEN` overrides the on-disk file.
+    from_env: bool,
+    /// SVG markup for a QR encoding the token (phone camera → paste / scan).
+    qr_svg: String,
+}
+
+/// Maps token resolve errors to short UI-safe strings (no filesystem paths).
+fn pairing_error_message(err: ingest::IngestError) -> String {
+    match err {
+        ingest::IngestError::HomeDirUnavailable => {
+            "Could not locate local pairing data.".into()
+        }
+        ingest::IngestError::TokenIo { .. } => "Could not read pairing token.".into(),
+        ingest::IngestError::EmptyTokenFile { .. } => "Pairing token is empty.".into(),
+        ingest::IngestError::TokenEntropy(_) => "Could not create pairing token.".into(),
+        _ => "Could not load pairing token.".into(),
+    }
+}
+
+fn render_token_qr_svg(token: &str) -> Result<String, String> {
+    let code = QrCode::new(token.as_bytes()).map_err(|err| err.to_string())?;
+    Ok(code
+        .render::<svg::Color>()
+        .min_dimensions(168, 168)
+        .dark_color(svg::Color("#1d1d1f"))
+        .light_color(svg::Color("#f5f5f7"))
+        .build())
+}
+
+fn build_pairing_info(token: String, from_env: bool) -> Result<PairingTokenInfo, String> {
+    let qr_svg = render_token_qr_svg(&token)?;
+    let ingest_base_url = format!(
+        "http://{}:{}",
+        ingest::INGEST_BIND_HOST,
+        ingest::DEFAULT_INGEST_PORT
+    );
+    Ok(PairingTokenInfo {
+        token,
+        ingest_base_url,
+        from_env,
+        qr_svg,
+    })
+}
+
+fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
+    let from_env = std::env::var(ingest::INGEST_TOKEN_ENV)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+    let token = ingest::resolve_ingest_token().map_err(pairing_error_message)?;
+    build_pairing_info(token, from_env)
+}
+
 /// Probes a DB path (create + WAL + migrate-on-open). Soft-fail via `Err`.
+/// Error strings are path-free ([`storage::StorageError::public_message`]).
 fn probe_database_at(path: &Path) -> Result<(), String> {
-    let _db = storage::Database::open(path).map_err(|err| err.to_string())?;
+    let _db = storage::Database::open(path).map_err(|err| err.public_message())?;
     Ok(())
 }
 
 fn probe_default_database() -> Result<(), String> {
-    let path = storage::default_db_path().map_err(|err| err.to_string())?;
+    let path = storage::default_db_path().map_err(|err| err.public_message())?;
     probe_database_at(&path)
 }
 
@@ -114,9 +190,17 @@ fn core_ping() -> Result<CorePing, String> {
     })
 }
 
-/// Starts the Tauri event loop (window + tray shell).
+/// Local pairing secret for companion share (copy / QR). No filesystem paths.
+#[tauri::command]
+fn get_pairing_token() -> Result<PairingTokenInfo, String> {
+    resolve_pairing_info()
+}
+
+/// Starts the Tauri event loop (window + tray shell + local ingest).
 pub fn run() -> DesktopResult<()> {
-    tauri::Builder::default()
+    let _ = runtime::init_tracing(Some("info"));
+
+    let app = tauri::Builder::default()
         .setup(|app| {
             let icon = app
                 .default_window_icon()
@@ -147,10 +231,22 @@ pub fn run() -> DesktopResult<()> {
                 })
                 .build(app)?;
 
+            ingest_host::start_ingest_host(app.handle());
+
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_status, core_ping])
-        .run(tauri::generate_context!())?;
+        .invoke_handler(tauri::generate_handler![
+            get_status,
+            core_ping,
+            get_pairing_token
+        ])
+        .build(tauri::generate_context!())?;
+
+    app.run(|app_handle, event| {
+        if let RunEvent::ExitRequested { .. } = event {
+            ingest_host::stop_ingest_host(app_handle);
+        }
+    });
 
     Ok(())
 }
@@ -158,7 +254,11 @@ pub fn run() -> DesktopResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    /// Serializes env-mutating pairing tests.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn build_status_ok_has_no_db_error() {
@@ -173,6 +273,25 @@ mod tests {
         let status = build_status(Err("disk full".into()));
         assert_eq!(status.db_status, "error");
         assert_eq!(status.db_error.as_deref(), Some("disk full"));
+    }
+
+    #[test]
+    fn storage_public_message_hides_paths_in_db_error() {
+        use std::io;
+        use std::path::PathBuf;
+
+        let err = storage::StorageError::CreateDir {
+            path: PathBuf::from("/Users/secret/.biofocus/data"),
+            source: io::Error::new(io::ErrorKind::PermissionDenied, "denied"),
+        };
+        let status = build_status(Err(err.public_message()));
+        let msg = status.db_error.as_deref().expect("dbError");
+        assert_eq!(msg, "Could not create local data directory.");
+        assert!(!msg.contains('/'));
+        assert!(!msg.contains(".biofocus"));
+        let json = serde_json::to_string(&status).expect("serialize");
+        assert!(!json.contains("/Users"));
+        assert!(!json.contains(".biofocus"));
     }
 
     #[test]
@@ -206,5 +325,50 @@ mod tests {
         assert!(!obj.contains_key("observations"));
         assert!(!obj.contains_key("payload"));
         assert!(!obj.contains_key("hrv"));
+    }
+
+    #[test]
+    fn pairing_info_json_has_no_paths() {
+        let info = build_pairing_info("abc123deadbeef".into(), false).expect("qr");
+        let json = serde_json::to_value(&info).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.get("token").and_then(|v| v.as_str()), Some("abc123deadbeef"));
+        assert_eq!(
+            obj.get("ingestBaseUrl").and_then(|v| v.as_str()),
+            Some("http://127.0.0.1:8787")
+        );
+        assert_eq!(obj.get("fromEnv").and_then(|v| v.as_bool()), Some(false));
+        let qr = obj.get("qrSvg").and_then(|v| v.as_str()).expect("qrSvg");
+        assert!(qr.contains("<svg"), "expected SVG markup");
+        assert!(!obj.contains_key("path"));
+        assert!(!obj.contains_key("home"));
+        assert!(!serde_json::to_string(&info).unwrap().contains(".biofocus"));
+    }
+
+    #[test]
+    fn pairing_error_message_hides_paths() {
+        let msg = pairing_error_message(ingest::IngestError::TokenIo {
+            path: "/Users/secret/.biofocus/pairing_token".into(),
+            source: std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied"),
+        });
+        assert!(!msg.contains("/Users"));
+        assert!(!msg.contains(".biofocus"));
+        assert!(!msg.contains("pairing_token"));
+    }
+
+    #[test]
+    fn resolve_pairing_info_from_env_override() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
+        // SAFETY: serialized by ENV_LOCK; restored before unlock.
+        unsafe {
+            std::env::set_var(ingest::INGEST_TOKEN_ENV, "ux-test-pairing-token");
+        }
+        let info = resolve_pairing_info().expect("resolve");
+        assert_eq!(info.token, "ux-test-pairing-token");
+        assert!(info.from_env);
+        assert!(info.qr_svg.contains("<svg"));
+        unsafe {
+            std::env::remove_var(ingest::INGEST_TOKEN_ENV);
+        }
     }
 }
