@@ -19,5 +19,5 @@
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)  
-**Phase 3:** active — `docs/SPRINT_ROADMAP.md` · brief `docs/handoffs/P3-E1-T1-pm-brief.md`  
+**Phase 3:** active — `docs/SPRINT_ROADMAP.md` · Ready **P3-E1-T4** · brief `docs/handoffs/P3-E1-T4-pm-brief.md`  
 **Git:** related-work branches → PR (classic); see `docs/12-development.md`.

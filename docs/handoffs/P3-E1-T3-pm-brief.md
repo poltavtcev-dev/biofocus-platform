@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes → PM close 2026-08-04)  
 **Date:** 2026-08-04  
-**Closed previous:** P3-E1-T2 (QA Pass with notes; PR #8 code · PR #9 QA handoff)
+**Closed previous:** P3-E1-T2 (QA Pass with notes; PR #8 code · PR #9 QA handoff)  
+**Evidence:** PR #11 (code) · `P3-E1-T3-qa-to-pm.md` (QA/PM docs close)
 
 ## Task
 **P3-E1-T3 — Normalization & calibration**
