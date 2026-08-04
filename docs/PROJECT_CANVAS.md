@@ -19,6 +19,23 @@
 
 **Для кого:** персональный самоконтроль ритма работы (не меддиагностика, не employee surveillance, не облако по умолчанию).
 
+### Owner dogfood stack
+
+| Piece | Device |
+| :--- | :--- |
+| Wearable | **Xiaomi Mi Band 8** |
+| Phone | **iPhone 12 mini** |
+| Desktop | **MacBook Pro 14" (M1 Pro)** |
+
+**Primary biometric source to support next:** Mi Band 8 (owner’s only wearable).
+
+- Today’s companion path is an **Apple HealthKit / CLI sample** — useful as the HTTP contract, **not** the owner’s daily Band 8 source.
+- Future path (realistic for this stack): Band 8 ↔ phone companion (Mi Fitness / Zepp / Health export or BLE bridge on **iPhone 12 mini**) → Desktop ingest on **M1 Pro MacBook** → Core Features → Menubar.
+- Practical deps: **LAN-reachable ingest** on the Mac (today bind is loopback-only — phone on Wi‑Fi cannot reach `127.0.0.1` on the Mac); then a **Mi Band 8 → Observation** bridge with stable `provider_id` (e.g. `com.xiaomi.miband` / Zepp — adapter TBD). Menubar 🟢/🟡/🔴 remains **P3-E3**.
+- Constraint: on iOS, continuous third-party BLE to Mi Band is harder than Android; prefer documented viable bridges (Health/export/share) over assuming raw BLE in App Store companion.
+
+Until that lands, dogfood on the Mac: `context_window` / optional `keystrokes` + CLI sample HR into ingest.
+
 ---
 
 ## Key Architectural Decisions

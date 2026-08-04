@@ -47,8 +47,11 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **DAG skeleton (T1):** `FeatureEngine::register` + `FeatureEngine::run(&[Observation])` → `EngineOutput { features, signals }`. Nodes implement `FeatureNode` (`id` / `depends_on` / `compute`). Kahn topo; errors via `thiserror` (duplicate / unknown dep / cycle / node failed). Empty DAG/snapshot → `Ok` empty.
 - **Focus catalog (T2):** `feature_engine::register_focus_v1(&mut engine)` — `ContextSwitchRate` → `FocusScore` (window 15m / step 1m; see `/docs/06-feature-catalog.md`).
 - **Stress/Fatigue (T3):** `feature_engine::register_stress_v1(&mut engine)` — `StressIndex` + `FatigueIndex` (needs FocusScore already registered); contiguous StressIndex > 75 for > 5m → transient `Signal` `High_Stress` (`Severity::High`). Full catalog: `feature_engine::register_catalog_v1` = focus + stress.
+- **Alert level (E3-T1):** `feature_engine::map_alert_level(&EngineOutput) → AlertLevel` — Red if `High_Stress`; Yellow if latest StressIndex or FatigueIndex > 60; else Green (empty → Green).
+- **IPC alert (E3-T2):** Desktop `get_status` includes `alertLevel` (`green`/`yellow`/`red`). Feature Worker hook runs catalog → map → shared `AlertState`. Idle/Ready/Error (`dbStatus`) unchanged. UI reads via IPC only (Menubar colors → T3).
 ```bash
 cargo test -p feature-engine
+cargo test -p desktop
 ```
 
 ### Pipeline E2E (P3-E2-T4)
@@ -165,5 +168,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done**; **P3-E2 Done** (T1–T4; T3: [PR #20](https://github.com/poltavtcev-dev/biofocus-platform/pull/20)/[#21](https://github.com/poltavtcev-dev/biofocus-platform/pull/21); T4: [PR #22](https://github.com/poltavtcev-dev/biofocus-platform/pull/22)). Ready **P3-E3-T1** (alert level mapping).  
+**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1–E2 Done**; **P3-E3-T1–T2 Done** (`map_alert_level` + IPC `alertLevel`). Ready **P3-E3-T3** (Menubar traffic-light).  
 **Git policy:** few **code** PRs; handoffs/docs are not PR triggers (see above).

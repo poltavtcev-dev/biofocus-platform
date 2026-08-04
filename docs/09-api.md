@@ -82,7 +82,8 @@ Example success:
 ```json
 {
   "version": "0.1.0",
-  "dbStatus": "ok"
+  "dbStatus": "ok",
+  "alertLevel": "green"
 }
 ```
 
@@ -92,15 +93,17 @@ Example failure:
 {
   "version": "0.1.0",
   "dbStatus": "error",
-  "dbError": "Could not locate local data directory."
+  "dbError": "Could not locate local data directory.",
+  "alertLevel": "green"
 }
 ```
 
 | Field | Type | Notes |
 | :--- | :--- | :--- |
 | `version` | string | Desktop package version (`CARGO_PKG_VERSION`) |
-| `dbStatus` | `"ok"` \| `"error"` | Result of storage probe |
+| `dbStatus` | `"ok"` \| `"error"` | Result of storage probe (Idle/Ready/Error path) |
 | `dbError` | string? | Present only when `dbStatus` is `"error"`; short + **no absolute filesystem paths** (`StorageError::public_message`) |
+| `alertLevel` | `"green"` \| `"yellow"` \| `"red"` | Menubar traffic-light from Core (`feature_engine::map_alert_level`); independent of `dbStatus`; default `green` without Feature evidence. No Observation / biometric fields. |
 
 ### `core_ping` (legacy fallback)
 

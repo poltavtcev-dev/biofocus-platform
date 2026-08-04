@@ -3,6 +3,9 @@ import { invoke } from "@tauri-apps/api/core";
 /** Neutral Core states for Phase 1 Menubar (non-judgmental copy). */
 export type CoreStatusKind = "idle" | "ready" | "error";
 
+/** Menubar traffic-light from Core (`get_status.alertLevel`). UX colors → P3-E3-T3. */
+export type AlertLevel = "green" | "yellow" | "red";
+
 export type StatusSource = "get_status" | "core_ping" | "mock";
 
 export type CoreStatusView = {
@@ -14,6 +17,8 @@ export type CoreStatusView = {
   source: StatusSource;
   /** Optional secondary meta (crate names / version) — never DB paths. */
   meta?: string;
+  /** From IPC only; independent of Idle/Ready/Error. */
+  alertLevel?: AlertLevel;
 };
 
 const COPY: Record<
@@ -71,7 +76,17 @@ type GetStatusPayload = {
   db_status?: string;
   dbError?: string;
   db_error?: string;
+  alertLevel?: string;
+  alert_level?: string;
 };
+
+function parseAlertLevel(raw: string | undefined): AlertLevel | undefined {
+  const v = raw?.toLowerCase();
+  if (v === "green" || v === "yellow" || v === "red") {
+    return v;
+  }
+  return undefined;
+}
 
 type CorePingPayload = {
   status: string;
@@ -98,7 +113,11 @@ async function fromGetStatus(): Promise<CoreStatusView | null> {
       kind === "error" && dbError
         ? [versionMeta, dbError].filter(Boolean).join(" · ")
         : versionMeta;
-    return statusView(kind, "get_status", meta);
+    const view = statusView(kind, "get_status", meta);
+    view.alertLevel = parseAlertLevel(
+      payload.alertLevel ?? payload.alert_level,
+    );
+    return view;
   } catch (err) {
     if (isCommandMissing(err)) {
       return null;

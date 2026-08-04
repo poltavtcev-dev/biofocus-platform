@@ -34,3 +34,10 @@ See [`ios/README.md`](ios/README.md) — HealthKit one-shot HR → same JSON arr
 
 ## Out of scope
 Feature pipeline, dashboard, cloud accounts, changing ingest HTTP contract.
+
+## Future: owner stack (Mi Band 8 + iPhone 12 mini + MacBook Pro M1 Pro)
+
+Owner dogfood: **Mi Band 8** → **iPhone 12 mini** → **MacBook Pro 14" (M1 Pro)** Desktop ingest. Not Apple Watch-first.
+
+Keep the Observation HTTP contract; add a Band 8 bridge later (phone companion / export / documented Health path). Needs **LAN ingest** on the Mac (not only `127.0.0.1`) so the iPhone can POST. See `docs/PROJECT_CANVAS.md` § Owner dogfood stack.
+

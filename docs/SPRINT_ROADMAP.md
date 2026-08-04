@@ -21,28 +21,28 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P3-E3-T1** (next) |
+| **Ready** | **P3-E3-T3** (next) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **Phase 2** (E0–E3, [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **P3-E1-T1** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6)) · **P3-E1-T2** ([PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8) code · [PR #9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9) QA handoff) · **P3-E1-T3** ([PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11) code · QA Pass with notes) · **P3-E1-T4** ([PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13) code · QA Pass with notes) · **P3-E2-T1** (QA Pass) · **P3-E2-T2** (QA Pass with notes) · **P3-E2-T3** (QA Pass with notes; [PR #20](https://github.com/poltavtcev-dev/biofocus-platform/pull/20)/[#21](https://github.com/poltavtcev-dev/biofocus-platform/pull/21)) · **P3-E2-T4** (QA Pass; pipeline E2E — [PR #22](https://github.com/poltavtcev-dev/biofocus-platform/pull/22)) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **Phase 2** (E0–E3, [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **P3-E1-T1** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6)) · **P3-E1-T2** ([PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8) code · [PR #9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9) QA handoff) · **P3-E1-T3** ([PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11) code · QA Pass with notes) · **P3-E1-T4** ([PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13) code · QA Pass with notes) · **P3-E2-T1** (QA Pass) · **P3-E2-T2** (QA Pass with notes) · **P3-E2-T3** (QA Pass with notes; [PR #20](https://github.com/poltavtcev-dev/biofocus-platform/pull/20)/[#21](https://github.com/poltavtcev-dev/biofocus-platform/pull/21)) · **P3-E2-T4** (QA Pass; pipeline E2E — [PR #22](https://github.com/poltavtcev-dev/biofocus-platform/pull/22)) · **P3-E3-T1** (QA Pass; AlertLevel map) · **P3-E3-T2** (QA Pass; IPC `alertLevel`) |
 
-**Epic status:** P3-E1 ✅ (T1–T4 Done) · P3-E2 ✅ (T1–T4 Done) · P3-E3 ⬜
+**Epic status:** P3-E1 ✅ (T1–T4 Done) · P3-E2 ✅ (T1–T4 Done) · P3-E3 ⬜ (T1–T2 Done)
 
 **Phase 3 on `/docs/14-roadmap.md`:** ☐ open (Sprint 5–6)
 
 **Рекомендуемый порядок:**  
-~~P3-E1-T1~~ → ~~E1-T2~~ → ~~E1-T3~~ → ~~E1-T4~~ → ~~E2-T1~~ → ~~E2-T2~~ → ~~E2-T3~~ → ~~E2-T4~~ → **E3-T1** → E3-T2 → E3-T3 → cluster PR
+~~P3-E1-T1~~ → ~~E1-T2~~ → ~~E1-T3~~ → ~~E1-T4~~ → ~~E2-T1~~ → ~~E2-T2~~ → ~~E2-T3~~ → ~~E2-T4~~ → ~~E3-T1~~ → ~~E3-T2~~ → **E3-T3** → cluster PR
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
 **Suggested branch:** `phase/3-pipeline-features` (или `epic/p3-e3-menubar-alerts` для E3).
 
-### Active assignment (PM → Dev)
+### Active assignment (PM → UX + Dev)
 
-**Task:** **P3-E3-T1** — Alert level mapping (Core)  
-**Brief:** (see AC in this file · Epic P3-E3)  
-**Role:** Dev · **Modules:** `feature-engine` or `runtime` alert module
+**Task:** **P3-E3-T3** — Menubar traffic-light UX  
+**Brief:** (AC in this file · Epic P3-E3-T3)  
+**Role:** UX + Dev · **Modules:** desktop React/Menubar
 
 ---
 
@@ -208,6 +208,10 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 6. ~~P3-E2-T2~~ — Done (QA Pass with notes; CSR + FocusScore v1)  
 7. ~~P3-E2-T3~~ — Done (QA Pass with notes; Stress/Fatigue + High_Stress — PR #20/#21)  
 8. ~~P3-E2-T4~~ — Done (QA Pass; pipeline E2E Observation → Feature/Signal)  
+9. ~~P3-E3-T1~~ — Done (QA Pass; AlertLevel Green/Yellow/Red map)  
+10. ~~P3-E3-T2~~ — Done (QA Pass; IPC `alertLevel` on `get_status`)  
 
-**Next:** **P3-E3-T1** — Alert level mapping (Core) ← **start here**  
-**Git:** branch `phase/3-pipeline-features` → E2-T4 code PR; then E3 cluster.
+**Next:** **P3-E3-T3** — Menubar traffic-light UX ← **start here**  
+**Git:** branch `phase/3-pipeline-features` → E3 cluster commits → PR when T1–T3 ready (or earlier if asked).
+
+**Wearable dogfood:** owner stack = **Mi Band 8** + **iPhone 12 mini** + **MacBook Pro 14" (M1 Pro)**. HealthKit stub stays a contract sample; Band 8 bridge + LAN ingest = follow-up after / alongside Menubar alerts — see `docs/PROJECT_CANVAS.md` § Owner dogfood stack.
