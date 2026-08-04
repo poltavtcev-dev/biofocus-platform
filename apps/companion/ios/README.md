@@ -7,7 +7,7 @@ Swift sources sketch the **same** HTTP contract as the Rust `companion` client:
 3. `POST` JSON **array** to `{baseURL}/v1/ingest` with `Authorization: Bearer <pairing_token>`.
 4. Surface network failures and `401` to the user (no silent swallow).
 
-This is **not** a full Xcode project / App Store target yet — drop into an iOS app target when wiring UI (**P2-E3-T2** for token share).
+This is **not** a full Xcode project / App Store target yet — drop into an iOS app target when wiring UI.
 
 ## Files
 - `IngestClient.swift` — URLSession POST + error mapping
@@ -16,7 +16,7 @@ This is **not** a full Xcode project / App Store target yet — drop into an iOS
 
 ## Config
 - `BIOFOCUS_INGEST_BASE_URL` default for Simulator: `http://127.0.0.1:8787`
-- Pairing token: paste from Desktop file / env until T2 UX exists
+- Pairing token: paste from Desktop shell (**Companion** → Copy, or scan **Show QR**)
 
 ## Privacy
 - Request HealthKit heart-rate read only; do not send RR intervals or identifiers beyond the Observation contract.

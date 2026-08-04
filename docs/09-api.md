@@ -118,3 +118,28 @@ compatibility until consumers drop the fallback path.
 ```
 
 Does **not** open SQLite. Do not treat `dbFile` as a frontend open path.
+
+### `get_pairing_token` (P2-E3-T2)
+
+- **Invoke:** `invoke("get_pairing_token")`
+- **Purpose:** Expose the local pairing Bearer token for companion share (copy / QR).
+- **Source:** same resolution as ingest — `BIOFOCUS_INGEST_TOKEN` if set, else load-or-create `~/.biofocus/pairing_token` (host-side only).
+- **Never returns** filesystem paths, Observation rows, or cloud credentials.
+
+```json
+{
+  "token": "…64 hex…",
+  "ingestBaseUrl": "http://127.0.0.1:8787",
+  "fromEnv": false,
+  "qrSvg": "<svg …>…</svg>"
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `token` | string | Bearer value for `Authorization` |
+| `ingestBaseUrl` | string | Loopback ingest base (Simulator / same Mac) |
+| `fromEnv` | bool | `true` when env override is active |
+| `qrSvg` | string | SVG QR encoding the token |
+
+Errors are short UI-safe strings (no absolute paths).

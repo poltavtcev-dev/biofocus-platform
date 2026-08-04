@@ -62,14 +62,25 @@ export BIOFOCUS_INGEST_TOKEN="$(cat ~/.biofocus/pairing_token)"
 cargo run -p companion --bin biofocus-companion-sample -- 74
 ```
 
-Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN needs a reachable host (loopback bind today — LAN later). Pairing QR/copy → **P2-E3-T2**.
+Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN needs a reachable host (loopback bind today — LAN later).
+
+### Pairing UX (P2-E3-T2)
+
+In the Desktop shell (**Companion** section):
+
+1. **Show** reveals the local pairing token (masked by default).
+2. **Copy** puts the token on the clipboard for paste into companion / CLI / iOS stub.
+3. **Show QR** displays a QR of the token (scan with the phone camera → copy text).
+
+IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; UI does not open `~/.biofocus` itself.
 
 **HTTP status (companion/debug):** `curl -s http://127.0.0.1:8787/v1/status` → `version` + `db_status` (no Observation payload). Menubar still uses IPC `get_status`.
 
 **Pairing token**
 - Default file: `~/.biofocus/pairing_token` (created on first `IngestConfig::load`)
-- Override: `export BIOFOCUS_INGEST_TOKEN=…` (skips file)
+- Override: `export BIOFOCUS_INGEST_TOKEN=…` (skips file; shell shows “env override”)
 - Tests / custom root: `export BIOFOCUS_HOME=/tmp/biofocus-test` → `$BIOFOCUS_HOME/pairing_token`
+- Share path: Desktop Companion UI (copy / QR) — do not commit the token
 - Details: `docs/10-security.md`
 
 ## CI

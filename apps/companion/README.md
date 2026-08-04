@@ -9,7 +9,7 @@ Minimal path: sample **`heart_rate`** `Observation` → Desktop **`POST /v1/inge
 
 ## Prerequisites
 - Desktop BioFocus running (ingest on `127.0.0.1:8787`) **or** another host that serves the same API
-- Pairing token: `~/.biofocus/pairing_token` or `BIOFOCUS_INGEST_TOKEN`
+- Pairing token from Desktop shell (**Companion** → Copy / QR) or `~/.biofocus/pairing_token` / `BIOFOCUS_INGEST_TOKEN`
 
 ## Rust sample (CI-friendly)
 
@@ -30,7 +30,7 @@ Exit codes: `0` queued · `2` network · `3` unauthorized (`401`) · `1` other.
 - **Physical iPhone on LAN:** needs Desktop ingest reachable on LAN (not shipped in E1 bind; documented for later pairing / host config). Do not use cloud.
 
 ## iOS stub
-See [`ios/README.md`](ios/README.md) — HealthKit one-shot HR → same JSON array body. Pairing QR/copy → **P2-E3-T2**.
+See [`ios/README.md`](ios/README.md) — HealthKit one-shot HR → same JSON array body. Paste the token from Desktop **Companion** (Copy / QR).
 
 ## Out of scope
 Feature pipeline, dashboard, cloud accounts, changing ingest HTTP contract.
