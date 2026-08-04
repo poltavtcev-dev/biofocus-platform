@@ -11,7 +11,7 @@
 - [ ] UI ↛ SQLite (только IPC); ingest пишет через Core/`storage`
 - [ ] Тесты зелёные; `cargo check` / релевантный CI
 - [ ] **Idle footprint:** нет busy-loop; sleep/wake по событиям или редкому таймеру; при простое CPU ≈ idle OS
-- [ ] **Commit на задачу**; ветка → **PR → `main` раз на спринт** после зелёного CI (`docs/12-development.md`)
+- [ ] **Commit / PR по связанному кластеру** (не коммит на каждый handoff; не mega-PR на весь спринт) — `docs/12-development.md`
 
 ---
 
@@ -19,29 +19,26 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | — (sprint gate in flight — see `SPRINT-GATE.md`) |
-| **In Progress** | **Sprint gate** (push + PR → `main`) |
+| **Ready** | — (Phase 2 task queue empty; next = Phase 3 when PM opens it) |
+| **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E0** (T1) · **P2-E1** (T1–T4) · **P2-E2** (T1–T3) · **P2-E3** (T1–T2, 2026-08-04; T2 Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E0** (T1) · **P2-E1** (T1–T4) · **P2-E2** (T1–T3) · **P2-E3** (T1–T2) · **Sprint 3–4 gate** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2) merged 2026-08-04) |
 
 **Epic status:** P2-E0 ✅ · P2-E1 ✅ · P2-E2 ✅ · P2-E3 ✅
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E0–E3 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
+**Phase 2 on `/docs/14-roadmap.md`:** ☑ shipped on `main` (PR #2); mark Phase checkbox when product accepts formal close
 
 **Рекомендуемый порядок:**  
-Epic E1 ✅ → Epic E2 ✅ → Epic E3 ✅ → Epic E0 ✅ → **sprint gate PR**
+Epic E1 ✅ → Epic E2 ✅ → Epic E3 ✅ → Epic E0 ✅ → **PR #2 merged** → Phase 3 (when Ready)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
-**Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: commit after build; push at sprint gate (`SPRINT-GATE.md`).
+**Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).
 
 ### Active assignment (PM → any role)
 
-**Task:** Sprint gate — push `phase/2-ingest-http` + `gh pr create --base main`  
-**Assignee:** closing now (2026-08-04)  
-**Branch:** `phase/2-ingest-http`  
-**Marker:** `docs/handoffs/SPRINT-GATE.md`  
-**Note:** merge after CI; manual smokes listed in gate file.
+**Task:** — none (Phase 2 merged). Next: open Phase 3 Ready when user asks.  
+**Git note (2026-08-04):** policy switched to classic related-work PRs (fewer commits; PR per coherent cluster).
 
 ---
 
@@ -189,8 +186,10 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **Sprint gate** — `SPRINT-GATE.md` + push + PR → `main` ← **берите сейчас**  
+1. ~~Sprint gate~~ **Merged** — [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)  
 2. ~~P2-E0-T1~~ Done — sanitize `dbError` / `db_error`  
 3. ~~P2-E3-T2~~ Done — pairing Copy/QR via IPC  
 4. ~~P2-E3-T1~~ Done — companion sample path  
-5. ~~Epic P2-E2 (T1–T3)~~ Done · ~~Epic P2-E1 (T1–T4)~~ Done · ~~Epic P2-E0~~ Done
+5. ~~Epic P2-E2 (T1–T3)~~ Done · ~~Epic P2-E1 (T1–T4)~~ Done · ~~Epic P2-E0~~ Done  
+
+**Next:** Phase 3 Ready (when PM opens) · Git: related-work PRs going forward.

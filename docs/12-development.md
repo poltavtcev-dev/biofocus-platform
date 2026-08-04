@@ -92,42 +92,39 @@ GitHub Actions (no CD): `.github/workflows/ci.yml`
 
 Triggers: push/PR to `main` or `master`.
 
-## Git workflow (commit after build · push at sprint gate)
+## Git workflow (related work → PR)
 
-С Phase 2: **не пушить напрямую в `main`**. Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
+**Не пушить напрямую в `main`.** Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
+
+Классика: **связанные задачи** → одна ветка → **немного осмысленных коммитов** → **PR**, когда кластер готов. Не коммит на каждый handoff и не один mega-PR на весь спринт.
 
 | Уровень | Правило |
 | :--- | :--- |
-| **Commit (build)** | Сразу после Dev/UX билда: код + `docs/handoffs/{TASK}-dev-to-qa.md`, subject с Task ID. |
-| **Commit (PM Done)** | Docs/kanban/qa-to-pm, если tree dirty после закрытия задачи. |
-| **Push / PR** | **Раз на спринт** (или epic gate): push ветки → `gh pr create` → merge после зелёного CI. Может выполнить Dev, QA или PM — кто закрывает спринт. |
-| **Ветка** | Вся работа спринта в одной ветке `phase/N-…` или `sprint/N-…`. |
+| **Ветка** | Кластер связанной работы: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. |
+| **Commit** | Когда единица работы готова к шарингу (можно batch Task IDs). Handoff-файлы обязательны для ролей — git-каденция отдельно. |
+| **Push / PR** | Когда связанные задачи в кластере **Done** (или пользователь сказал «PR»). Предпочтительно **squash merge**. |
+| **Спринт** | Не обязан совпадать с одним PR; несколько PR за спринт — норма. |
 
 ```bash
-# start sprint / phase work
 git checkout main && git pull
-git checkout -b phase/2-ingestion   # or sprint/3-…
+git checkout -b epic/p3-e1-pipeline   # or feat/…
 
-# after each Dev/UX build (handoff written, tests green):
-git add … && git commit -m "P2-E?-T?: …"
+# … Dev → QA → PM on related tasks; handoffs on disk …
+git add … && git commit -m "P3-E1: …"
 
-# after PM Done (if docs still dirty):
-git add docs/ … && git commit -m "P2-E?-T?: close task docs/kanban"
-
-# end of sprint / epic gate — push once and open PR
 git push -u origin HEAD
-gh pr create --base main --title "Phase 2 Sprint …" --body "## Summary
+gh pr create --base main --title "…" --body "## Summary
 - …
 ## Test plan
 - [ ] CI green (rust-core + desktop)
 "
-# merge after CI Pass (GitHub UI or: gh pr merge --squash)
+# prefer: gh pr merge --squash (after CI Pass)
 ```
 
-Naming: `phase/N-short-slug` or `sprint/N-short-slug`.  
+Naming: `phase/N-short-slug`, `epic/…`, `feat/…`.  
 Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **E0–E3 Done** on `phase/2-ingest-http`; **sprint gate open** (`docs/handoffs/SPRINT-GATE.md`).  
-**Git:** push + PR → `main` (merge after CI green).
+**Status (2026-08-04):** Phase 2 **merged** via [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2) (`phase/2-ingest-http` → `main`). E0–E3 on `main`.  
+**Git policy:** classic related-work PRs (see above) — supersedes commit-per-task / sprint-only push.

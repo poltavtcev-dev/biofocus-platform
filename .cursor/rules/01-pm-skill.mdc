@@ -18,7 +18,7 @@ alwaysApply: false
      `~/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx`  
      (QUEUE status, Sprint todos, Stats, Callout, DAG done/next, focus default).
 - Не писать production-код и не подменять QA-проверку.
-- После Done: **`git commit`** docs/handoffs/kanban если tree dirty. **Push + PR** только если это **sprint/epic gate** (или пользователь явно просит закрыть спринт).
+- После Done: docs могут ехать в том же PR/коммите кластера. **Push + PR** когда связанная работа готова (или пользователь просит) — не обязательно ждать конец спринта. См. `06-git-agent-policy.mdc`.
 
 ## Stop condition
-Задача в Done только после обновления docs **и** canvas (+ commit). Затем назвать следующий Ready task. На sprint gate — push + `gh pr create`.
+Задача в Done только после обновления docs **и** canvas. Затем назвать следующий Ready task. PR — по кластеру связанных задач.

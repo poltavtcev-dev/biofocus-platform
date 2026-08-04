@@ -25,10 +25,9 @@ PM (задача Ready) → Dev|UX (сборка) → QA (проверка) → 
 
 ## Git (кратко)
 
-- **После билда Dev/UX** → `git commit` (Task ID), без push.  
-- **После PM Done** → commit docs, если dirty.  
-- **Конец спринта / epic gate** → commit остатков + **push + `gh pr create`**.  
-Детали: `.cursor/rules/06-git-agent-policy.mdc`, `docs/12-development.md`.
+- Связанные задачи → одна ветка → **мало осмысленных коммитов** → **PR** (не коммит на каждый handoff).  
+- PR когда кластер Done / пользователь просит — не обязательно ждать весь спринт.  
+- Прямой push в `main` запрещён. Детали: `06-git-agent-policy.mdc`, `docs/12-development.md`.
 
 ## Запреты
 

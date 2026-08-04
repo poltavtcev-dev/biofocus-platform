@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nudge agents to commit after build / push at sprint gate when the tree is dirty.
+# Nudge agents toward classic git: commit/PR for related work clusters.
 # Never auto-commits or pushes — only returns followup_message for the agent.
 set -euo pipefail
 
@@ -31,28 +31,20 @@ if git diff --quiet && git diff --cached --quiet && [[ -z "$(git ls-files --othe
   exit 0
 fi
 
-# Explicit sprint-gate marker (PM sets this when closing the sprint).
-sprint_gate=0
-if [[ -f docs/handoffs/SPRINT-GATE.md ]] || git status --porcelain | grep -q 'SPRINT-GATE'; then
-  sprint_gate=1
-fi
+dirty_count="$(git status --porcelain | wc -l | tr -d ' ')"
 
-# Fresh handoffs (build or QA just finished) — mtime within 30 minutes.
-handoff_fresh=0
-if find docs/handoffs -maxdepth 1 \( -name '*-dev-to-qa.md' -o -name '*-qa-to-pm.md' \) -mmin -30 2>/dev/null | grep -q .; then
-  handoff_fresh=1
+# Explicit PR / gate request marker (optional).
+pr_gate=0
+if [[ -f docs/handoffs/PR-GATE.md ]] || [[ -f docs/handoffs/SPRINT-GATE.md ]] \
+  || git status --porcelain | grep -qE 'PR-GATE|SPRINT-GATE'; then
+  pr_gate=1
 fi
 
 msg=""
-if [[ "$sprint_gate" -eq 1 ]]; then
-  msg="Git policy (sprint gate): docs/handoffs/SPRINT-GATE.md present and tree is dirty. Commit leftovers with Task/Sprint IDs, then git push -u origin HEAD and gh pr create --base main. See docs/12-development.md."
-elif [[ "$handoff_fresh" -eq 1 ]]; then
-  msg="Git policy (post-build): working tree is dirty after a recent handoff under docs/handoffs/. Create the task commit now (git add + commit with Task ID). Do not push unless sprint gate. See docs/12-development.md."
-else
-  dirty_count="$(git status --porcelain | wc -l | tr -d ' ')"
-  if [[ "${dirty_count:-0}" -ge 5 ]]; then
-    msg="Git policy: ${dirty_count} dirty paths after agent turn. If you finished a Dev/UX build or PM Done, commit now with the Task ID. Push only at sprint end (SPRINT-GATE.md)."
-  fi
+if [[ "$pr_gate" -eq 1 ]]; then
+  msg="Git policy (PR gate): gate marker present and tree is dirty. Commit the related cluster, then git push -u origin HEAD and gh pr create --base main (prefer squash merge). See docs/12-development.md."
+elif [[ "${dirty_count:-0}" -ge 12 ]]; then
+  msg="Git policy: ${dirty_count} dirty paths. If this related work cluster is ready (or user asked for PR), commit with Task/Epic IDs and open a PR — do not wait for a full sprint. See docs/12-development.md."
 fi
 
 if [[ -z "$msg" ]]; then
