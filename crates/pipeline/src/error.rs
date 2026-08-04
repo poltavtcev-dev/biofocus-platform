@@ -7,18 +7,19 @@ pub type PipelineResult<T> = Result<T, PipelineError>;
 
 /// Errors raised while accepting or processing Observation batches.
 ///
-/// Intake (`accept_observations`) does not reject batches in T1; variants below
-/// reserve structured failure paths for later stages (dedupe / normalize / policy).
+/// Intake / dedupe default paths do not reject; variants below reserve structured
+/// failure paths for policy / later stages (normalize).
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum PipelineError {
-    /// Batch rejected at intake (validation / policy). Unused by default T1 path.
+    /// Batch rejected at intake (validation / policy). Unused by default intake path.
     #[error("observation intake rejected: {reason}")]
     IntakeRejected {
         /// Human-readable rejection reason (static for now).
         reason: &'static str,
     },
 
-    /// A downstream stage failed (dedupe / normalize). Reserved for T2+.
+    /// A downstream stage failed (dedupe / normalize). Reserved; default T2 dedupe
+    /// always succeeds ([`Ok`]).
     #[error("pipeline stage `{stage}` failed: {message}")]
     StageFailed {
         /// Stage name (e.g. `dedupe`, `normalize`).
