@@ -19,31 +19,31 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P2-E2-T3** (collector integration tests + pause idle) |
+| **Ready** | **P2-E3-T1** (HealthKit sample → ingest) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4) · **P2-E2-T1** · **P2-E2-T2** (2026-08-04; Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4) · **P2-E2** (T1–T3, 2026-08-04; T3 Pass with notes) |
 
-**Epic status:** P2-E1 ✅ · P2-E2 ▶️ (T1–T2 ✅) · P2-E3 ○ · P2-E0 ○ (hygiene)
+**Epic status:** P2-E1 ✅ · P2-E2 ✅ · P2-E3 ○ · P2-E0 ○ (hygiene)
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E1 Done; E2-T1/T2 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E1–E2 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
 
 **Рекомендуемый порядок:**  
-Epic E1 ✅ → E2-T1 ✅ → E2-T2 ✅ → `P2-E2-T3` → `P2-E3-*`  
+Epic E1 ✅ → Epic E2 ✅ → `P2-E3-*`  
 Параллельно: `P2-E0-T1` sanitize `dbError` (∥; optionally extend to HTTP `/v1/status` `db_error`)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: commit after build; push at sprint gate (`SPRINT-GATE.md`).
 
-### Active assignment (PM → QA/Dev)
+### Active assignment (PM → Dev)
 
-**Task:** `P2-E2-T3` — Collector integration tests + pause idle  
-**Assignee:** QA (lead) + Dev  
-**Brief:** `docs/handoffs/P2-E2-T3-pm-brief.md`  
+**Task:** `P2-E3-T1` — Companion contract + minimal HealthKit sample path  
+**Assignee:** Dev (iOS)  
+**Brief:** `docs/handoffs/P2-E3-T1-pm-brief.md`  
 **Branch:** `phase/2-ingest-http` (local commits per task; **push + PR at sprint end**)  
-**Locked:** T1 `context_window`; T2 `keystrokes` aggregates opt-in via `BIOFOCUS_INPUT_AGGREGATES`.  
-**Note:** before sprint PR — manual smokes for window stream + (optional) Accessibility aggregates.
+**Locked:** E2 collectors (`context_window` / opt-in `keystrokes`); ingest `POST /v1/ingest` + pairing.  
+**Note:** before sprint PR — manual smokes for window stream + (optional) Accessibility aggregates; E2 epic closed on branch (gate PR optional).
 
 ---
 
@@ -121,13 +121,14 @@ Epic E1 ✅ → E2-T1 ✅ → E2-T2 ✅ → `P2-E2-T3` → `P2-E3-*`
 | **AC** | Только **агрегаты** (counts / rates в окне), **не** символы/текст. Документированы разрешения Accessibility. Отключение collector — одна настройка/флаг. |
 | **Done** | 2026-08-04 — QA Pass with notes (`docs/handoffs/P2-E2-T2-qa-to-pm.md`). Opt-in `BIOFOCUS_INPUT_AGGREGATES`; payload counts/rates only. |
 
-### P2-E2-T3 — Collector integration tests + pause idle
+### P2-E2-T3 — Collector integration tests + pause idle ✅
 | Field | Value |
 | :--- | :--- |
 | **Role** | QA (lead), Dev |
 | **Modules** | collector + storage |
 | **Depends on** | P2-E2-T1 (T2 если готов) |
 | **AC** | Тесты на emit Observation / pause. Подтверждение: paused collector ≈ нет периодической работы. |
+| **Done** | 2026-08-04 — QA Pass with notes (`docs/handoffs/P2-E2-T3-qa-to-pm.md`). Integration: channel→persist + stop/idle freeze; docs § Collector test suite. |
 
 ---
 
@@ -187,8 +188,7 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **P2-E2-T3** — Collector integration tests + pause idle ← **берите сейчас**  
+1. **P2-E3-T1** — Companion contract + minimal HealthKit sample path ← **берите сейчас**  
 2. Параллельно (опционально): **P2-E0-T1** sanitize `dbError`  
-3. ~~P2-E2-T2~~ Done — committed on branch  
-4. ~~P2-E2-T1~~ Done — committed on branch  
-5. ~~Epic P2-E1 (T1–T4)~~ Done — **sprint PR → `main`** в конце Sprint 3–4
+3. ~~Epic P2-E2 (T1–T3)~~ Done — committed on branch  
+4. ~~Epic P2-E1 (T1–T4)~~ Done — **sprint PR → `main`** в конце Sprint 3–4

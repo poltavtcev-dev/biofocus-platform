@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** QA (lead) + Dev  
-**Status:** Ready (assigned)  
+**Status:** Closed (Done)  
 **Date:** 2026-08-04  
 **Closed previous:** P2-E2-T2 — QA Pass with notes (`docs/handoffs/P2-E2-T2-qa-to-pm.md`)
+**Closed this:** QA Pass with notes → `docs/handoffs/P2-E2-T3-qa-to-pm.md`; Epic P2-E2 ✅; Ready **P2-E3-T1**
 
 ## Task
 **P2-E2-T3 — Collector integration tests + pause idle**

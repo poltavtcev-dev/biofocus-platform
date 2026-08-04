@@ -5,10 +5,10 @@
   - Workspace setup (`bio-spec`, `runtime`, `storage`).
   - SQLite WAL migration script & Repositories.
   - Basic Menubar UI via Tauri v2.
-- [ ] **Phase 2: Ingestion & Context Collector (Sprint 3-4)** — Epic **P2-E1** Done; E2-T1/T2 Done; E2-T3 next
+- [ ] **Phase 2: Ingestion & Context Collector (Sprint 3-4)** — Epics **P2-E1** + **P2-E2** Done; E3 next
   - Local HTTP Server (`/v1/ingest`) + host wire + `/v1/status` — **shipped (E1)**.
-  - macOS active window + opt-in keystroke aggregates — **shipped (E2-T1/T2)**; collector tests — **next (E2-T3)**.
-  - iOS Companion app (HealthKit webhook).
+  - macOS collectors + integration/idle tests — **shipped (E2)**.
+  - iOS Companion app (HealthKit → ingest) — **next (E3)**.
 - [ ] **Phase 3: Pipeline & Features (Sprint 5-6)**
   - Pipeline logic (Deduplication -> Normalization -> Feature Calculation).
   - Real-time alerts (Menubar color change 🟢/🟡/🔴).
@@ -17,5 +17,5 @@
   - Local LLM Prompt Generator (Ollama / OpenAI API).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
-**Phase 2:** `docs/SPRINT_ROADMAP.md` — E1 + E2-T1/T2 Done; Ready **P2-E2-T3** (`docs/handoffs/P2-E2-T3-pm-brief.md`)  
+**Phase 2:** `docs/SPRINT_ROADMAP.md` — E1–E2 Done; Ready **P2-E3-T1** (`docs/handoffs/P2-E3-T1-pm-brief.md`)  
 **Git:** branch `phase/2-ingest-http`; **commit after build**; **PR → `main` per sprint**.

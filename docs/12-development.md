@@ -105,5 +105,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 — **P2-E2-T1/T2 Done**; **P2-E2-T3** in progress (collector integration + idle) on `phase/2-ingest-http`; Epic E1 Done.  
+**Status (2026-08-04):** Phase 2 — **Epics E1–E2 Done**; Ready **P2-E3-T1** (HealthKit → ingest) on `phase/2-ingest-http`.  
 **Git:** commit-after-build on branch; **sprint PR** at Sprint 3–4 gate (`docs/handoffs/SPRINT-GATE.md`). Follow-up: sanitize `dbError` (**P2-E0-T1**).
