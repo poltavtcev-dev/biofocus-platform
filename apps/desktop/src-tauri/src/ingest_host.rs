@@ -1,14 +1,17 @@
-//! Local ingest lifecycle owned by the desktop host (P2-E1-T4).
+//! Local ingest + collector lifecycle owned by the desktop host.
 //!
 //! Startup: open default DB → [`IngestConfig::load`] → Observation channel →
-//! persist worker → loopback Axum serve. Shutdown signals accept loop stop and
-//! joins the worker (no orphan spin).
+//! persist worker → loopback Axum serve → active window collector (same `tx`).
+//! Shutdown stops collector, then accept loop, then joins the worker.
 
 use std::sync::Mutex;
 use std::time::Duration;
 
 use ingest::{serve_with_shutdown, spawn_persist_worker, IngestConfig, IngestState};
+use macos_collector::ActiveWindowPlugin;
+use plugin_sdk::BioFocusPlugin;
 use runtime::{observation_channel, DEFAULT_OBSERVATION_BUFFER};
+use std::sync::Arc;
 use tauri::{AppHandle, Manager, Runtime};
 use tokio::sync::oneshot;
 use tracing::{error, info, warn};
@@ -18,11 +21,22 @@ pub struct IngestHost {
     shutdown_tx: Mutex<Option<oneshot::Sender<()>>>,
     server_done: Mutex<Option<std::sync::mpsc::Receiver<()>>>,
     worker: Mutex<Option<std::thread::JoinHandle<()>>>,
+    collector: Mutex<Option<Arc<ActiveWindowPlugin>>>,
 }
 
 impl IngestHost {
     /// Signals graceful HTTP shutdown, waits briefly for the server task, joins worker.
     pub fn shutdown(&self) {
+        if let Ok(mut guard) = self.collector.lock() {
+            if let Some(plugin) = guard.take() {
+                match tauri::async_runtime::block_on(plugin.stop_stream()) {
+                    Ok(()) => info!("active window collector stopped"),
+                    Err(plugin_sdk::PluginError::NotRunning) => {}
+                    Err(err) => warn!(error = %err, "active window collector stop failed"),
+                }
+            }
+        }
+
         if let Ok(mut guard) = self.shutdown_tx.lock() {
             if let Some(tx) = guard.take() {
                 let _ = tx.send(());
@@ -80,6 +94,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
     };
 
     let port = config.port;
+    let collector_tx = tx.clone();
 
     let worker = match storage::Database::open(&db_path) {
         Ok(db) => spawn_persist_worker(rx, db),
@@ -122,10 +137,22 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
 
     info!(%port, host = "127.0.0.1", "ingest HTTP starting on loopback (idle on accept)");
 
+    let collector = Arc::new(ActiveWindowPlugin::system_default());
+    match tauri::async_runtime::block_on(collector.start_stream(collector_tx)) {
+        Ok(()) => info!(
+            plugin = collector.id(),
+            "active window collector armed (poll ≥1s, emit on change)"
+        ),
+        Err(err) => {
+            warn!(error = %err, "active window collector failed to start");
+        }
+    }
+
     app.manage(IngestHost {
         shutdown_tx: Mutex::new(Some(shutdown_tx)),
         server_done: Mutex::new(Some(done_rx)),
         worker: Mutex::new(Some(worker)),
+        collector: Mutex::new(Some(collector)),
     });
 }
 

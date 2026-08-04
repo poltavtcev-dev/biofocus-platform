@@ -7,3 +7,6 @@ license.workspace = true
 
 [dependencies]
 bio-spec = { workspace = true }
+runtime = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }

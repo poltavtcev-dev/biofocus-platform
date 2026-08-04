@@ -19,17 +19,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P2-E2-T1** (active window Observation stream) |
+| **Ready** | **P2-E2-T2** (keystroke / input aggregates, privacy-safe) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4, 2026-08-04; T4 Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4) · **P2-E2-T1** (2026-08-04; Pass with notes) |
 
-**Epic status:** P2-E1 ✅ · P2-E2 ▶️ · P2-E3 ○ · P2-E0 ○ (hygiene)
+**Epic status:** P2-E1 ✅ · P2-E2 ▶️ (T1 ✅) · P2-E3 ○ · P2-E0 ○ (hygiene)
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (Epic E1 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (E1 Done; E2-T1 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
 
 **Рекомендуемый порядок:**  
-Epic E1 ✅ → `P2-E2-*` → `P2-E3-*`  
+Epic E1 ✅ → `P2-E2-T1` ✅ → `P2-E2-T2` → `P2-E2-T3` → `P2-E3-*`  
 Параллельно: `P2-E0-T1` sanitize `dbError` (∥; optionally extend to HTTP `/v1/status` `db_error`)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
@@ -38,11 +38,12 @@ Epic E1 ✅ → `P2-E2-*` → `P2-E3-*`
 
 ### Active assignment (PM → Dev)
 
-**Task:** `P2-E2-T1` — Active window Observation stream  
-**Assignee:** Dev  
-**Brief:** `docs/handoffs/P2-E2-T1-pm-brief.md`  
+**Task:** `P2-E2-T2` — Keystroke / input aggregates (privacy-safe)  
+**Assignee:** Dev (+ PM privacy check)  
+**Brief:** `docs/handoffs/P2-E2-T2-pm-brief.md`  
 **Branch:** `phase/2-ingest-http` (local commits per task; **push + PR at sprint end**)  
-**Locked (E1):** mid-batch **contract C**; host starts/stops ingest; `GET /v1/status` without Observation payload.
+**Locked:** E1 ingest contracts; T1 `context_window` = `bundle_id` + `app_name` only (no Accessibility).  
+**Note (T1):** before sprint PR — one manual GUI→SQLite smoke (`pnpm tauri dev` → switch apps → `context_window` rows).
 
 ---
 
@@ -102,13 +103,14 @@ Epic E1 ✅ → `P2-E2-*` → `P2-E3-*`
 
 **Цель:** локальный контекст работы → Observation (`context_window` / агрегаты ввода). Не keylogger содержимого.
 
-### P2-E2-T1 — Active window Observation stream
+### P2-E2-T1 — Active window Observation stream ✅
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `plugin-sdk` + macOS collector adapter |
+| **Modules** | `plugin-sdk` + `crates/macos-collector` |
 | **Depends on** | P2-E1-T3 (куда писать) или channel→repo |
 | **AC** | Смена активного приложения/окна → Observation с `data_type` согласованным со схемой (`docs/04-storage.md`). Polling/event interval не чаще разумного (напр. ≥1s или event-driven). Stop/pause останавливает работу. Idle без лишней нагрузки. |
+| **Done** | 2026-08-04 — QA Pass with notes (`docs/handoffs/P2-E2-T1-qa-to-pm.md`). Ship: `ActiveWindowPlugin` → `context_window` via channel→persist. Manual GUI smoke deferred to sprint PR. |
 
 ### P2-E2-T2 — Keystroke / input aggregates (privacy-safe)
 | Field | Value |
@@ -184,6 +186,7 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **P2-E2-T1** — Active window Observation stream ← **берите сейчас**  
+1. **P2-E2-T2** — Keystroke / input aggregates (privacy-safe) ← **берите сейчас**  
 2. Параллельно (опционально): **P2-E0-T1** sanitize `dbError`  
-3. ~~Epic P2-E1 (T1–T4)~~ Done — commits on branch; **sprint PR → `main`** в конце Sprint 3–4
+3. ~~P2-E2-T1~~ Done — commit on branch before next task  
+4. ~~Epic P2-E1 (T1–T4)~~ Done — **sprint PR → `main`** в конце Sprint 3–4
