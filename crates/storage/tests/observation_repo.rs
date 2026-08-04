@@ -280,3 +280,47 @@ fn list_by_time_range_stops_on_corrupt_payload() {
         other => panic!("expected PayloadDeserialize, got {other:?}"),
     }
 }
+
+#[test]
+fn list_after_created_cursor_incremental_and_idle_empty() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+
+    assert!(repo.max_created_cursor().expect("max").is_none());
+    assert!(repo
+        .list_after_created_cursor(0, "", 10)
+        .expect("empty list")
+        .is_empty());
+
+    let a = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc1", 100, "heart_rate");
+    let b = sample_observation("0190ecb5-7c2a-7123-8901-23456789abc2", 200, "heart_rate");
+    repo.insert(&a).expect("insert a");
+    repo.insert(&b).expect("insert b");
+
+    let tip = repo.max_created_cursor().expect("max").expect("some tip");
+    let first_page = repo
+        .list_after_created_cursor(0, "", 1)
+        .expect("page 1");
+    assert_eq!(first_page.len(), 1);
+    assert_eq!(first_page[0].observation.id, a.id);
+
+    let second = repo
+        .list_after_created_cursor(
+            first_page[0].created_at,
+            &first_page[0].observation.id.to_string(),
+            10,
+        )
+        .expect("page 2");
+    assert_eq!(second.len(), 1);
+    assert_eq!(second[0].observation.id, b.id);
+
+    let idle = repo
+        .list_after_created_cursor(tip.0, &tip.1, 10)
+        .expect("idle");
+    assert!(idle.is_empty());
+
+    assert!(repo
+        .list_after_created_cursor(0, "", 0)
+        .expect("limit 0")
+        .is_empty());
+}

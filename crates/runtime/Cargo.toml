@@ -7,6 +7,7 @@ license.workspace = true
 
 [dependencies]
 bio-spec = { workspace = true }
+pipeline = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
