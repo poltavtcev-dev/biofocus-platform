@@ -21,28 +21,28 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P3-E1-T1** (next) |
+| **Ready** | **P3-E1-T2** (next) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **Phase 2** (E0–E3, [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **Phase 2** (E0–E3, [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **P3-E1-T1** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5) code · [PR #6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6) QA handoff) |
 
-**Epic status:** P3-E1 ⬜ · P3-E2 ⬜ · P3-E3 ⬜
+**Epic status:** P3-E1 ◐ (T1 Done) · P3-E2 ⬜ · P3-E3 ⬜
 
 **Phase 3 on `/docs/14-roadmap.md`:** ☐ open (Sprint 5–6)
 
 **Рекомендуемый порядок:**  
-**P3-E1-T1** → E1-T2 → E1-T3 → E1-T4 → E2-T1 → E2-T2 → E2-T3 → E2-T4 → E3-T1 → E3-T2 → E3-T3 → sprint PR
+~~P3-E1-T1~~ → **E1-T2** → E1-T3 → E1-T4 → E2-T1 → E2-T2 → E2-T3 → E2-T4 → E3-T1 → E3-T2 → E3-T3 → cluster PR
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
-**Suggested branch:** `phase/3-pipeline-features` (или `epic/p3-e1-pipeline` для первого кластера).
+**Suggested branch:** `phase/3-pipeline-features` (или `epic/p3-e1-pipeline` для E1 T2–T4).
 
 ### Active assignment (PM → Dev)
 
-**Task:** **P3-E1-T1** — Pipeline crate skeleton + Observation intake  
-**Brief:** `docs/handoffs/P3-E1-T1-pm-brief.md`  
-**Role:** Dev · **Modules:** `crates/pipeline`, `bio-spec`
+**Task:** **P3-E1-T2** — Deduplication stage  
+**Brief:** `docs/handoffs/P3-E1-T2-pm-brief.md`  
+**Role:** Dev · **Modules:** `crates/pipeline`
 
 ---
 
@@ -200,8 +200,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 5 — Ready Now
 
-1. **P3-E1-T1** — Pipeline crate skeleton + Observation intake ← **start here**  
-2. P3-E1-T2 — Deduplication  
+1. ~~P3-E1-T1~~ — Done (QA Pass with notes; PR #5 + #6)  
+2. **P3-E1-T2** — Deduplication ← **start here**  
 3. P3-E1-T3 — Normalization  
 4. P3-E1-T4 — Runtime worker wire  
 

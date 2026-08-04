@@ -6,7 +6,7 @@
 ## Implementation snapshot
 - **Phase 1:** Done (E1–E4, 2026-08-04).
 - **Phase 2:** **Done on `main`** via [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2) (2026-08-04) — E0–E3 (ingest, collector, companion/pairing, `dbError` hygiene).
-- **Phase 3:** **Open** (Sprint 5–6) — Pipeline & Features; Ready = **P3-E1-T1**. Branch suggestion: `phase/3-pipeline-features`.
+- **Phase 3:** **Open** (Sprint 5–6) — Pipeline & Features; **P3-E1-T1 Done** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5) / [PR #6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6)); Ready = **P3-E1-T2**. Branch: `phase/3-pipeline-features`.
 - Phase 4+ not started. Git = classic related-work PRs (`docs/12-development.md`).
 
 ## Core Decisions

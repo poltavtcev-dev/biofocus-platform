@@ -2,10 +2,11 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes → PM close 2026-08-04)  
 **Date:** 2026-08-04  
 **Opened:** Phase 3 (Sprint 5–6)  
-**Closed previous:** Phase 2 / PR #2
+**Closed previous:** Phase 2 / PR #2  
+**Evidence:** PR #5 (code) · PR #6 (QA handoff) · `P3-E1-T1-qa-to-pm.md`
 
 ## Task
 **P3-E1-T1 — Pipeline crate skeleton + Observation intake**
