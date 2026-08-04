@@ -45,10 +45,30 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 
 **Feature Engine (Phase 3 E2):** crate `crates/feature-engine`.
 - **DAG skeleton (T1):** `FeatureEngine::register` + `FeatureEngine::run(&[Observation])` → `EngineOutput { features, signals }`. Nodes implement `FeatureNode` (`id` / `depends_on` / `compute`). Kahn topo; errors via `thiserror` (duplicate / unknown dep / cycle / node failed). Empty DAG/snapshot → `Ok` empty.
-- **Focus catalog (T2):** `feature_engine::register_focus_v1(&mut engine)` регистрирует `ContextSwitchRate` → `FocusScore` (window 15m / step 1m; see `/docs/06-feature-catalog.md`). Stress/Fatigue + High_Stress → T3.
+- **Focus catalog (T2):** `feature_engine::register_focus_v1(&mut engine)` — `ContextSwitchRate` → `FocusScore` (window 15m / step 1m; see `/docs/06-feature-catalog.md`).
+- **Stress/Fatigue (T3):** `feature_engine::register_stress_v1(&mut engine)` — `StressIndex` + `FatigueIndex` (needs FocusScore already registered); contiguous StressIndex > 75 for > 5m → transient `Signal` `High_Stress` (`Severity::High`). Full catalog: `feature_engine::register_catalog_v1` = focus + stress.
 ```bash
 cargo test -p feature-engine
 ```
+
+### Pipeline E2E (P3-E2-T4)
+
+Integration suite (`docs/11-testing.md` §5): fixture / mock Observation stream → `pipeline::run_quality_pipeline` (accept → dedupe → normalize) → `feature_engine::register_catalog_v1` + `FeatureEngine::run` → asserted Features / Signals (in-memory; no SQLite schema, no UI).
+
+```bash
+# Full pipeline crate (unit + E2E)
+cargo test -p pipeline
+
+# E2E only
+cargo test -p pipeline --test pipeline_e2e
+
+# Feature Engine units (catalog) — optional companion
+cargo test -p feature-engine
+```
+
+Coverage (`crates/pipeline/tests/pipeline_e2e.rs`):
+- **Happy path** — fixture `tests/fixtures/e2e_happy_path.json` (alias payloads, duplicate id, unknown `custom.debug` pass-through) → normalized Observations → `ContextSwitchRate` / `FocusScore` / `StressIndex` / `FatigueIndex` + `High_Stress` Signal.
+- **Edge** — empty batch → idle-friendly empty output; high RMSSD → StressIndex below threshold, no `High_Stress`.
 
 **Active window collector (P2-E2-T1):** on macOS, Desktop also starts `ActiveWindowPlugin` (poll ≥1s → `context_window` Observations on the same channel → persist worker). No Accessibility permission. Payload: `bundle_id` + `app_name` only.
 
@@ -113,14 +133,16 @@ Triggers: push/PR to `main` or `master`.
 
 **Не пушить напрямую в `main`.** Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
 
-Классика: **связанные задачи** → одна ветка → **немного осмысленных коммитов** → **PR**, когда кластер готов. Не коммит на каждый handoff и не один mega-PR на весь спринт.
+Классика: **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
+Не коммит/PR на каждый handoff. **Docs / roadmap / canvas** — отдельно позже или в следующий code PR.
 
 | Уровень | Правило |
 | :--- | :--- |
-| **Ветка** | Кластер связанной работы: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. |
-| **Commit** | Когда единица работы готова к шарингу (можно batch Task IDs). Handoff-файлы обязательны для ролей — git-каденция отдельно. |
-| **Push / PR** | Когда связанные задачи в кластере **Done** (или пользователь сказал «PR»). Предпочтительно **squash merge**. |
-| **Спринт** | Не обязан совпадать с одним PR; несколько PR за спринт — норма. |
+| **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. |
+| **Commit** | Когда код-единица готова (batch Task IDs ок). Handoffs на диске — не триггерят PR. |
+| **Push / PR** | Только substantive code vs `main` **и** (кластер готов **или** явный «PR»). Один PR на ветку. Squash preferred. |
+| **Не PR** | handoffs-only, roadmap/canvas-only, второй PR на тот же tip. |
+| **Спринт** | Лучше мало содержательных PR, чем много пустых. |
 
 ```bash
 git checkout main && git pull
@@ -143,5 +165,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done** (T1–T4: [PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6), [PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8)/[#9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9), [PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11), [PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13)); **P3-E2-T1 Done** (DAG skeleton); **P3-E2-T2 Done** (CSR + FocusScore v1 — this PR); Ready **P3-E2-T3**.  
-**Git policy:** classic related-work PRs (see above) — supersedes commit-per-task / sprint-only push.
+**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done**; **P3-E2 Done** (T1–T4; T3: [PR #20](https://github.com/poltavtcev-dev/biofocus-platform/pull/20)/[#21](https://github.com/poltavtcev-dev/biofocus-platform/pull/21); T4: [PR #22](https://github.com/poltavtcev-dev/biofocus-platform/pull/22)). Ready **P3-E3-T1** (alert level mapping).  
+**Git policy:** few **code** PRs; handoffs/docs are not PR triggers (see above).

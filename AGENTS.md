@@ -11,8 +11,8 @@ Handoffs: `docs/handoffs/`.
 
 ## Git / PR
 
-С Phase 2+: работа в ветке по **связанному кластеру** (`phase/…`, `epic/…`, `feat/…`).  
-- **Commit** — когда единица работы готова (можно batch связанных Task ID); не обязательно после каждого handoff.  
-- **Push + PR → `main`** — когда кластер Done / пользователь просит PR; предпочтительно squash.  
-Прямой push в `main` запрещён. Детали: `docs/12-development.md`, `.cursor/rules/06-git-agent-policy.mdc`.  
-Hook: `.cursor/hooks/git-policy-stop.sh` мягко напоминает при сильно dirty дереве / PR-gate.
+С Phase 2+: ветка под **код-кластер** (`phase/…`, `epic/…`, `feat/…`).  
+- **Commit** — когда код-единица готова (batch Task ID ок); handoffs на диске, не обязательный коммит/PR на каждый шаг.  
+- **Push + PR → `main`** — только substantive code + (кластер готов **или** явный «PR»); один PR на ветку; squash.  
+- **Не PR** для handoffs / roadmap / canvas alone — docs можно обновить отдельно позже.  
+Прямой push в `main` запрещён. Детали: `docs/12-development.md`, `.cursor/rules/06-git-agent-policy.mdc`.

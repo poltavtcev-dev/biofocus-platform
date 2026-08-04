@@ -31,9 +31,9 @@
 - **Note (catalog):** `docs/06-feature-catalog.md` описывает Baevsky / full inputs; v1 simplifications живут в code rustdoc + handoff — PM может добавить v1 note при docs-pass (как для FocusScore на T2).
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P3-E2-T3 → Done; Ready → **P3-E2-T4**; refresh Active assignment / execution order; Epic P3-E2 T1–T3 Done
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG (E2-T3 done → E2-T4 next)
-- [ ] Other docs: `docs/12-development.md` entrypoints Stress/Fatigue; optional v1 note in `docs/06-feature-catalog.md`; brief `P3-E2-T4-pm-brief.md` если ещё нет
+- [x] `/docs/SPRINT_ROADMAP.md` — P3-E2-T3 → Done; Ready → **P3-E2-T4**; refresh Active assignment / execution order; Epic P3-E2 T1–T3 Done
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG (E2-T3 done → E2-T4 next)
+- [x] Other docs: `docs/12-development.md` entrypoints Stress/Fatigue; optional v1 note in `docs/06-feature-catalog.md`; brief `P3-E2-T4-pm-brief.md` если ещё нет
 
 ## Suggested next Ready task
 - **P3-E2-T4** — Pipeline E2E (Observation → Feature / Signal) · QA (lead) + Dev · `pipeline` + `feature-engine`

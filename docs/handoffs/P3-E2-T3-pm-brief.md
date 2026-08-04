@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes; PM close 2026-08-04)  
 **Date:** 2026-08-04  
 **Closed previous:** P3-E2-T2 (QA Pass with notes; CSR + FocusScore v1)
 
