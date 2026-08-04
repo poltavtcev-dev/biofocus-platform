@@ -40,7 +40,8 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **Intake (T1):** `pipeline::accept_observations(&[Observation])` → `AcceptedBatch` (`AcceptedForProcessing`). Empty = **Ok**. Helpers: `accept_owned`, `accept_iter`.
 - **Dedupe (T2):** `pipeline::dedupe_observations(&mut DedupeState, &[Observation])` → `DedupedBatch` (`Deduped`); wire `dedupe_accepted`. Rule: drop if same `id` **or** same `(provider_id, data_type, timestamp, payload JSON)` already seen (first wins; in-memory seen-set). SQLite rows never rewritten.
 - **Normalize (T3):** `pipeline::normalize_observations(&[Observation])` → `NormalizedBatch` (`Normalized`); wire `normalize_deduped`. Known types → canonical payload/units (`heart_rate` / `hrv` / `context_window` / `keystrokes`); unknown → pass-through; unparseable known → skip. SQLite rows never rewritten.
-- Runtime worker — T4.
+- **Quality chain helper:** `pipeline::run_quality_pipeline(batch, &mut DedupeState)` → accept → dedupe → normalize.
+- **Feature Worker (T4):** `runtime::spawn_feature_worker(source, hook, config)` — idle-safe poll (`recv_timeout` ≥1s when empty); desktop `feature_host::{start,stop}_feature_host` with app lifecycle. Hook stub: `NoopFeatureHook` until Feature Engine (E2). Storage cursor: `ObservationRepository::list_after_created_cursor` (no new schema; launch at DB tip).
 
 **Active window collector (P2-E2-T1):** on macOS, Desktop also starts `ActiveWindowPlugin` (poll ≥1s → `context_window` Observations on the same channel → persist worker). No Accessibility permission. Payload: `bundle_id` + `app_name` only.
 
@@ -135,5 +136,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1-T1/T2/T3 Done** ([PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6), [PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8)/[#9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9), [PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11)); Ready **P3-E1-T4**.  
+**Status (2026-08-04):** Phase 2 **merged** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)). Phase 3: **P3-E1 Done** (T1–T4: [PR #5](https://github.com/poltavtcev-dev/biofocus-platform/pull/5)/[#6](https://github.com/poltavtcev-dev/biofocus-platform/pull/6), [PR #8](https://github.com/poltavtcev-dev/biofocus-platform/pull/8)/[#9](https://github.com/poltavtcev-dev/biofocus-platform/pull/9), [PR #11](https://github.com/poltavtcev-dev/biofocus-platform/pull/11), [PR #13](https://github.com/poltavtcev-dev/biofocus-platform/pull/13)); Ready **P3-E2-T1**.  
 **Git policy:** classic related-work PRs (see above) — supersedes commit-per-task / sprint-only push.
