@@ -8,6 +8,7 @@ Local-First open-source platform for productivity, physiological stress, and rec
 
 ## Documentation
 
+- **Contributing / how to extend:** [`CONTRIBUTING.md`](./CONTRIBUTING.md) (plugins, pipeline, Features, PRs)
 - Vision & scope: `docs/00-vision.md`
 - Project canvas: `docs/PROJECT_CANVAS.md`
 - Sprint plan: `docs/SPRINT_ROADMAP.md`

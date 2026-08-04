@@ -1,5 +1,7 @@
 # 12. Local Development Guide
 
+> **Extending BioFocus** (where to add plugins, pipeline stages, Features, IPC): see root [`CONTRIBUTING.md`](../CONTRIBUTING.md). This file is local setup, commands, and git cadence.
+
 ## Prerequisites
 - Rust stable (edition 2024) — `rustup` / `rust-toolchain.toml`
 - Node.js >= 20.x, pnpm
