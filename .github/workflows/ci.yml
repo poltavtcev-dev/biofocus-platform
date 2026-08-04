@@ -30,8 +30,8 @@ jobs:
       - name: cargo check (workspace, exclude desktop)
         run: cargo check --workspace --exclude desktop
 
-      - name: cargo test (bio-spec, runtime, storage)
-        run: cargo test -p bio-spec -p runtime -p storage
+      - name: cargo test (bio-spec, runtime, storage, ingest)
+        run: cargo test -p bio-spec -p runtime -p storage -p ingest
 
   desktop:
     name: Desktop (Rust + frontend)

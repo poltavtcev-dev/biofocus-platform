@@ -1,0 +1,272 @@
+//! Integration tests: loopback bind, auth reject, 202 happy path, bad JSON.
+
+use std::sync::Arc;
+use std::time::Duration;
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use bio_spec::Observation;
+use http::header::AUTHORIZATION;
+use ingest::{
+    bind_loopback, ingest_router, IngestConfig, IngestResponse, IngestState, INGEST_BIND_HOST,
+};
+use runtime::observation_channel;
+use serde_json::json;
+use tower::ServiceExt;
+use uuid::Uuid;
+
+const TOKEN: &str = "test-ingest-token";
+
+fn sample_observation_json() -> serde_json::Value {
+    json!({
+        "id": "0190ecb5-7c2a-7123-8901-23456789abcd",
+        "timestamp": 1721990400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "heart_rate",
+        "payload": { "bpm": 74.0 },
+        "confidence": 0.98
+    })
+}
+
+fn test_state(capacity: usize) -> (IngestState, runtime::ObservationReceiver) {
+    let (tx, rx) = observation_channel(capacity).expect("channel");
+    (
+        IngestState {
+            token: Arc::from(TOKEN),
+            tx,
+        },
+        rx,
+    )
+}
+
+#[tokio::test]
+async fn bind_loopback_is_localhost_only() {
+    let (listener, addr) = bind_loopback(0).await.expect("bind ephemeral");
+    assert_eq!(addr.ip(), std::net::IpAddr::V4(INGEST_BIND_HOST));
+    assert_ne!(addr.port(), 0);
+    drop(listener);
+}
+
+#[tokio::test]
+async fn post_ingest_rejects_missing_token() {
+    let (state, _rx) = test_state(8);
+    let app = ingest_router(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header("content-type", "application/json")
+                .body(Body::from("[]"))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn post_ingest_rejects_wrong_token() {
+    let (state, _rx) = test_state(8);
+    let app = ingest_router(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, "Bearer wrong-token")
+                .header("content-type", "application/json")
+                .body(Body::from("[]"))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn post_ingest_rejects_invalid_json() {
+    let (state, _rx) = test_state(8);
+    let app = ingest_router(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from("{not-json"))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn post_ingest_rejects_domain_validation_failure() {
+    let (state, _rx) = test_state(8);
+    let app = ingest_router(state);
+
+    let bad = json!([{
+        "id": "0190ecb5-7c2a-7123-8901-23456789abcd",
+        "timestamp": 1721990400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "heart_rate",
+        "payload": {},
+        "confidence": 1.5
+    }]);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(bad.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn post_ingest_returns_202_and_enqueues() {
+    let (state, mut rx) = test_state(8);
+    let app = ingest_router(state);
+
+    let body = json!([sample_observation_json()]);
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(body.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::ACCEPTED);
+
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: IngestResponse = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed, IngestResponse::queued(1));
+
+    let obs = rx.try_recv().expect("enqueued observation");
+    assert_eq!(
+        obs.id,
+        Uuid::parse_str("0190ecb5-7c2a-7123-8901-23456789abcd").expect("uuid")
+    );
+    assert_eq!(obs.data_type, "heart_rate");
+}
+
+#[tokio::test]
+async fn live_server_accepts_over_loopback_http() {
+    let (tx, mut rx) = observation_channel(8).expect("channel");
+    let (listener, addr) = bind_loopback(0).await.expect("bind");
+    assert_eq!(addr.ip(), std::net::IpAddr::V4(INGEST_BIND_HOST));
+
+    let state = IngestState {
+        token: Arc::from(TOKEN),
+        tx,
+    };
+    let app = ingest_router(state);
+
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.expect("serve");
+    });
+
+    // Give the accept loop a tick (event-driven; no busy spin in server).
+    tokio::time::sleep(Duration::from_millis(20)).await;
+
+    let client = reqwest::Client::new();
+    let url = format!("http://{addr}/v1/ingest");
+    let response = client
+        .post(&url)
+        .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+        .json(&json!([sample_observation_json()]))
+        .send()
+        .await
+        .expect("http");
+
+    assert_eq!(response.status(), StatusCode::ACCEPTED);
+    let body: IngestResponse = response.json().await.expect("json");
+    assert_eq!(body, IngestResponse::queued(1));
+
+    let obs: Observation = rx.recv().await.expect("queued");
+    assert_eq!(obs.provider_id, "com.biofocus.applehealth");
+
+    server.abort();
+}
+
+#[test]
+fn default_config_documents_port_and_test_token() {
+    let cfg = IngestConfig::default();
+    assert_eq!(cfg.port, ingest::DEFAULT_INGEST_PORT);
+    assert_eq!(cfg.token, ingest::DEFAULT_TEST_TOKEN);
+    assert_eq!(ingest::DEFAULT_SKELETON_TOKEN, ingest::DEFAULT_TEST_TOKEN);
+}
+
+#[tokio::test]
+async fn persisted_token_is_accepted_wrong_token_rejected() {
+    let dir = std::env::temp_dir().join(format!(
+        "biofocus-ingest-http-token-{}-{}",
+        std::process::id(),
+        Uuid::now_v7()
+    ));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join(ingest::PAIRING_TOKEN_FILE);
+    let token = ingest::load_or_create_pairing_token(&path).expect("token");
+
+    let (tx, _rx) = observation_channel(8).expect("channel");
+    let state = IngestState {
+        token: Arc::from(token.as_str()),
+        tx,
+    };
+    let app = ingest_router(state);
+
+    let ok = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {token}"))
+                .header("content-type", "application/json")
+                .body(Body::from("[]"))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(ok.status(), StatusCode::ACCEPTED);
+
+    let bad = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, "Bearer wrong-token")
+                .header("content-type", "application/json")
+                .body(Body::from("[]"))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(bad.status(), StatusCode::UNAUTHORIZED);
+
+    let _ = std::fs::remove_dir_all(&dir);
+}

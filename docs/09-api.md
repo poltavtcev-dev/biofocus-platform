@@ -1,16 +1,20 @@
 # 09. Internal REST & Ingestion API
 
-## 1. Endpoints (Phase 2 — not implemented in Phase 1)
+## 1. Endpoints (Phase 2)
+
+Default bind (skeleton): **`127.0.0.1:8787`** (`crates/ingest`). Loopback only until pairing/LAN epic.
 
 ### `POST /v1/ingest`
-- **Description:** Прием биометрии от мобильных мостов/компаньонов по локальной сети.
-- **Headers:** `Authorization: Bearer <PAIRING_TOKEN>`
+- **Description:** Приём `Observation` от companion/collectors (локально).
+- **Headers:** `Authorization: Bearer <PAIRING_TOKEN>` (token from `~/.biofocus/pairing_token` or `BIOFOCUS_INGEST_TOKEN`; see `docs/10-security.md`)
 - **Request Body:** `Array<Observation>`
-- **Response:** `202 Accepted` -> `{"status": "queued", "count": 1}`
+- **Response:** `202 Accepted` → `{"status": "queued", "count": N}`
+- **Errors:** `401` missing/wrong token; `400` invalid JSON / domain; `503` queue full/closed (mid-batch semantics → **P2-E1-T3**)
+- **Status:** Pairing token persistence → **P2-E1-T2**. Persist Observations → **P2-E1-T3**.
 
 ### `GET /v1/status`
-- **Description:** Проверка статуса Core Daemon и активных подключений (HTTP; Phase 2).
-- **Response:** `200 OK` -> `{"version": "1.0.0", "db_status": "ok", "active_plugins": 2}`
+- **Description:** Статус Core / ingest (HTTP; wire in **P2-E1-T4**).
+- **Response:** `200 OK` → `{"version": "…", "db_status": "ok"|…}` — **без** Observation payload.
 
 ---
 

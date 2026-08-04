@@ -1,0 +1,23 @@
+[package]
+name = "ingest"
+description = "Local loopback HTTP ingest API for BioFocus Observations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bio-spec = { workspace = true }
+runtime = { workspace = true }
+axum = { workspace = true }
+getrandom = "0.3"
+http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tower = { workspace = true }
+uuid = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

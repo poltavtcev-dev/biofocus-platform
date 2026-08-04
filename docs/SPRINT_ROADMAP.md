@@ -19,18 +19,18 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P2-E1-T1** (ingest HTTP skeleton) |
+| **Ready** | **P2-E1-T3** (persist + mid-batch 503) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1-T1** · **P2-E1-T2** (2026-08-04, Pass with notes) |
 
-**Epic status:** P2-E1 ▶️ · P2-E2 ○ · P2-E3 ○ · P2-E0 ○ (hygiene)
+**Epic status:** P2-E1 ▶️ (T1 ✅ T2 ✅) · P2-E2 ○ · P2-E3 ○ · P2-E0 ○ (hygiene)
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ not started (decomposition Ready)
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (ingest + pairing on branch; **PR pending**)
 
 **Рекомендуемый порядок:**  
-`P2-E1-T1` → `T2` → `T3` → `T4` → `P2-E2-*` → `P2-E3-*`  
-Параллельно (маленький): `P2-E0-T1` sanitize `dbError` (после T1 или ∥ T2)
+`P2-E1-T3` → `T4` → `P2-E2-*` → `P2-E3-*`  
+Параллельно: `P2-E0-T1` sanitize `dbError` (∥)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -38,10 +38,11 @@
 
 ### Active assignment (PM → Dev)
 
-**Task:** `P2-E1-T1` — Local ingest HTTP skeleton (`POST /v1/ingest`)  
+**Task:** `P2-E1-T3` — Persist ingest → `ObservationRepository` (+ mid-batch contract)  
 **Assignee:** Dev  
-**Brief:** `docs/handoffs/P2-E1-T1-pm-brief.md`  
-**Branch:** `phase/2-ingest-http` (PR to `main`)
+**Brief:** `docs/handoffs/P2-E1-T3-pm-brief.md`  
+**Branch:** `phase/2-ingest-http` → **commit + PR urgently** (T1+T2 still uncommitted)  
+**Carry notes:** host `IngestConfig::load()` → **T4**; mid-batch 503 → **T3** (this task).
 
 ---
 
@@ -85,7 +86,7 @@
 | **Role** | Dev |
 | **Modules** | ingest path + `storage` + bounded channel |
 | **Depends on** | P2-E1-T1, P1-E2-T3 |
-| **AC** | Принятые Observation асинхронно пишутся через `ObservationRepository::insert` (immutable). Duplicate PK → явная ошибка/ответ без silent overwrite. Backpressure: bounded channel; при full — предсказуемый 503 или drop+metric (зафиксировать в handoff). Тесты round-trip ingest→DB. |
+| **AC** | Принятые Observation асинхронно пишутся через `ObservationRepository::insert` (immutable). Duplicate PK → явная ошибка/ответ без silent overwrite. Backpressure: bounded channel; при full — предсказуемый **503**. **Формализовать mid-batch:** если часть batch уже в канале, а дальше `queue_full` — зафиксировать контракт (напр. `202` с `count` + warning / или атомарный all-or-nothing / или `207`/`503` с `accepted`/`rejected` counts) в API + тестах (из T1 QA note). Тесты round-trip ingest→DB. |
 
 ### P2-E1-T4 — Host wire + `GET /v1/status` + idle DoD
 | Field | Value |
@@ -93,7 +94,7 @@
 | **Role** | Dev |
 | **Modules** | `apps/desktop/src-tauri`, ingest lifecycle |
 | **Depends on** | P2-E1-T2, P2-E1-T3 |
-| **AC** | Desktop стартует/останавливает ingest с приложением. `GET /v1/status` (local) отдаёт version + db ok\|error **без** Observation payload. Нет busy-loop в idle. UI по-прежнему только IPC для статуса shell (HTTP status — для companion/debug, не сырой биометрии). |
+| **AC** | Desktop стартует/останавливает ingest с приложением через `IngestConfig::load()` (pairing file / env из T2). `GET /v1/status` (local) отдаёт version + db ok\|error **без** Observation payload. Нет busy-loop в idle. UI по-прежнему только IPC для статуса shell (HTTP status — для companion/debug, не сырой биометрии). |
 
 ---
 
@@ -183,6 +184,7 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **P2-E1-T1** — Ingest HTTP skeleton ← **берите сейчас**  
-2. Затем **P2-E1-T2** → **T3** → **T4**  
-3. Опционально ∥ **P2-E0-T1** sanitize `dbError`
+1. **P2-E1-T3** — Persist + mid-batch 503 ← **берите сейчас**  
+2. Затем **P2-E1-T4** (host `IngestConfig::load`)  
+3. Опционально ∥ **P2-E0-T1** sanitize `dbError`  
+4. ~~T1~~ ~~T2~~ Done — **сначала commit+PR `phase/2-ingest-http`**

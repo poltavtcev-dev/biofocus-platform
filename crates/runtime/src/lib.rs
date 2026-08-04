@@ -5,8 +5,8 @@
 //! - bounded Observation ingress channel ([`observation_channel`])
 //! - tracing subscriber bootstrap ([`init_tracing`])
 //!
-//! HTTP ingest and OS collectors belong to Phase 2+ and are intentionally
-//! absent here (`docs/03-runtime.md`, `docs/15-engineering-principles.md`).
+//! HTTP ingest lives in the `ingest` crate (Phase 2). OS collectors are Phase 2+
+//! (`docs/03-runtime.md`, `docs/15-engineering-principles.md`).
 
 #![forbid(unsafe_code)]
 

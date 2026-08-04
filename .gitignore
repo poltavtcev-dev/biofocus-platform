@@ -17,3 +17,7 @@ node_modules
 *.db
 *.db-wal
 *.db-shm
+
+# Local BioFocus state (must never be committed)
+.biofocus/
+pairing_token

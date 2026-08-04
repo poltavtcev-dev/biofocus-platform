@@ -5,8 +5,8 @@
 
 ## Implementation snapshot
 - **Phase 1:** Done (E1–E4, 2026-08-04).
-- **Phase 2:** Decomposed in `docs/SPRINT_ROADMAP.md`. First Ready: **P2-E1-T1** ingest HTTP skeleton. Implementation not started until Dev picks brief.
-- **Open follow-up:** sanitize IPC `dbError` paths → **P2-E0-T1**.
+- **Phase 2:** **P2-E1-T1** + **P2-E1-T2** Done (Pass with notes) — `crates/ingest` loopback ingest + `~/.biofocus/pairing_token` (or `BIOFOCUS_HOME` / env override). Next Ready: **P2-E1-T3** persist + mid-batch 503. **Branch `phase/2-ingest-http` still needs commit+PR.**
+- **Open follow-up:** sanitize IPC `dbError` → **P2-E0-T1**; host `IngestConfig::load` → **P2-E1-T4**.
 - Phase 3+ not started.
 
 ## Core Decisions
