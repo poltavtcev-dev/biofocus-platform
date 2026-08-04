@@ -8,3 +8,8 @@
 4. `docs/SPRINT_ROADMAP.md` — очередь задач  
 
 Handoffs: `docs/handoffs/`.
+
+## Git / PR
+
+С Phase 2: работа в ветке (`phase/N-…` или `sprint/N-…`) → **PR в `main`** → merge только после зелёного CI.  
+Прямой push в `main` запрещён (Phase 1 foundation — исключение). Детали: `docs/12-development.md` § Git workflow.
