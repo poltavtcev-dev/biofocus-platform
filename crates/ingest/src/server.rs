@@ -1,7 +1,6 @@
 //! Loopback TCP bind and Axum serve loop (idle on accept — no spin).
 
 use std::net::{SocketAddr, SocketAddrV4};
-use std::sync::Arc;
 
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
@@ -9,7 +8,6 @@ use tokio::sync::oneshot;
 use crate::config::{IngestConfig, INGEST_BIND_HOST};
 use crate::error::{IngestError, IngestResult};
 use crate::routes::{ingest_router, IngestState};
-use runtime::ObservationSender;
 
 /// Binds a TCP listener to `127.0.0.1:<port>` only.
 ///
@@ -30,15 +28,7 @@ pub async fn bind_loopback(port: u16) -> IngestResult<(TcpListener, SocketAddr)>
 }
 
 /// Serves ingest on an already-bound loopback listener until the process ends.
-pub async fn serve_listener(
-    listener: TcpListener,
-    config: IngestConfig,
-    tx: ObservationSender,
-) -> IngestResult<()> {
-    let state = IngestState {
-        token: Arc::from(config.token),
-        tx,
-    };
+pub async fn serve_listener(listener: TcpListener, state: IngestState) -> IngestResult<()> {
     let app = ingest_router(state);
     axum::serve(listener, app)
         .await
@@ -48,16 +38,13 @@ pub async fn serve_listener(
 /// Binds loopback and serves until `shutdown` receives a value.
 ///
 /// Returns the bound [`SocketAddr`] (port may differ when `config.port == 0`).
+/// Idle: tokio accept — no busy-spin.
 pub async fn serve_with_shutdown(
     config: IngestConfig,
-    tx: ObservationSender,
+    state: IngestState,
     shutdown: oneshot::Receiver<()>,
 ) -> IngestResult<SocketAddr> {
     let (listener, addr) = bind_loopback(config.port).await?;
-    let state = IngestState {
-        token: Arc::from(config.token),
-        tx,
-    };
     let app = ingest_router(state);
 
     axum::serve(listener, app)

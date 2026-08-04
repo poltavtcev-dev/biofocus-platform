@@ -1,6 +1,5 @@
 //! Integration tests: loopback bind, auth reject, 202 happy path, bad JSON.
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use axum::body::Body;
@@ -9,7 +8,7 @@ use bio_spec::Observation;
 use http::header::AUTHORIZATION;
 use ingest::{
     bind_loopback, ingest_router, IngestConfig, IngestResponse, IngestState, QueuePressureBody,
-    INGEST_BIND_HOST,
+    StatusResponse, INGEST_BIND_HOST,
 };
 use runtime::observation_channel;
 use serde_json::json;
@@ -31,13 +30,7 @@ fn sample_observation_json() -> serde_json::Value {
 
 fn test_state(capacity: usize) -> (IngestState, runtime::ObservationReceiver) {
     let (tx, rx) = observation_channel(capacity).expect("channel");
-    (
-        IngestState {
-            token: Arc::from(TOKEN),
-            tx,
-        },
-        rx,
-    )
+    (IngestState::new(TOKEN, tx), rx)
 }
 
 #[tokio::test]
@@ -233,10 +226,7 @@ async fn post_ingest_queue_full_on_first_item_accepted_zero() {
     tx.try_send(serde_json::from_value(sample_observation_json()).expect("obs"))
         .expect("prefill");
 
-    let state = IngestState {
-        token: Arc::from(TOKEN),
-        tx,
-    };
+    let state = IngestState::new(TOKEN, tx);
     let app = ingest_router(state);
 
     let body = json!([
@@ -289,10 +279,7 @@ async fn live_server_accepts_over_loopback_http() {
     let (listener, addr) = bind_loopback(0).await.expect("bind");
     assert_eq!(addr.ip(), std::net::IpAddr::V4(INGEST_BIND_HOST));
 
-    let state = IngestState {
-        token: Arc::from(TOKEN),
-        tx,
-    };
+    let state = IngestState::new(TOKEN, tx);
     let app = ingest_router(state);
 
     let server = tokio::spawn(async move {
@@ -342,10 +329,7 @@ async fn persisted_token_is_accepted_wrong_token_rejected() {
     let token = ingest::load_or_create_pairing_token(&path).expect("token");
 
     let (tx, _rx) = observation_channel(8).expect("channel");
-    let state = IngestState {
-        token: Arc::from(token.as_str()),
-        tx,
-    };
+    let state = IngestState::new(token.as_str(), tx);
     let app = ingest_router(state);
 
     let ok = app
@@ -378,4 +362,106 @@ async fn persisted_token_is_accepted_wrong_token_rejected() {
     assert_eq!(bad.status(), StatusCode::UNAUTHORIZED);
 
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test]
+async fn get_status_ok_shape_has_no_observation_fields() {
+    let (state, _rx) = test_state(8);
+    let app = ingest_router(state.with_version("9.9.9"));
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/status")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: StatusResponse = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed.version, "9.9.9");
+    assert_eq!(parsed.db_status, "ok");
+    assert_eq!(parsed.db_error, None);
+
+    let value: serde_json::Value = serde_json::from_slice(&bytes).expect("value");
+    let obj = value.as_object().expect("object");
+    assert!(obj.contains_key("version"));
+    assert!(obj.contains_key("db_status"));
+    assert!(!obj.contains_key("observations"));
+    assert!(!obj.contains_key("payload"));
+    assert!(!obj.contains_key("hrv"));
+    assert!(!obj.contains_key("dbStatus")); // HTTP uses snake_case
+}
+
+#[tokio::test]
+async fn get_status_maps_db_probe_error_soft() {
+    let (tx, _rx) = observation_channel(8).expect("channel");
+    let state = IngestState::new(TOKEN, tx)
+        .with_version("0.1.0")
+        .with_db_probe(|| Err("simulated open failure".into()));
+    let app = ingest_router(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/status")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: StatusResponse = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed.db_status, "error");
+    assert_eq!(parsed.db_error.as_deref(), Some("simulated open failure"));
+}
+
+#[tokio::test]
+async fn get_status_probes_real_temp_db_path() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("status_probe.db");
+    let (tx, _rx) = observation_channel(8).expect("channel");
+    let state = IngestState::new(TOKEN, tx).with_db_path(db_path.clone());
+    let app = ingest_router(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/status")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: StatusResponse = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed.db_status, "ok");
+    assert!(db_path.exists(), "probe should create DB via open+migrate");
+}
+
+#[test]
+fn status_response_unit_mapping() {
+    let ok = StatusResponse::from_probe("1.0.0", Ok(()));
+    assert_eq!(ok.db_status, "ok");
+    assert!(ok.db_error.is_none());
+
+    let err = StatusResponse::from_probe("1.0.0", Err("disk full".into()));
+    assert_eq!(err.db_status, "error");
+    assert_eq!(err.db_error.as_deref(), Some("disk full"));
 }

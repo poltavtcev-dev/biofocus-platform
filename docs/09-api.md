@@ -14,7 +14,7 @@ Default bind (skeleton): **`127.0.0.1:8787`** (`crates/ingest`). Loopback only u
   - `400` invalid JSON / domain → `{"error":"invalid_json"}` (и аналоги)
   - `503` backpressure / closed channel (см. mid-batch ниже)
 - **Persist:** duplicate PK при insert → явный `StorageError::DuplicateObservation` (log, **без overwrite**); HTTP `202` означает «принято в очередь», не «уже закоммичено в SQLite».
-- **Status:** Pairing + persist path shipped (T1–T3). Host wire (`IngestConfig::load` at app start) → **P2-E1-T4**.
+- **Status:** Host wire shipped (**P2-E1-T4**): Desktop starts/stops ingest with the app.
 
 #### Mid-batch / queue full (contract **C**)
 
@@ -36,8 +36,25 @@ Bounded `try_send` per item. If a later item in the same request hits a full (or
 Same shape when the channel is full on the **first** item (`accepted: 0`). Collectors should back off and retry rejected Observations (new request).
 
 ### `GET /v1/status`
-- **Description:** Статус Core / ingest (HTTP; wire in **P2-E1-T4**).
-- **Response:** `200 OK` → `{"version": "…", "db_status": "ok"|…}` — **без** Observation payload.
+- **Description:** Статус Core / ingest для companion/debug (loopback). Shell UI uses IPC `get_status`, not this endpoint.
+- **Auth:** none (loopback-only bind).
+- **Response:** `200 OK` — **без** Observation / biometric payload:
+
+```json
+{"version":"0.1.0","db_status":"ok"}
+```
+
+```json
+{"version":"0.1.0","db_status":"error","db_error":"…"}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `version` | string | Host / desktop package version |
+| `db_status` | `"ok"` \| `"error"` | Soft-fail probe (open + WAL + migrate) |
+| `db_error` | string? | Present only when `db_status` is `"error"` |
+
+- **Host:** Desktop starts ingest on app launch via `IngestConfig::load()` (pairing file / `BIOFOCUS_INGEST_TOKEN`) and stops accept + persist worker on exit.
 
 ---
 

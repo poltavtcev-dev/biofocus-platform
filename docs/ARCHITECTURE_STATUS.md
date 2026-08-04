@@ -5,8 +5,8 @@
 
 ## Implementation snapshot
 - **Phase 1:** Done (E1–E4, 2026-08-04).
-- **Phase 2:** **P2-E1-T1…T3** Done — ingest loopback + pairing token + persist worker + mid-batch **contract C** (`503` + counts). Duplicate PK handled at persist (log, no HTTP 409). Next Ready: **P2-E1-T4** host wire. Branch `phase/2-ingest-http` (sprint PR later).
-- **Open follow-up:** sanitize IPC `dbError` → **P2-E0-T1**.
+- **Phase 2:** **Epic P2-E1 Done** (T1–T4, 2026-08-04) — loopback ingest + pairing + persist (contract C) + Desktop host wire + `GET /v1/status` (no Observation payload). Next Ready: **P2-E2-T1** active window collector. Branch `phase/2-ingest-http` (commit per task; **sprint PR → `main` at sprint gate**).
+- **Open follow-up:** sanitize IPC `dbError` → **P2-E0-T1** (optionally HTTP `db_error` too).
 - Phase 3+ not started.
 
 ## Core Decisions

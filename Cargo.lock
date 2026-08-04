@@ -642,6 +642,7 @@ dependencies = [
 name = "desktop"
 version = "0.1.0"
 dependencies = [
+ "ingest",
  "runtime",
  "serde",
  "serde_json",
@@ -649,6 +650,8 @@ dependencies = [
  "tauri",
  "tauri-build",
  "thiserror 2.0.19",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

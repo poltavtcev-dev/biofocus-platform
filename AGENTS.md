@@ -11,5 +11,6 @@ Handoffs: `docs/handoffs/`.
 
 ## Git / PR
 
-С Phase 2: работа в ветке (`phase/N-…` или `sprint/N-…`) → **PR в `main`** → merge только после зелёного CI.  
+С Phase 2: работа в ветке (`phase/N-…` или `sprint/N-…`).  
+**Commit на каждую задачу** после PM Done; **push + PR в `main` — раз на спринт** (после зелёного CI).  
 Прямой push в `main` запрещён (Phase 1 foundation — исключение). Детали: `docs/12-development.md` § Git workflow.

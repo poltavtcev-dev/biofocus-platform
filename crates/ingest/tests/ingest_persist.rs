@@ -1,6 +1,5 @@
 //! Round-trip: HTTP ingest → bounded channel → ObservationRepository (temp DB).
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use axum::body::Body;
@@ -56,10 +55,7 @@ async fn http_ingest_persists_to_sqlite_round_trip() {
     let (tx, rx) = observation_channel(8).expect("channel");
     let worker = spawn_persist_worker(rx, db);
 
-    let state = IngestState {
-        token: Arc::from(TOKEN),
-        tx: tx.clone(),
-    };
+    let state = IngestState::new(TOKEN, tx.clone());
     let app = ingest_router(state);
 
     let body = json!([
@@ -124,10 +120,7 @@ async fn duplicate_pk_does_not_overwrite_persisted_observation() {
     let (tx, rx) = observation_channel(8).expect("channel");
     let worker = spawn_persist_worker(rx, db);
 
-    let state = IngestState {
-        token: Arc::from(TOKEN),
-        tx: tx.clone(),
-    };
+    let state = IngestState::new(TOKEN, tx.clone());
     let app = ingest_router(state);
 
     let first = json!([observation_json(ID_A, 74.0)]);

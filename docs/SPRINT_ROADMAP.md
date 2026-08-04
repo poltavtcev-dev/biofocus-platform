@@ -11,7 +11,7 @@
 - [ ] UI ↛ SQLite (только IPC); ingest пишет через Core/`storage`
 - [ ] Тесты зелёные; `cargo check` / релевантный CI
 - [ ] **Idle footprint:** нет busy-loop; sleep/wake по событиям или редкому таймеру; при простое CPU ≈ idle OS
-- [ ] Ветка → **PR → `main`** после зелёного CI (`docs/12-development.md`)
+- [ ] **Commit на задачу**; ветка → **PR → `main` раз на спринт** после зелёного CI (`docs/12-development.md`)
 
 ---
 
@@ -19,18 +19,18 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P2-E1-T4** (host wire + `/v1/status` + idle) |
+| **Ready** | **P2-E2-T1** (active window Observation stream) |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1-T1** · **P2-E1-T2** · **P2-E1-T3** (2026-08-04, Pass with notes) |
+| **Done** | Phase 0 · **Phase 1** (E1–E4) · **P2-E1** (T1–T4, 2026-08-04; T4 Pass with notes) |
 
-**Epic status:** P2-E1 ▶️ (T1–T3 ✅) · P2-E2 ○ · P2-E3 ○ · P2-E0 ○ (hygiene)
+**Epic status:** P2-E1 ✅ · P2-E2 ▶️ · P2-E3 ○ · P2-E0 ○ (hygiene)
 
-**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (persist + contract C on branch; sprint PR later)
+**Phase 2 on `/docs/14-roadmap.md`:** ☐ in progress (Epic E1 Done on branch; **commits per task**; **sprint PR** at Sprint 3–4 gate)
 
 **Рекомендуемый порядок:**  
-`P2-E1-T4` → Epic E1 Done → `P2-E2-*` → `P2-E3-*`  
-Параллельно: `P2-E0-T1` sanitize `dbError` (∥)
+Epic E1 ✅ → `P2-E2-*` → `P2-E3-*`  
+Параллельно: `P2-E0-T1` sanitize `dbError` (∥; optionally extend to HTTP `/v1/status` `db_error`)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -38,11 +38,11 @@
 
 ### Active assignment (PM → Dev)
 
-**Task:** `P2-E1-T4` — Host wire + `GET /v1/status` + `IngestConfig::load` + idle DoD  
+**Task:** `P2-E2-T1` — Active window Observation stream  
 **Assignee:** Dev  
-**Brief:** `docs/handoffs/P2-E1-T4-pm-brief.md`  
-**Branch:** `phase/2-ingest-http` (commit T3 on branch; **PR to `main` at end of sprint/E1**)  
-**Locked:** mid-batch **contract C** (`503` + `accepted`/`rejected`); duplicate → persist-time log, not HTTP 409.
+**Brief:** `docs/handoffs/P2-E2-T1-pm-brief.md`  
+**Branch:** `phase/2-ingest-http` (local commits per task; **push + PR at sprint end**)  
+**Locked (E1):** mid-batch **contract C**; host starts/stops ingest; `GET /v1/status` without Observation payload.
 
 ---
 
@@ -55,7 +55,7 @@
 | **Modules** | `apps/desktop/src-tauri`, optionally `crates/storage` error mapping |
 | **Depends on** | Phase 1 |
 | **AC** | UI/`get_status` не показывает абсолютный filesystem path в `dbError`. Сообщение короткое и безопасное. Тест(ы) на mapping. |
-| **Note** | Из E3-T4 follow-up. Можно ∥ после P2-E1-T1. |
+| **Note** | Из E3-T4 follow-up. Можно ∥. После T4: опционально также sanitize HTTP `/v1/status` `db_error`. |
 
 ---
 
@@ -184,6 +184,6 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 3 — Ready Now
 
-1. **P2-E1-T4** — Host wire + status + idle ← **берите сейчас**  
-2. Затем Epic E1 Done → **P2-E2-T1** (или ∥ **P2-E0-T1**)  
-3. ~~T1~~ ~~T2~~ ~~T3~~ Done — commit T3 на ветку; sprint PR позже
+1. **P2-E2-T1** — Active window Observation stream ← **берите сейчас**  
+2. Параллельно (опционально): **P2-E0-T1** sanitize `dbError`  
+3. ~~Epic P2-E1 (T1–T4)~~ Done — commits on branch; **sprint PR → `main`** в конце Sprint 3–4

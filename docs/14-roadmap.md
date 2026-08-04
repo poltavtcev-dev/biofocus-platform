@@ -5,9 +5,9 @@
   - Workspace setup (`bio-spec`, `runtime`, `storage`).
   - SQLite WAL migration script & Repositories.
   - Basic Menubar UI via Tauri v2.
-- [ ] **Phase 2: Ingestion & Context Collector (Sprint 3-4)** — decomposed 2026-08-04; implementation not started
-  - Local HTTP Server (`/v1/ingest`).
-  - macOS active window & keystroke collector.
+- [ ] **Phase 2: Ingestion & Context Collector (Sprint 3-4)** — Epic **P2-E1** Done; collectors next
+  - Local HTTP Server (`/v1/ingest`) + host wire + `/v1/status` — **shipped (E1)**.
+  - macOS active window & keystroke collector — **in progress (E2)**.
   - iOS Companion app (HealthKit webhook).
 - [ ] **Phase 3: Pipeline & Features (Sprint 5-6)**
   - Pipeline logic (Deduplication -> Normalization -> Feature Calculation).
@@ -17,5 +17,5 @@
   - Local LLM Prompt Generator (Ollama / OpenAI API).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
-**Phase 2:** `docs/SPRINT_ROADMAP.md` — **P2-E1-T1…T3** Done; Ready **P2-E1-T4** (`docs/handoffs/P2-E1-T4-pm-brief.md`)  
-**Git:** commits on `phase/2-ingest-http`; **PR → `main` at end of sprint / epic E1**.
+**Phase 2:** `docs/SPRINT_ROADMAP.md` — Epic **P2-E1** Done (T1–T4); Ready **P2-E2-T1** (`docs/handoffs/P2-E2-T1-pm-brief.md`)  
+**Git:** branch `phase/2-ingest-http`; **commit per task**; **PR → `main` per sprint**.

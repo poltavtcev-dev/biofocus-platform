@@ -16,4 +16,4 @@
 | **Permissions** | Written `0600` on Unix (via exclusive create of temp file + rename) |
 | **Git** | Never commit; lives outside the repo under the user home. `.gitignore` also ignores `.biofocus/` and `pairing_token` if copied into the tree |
 
-QR / copy UX for sharing the token with a companion device → **P2-E3-T2**. Host auto-start of ingest → **P2-E1-T4**.
+QR / copy UX for sharing the token with a companion device → **P2-E3-T2**. Host auto-start of ingest → shipped in **P2-E1-T4**.

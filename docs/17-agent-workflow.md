@@ -20,12 +20,13 @@
 
 Шаблоны: `docs/handoffs/TEMPLATE-*.md`.
 
-## Git / PR (после каждого спринта)
+## Git / PR
 
 1. Ветка `phase/N-…` или `sprint/N-…` (не `main`).  
-2. В конце спринта — PR → `main`.  
-3. Merge только после зелёного GitHub Actions CI.  
-4. Прямой push в `main` — запрещён (исключение: Phase 1 foundation уже в истории).
+2. **Commit на каждую задачу** после PM Done (код + handoffs + docs задачи).  
+3. **Push + PR → `main` — раз на спринт** (или epic gate), не на каждую задачу.  
+4. Merge только после зелёного GitHub Actions CI.  
+5. Прямой push в `main` — запрещён (исключение: Phase 1 foundation уже в истории).
 
 Команды: `docs/12-development.md` § Git workflow.
 

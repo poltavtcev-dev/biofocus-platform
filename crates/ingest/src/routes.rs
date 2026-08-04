@@ -1,11 +1,12 @@
 //! Axum routes for local ingest.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use bio_spec::Observation;
 use runtime::ObservationSender;
@@ -13,6 +14,10 @@ use serde::{Deserialize, Serialize};
 use tracing::warn;
 
 use crate::auth::{bearer_token, tokens_equal};
+use crate::status::{probe_db_at, StatusResponse};
+
+/// Soft-fail DB probe used by `GET /v1/status`.
+pub type DbProbe = Arc<dyn Fn() -> Result<(), String> + Send + Sync>;
 
 /// Shared state for ingest handlers.
 #[derive(Clone)]
@@ -21,6 +26,46 @@ pub struct IngestState {
     pub token: Arc<str>,
     /// Bounded Observation ingress (drained by persist worker).
     pub tx: ObservationSender,
+    /// Version string returned by `GET /v1/status`.
+    pub version: Arc<str>,
+    /// Soft-fail DB probe for status (no Observation payload).
+    pub db_probe: DbProbe,
+}
+
+impl IngestState {
+    /// Builds state with crate version and an always-ok DB probe (tests / callers that override).
+    #[must_use]
+    pub fn new(token: impl Into<String>, tx: ObservationSender) -> Self {
+        Self {
+            token: Arc::from(token.into()),
+            tx,
+            version: Arc::from(env!("CARGO_PKG_VERSION")),
+            db_probe: Arc::new(|| Ok(())),
+        }
+    }
+
+    /// Overrides the version string exposed by `GET /v1/status`.
+    #[must_use]
+    pub fn with_version(mut self, version: impl Into<String>) -> Self {
+        self.version = Arc::from(version.into());
+        self
+    }
+
+    /// Overrides the soft-fail DB probe.
+    #[must_use]
+    pub fn with_db_probe(
+        mut self,
+        probe: impl Fn() -> Result<(), String> + Send + Sync + 'static,
+    ) -> Self {
+        self.db_probe = Arc::new(probe);
+        self
+    }
+
+    /// Probes by opening `path` (WAL + migrate-on-open). Soft-fail via `Err(String)`.
+    #[must_use]
+    pub fn with_db_path(self, path: PathBuf) -> Self {
+        self.with_db_probe(move || probe_db_at(&path))
+    }
 }
 
 /// Success body for `POST /v1/ingest` (`docs/09-api.md`).
@@ -77,12 +122,19 @@ impl QueuePressureBody {
     }
 }
 
-/// Builds the ingest router (`POST /v1/ingest`).
+/// Builds the ingest router (`POST /v1/ingest`, `GET /v1/status`).
 #[must_use]
 pub fn ingest_router(state: IngestState) -> Router {
     Router::new()
         .route("/v1/ingest", post(post_ingest))
+        .route("/v1/status", get(get_status))
         .with_state(state)
+}
+
+async fn get_status(State(state): State<IngestState>) -> impl IntoResponse {
+    let probe = (state.db_probe)();
+    let body = StatusResponse::from_probe(state.version.as_ref(), probe);
+    (StatusCode::OK, Json(body))
 }
 
 async fn post_ingest(

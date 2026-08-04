@@ -19,7 +19,10 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 runtime = { workspace = true }
 storage = { workspace = true }
+ingest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 tauri = { version = "2", features = ["tray-icon"] }

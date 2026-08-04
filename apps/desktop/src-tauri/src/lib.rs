@@ -20,15 +20,23 @@
 //!
 //! Legacy scaffold probe (T1). UI prefers `get_status`; kept as fallback.
 //!
-//! See also `docs/09-api.md` § Desktop Tauri IPC.
+//! ## Local ingest HTTP (Phase 2)
+//!
+//! On startup the host opens the default DB, loads [`ingest::IngestConfig`],
+//! spawns the persist worker, and serves loopback ingest (`127.0.0.1:8787`).
+//! Companion/debug use `GET /v1/status`; the shell UI still uses IPC `get_status`.
+//!
+//! See also `docs/09-api.md`.
 
 #![forbid(unsafe_code)]
+
+mod ingest_host;
 
 use std::path::Path;
 
 use serde::Serialize;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 use thiserror::Error;
 
 /// Errors from the desktop host bootstrap (no panics on the production path).
@@ -114,9 +122,11 @@ fn core_ping() -> Result<CorePing, String> {
     })
 }
 
-/// Starts the Tauri event loop (window + tray shell).
+/// Starts the Tauri event loop (window + tray shell + local ingest).
 pub fn run() -> DesktopResult<()> {
-    tauri::Builder::default()
+    let _ = runtime::init_tracing(Some("info"));
+
+    let app = tauri::Builder::default()
         .setup(|app| {
             let icon = app
                 .default_window_icon()
@@ -147,10 +157,18 @@ pub fn run() -> DesktopResult<()> {
                 })
                 .build(app)?;
 
+            ingest_host::start_ingest_host(app.handle());
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![get_status, core_ping])
-        .run(tauri::generate_context!())?;
+        .build(tauri::generate_context!())?;
+
+    app.run(|app_handle, event| {
+        if let RunEvent::ExitRequested { .. } = event {
+            ingest_host::stop_ingest_host(app_handle);
+        }
+    });
 
     Ok(())
 }

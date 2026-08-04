@@ -13,6 +13,7 @@ mod error;
 mod persist;
 mod routes;
 mod server;
+mod status;
 mod token;
 
 pub use config::{
@@ -21,8 +22,9 @@ pub use config::{
 };
 pub use error::{IngestError, IngestResult};
 pub use persist::spawn_persist_worker;
-pub use routes::{ingest_router, IngestResponse, IngestState, QueuePressureBody};
+pub use routes::{ingest_router, DbProbe, IngestResponse, IngestState, QueuePressureBody};
 pub use server::{bind_loopback, serve_listener, serve_with_shutdown};
+pub use status::{probe_db_at, StatusResponse};
 pub use token::{
     default_pairing_token_path, generate_pairing_token, load_or_create_pairing_token,
     resolve_ingest_token, BIOFOCUS_DIR, BIOFOCUS_HOME_ENV, PAIRING_TOKEN_FILE,
