@@ -39,6 +39,29 @@
 //! }
 //! ```
 //!
+//! ## `get_insights` (P4-E2-T3)
+//!
+//! Evaluates product Insight rules against the latest cached Feature snapshot
+//! (same in-memory path as `get_feature_snapshot`). Host registers
+//! `knowledge_engine::register_insights_v1` once at startup. Idle / no match /
+//! evaluate soft-fail → `{ "insights": [] }`. No SQLite, no LLM.
+//!
+//! Example (camelCase JSON):
+//! ```json
+//! {
+//!   "insights": [
+//!     {
+//!       "id": "…uuid…",
+//!       "title": "Sustained stress pattern",
+//!       "description": "…",
+//!       "category": "stress",
+//!       "evidenceList": [{ "kind": "signal", "id": "…uuid…" }],
+//!       "actionRecommendation": "…"
+//!     }
+//!   ]
+//! }
+//! ```
+//!
 //! ## `open_dashboard` (P4-E1-T2)
 //!
 //! Shows the preconfigured `dashboard` webview (hide-on-close). Menubar shell
@@ -77,7 +100,9 @@ mod ingest_host;
 
 use std::path::Path;
 
+use bio_spec::{EvidenceRef, Insight};
 use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal};
+use knowledge_engine::{register_insights_v1, KnowledgeEngine};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use serde::Serialize;
@@ -85,8 +110,28 @@ use serde_json::Value as JsonValue;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
 use thiserror::Error;
+use tracing::warn;
 
 use crate::alert_state::{AlertState, SnapshotState};
+
+/// Process-lifetime Knowledge Engine with v1 product rules (P4-E2-T3).
+struct InsightsEngineState {
+    engine: KnowledgeEngine,
+}
+
+impl InsightsEngineState {
+    /// Registers [`register_insights_v1`]; soft-fails to an empty engine.
+    fn new() -> Self {
+        let mut engine = KnowledgeEngine::new();
+        if let Err(err) = register_insights_v1(&mut engine) {
+            warn!(
+                error = %err,
+                "insights: register_insights_v1 failed; get_insights returns []"
+            );
+        }
+        Self { engine }
+    }
+}
 
 /// Errors from the desktop host bootstrap (no panics on the production path).
 #[derive(Debug, Error)]
@@ -217,6 +262,80 @@ fn snapshot_to_dto(snapshot: &FeatureSnapshot) -> FeatureSnapshotDto {
     }
 }
 
+/// Evidence ref on the IPC wire (`feature` | `signal` + id string).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct EvidenceRefDto {
+    kind: String,
+    id: String,
+}
+
+impl From<&EvidenceRef> for EvidenceRefDto {
+    fn from(evidence: &EvidenceRef) -> Self {
+        match evidence {
+            EvidenceRef::Feature(id) => Self {
+                kind: "feature".into(),
+                id: id.clone(),
+            },
+            EvidenceRef::Signal(id) => Self {
+                kind: "signal".into(),
+                id: id.to_string(),
+            },
+        }
+    }
+}
+
+/// One Insight in the IPC list (camelCase; evidence ids only).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct InsightDto {
+    id: String,
+    title: String,
+    description: String,
+    category: String,
+    evidence_list: Vec<EvidenceRefDto>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    action_recommendation: Option<String>,
+}
+
+impl From<&Insight> for InsightDto {
+    fn from(insight: &Insight) -> Self {
+        Self {
+            id: insight.id.to_string(),
+            title: insight.title.clone(),
+            description: insight.description.clone(),
+            category: insight.category.clone(),
+            evidence_list: insight.evidence_list.iter().map(EvidenceRefDto::from).collect(),
+            action_recommendation: insight.action_recommendation.clone(),
+        }
+    }
+}
+
+/// IPC payload for [`get_insights`].
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct InsightsDto {
+    insights: Vec<InsightDto>,
+}
+
+fn insights_to_dto(insights: &[Insight]) -> InsightsDto {
+    InsightsDto {
+        insights: insights.iter().map(InsightDto::from).collect(),
+    }
+}
+
+fn evaluate_insights(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> InsightsDto {
+    match engine.evaluate(&snapshot.features, &snapshot.signals) {
+        Ok(insights) => insights_to_dto(&insights),
+        Err(err) => {
+            warn!(error = %err, "get_insights: evaluate failed; returning empty list");
+            InsightsDto {
+                insights: Vec::new(),
+            }
+        }
+    }
+}
+
 /// Placeholder IPC payload kept for T2 fallback until consumers drop it.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -343,6 +462,20 @@ fn get_feature_snapshot(app: AppHandle) -> FeatureSnapshotDto {
     snapshot_to_dto(&current_feature_snapshot(&app))
 }
 
+/// Insights from v1 product rules over the cached Feature snapshot (P4-E2-T3).
+///
+/// Evaluate-on-read — no separate Insights cache / SQLite. Soft-fails to `[]`.
+#[tauri::command]
+fn get_insights(app: AppHandle) -> InsightsDto {
+    let snapshot = current_feature_snapshot(&app);
+    let Some(state) = app.try_state::<InsightsEngineState>() else {
+        return InsightsDto {
+            insights: Vec::new(),
+        };
+    };
+    evaluate_insights(&state.engine, &snapshot)
+}
+
 /// Shows the Dashboard window (P4-E1-T2). Soft-fail if the window is missing.
 #[tauri::command]
 fn open_dashboard(app: AppHandle) -> Result<(), String> {
@@ -424,12 +557,14 @@ pub fn run() -> DesktopResult<()> {
 
             ingest_host::start_ingest_host(app.handle());
             feature_host::start_feature_host(app.handle());
+            app.manage(InsightsEngineState::new());
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_status,
             get_feature_snapshot,
+            get_insights,
             open_dashboard,
             core_ping,
             get_pairing_token
@@ -622,6 +757,119 @@ mod tests {
             s.get("timestampStart").and_then(|v| v.as_i64()),
             Some(900)
         );
+
+        let raw = serde_json::to_string(&dto).expect("string");
+        assert!(!raw.contains("/Users"));
+        assert!(!raw.contains(".biofocus"));
+        assert!(!raw.contains("rmssd"));
+    }
+
+    #[test]
+    fn empty_snapshot_insights_dto_is_idle() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("register");
+        let dto = evaluate_insights(&engine, &FeatureSnapshot::empty());
+        assert!(dto.insights.is_empty());
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(
+            obj.get("insights")
+                .and_then(|v| v.as_array())
+                .map(|a| a.len()),
+            Some(0)
+        );
+        assert!(!obj.contains_key("payload"));
+        assert!(!obj.contains_key("path"));
+    }
+
+    #[test]
+    fn unregistered_engine_insights_are_empty() {
+        let engine = KnowledgeEngine::new();
+        let window =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let snap = FeatureSnapshot {
+            features: vec![Feature {
+                feature_id: "ContextSwitchRate".into(),
+                time_window: window,
+                value: FeatureValue::Scalar(2.5),
+                provenance: vec![Uuid::from_u128(2)],
+            }],
+            signals: vec![Signal {
+                id: Uuid::from_u128(9),
+                signal_type: "High_Stress".into(),
+                timestamp_start: UnixTimestamp::from_secs(900),
+                timestamp_end: UnixTimestamp::from_secs(1260),
+                severity: Severity::High,
+            }],
+        };
+        let dto = evaluate_insights(&engine, &snap);
+        assert!(dto.insights.is_empty());
+    }
+
+    #[test]
+    fn registered_engine_emits_insights_with_evidence_refs() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("register");
+        let window =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let signal_id = Uuid::from_u128(9);
+        let snap = FeatureSnapshot {
+            features: vec![
+                Feature {
+                    feature_id: "ContextSwitchRate".into(),
+                    time_window: window.clone(),
+                    value: FeatureValue::Scalar(2.5),
+                    provenance: vec![Uuid::from_u128(2)],
+                },
+                Feature {
+                    feature_id: "StressIndex".into(),
+                    time_window: window,
+                    value: FeatureValue::Scalar(80.0),
+                    provenance: vec![Uuid::from_u128(3)],
+                },
+            ],
+            signals: vec![Signal {
+                id: signal_id,
+                signal_type: "High_Stress".into(),
+                timestamp_start: UnixTimestamp::from_secs(900),
+                timestamp_end: UnixTimestamp::from_secs(1260),
+                severity: Severity::High,
+            }],
+        };
+        let dto = evaluate_insights(&engine, &snap);
+        assert!(
+            dto.insights.len() >= 2,
+            "expected stress + context insights, got {}",
+            dto.insights.len()
+        );
+
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let insights = json
+            .get("insights")
+            .and_then(|v| v.as_array())
+            .expect("insights");
+        for item in insights {
+            let obj = item.as_object().expect("insight obj");
+            assert!(obj.contains_key("id"));
+            assert!(obj.contains_key("title"));
+            assert!(obj.contains_key("description"));
+            assert!(obj.contains_key("category"));
+            let evidence = obj
+                .get("evidenceList")
+                .and_then(|v| v.as_array())
+                .expect("evidenceList");
+            assert!(!evidence.is_empty());
+            for ev in evidence {
+                let e = ev.as_object().expect("evidence obj");
+                let kind = e.get("kind").and_then(|v| v.as_str()).expect("kind");
+                assert!(kind == "feature" || kind == "signal", "kind={kind}");
+                assert!(e.get("id").and_then(|v| v.as_str()).is_some());
+            }
+            assert!(!obj.contains_key("payload"));
+            assert!(!obj.contains_key("observations"));
+        }
 
         let raw = serde_json::to_string(&dto).expect("string");
         assert!(!raw.contains("/Users"));

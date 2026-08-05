@@ -32,9 +32,9 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P4-E2-T2 → Done; Ready → **P4-E2-T3** (Insights IPC + Dashboard list — Dev + UX)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs: `docs/12-development.md` — replace «Product rules → T2» with entrypoint `knowledge_engine::register_insights_v1`; optional note in `ARCHITECTURE_STATUS` / decision-log if Phase 4 status tracks Insights
+- [x] `/docs/SPRINT_ROADMAP.md` — P4-E2-T2 → Done; Ready → **P4-E2-T3** (Insights IPC + Dashboard list — Dev + UX)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/12-development.md` entrypoint `knowledge_engine::register_insights_v1`; `ARCHITECTURE_STATUS` / `14-roadmap` Ready → T3
 
 ## Suggested next Ready task
 - **P4-E2-T3** — Insights IPC + Dashboard list (Dev + UX); depends on this + P4-E1-T2.

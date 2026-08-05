@@ -22,17 +22,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P4-E2-T2** |
+| **Ready** | **P4-E2-T3** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) · **P4-E1** (T1–T3) · **P4-E2-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) · **P4-E1** (T1–T3) · **P4-E2-T1** · **P4-E2-T2** |
 
 **Epic status:** P4-E1 ✅ · P4-E2 ◐ · P4-E3 ⬜
 
 **Phase 4 on `/docs/14-roadmap.md`:** opened 2026-08-05
 
 **Рекомендуемый порядок:**  
-~~P4-E1~~ → ~~P4-E2-T1~~ → **T2** → T3 → P4-E3-T1 → T2 → T3
+~~P4-E1~~ → ~~P4-E2-T1~~ → ~~T2~~ → **T3** → P4-E3-T1 → T2 → T3
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -41,10 +41,10 @@
 
 ### Active assignment
 
-**Ready now:** **P4-E2-T2** — Rule Insights v1 — role **Dev**.  
-Brief: `docs/handoffs/P4-E2-T2-pm-brief.md`.
+**Ready now:** **P4-E2-T3** — Insights IPC + Dashboard list — role **Dev + UX**.  
+Brief: `docs/handoffs/P4-E2-T3-pm-brief.md`.
 
-**Closed:** P4-E2-T1 (QA Pass, 2026-08-05) — `KnowledgeEngine` + `bio-spec` Insight/Evidence; product rules → T2.
+**Closed:** P4-E2-T2 (QA Pass, 2026-08-05) — `register_insights_v1` (`high_stress_period_v1` + `context_switch_elevated_v1`); IPC/UI → T3.
 
 ---
 
@@ -211,8 +211,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 ## Sprint 8 (after E1)
 
 4. ~~P4-E2-T1 — knowledge-engine + Insight types~~ **Done**  
-5. **P4-E2-T2** — Rule Insights v1 ← **Ready (Dev)**  
-6. P4-E2-T3 — Insights IPC + Dashboard list  
+5. ~~P4-E2-T2 — Rule Insights v1~~ **Done**  
+6. **P4-E2-T3** — Insights IPC + Dashboard list ← **Ready (Dev + UX)**  
 7. P4-E3-T1 — report-engine builder  
 8. P4-E3-T2 — Optional local LLM adapter  
 9. P4-E3-T3 — Report UX  

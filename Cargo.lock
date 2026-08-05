@@ -661,6 +661,7 @@ dependencies = [
  "bio-spec",
  "feature-engine",
  "ingest",
+ "knowledge-engine",
  "macos-collector",
  "pipeline",
  "plugin-sdk",
