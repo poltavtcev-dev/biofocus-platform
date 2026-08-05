@@ -33,11 +33,12 @@
 
 UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer name.
 
-### Wearable / companion (Phase 5)
+### Wearable / companion (Phase 5 — Done)
 
-- **Phase 5 (active):** **P5-E1 + P5-E2 Done** — opt-in LAN bind (ADR-005) + advertise hints + Companion Base URL / token/QR. Next: runnable **iOS HealthKit** companion (**P5-E3-T1**) posts HR `Observation`s to Desktop on the same LAN.
-- Today: HealthKit / CLI **sample** sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; iOS runnable target remains.
-- Later (post–Phase 5): Life Events + Calendar (P6); additional wearable bridges; plugins (IDE/Git/Browser) later.
+- **Shipped:** opt-in LAN bind (ADR-005) + advertise hints + Companion Base URL / token/QR + runnable **iOS HealthKit** companion posts HR `Observation`s to Desktop ingest (Simulator loopback or physical phone on LAN).
+- **Dogfood:** end-to-end operator runbook in `docs/12-development.md` § Wearable dogfood runbook. Companion READMEs mirror the same steps.
+- Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
+- **Phase 6 (active):** Life Events as `Observation` kinds (ADR-006 Done) → Desktop quick-log (**P6-E2-T1** Ready) → Calendar → meeting-density Features. Later: additional wearable bridges; plugins (IDE/Git/Browser).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 
 Dogfood tip: if `base_url_hints` is empty under `BIOFOCUS_INGEST_LAN=1`, set `BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>` before pairing.
@@ -108,12 +109,12 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 5** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
+Immediate Kanban = **Phase 6** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
 
 | Phase | Focus |
 | :--- | :--- |
-| **5** | Wearable dogfood (LAN → HealthKit) — **active** |
-| **6** | Life Events v1 + Calendar |
+| **5** | Wearable dogfood (LAN → HealthKit) — **done** |
+| **6** | Life Events v1 + Calendar — **active** (Ready **P6-E2-T1**) |
 | **7** | Feature confidence + Explanation factors |
 | **8** | Pattern Discovery v1 (ADR for history/recompute) |
 | **9** | Deterministic Recommendations |

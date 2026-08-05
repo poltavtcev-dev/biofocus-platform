@@ -94,6 +94,13 @@
 //! Returns the local pairing Bearer token (+ QR SVG) for companion share.
 //! Never returns filesystem paths. UI must not read `~/.biofocus` itself.
 //!
+//! ## `log_life_event` / `list_recent_life_events` (P6-E2-T1)
+//!
+//! Menubar quick-log for v1 Life Event Observations (`data_type: "life_event"`,
+//! `payload.kind` ∈ coffee / walk / lunch / workout). Host validates via
+//! `bio_spec`, appends through [`storage::ObservationRepository`] (same store
+//! as ingest — no parallel table). UI never opens SQLite.
+//!
 //! ## Local ingest HTTP (Phase 2)
 //!
 //! On startup the host opens the default DB, loads [`ingest::IngestConfig`],
@@ -116,6 +123,7 @@
 mod alert_state;
 mod feature_host;
 mod ingest_host;
+mod life_event_ipc;
 
 use std::path::Path;
 
@@ -659,6 +667,22 @@ fn get_pairing_token() -> Result<PairingTokenInfo, String> {
     resolve_pairing_info()
 }
 
+/// Logs a v1 Life Event Observation from the Menubar (P6-E2-T1 / ADR-006).
+///
+/// Persists via [`storage::ObservationRepository`] — UI ↛ SQLite. Calm errors.
+#[tauri::command]
+fn log_life_event(kind: String) -> Result<life_event_ipc::LifeEventDto, String> {
+    life_event_ipc::log_life_event(&kind)
+}
+
+/// Recent Life Events for Menubar confirmation (newest first). Soft-fails to Err string.
+#[tauri::command]
+fn list_recent_life_events(
+    limit: Option<u32>,
+) -> Result<Vec<life_event_ipc::LifeEventDto>, String> {
+    life_event_ipc::list_recent_life_events(limit)
+}
+
 /// Starts the Tauri event loop (window + tray shell + local ingest).
 pub fn run() -> DesktopResult<()> {
     let _ = runtime::init_tracing(Some("info"));
@@ -718,7 +742,9 @@ pub fn run() -> DesktopResult<()> {
             generate_report,
             open_dashboard,
             core_ping,
-            get_pairing_token
+            get_pairing_token,
+            log_life_event,
+            list_recent_life_events
         ])
         .build(tauri::generate_context!())?;
 

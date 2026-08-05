@@ -310,3 +310,43 @@ LAN opt-in (`BIOFOCUS_INGEST_LAN=1`) example:
 | `qrSvg` | string | SVG QR encoding the token |
 
 Errors are short UI-safe strings (no absolute paths). Never returns Observation payloads or DB paths.
+
+### `log_life_event` / `list_recent_life_events` (P6-E2-T1)
+
+- **Invoke:** `invoke("log_life_event", { kind })` / `invoke("list_recent_life_events", { limit? })`
+- **Purpose:** Menubar quick-log for v1 Life Event Observations (ADR-006). Same Observation store as ingest — no parallel table. UI ↛ SQLite.
+- **Contract:** `data_type: "life_event"`, `provider_id: "com.biofocus.desktop"`, `payload.kind` ∈ `coffee` / `walk` / `lunch` / `workout`. Validated with `bio_spec::validate_observation_payload` before insert via `ObservationRepository`.
+- **Idle-safe:** on-demand invoke only (no poll loop for logging).
+
+`log_life_event` success:
+
+```json
+{
+  "id": "0190…",
+  "kind": "coffee",
+  "timestamp": 1721990400,
+  "providerId": "com.biofocus.desktop"
+}
+```
+
+`list_recent_life_events` success (newest first; default limit 8, max 32):
+
+```json
+[
+  {
+    "id": "0190…",
+    "kind": "coffee",
+    "timestamp": 1721990400,
+    "providerId": "com.biofocus.desktop"
+  }
+]
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `id` | string | Observation UUID |
+| `kind` | string | v1 Life Event kind |
+| `timestamp` | number | Unix seconds UTC |
+| `providerId` | string | Usually `com.biofocus.desktop` for quick-log |
+
+Errors are calm UI-safe strings (unknown kind, storage soft-fail). Never returns raw biometric payloads or absolute filesystem paths.
