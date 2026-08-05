@@ -105,6 +105,53 @@ Example failure:
 | `dbError` | string? | Present only when `dbStatus` is `"error"`; short + **no absolute filesystem paths** (`StorageError::public_message`) |
 | `alertLevel` | `"green"` \| `"yellow"` \| `"red"` | Menubar traffic-light from Core (`feature_engine::map_alert_level`); independent of `dbStatus`; default `green` without Feature evidence. No Observation / biometric fields. |
 
+`get_status` stays lean (version / dbStatus / alertLevel only). Feature time-series for Dashboard use [`get_feature_snapshot`](#get_feature_snapshot-p4-e1-t1).
+
+### `get_feature_snapshot` (P4-E1-T1)
+
+- **Invoke:** `invoke("get_feature_snapshot")`
+- **Purpose:** Latest cached Feature snapshot (+ optional Signals) for Dashboard charts.
+- **Source:** In-memory cache updated by the Feature Worker (`CatalogAlertHook` → `feature_engine::FeatureSnapshot`). Command path is a **pure cache read** — no busy-loop, no SQLite open inside the invoke.
+- **Empty:** `{ "features": [], "signals": [] }` when idle / worker not started / no evidence yet.
+- **Never returns** raw Observation biometric payloads or absolute filesystem paths. Provenance is Observation **ids only**.
+
+Example (non-empty):
+
+```json
+{
+  "features": [
+    {
+      "featureId": "FocusScore",
+      "timeWindow": { "start": 100, "end": 1000 },
+      "value": 72.5,
+      "provenance": ["0190…"]
+    }
+  ],
+  "signals": [
+    {
+      "id": "0190…",
+      "type": "High_Stress",
+      "timestampStart": 900,
+      "timestampEnd": 1260,
+      "severity": "high"
+    }
+  ]
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `features[]` | object | Windowed Features (`FocusScore`, `StressIndex`, `FatigueIndex`, `ContextSwitchRate`, …) |
+| `features[].featureId` | string | Stable Feature name |
+| `features[].timeWindow` | `{ start, end }` | Unix seconds UTC |
+| `features[].value` | number \| object | Scalar `f64` or structured JSON |
+| `features[].provenance` | string[] | Observation UUIDs used as evidence |
+| `signals[]` | object | Optional Signals from the same engine run |
+| `signals[].type` | string | e.g. `High_Stress` |
+| `signals[].severity` | `"low"` \| `"medium"` \| `"high"` \| `"critical"` | Wire form of `bio_spec::Severity` |
+
+Core API (crate): `feature_engine::FeatureSnapshot::from_engine_output` — Features + Signals without Observation payloads.
+
 ### `core_ping` (legacy fallback)
 
 Scaffold probe from P1-E3-T1. UI prefers `get_status`. Still registered for

@@ -1,13 +1,15 @@
-//! Shared Menubar alert level updated by the Feature Worker (P3-E3-T2).
+//! Shared Menubar alert level + Feature snapshot cache (P3-E3-T2 / P4-E1-T1).
 //!
-//! Latest [`AlertLevel`](feature_engine::AlertLevel) is computed in-process from
-//! normalized Observation batches (catalog Features + Signals). Exposed to the
-//! UI only via IPC `get_status` — never Observation payloads.
+//! Latest [`AlertLevel`](feature_engine::AlertLevel) and
+//! [`FeatureSnapshot`](feature_engine::FeatureSnapshot) are computed in-process
+//! from normalized Observation batches (catalog Features + Signals). Exposed to
+//! the UI only via IPC (`get_status` / `get_feature_snapshot`) — never Observation
+//! payloads.
 
 use std::sync::{Arc, Mutex};
 
 use feature_engine::{
-    map_alert_level, register_catalog_v1, AlertLevel, FeatureEngine, WINDOW_SECS,
+    map_alert_level, register_catalog_v1, AlertLevel, FeatureEngine, FeatureSnapshot, WINDOW_SECS,
 };
 use pipeline::NormalizedBatch;
 use runtime::{FeatureHook, Observation};
@@ -50,9 +52,47 @@ impl Default for AlertState {
     }
 }
 
-/// Feature Worker hook: rolling Observation snapshot → catalog → alert map.
+/// Process-wide latest Feature snapshot for IPC (default empty = idle).
+#[derive(Debug, Clone)]
+pub struct SnapshotState {
+    inner: Arc<Mutex<FeatureSnapshot>>,
+}
+
+impl SnapshotState {
+    /// Starts empty (idle / no Feature evidence yet).
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(FeatureSnapshot::empty())),
+        }
+    }
+
+    /// Cloneable handle for the Feature Worker hook.
+    #[must_use]
+    pub fn share(&self) -> Arc<Mutex<FeatureSnapshot>> {
+        Arc::clone(&self.inner)
+    }
+
+    /// Current snapshot for `get_feature_snapshot` (empty if lock poisoned).
+    #[must_use]
+    pub fn current(&self) -> FeatureSnapshot {
+        self.inner
+            .lock()
+            .map(|g| g.clone())
+            .unwrap_or_else(|_| FeatureSnapshot::empty())
+    }
+}
+
+impl Default for SnapshotState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Feature Worker hook: rolling Observation snapshot → catalog → alert + cache.
 pub struct CatalogAlertHook {
     level: Arc<Mutex<AlertLevel>>,
+    snapshot: Arc<Mutex<FeatureSnapshot>>,
     recent: Vec<Observation>,
     engine: FeatureEngine,
 }
@@ -60,13 +100,14 @@ pub struct CatalogAlertHook {
 impl CatalogAlertHook {
     /// Builds a catalog-registered engine. Soft-fails registration (empty engine).
     #[must_use]
-    pub fn new(level: Arc<Mutex<AlertLevel>>) -> Self {
+    pub fn new(level: Arc<Mutex<AlertLevel>>, snapshot: Arc<Mutex<FeatureSnapshot>>) -> Self {
         let mut engine = FeatureEngine::new();
         if let Err(err) = register_catalog_v1(&mut engine) {
             warn!(error = %err, "alert hook: catalog register failed; alerts stay green");
         }
         Self {
             level,
+            snapshot,
             recent: Vec::new(),
             engine,
         }
@@ -99,11 +140,15 @@ impl FeatureHook for CatalogAlertHook {
         match self.engine.run(&self.recent) {
             Ok(output) => {
                 let next = map_alert_level(&output);
+                let snap = FeatureSnapshot::from_engine_output(&output);
                 if let Ok(mut guard) = self.level.lock() {
                     if *guard != next {
                         debug!(alert = next.as_str(), "alert level updated");
                     }
                     *guard = next;
+                }
+                if let Ok(mut guard) = self.snapshot.lock() {
+                    *guard = snap;
                 }
             }
             Err(err) => {
@@ -117,7 +162,7 @@ impl FeatureHook for CatalogAlertHook {
 mod tests {
     use super::*;
     use bio_spec::UnixTimestamp;
-    use feature_engine::HIGH_STRESS_SIGNAL_TYPE;
+    use feature_engine::{HIGH_STRESS_SIGNAL_TYPE, STRESS_INDEX_ID};
     use pipeline::{run_quality_pipeline, DedupeState};
     use serde_json::json;
     use uuid::Uuid;
@@ -140,9 +185,15 @@ mod tests {
     }
 
     #[test]
-    fn hook_elevated_stress_becomes_yellow() {
+    fn default_snapshot_is_empty() {
+        assert!(SnapshotState::new().current().is_empty());
+    }
+
+    #[test]
+    fn hook_elevated_stress_becomes_yellow_and_caches_features() {
         let state = AlertState::new();
-        let mut hook = CatalogAlertHook::new(state.share());
+        let snapshots = SnapshotState::new();
+        let mut hook = CatalogAlertHook::new(state.share(), snapshots.share());
         let mut dedupe = DedupeState::new();
         let batch = run_quality_pipeline(
             vec![hrv(1, 1500, 25.0), hrv(2, 1800, 25.0)],
@@ -152,12 +203,26 @@ mod tests {
         // RMSSD 25 → stress ≈ (70-25)/(70-15)*100 ≈ 81.8 > 60 → Yellow (no High_Stress span).
         hook.on_normalized(&batch);
         assert_eq!(state.current(), AlertLevel::Yellow);
+
+        let snap = snapshots.current();
+        assert!(!snap.is_empty());
+        assert!(snap
+            .features
+            .iter()
+            .any(|f| f.feature_id == STRESS_INDEX_ID));
+        let stress = snap
+            .features
+            .iter()
+            .find(|f| f.feature_id == STRESS_INDEX_ID)
+            .expect("StressIndex");
+        assert!(!stress.provenance.is_empty());
     }
 
     #[test]
     fn hook_high_stress_signal_becomes_red() {
         let state = AlertState::new();
-        let mut hook = CatalogAlertHook::new(state.share());
+        let snapshots = SnapshotState::new();
+        let mut hook = CatalogAlertHook::new(state.share(), snapshots.share());
         let mut dedupe = DedupeState::new();
         let mut raw = Vec::new();
         for (i, ts) in (900..=1260).step_by(60).enumerate() {
@@ -167,11 +232,8 @@ mod tests {
         hook.on_normalized(&batch);
         assert_eq!(state.current(), AlertLevel::Red);
 
-        // Sanity: engine would have emitted High_Stress (covered in feature-engine).
-        let mut engine = FeatureEngine::new();
-        register_catalog_v1(&mut engine).expect("reg");
-        let out = engine.run(batch.observations()).expect("run");
-        assert!(out
+        let snap = snapshots.current();
+        assert!(snap
             .signals
             .iter()
             .any(|s| s.signal_type == HIGH_STRESS_SIGNAL_TYPE));
