@@ -1,5 +1,6 @@
 //! Axum routes for local ingest.
 
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -13,7 +14,9 @@ use runtime::ObservationSender;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
+use crate::advertise::AdvertiseInfo;
 use crate::auth::{bearer_token, tokens_equal};
+use crate::config::{DEFAULT_INGEST_PORT, INGEST_BIND_HOST};
 use crate::status::{probe_db_at, StatusResponse};
 
 /// Soft-fail DB probe used by `GET /v1/status`.
@@ -30,10 +33,12 @@ pub struct IngestState {
     pub version: Arc<str>,
     /// Soft-fail DB probe for status (no Observation payload).
     pub db_probe: DbProbe,
+    /// Bind mode + base URL hints for `GET /v1/status` (P5-E1-T2).
+    pub advertise: AdvertiseInfo,
 }
 
 impl IngestState {
-    /// Builds state with crate version and an always-ok DB probe (tests / callers that override).
+    /// Builds state with crate version, loopback advertise, and an always-ok DB probe.
     #[must_use]
     pub fn new(token: impl Into<String>, tx: ObservationSender) -> Self {
         Self {
@@ -41,6 +46,7 @@ impl IngestState {
             tx,
             version: Arc::from(env!("CARGO_PKG_VERSION")),
             db_probe: Arc::new(|| Ok(())),
+            advertise: AdvertiseInfo::for_bind(INGEST_BIND_HOST, DEFAULT_INGEST_PORT),
         }
     }
 
@@ -49,6 +55,19 @@ impl IngestState {
     pub fn with_version(mut self, version: impl Into<String>) -> Self {
         self.version = Arc::from(version.into());
         self
+    }
+
+    /// Overrides advertise hints (bind mode + base URLs).
+    #[must_use]
+    pub fn with_advertise(mut self, advertise: AdvertiseInfo) -> Self {
+        self.advertise = advertise;
+        self
+    }
+
+    /// Sets advertise from bind host + port (derives hints on call; no spin).
+    #[must_use]
+    pub fn with_bind(self, bind_host: Ipv4Addr, port: u16) -> Self {
+        self.with_advertise(AdvertiseInfo::for_bind(bind_host, port))
     }
 
     /// Overrides the soft-fail DB probe.
@@ -133,7 +152,7 @@ pub fn ingest_router(state: IngestState) -> Router {
 
 async fn get_status(State(state): State<IngestState>) -> impl IntoResponse {
     let probe = (state.db_probe)();
-    let body = StatusResponse::from_probe(state.version.as_ref(), probe);
+    let body = StatusResponse::from_probe(state.version.as_ref(), probe, &state.advertise);
     (StatusCode::OK, Json(body))
 }
 

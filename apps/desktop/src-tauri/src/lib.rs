@@ -457,8 +457,12 @@ struct CorePing {
 struct PairingTokenInfo {
     /// Bearer token value (64 hex chars when from file generation).
     token: String,
-    /// Loopback ingest base URL companions should use on the same Mac / Simulator.
+    /// Primary ingest base URL (loopback or LAN hint). Companions / Simulator.
     ingest_base_url: String,
+    /// `"loopback"` or `"lan"` — matches HTTP `/v1/status` `bind_mode`.
+    bind_mode: String,
+    /// Usable base URL hints (primary first). Empty only if LAN discovery failed.
+    base_url_hints: Vec<String>,
     /// `true` when `BIOFOCUS_INGEST_TOKEN` overrides the on-disk file.
     from_env: bool,
     /// SVG markup for a QR encoding the token (phone camera → paste / scan).
@@ -488,19 +492,47 @@ fn render_token_qr_svg(token: &str) -> Result<String, String> {
         .build())
 }
 
-fn build_pairing_info(token: String, from_env: bool) -> Result<PairingTokenInfo, String> {
+fn bind_mode_label(mode: ingest::BindMode) -> &'static str {
+    match mode {
+        ingest::BindMode::Loopback => "loopback",
+        ingest::BindMode::Lan => "lan",
+    }
+}
+
+fn build_pairing_info(
+    token: String,
+    from_env: bool,
+    advertise: &ingest::AdvertiseInfo,
+) -> Result<PairingTokenInfo, String> {
     let qr_svg = render_token_qr_svg(&token)?;
-    let ingest_base_url = format!(
-        "http://{}:{}",
-        ingest::INGEST_BIND_HOST,
-        ingest::DEFAULT_INGEST_PORT
-    );
+    // Prefer primary LAN/loopback hint; fall back to loopback so Simulator path stays usable.
+    let ingest_base_url = advertise
+        .primary_base_url()
+        .map(str::to_owned)
+        .unwrap_or_else(|| {
+            ingest::http_base_url(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT)
+        });
     Ok(PairingTokenInfo {
         token,
         ingest_base_url,
+        bind_mode: bind_mode_label(advertise.bind_mode).to_owned(),
+        base_url_hints: advertise.base_url_hints.clone(),
         from_env,
         qr_svg,
     })
+}
+
+fn resolve_pairing_advertise() -> Result<ingest::AdvertiseInfo, String> {
+    let bind_host = ingest::resolve_bind_host().map_err(|err| match err {
+        ingest::IngestError::InvalidBindHost { value } => {
+            format!("Invalid ingest bind host: {value}")
+        }
+        _ => "Could not resolve ingest bind host.".into(),
+    })?;
+    Ok(ingest::AdvertiseInfo::for_bind(
+        bind_host,
+        ingest::DEFAULT_INGEST_PORT,
+    ))
 }
 
 fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
@@ -508,7 +540,8 @@ fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
         .map(|value| !value.trim().is_empty())
         .unwrap_or(false);
     let token = ingest::resolve_ingest_token().map_err(pairing_error_message)?;
-    build_pairing_info(token, from_env)
+    let advertise = resolve_pairing_advertise()?;
+    build_pairing_info(token, from_env, &advertise)
 }
 
 /// Probes a DB path (create + WAL + migrate-on-open). Soft-fail via `Err`.
@@ -1043,7 +1076,9 @@ mod tests {
 
     #[test]
     fn pairing_info_json_has_no_paths() {
-        let info = build_pairing_info("abc123deadbeef".into(), false).expect("qr");
+        let advertise =
+            ingest::AdvertiseInfo::for_bind(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT);
+        let info = build_pairing_info("abc123deadbeef".into(), false, &advertise).expect("qr");
         let json = serde_json::to_value(&info).expect("serialize");
         let obj = json.as_object().expect("object");
         assert_eq!(
@@ -1054,12 +1089,78 @@ mod tests {
             obj.get("ingestBaseUrl").and_then(|v| v.as_str()),
             Some("http://127.0.0.1:8787")
         );
+        assert_eq!(
+            obj.get("bindMode").and_then(|v| v.as_str()),
+            Some("loopback")
+        );
+        let hints = obj
+            .get("baseUrlHints")
+            .and_then(|v| v.as_array())
+            .expect("baseUrlHints");
+        assert_eq!(hints.len(), 1);
+        assert_eq!(hints[0].as_str(), Some("http://127.0.0.1:8787"));
         assert_eq!(obj.get("fromEnv").and_then(|v| v.as_bool()), Some(false));
         let qr = obj.get("qrSvg").and_then(|v| v.as_str()).expect("qrSvg");
         assert!(qr.contains("<svg"), "expected SVG markup");
         assert!(!obj.contains_key("path"));
         assert!(!obj.contains_key("home"));
-        assert!(!serde_json::to_string(&info).unwrap().contains(".biofocus"));
+        let raw = serde_json::to_string(&info).unwrap();
+        assert!(!raw.contains(".biofocus"));
+        assert!(!raw.contains("/Users"));
+        assert!(!raw.contains("observation"));
+    }
+
+    #[test]
+    fn pairing_info_lan_advertise_uses_primary_hint() {
+        let advertise = ingest::AdvertiseInfo::for_bind_with(
+            ingest::INGEST_LAN_BIND_HOST,
+            ingest::DEFAULT_INGEST_PORT,
+            || vec![std::net::Ipv4Addr::new(192, 168, 1, 40)],
+        );
+        let info = build_pairing_info("tok".into(), true, &advertise).expect("qr");
+        assert_eq!(info.bind_mode, "lan");
+        assert_eq!(info.ingest_base_url, "http://192.168.1.40:8787");
+        assert_eq!(
+            info.base_url_hints,
+            vec!["http://192.168.1.40:8787".to_owned()]
+        );
+        assert!(info.from_env);
+    }
+
+    #[test]
+    fn resolve_pairing_advertise_loopback_by_default() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
+        // SAFETY: serialized by ENV_LOCK; restore LAN knobs before unlock.
+        unsafe {
+            std::env::remove_var(ingest::INGEST_LAN_ENV);
+            std::env::remove_var(ingest::INGEST_BIND_HOST_ENV);
+        }
+        let advertise = resolve_pairing_advertise().expect("advertise");
+        assert_eq!(advertise.bind_mode, ingest::BindMode::Loopback);
+        assert_eq!(
+            advertise.base_url_hints,
+            vec!["http://127.0.0.1:8787".to_owned()]
+        );
+    }
+
+    #[test]
+    fn resolve_pairing_advertise_lan_flag_is_lan_mode() {
+        let _guard = ENV_LOCK.lock().expect("env lock");
+        unsafe {
+            std::env::set_var(ingest::INGEST_LAN_ENV, "1");
+            std::env::remove_var(ingest::INGEST_BIND_HOST_ENV);
+        }
+        let advertise = resolve_pairing_advertise().expect("advertise");
+        assert_eq!(advertise.bind_mode, ingest::BindMode::Lan);
+        // Primary hint may be empty if OS discovery fails in CI; mode must still be lan.
+        for url in &advertise.base_url_hints {
+            assert!(url.starts_with("http://"), "hint={url}");
+            assert!(url.contains(":8787"), "hint={url}");
+            assert!(!url.contains("127.0.0.1"), "LAN hint should not be loopback");
+        }
+        unsafe {
+            std::env::remove_var(ingest::INGEST_LAN_ENV);
+        }
     }
 
     #[test]

@@ -7,6 +7,7 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
+use crate::advertise::AdvertiseInfo;
 use crate::config::{IngestConfig, INGEST_BIND_HOST};
 use crate::error::{IngestError, IngestResult};
 use crate::routes::{ingest_router, IngestState};
@@ -54,6 +55,8 @@ pub async fn serve_with_shutdown(
     shutdown: oneshot::Receiver<()>,
 ) -> IngestResult<SocketAddr> {
     let (listener, addr) = bind_host(config.bind_host, config.port).await?;
+    // Refresh hints with the actual bound port (ephemeral `0` in tests).
+    let state = state.with_advertise(AdvertiseInfo::for_bind(config.bind_host, addr.port()));
     let app = ingest_router(state);
 
     axum::serve(listener, app)

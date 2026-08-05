@@ -4,6 +4,10 @@ import { invoke } from "@tauri-apps/api/core";
 export type PairingTokenInfo = {
   token: string;
   ingestBaseUrl: string;
+  /** `"loopback"` | `"lan"` — from host advertise (P5-E1-T2). */
+  bindMode: string;
+  /** Usable base URLs; primary is also `ingestBaseUrl`. */
+  baseUrlHints: string[];
   fromEnv: boolean;
   qrSvg: string;
 };
@@ -12,6 +16,10 @@ type PairingPayload = {
   token?: string;
   ingestBaseUrl?: string;
   ingest_base_url?: string;
+  bindMode?: string;
+  bind_mode?: string;
+  baseUrlHints?: string[];
+  base_url_hints?: string[];
   fromEnv?: boolean;
   from_env?: boolean;
   qrSvg?: string;
@@ -35,9 +43,23 @@ function normalize(payload: PairingPayload): PairingTokenInfo | null {
   if (!token || !ingestBaseUrl || !qrSvg) {
     return null;
   }
+  const bindMode = (
+    payload.bindMode ??
+    payload.bind_mode ??
+    "loopback"
+  ).trim();
+  const baseUrlHints = (
+    payload.baseUrlHints ??
+    payload.base_url_hints ??
+    [ingestBaseUrl]
+  )
+    .map((u) => u.trim())
+    .filter(Boolean);
   return {
     token,
     ingestBaseUrl,
+    bindMode: bindMode || "loopback",
+    baseUrlHints: baseUrlHints.length > 0 ? baseUrlHints : [ingestBaseUrl],
     fromEnv: Boolean(payload.fromEnv ?? payload.from_env),
     qrSvg,
   };

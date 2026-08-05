@@ -11,21 +11,36 @@
 
 ## Value Proposition
 
-**BioFocus** — Local-First open-source платформа, которая на устройстве пользователя:
+**BioFocus** — Local-First open-source **Personal Performance OS**: помогает понимать продуктивность, концентрацию, стресс и восстановление **на устройстве пользователя**.
 
 1. Собирает биометрию и контекст работы как неизменяемые факты (`Observation`).
 2. Детерминированно считает метрики фокуса / стресса / усталости (`Feature`).
 3. Выдаёт объяснимые инсайты с Evidence (`Insight`) — опционально через LLM только как интерпретатор, не как движок метрик.
 
-**Для кого:** персональный самоконтроль ритма работы (не меддиагностика, не employee surveillance, не облако по умолчанию).
+**North star:** *Personal Pattern Discovery* (персональные закономерности) — не универсальные советы и не AI-обёртка.  
+**Для кого:** персональный самоконтроль ритма работы (не меддиагностика, не employee surveillance, не облако по умолчанию).  
+**Full vision + sequencing:** `/docs/00-vision.md`.
 
-### Wearable / companion (forward)
+### Analysis levels (L1–L5)
 
-- Today: HealthKit / CLI **sample** path for the ingest HTTP contract.
-- Later: phone companion bridges for additional wearables (vendor-neutral `Observation` + `provider_id`); **LAN-reachable ingest** (today loopback-only) before physical-phone dogfood.
-- Menubar alert colors: Phase 3 E3.
+| L | Layer | Engine today |
+| :--- | :--- | :--- |
+| 1 | Observations | ingest / collectors / SQLite |
+| 2 | Features | `feature-engine` |
+| 3 | Knowledge (Insights) | `knowledge-engine` |
+| 4 | Recommendations | thin Insight text → Phase 9 engine |
+| 5 | Coaching (AI interpret) | `report-engine` + opt-in LLM |
 
-Until then: macOS `context_window` / optional `keystrokes` + sample HR into ingest.
+UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer name.
+
+### Wearable / companion (Phase 5)
+
+- **Phase 5 (active):** opt-in **LAN-reachable ingest** shipped (**P5-E1-T1** / ADR-005: `BIOFOCUS_INGEST_LAN=1`, default still loopback) → next: advertise LAN base URL (**T2**) → Companion pairing UX → runnable **iOS HealthKit** companion posts HR `Observation`s to Desktop on the same LAN.
+- Today: HealthKit / CLI **sample** sources + loopback ingest; physical-phone dogfood needs URL hints (T2) + pairing UX + iOS runnable.
+- Later (post–Phase 5): Life Events + Calendar (P6); additional wearable bridges; plugins (IDE/Git/Browser) later.
+- Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
+
+Until URL advertise ships: macOS `context_window` / optional `keystrokes` + sample HR via loopback / Simulator; LAN bind opt-in already available for manual IP.
 
 ---
 
@@ -75,8 +90,8 @@ Observation (immutable fact)
 | Storage | `rusqlite`, WAL, repositories |
 | Pipeline / Engines | `pipeline`, `feature-engine`, `knowledge-engine`, `report-engine` |
 | Plugins | `plugin-sdk` traits + adapters |
-| Ingest (Phase 2+) | Local HTTP (`127.0.0.1`), Bearer pairing token |
-| Desktop | Tauri v2, React/TS, Menubar + Dashboard (Phase 4) |
+| Ingest (Phase 2+) | Local HTTP; default loopback; opt-in LAN (ADR-005) + Bearer |
+| Desktop | Tauri v2, React/TS, Menubar + Dashboard window (presentation) |
 
 ### Explicit Non-Goals
 
@@ -91,6 +106,23 @@ Observation (immutable fact)
 
 ---
 
+## Horizon ladder (accepted)
+
+Immediate Kanban = **Phase 5** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
+
+| Phase | Focus |
+| :--- | :--- |
+| **5** | Wearable dogfood (LAN → HealthKit) — **active** |
+| **6** | Life Events v1 + Calendar |
+| **7** | Feature confidence + Explanation factors |
+| **8** | Pattern Discovery v1 (ADR for history/recompute) |
+| **9** | Deterministic Recommendations |
+| **10** | Plugin wave-1 (IDE/Git or Browser) |
+| **11** | AI coaching polish (prompts / providers UX) |
+| **12+** | Ambient sources + commercial packaging |
+
+**Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
+
 ## North Star for Engineering
 
-> Каждый Insight трассируем до Observation. Каждый crate компилируется без Tauri. Архитектура меняется только через ADR.
+> Каждый Insight трассируем до Observation. Каждый crate компилируется без Tauri. Архитектура меняется только через ADR. Personal Pattern Discovery — продуктовый north star (`/docs/00-vision.md`).

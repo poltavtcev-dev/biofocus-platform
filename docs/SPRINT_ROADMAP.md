@@ -1,10 +1,11 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 4: Dashboard UI & Local AI Insights** (Sprint 7–8) — **Done** 2026-08-05 (QA Pass with notes on P4-E3-T3).  
-> Phase 1 Foundation · Phase 2 Ingestion · Phase 3 Pipeline & Features · Phase 4 Dashboard & AI: **Done**.  
-> Out of scope until later / ADR: LAN ingest, wearable companion bridges, **new SQLite tables** (Insights stay derived/in-memory in Phase 4 v1).
+> **Phase 5: Wearable dogfood** (Sprint 9–10) — **Opened** 2026-08-05.  
+> Phase 1–4 Done. Goal: physical-phone path — **opt-in LAN ingest** → pairing shows LAN endpoint → **iOS HealthKit companion** posts HR `Observation`s to Desktop on the same LAN.
 
-**Phase 4 goal (shipped):** Local React Dashboard (Recharts) over Feature snapshots via IPC + deterministic Knowledge Insights + optional local LLM reports (Ollama / OpenAI-compatible). LLM **interprets** only — never computes Features.
+**Phase 5 goal:** Dogfood-ready wearable bridge without cloud. Default bind stays loopback; LAN is **explicit opt-in**. Same Observation HTTP contract (`POST /v1/ingest` + Bearer). No new SQLite tables without ADR + approve.
+
+**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 analysis stack · horizon P6–P12+ — `/docs/00-vision.md`. **Do not** pull P6+ Features/plugins into this Kanban until PM opens that phase.
 
 **Global DoD (каждая задача):**
 - [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight`)
@@ -12,139 +13,106 @@
 - [ ] UI ↛ SQLite (только IPC); Features/Insights считаются в Core
 - [ ] Тесты зелёные; `cargo check` / релевантный CI
 - [ ] **Idle footprint:** нет busy-loop; poll/refresh по событию или редкому таймеру
-- [ ] **Нет новой SQLite-схемы** без ADR + approve (Insights/reports — in-memory / derived)
+- [ ] **Нет новой SQLite-схемы** без ADR + approve
 - [ ] **Commit / PR по связанному кластеру** — `docs/12-development.md`
 - [ ] Copy спокойный, неоценочный (не «ты выгорел» / clinical claims)
+- [ ] **LAN / companion:** Bearer обязателен; нет cloud telemetry; default = loopback
 
 ---
 
-## Kanban Overview (Phase 4 closed)
+## Kanban Overview (Phase 5 active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | — |
+| **Ready** | **P5-E1-T2** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) · **Phase 4** (**P4-E1** · **P4-E2** · **P4-E3** T1–T3) |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **P5-E1-T1** |
 
-**Epic status:** P4-E1 ✅ · P4-E2 ✅ · P4-E3 ✅
+**Epic status:** P5-E1 ⬜ (T1 ✅) · P5-E2 ⬜ · P5-E3 ⬜
 
-**Phase 4 on `/docs/14-roadmap.md`:** closed 2026-08-05 (Kanban; cluster PR pending on `phase/4-dashboard-ai`)
+**Phase 5 on `/docs/14-roadmap.md`:** opened 2026-08-05
 
 **Рекомендуемый порядок:**  
-~~P4-E1~~ → ~~P4-E2~~ → ~~P4-E3-T1~~ → ~~P4-E3-T2~~ → ~~P4-E3-T3~~ ✅
+~~P5-E1-T1~~ → **P5-E1-T2** → P5-E2-T1 → P5-E3-T1 → P5-E3-T2
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
-**Suggested branch:** `phase/4-dashboard-ai` → **cluster PR** when ready.
+**Suggested branch:** `phase/5-wearable-dogfood` (base on latest `main`; Phase 4 cluster PR may land separately on `phase/4-dashboard-ai`).
 
 ### Active assignment
 
-**Ready now:** — (Phase 4 complete). Next ops: **cluster PR** on `phase/4-dashboard-ai`; Phase 5+ not in sprint until PM re-opens from `/docs/14-roadmap.md` / product choice.
+**Ready now:** **P5-E1-T2** — Advertise bind mode + base URL hints (Dev).  
+Brief: `docs/handoffs/P5-E1-T2-pm-brief.md`.
 
-**Closed:** P4-E3-T3 (QA Pass with notes, 2026-08-05) — Dashboard `generate_report` IPC + Report UX; Epic **P4-E3** ✅ · Phase 4 ✅.
+**Closed:** P5-E1-T1 (QA Pass with notes, 2026-08-05) — opt-in LAN bind (`BIOFOCUS_INGEST_LAN` / `BIOFOCUS_INGEST_BIND_HOST`); ADR-005; default loopback. Evidence: `docs/handoffs/P5-E1-T1-qa-to-pm.md`.
+
+**Ops note:** Phase 4 cluster PR on `phase/4-dashboard-ai` remains optional parallel ops — does not block Phase 5.
 
 ---
 
-## Epic P4-E1 — Feature IPC + Dashboard charts ✅
+## Epic P5-E1 — Opt-in LAN ingest
 
-**Цель:** UI получает windowed Feature snapshot только через IPC; Recharts dashboard без LLM.
+**Цель:** Physical phone on the same Wi-Fi can reach Desktop `/v1/ingest`. Default remains **loopback-only**; LAN bind is opt-in and documented.
 
-### P4-E1-T1 — Feature snapshot API + IPC
+### P5-E1-T1 — Opt-in LAN bind + config ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `runtime` / `feature-engine`, `apps/desktop/src-tauri`, optionally `bio-spec` DTO |
-| **Depends on** | Phase 3 (Feature Worker + DAG + AlertLevel) |
-| **AC** | Публичный Core API отдаёт недавний snapshot Features (+ optional Signals) с `provenance` / ids; отдельная IPC-команда (предпочтительно `get_feature_snapshot`, не раздувать `get_status`); payload без raw Observation biometrics / absolute paths; unit-тесты на empty + non-empty; idle-safe (pure read / cached snapshot). Нет Recharts, нет LLM, нет новой SQLite-таблицы. Документировать контракт в handoff + кратко в `docs/09-api.md` / `12-development.md`. |
-| **Out of scope** | Dashboard UI (→ T2/T3), Insights (→ E2), LLM (→ E3) |
+| **Modules** | `crates/ingest`, desktop host wire (`apps/desktop/src-tauri`), docs (`10-security`, `12-development`, `09-api` as needed) |
+| **Depends on** | Phase 2 ingest (loopback serve + Bearer) |
+| **AC** | (1) Default bind remains `127.0.0.1` (Simulator / same-machine unchanged). (2) Explicit opt-in enables LAN-reachable bind (e.g. env/config such as `BIOFOCUS_INGEST_LAN=1` and/or bind-host override — document the chosen knobs). (3) Bearer pairing token **still required** for `POST /v1/ingest`; no anonymous LAN ingest. (4) Without opt-in, behavior identical to today (loopback-only). (5) Unit/integration coverage: default loopback + opt-in LAN bind path (ephemeral port OK). (6) Idle-safe (tokio accept; no busy-loop). (7) Update `docs/10-security.md` + short note in `docs/12-development.md` (and `09-api.md` if bind surface changes). (8) Record **ADR-005** in `docs/decision-log.md`: opt-in LAN ingest for companion dogfood; default loopback. (9) No new SQLite schema; no iOS app work in this task. Handoff: `docs/handoffs/P5-E1-T1-dev-to-qa.md`. |
+| **Out of scope** | Companion UI LAN URL/QR (→ **E2-T1**), iOS runnable app (→ **E3**), cloud / mDNS discovery, TLS termination, new Observation types |
+| **Shipped** | `IngestConfig.bind_host`; `BIOFOCUS_INGEST_LAN` → `0.0.0.0`; `BIOFOCUS_INGEST_BIND_HOST` override; ADR-005; QA Pass with notes 2026-08-05. Pairing `ingestBaseUrl` still loopback → **T2**. |
 
-### P4-E1-T2 — Dashboard shell (window / route)
+### P5-E1-T2 — Advertise bind mode + base URL hints ✅ Ready
+| Field | Value |
+| :--- | :--- |
+| **Role** | Dev |
+| **Modules** | `crates/ingest`, desktop host, optionally `/v1/status` / IPC |
+| **Depends on** | P5-E1-T1 |
+| **AC** | When LAN opt-in is on, host exposes enough for dogfood: bind mode + usable base URL hint(s) (e.g. primary LAN IPv4 + port) via documented status/IPC — **no** Observation payloads, **no** absolute DB paths. Loopback mode still reports loopback URL. Tests for status shape. Idle-safe. Docs note how to read the hint. |
+| **Out of scope** | Full pairing QR redesign (→ E2), iOS UI |
+
+---
+
+## Epic P5-E2 — Pairing UX for LAN dogfood
+
+**Цель:** Desktop Companion section makes physical-phone pairing obvious: LAN base URL + token (copy / QR).
+
+### P5-E2-T1 — Companion UI: LAN base URL + token/QR
 | Field | Value |
 | :--- | :--- |
 | **Role** | UX + Dev |
-| **Modules** | `apps/desktop` (React + Tauri) |
-| **Depends on** | P4-E1-T1 (IPC may be stubbed with mocks for UX layout if documented) |
-| **AC** | Открываемый Dashboard view из Menubar (отдельное окно или route); спокойный shell: loading / empty / error; данные только через IPC; Menubar alert UX не ломается. Нет Recharts series ещё (layout slots / empty chart area OK). Нет evaluative copy. Handoff с manual smoke. |
-| **Out of scope** | Полные charts (→ T3), Insights list (→ E2-T3), LLM report UI (→ E3-T3) |
-
-### P4-E1-T3 — Recharts Feature series
-| Field | Value |
-| :--- | :--- |
-| **Role** | UX (+ Dev IPC glue if needed) |
-| **Modules** | `apps/desktop` (+ Recharts) |
-| **Depends on** | P4-E1-T1, P4-E1-T2 |
-| **AC** | Графики v1 по snapshot: как минимум `FocusScore`, `StressIndex`, `FatigueIndex` (и `ContextSwitchRate` если есть в snapshot); спокойные labels/units; refresh on open или редкий timer (нет busy-loop); нет medical claims. Smoke + typecheck. |
-| **Out of scope** | Insight cards, LLM, persistence |
+| **Modules** | `apps/desktop` (Companion section + IPC glue) |
+| **Depends on** | P5-E1-T2 (URL hint); token IPC already exists (`get_pairing_token`) |
+| **AC** | Companion UI shows copyable LAN (or loopback) base URL when available; token Show/Copy/QR still works; calm copy that LAN is opt-in / local network only; UI↛DB; smoke steps in handoff. No cloud account. |
+| **Out of scope** | iOS app (→ E3), changing ingest auth scheme |
 
 ---
 
-## Epic P4-E2 — Knowledge Insights (deterministic) ✅
+## Epic P5-E3 — iOS HealthKit companion (dogfood)
 
-**Цель:** Rule-based `Insight` + Evidence из Features/Signals. LLM не участвует в генерации метрик и не обязателен для Insights.
+**Цель:** Runnable iOS path: HealthKit heart-rate sample → same Observation JSON → `POST /v1/ingest` over LAN (or Simulator loopback).
 
-### P4-E2-T1 — knowledge-engine skeleton + Insight types
+### P5-E3-T1 — Runnable iOS companion + HealthKit one-shot
+| Field | Value |
+| :--- | :--- |
+| **Role** | Dev (+ UX for minimal UI copy) |
+| **Modules** | `apps/companion/ios/` |
+| **Depends on** | P5-E1-T1 (LAN); E2-T1 helpful for pairing UX |
+| **AC** | Runnable Xcode target (or clearly documented project) using existing Swift contract sources; user can set base URL + paste pairing token; one-shot HealthKit HR → Observation array POST; surface 401 / network errors; **no** busy-loop HealthKit polling; privacy: HR read only per existing stub; local Desktop only. Handoff with Simulator and/or device smoke notes. |
+| **Out of scope** | App Store release, background continuous streaming, vendor wearable SDKs beyond HealthKit, new SQLite |
+
+### P5-E3-T2 — Dogfood runbook + contract docs
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/knowledge-engine`, `bio-spec` |
-| **Depends on** | P4-E1-T1 (Feature snapshot shape helpful) |
-| **AC** | Crate больше не stub-only: типы `Insight` / Evidence (ids Feature/Signal); API `Features + Signals → Result<Vec<Insight>>` (может вернуть empty); `thiserror`; unit-тест happy path + empty. Нет SQLite, нет UI, нет LLM. |
-| **Out of scope** | Реальные product rules (→ T2), IPC/UI (→ T3) |
-
-### P4-E2-T2 — Rule Insights v1
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `knowledge-engine` |
-| **Depends on** | P4-E2-T1 |
-| **AC** | ≥2 детерминированных rules (напр. `High_Stress` Signal → Insight; elevated Focus/ContextSwitch pattern); `evidence_list` ссылается на Feature/Signal ids; copy спокойный; unit-тесты на trigger + no-trigger. |
-| **Out of scope** | Persistence ADR, LLM rewrite of Insights |
-
-### P4-E2-T3 — Insights IPC + Dashboard list
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev + UX |
-| **Modules** | desktop host + React Dashboard |
-| **Depends on** | P4-E2-T2, P4-E1-T2 |
-| **AC** | IPC `get_insights` (или эквивалент); Dashboard показывает список Insights + evidence refs; UI↛DB; без новой SQLite-схемы. Handoff + smoke. |
-| **Out of scope** | Report/LLM (→ E3) |
-
----
-
-## Epic P4-E3 — Reports & optional local LLM ✅
-
-**Цель:** Детерминированный report/prompt builder + opt-in local LLM (Ollama / OpenAI-compatible). Default OFF; данные не уходят без явного user action.
-
-### P4-E3-T1 — report-engine prompt / markdown builder
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `crates/report-engine` |
-| **Depends on** | P4-E2-T1 (Insights shape); Features from E1 |
-| **AC** | Crate API: Features (+ Insights) → deterministic markdown и/или LLM prompt string; offline; unit-тесты; нет network calls. Документировать формат. |
-| **Out of scope** | HTTP к Ollama/OpenAI (→ T2), Dashboard button (→ T3) |
-
-### P4-E3-T2 — Optional local LLM adapter ✅
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `crates/report-engine` (shipped; not desktop host) |
-| **Depends on** | P4-E3-T1 |
-| **AC** | Opt-in (env/flag/config); default **OFF**; предпочтительно localhost Ollama / OpenAI-compatible base URL; `Result` errors; timeout; never auto-send on startup; docs privacy note в `12-development.md`. Нет Feature math в LLM. |
-| **Out of scope** | Cloud account UX, mandatory AI |
-| **Shipped** | `LocalLlmConfig`, `interpret_report` / `interpret_llm_prompt`; env `BIOFOCUS_LOCAL_LLM*`; QA Pass with notes 2026-08-05 |
-
-### P4-E3-T3 — Report UX in Dashboard ✅
-| Field | Value |
-| :--- | :--- |
-| **Role** | UX + Dev |
-| **Modules** | `apps/desktop` |
-| **Depends on** | P4-E3-T1 (T2 optional for LLM path) |
-| **AC** | Кнопка/flow «Generate report»: показывает deterministic markdown/prompt; если LLM enabled — optional local output; явный copy «local / optional AI»; спокойный тон; IPC-only. Smoke steps в handoff. |
-| **Out of scope** | Insight persistence, LAN ingest |
-| **Shipped** | IPC `generate_report` → `{ markdown, llmPrompt, interpretation?, llmStatus, llmError? }`; Dashboard `ReportSlot`; QA Pass with notes 2026-08-05 |
+| **Modules** | `docs/` (`12-development`, companion READMEs, `PROJECT_CANVAS` wearable §) |
+| **Depends on** | P5-E3-T1 |
+| **AC** | End-to-end runbook: enable LAN → note URL → pair token → iPhone/Simulator post → Observation visible (status / Dashboard / storage path as appropriate). Update companion READMEs; no personal device inventory in git. |
+| **Out of scope** | New product Features/Insights; non-HealthKit bridges |
 
 ---
 
@@ -170,7 +138,7 @@ Evidence: `docs/handoffs/P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (clu
 **Done:** P3-E1 (T1–T4) · P3-E2 (T1–T4) · P3-E3 (T1–T3).  
 Pipeline quality → Feature DAG → Menubar AlertLevel IPC + UX.
 
-Evidence: `docs/handoffs/P3-*-qa-to-pm.md` · PRs #5–#23 (cluster) · Menubar T3 may land via follow-up PR if not yet on `main`.
+Evidence: `docs/handoffs/P3-*-qa-to-pm.md` · PRs #5–#23 (cluster) · Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24).
 
 </details>
 
@@ -203,37 +171,26 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ---
 
-## Role × Module Matrix (Phase 4)
+## Role × Module Matrix (Phase 5)
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P4-E1-T1 Feature snapshot IPC | | ● | ○ | | runtime / feature-engine / desktop host |
-| P4-E1-T2 Dashboard shell | ○ | ○ | ○ | ● | apps/desktop |
-| P4-E1-T3 Recharts series | | ○ | ○ | ● | apps/desktop |
-| P4-E2-T1 knowledge-engine types | | ● | ○ | | knowledge-engine / bio-spec |
-| P4-E2-T2 Rule Insights v1 | | ● | ○ | | knowledge-engine |
-| P4-E2-T3 Insights IPC + list | | ● | ○ | ● | desktop + knowledge-engine |
-| P4-E3-T1 report-engine builder | | ● | ○ | | report-engine |
-| P4-E3-T2 Optional local LLM | | ● | ○ | | report-engine |
-| P4-E3-T3 Report UX | ○ | ○ | | ● | apps/desktop |
+| P5-E1-T1 Opt-in LAN bind | | ● | ○ | | ingest + desktop host |
+| P5-E1-T2 Advertise URL hints | | ● | ○ | | ingest + host / status |
+| P5-E2-T1 Companion LAN UX | ○ | ○ | ○ | ● | apps/desktop |
+| P5-E3-T1 iOS HealthKit runnable | | ● | ○ | ○ | apps/companion/ios |
+| P5-E3-T2 Dogfood runbook | | ● | ○ | | docs + companion READMEs |
 
 ● = owner · ○ = collaborator
 
 ---
 
-## Sprint 7–8 — Complete
+## Sprint 9–10 — Queue
 
-1. ~~P4-E1-T1 — Feature snapshot API + IPC~~ **Done**  
-2. ~~P4-E1-T2 — Dashboard shell~~ **Done**  
-3. ~~P4-E1-T3 — Recharts Feature series~~ **Done** (QA Pass with notes) — Epic **P4-E1** ✅  
+1. ~~P5-E1-T1 — Opt-in LAN ingest bind + config~~ **Done** (QA Pass with notes)  
+2. **P5-E1-T2 — Advertise bind mode + base URL hints** ← **Ready**  
+3. P5-E2-T1 — Companion UI: LAN base URL + token/QR  
+4. P5-E3-T1 — Runnable iOS companion + HealthKit one-shot  
+5. P5-E3-T2 — Dogfood runbook + contract docs  
 
-4. ~~P4-E2-T1 — knowledge-engine + Insight types~~ **Done**  
-5. ~~P4-E2-T2 — Rule Insights v1~~ **Done**  
-6. ~~P4-E2-T3 — Insights IPC + Dashboard list~~ **Done** — Epic **P4-E2** ✅  
-7. ~~P4-E3-T1 — report-engine builder~~ **Done**  
-8. ~~P4-E3-T2 — Optional local LLM adapter~~ **Done**  
-9. ~~P4-E3-T3 — Report UX~~ **Done** (QA Pass with notes) — Epic **P4-E3** ✅ · **Phase 4** ✅  
-
-**Git:** `phase/4-dashboard-ai` → related commits → **cluster PR** (Epic P4-E3 / Phase 4 complete).
-
-**Wearables (later):** phone companion bridges + LAN ingest; HealthKit/CLI sample stays the contract path for now — see `docs/PROJECT_CANVAS.md` § Wearable / companion.
+**Git:** `phase/5-wearable-dogfood` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship.
