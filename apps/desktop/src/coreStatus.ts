@@ -55,7 +55,33 @@ export function statusView(
 }
 
 export function trayTooltipFor(view: CoreStatusView): string {
-  return `BioFocus — ${view.label}`;
+  const alert = view.alertLevel
+    ? ` · ${alertCopy(view.alertLevel).label}`
+    : "";
+  return `BioFocus — ${view.label}${alert}`;
+}
+
+/** Calm, non-evaluative labels for Menubar alert level (P3-E3-T3). */
+export function alertCopy(level: AlertLevel): { label: string; detail: string } {
+  switch (level) {
+    case "green":
+      return { label: "Steady", detail: "Load looks steady." };
+    case "yellow":
+      return { label: "Elevated", detail: "Load is elevated." };
+    case "red":
+      return { label: "High", detail: "Load is high right now." };
+  }
+}
+
+/** QA: `?mockAlert=green|yellow|red` forces alert without Core Features. */
+export function mockAlertFromLocation(
+  search: string = typeof window !== "undefined" ? window.location.search : "",
+): AlertLevel | null {
+  const raw = new URLSearchParams(search).get("mockAlert");
+  if (raw === "green" || raw === "yellow" || raw === "red") {
+    return raw;
+  }
+  return null;
 }
 
 /** QA / T4: `?mockStatus=idle|ready|error` forces a state without DB access. */
@@ -149,11 +175,20 @@ async function fromCorePing(): Promise<CoreStatusView> {
 export async function fetchCoreStatus(): Promise<CoreStatusView> {
   const mocked = mockStatusFromLocation();
   if (mocked) {
-    return statusView(mocked, "mock");
+    const view = statusView(mocked, "mock");
+    const mockAlert = mockAlertFromLocation();
+    if (mockAlert) {
+      view.alertLevel = mockAlert;
+    }
+    return view;
   }
 
   const fromStatus = await fromGetStatus();
   if (fromStatus) {
+    const mockAlert = mockAlertFromLocation();
+    if (mockAlert) {
+      fromStatus.alertLevel = mockAlert;
+    }
     return fromStatus;
   }
 

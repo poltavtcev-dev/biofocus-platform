@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { TrayIcon } from "@tauri-apps/api/tray";
 import {
+  alertCopy,
   fetchCoreStatus,
   statusView,
   trayTooltipFor,
+  type AlertLevel,
   type CoreStatusView,
 } from "./coreStatus";
 import {
@@ -15,6 +17,8 @@ import {
 import "./App.css";
 
 const TRAY_ID = "main";
+/** Soft refresh so Menubar alert tracks Core without busy-loop. */
+const STATUS_POLL_MS = 5_000;
 
 async function syncTrayTooltip(view: CoreStatusView): Promise<void> {
   try {
@@ -25,6 +29,19 @@ async function syncTrayTooltip(view: CoreStatusView): Promise<void> {
   } catch {
     // Browser/Vite preview has no tray — ignore.
   }
+}
+
+function AlertIndicator({ level }: { level: AlertLevel }) {
+  const copy = alertCopy(level);
+  return (
+    <section className="alert-block" aria-live="polite" data-alert={level}>
+      <div className="status-row">
+        <span className={`alert-dot alert-dot--${level}`} aria-hidden />
+        <p className="status-label">{copy.label}</p>
+      </div>
+      <p className="status-detail">{copy.detail}</p>
+    </section>
+  );
 }
 
 function App() {
@@ -40,21 +57,29 @@ function App() {
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
-      setBusy(true);
+    const load = async (isFirst: boolean) => {
+      if (isFirst) {
+        setBusy(true);
+      }
       const next = await fetchCoreStatus();
       if (cancelled) {
         return;
       }
       setView(next);
-      setBusy(false);
+      if (isFirst) {
+        setBusy(false);
+      }
       void syncTrayTooltip(next);
     };
 
-    void load();
+    void load(true);
+    const timer = window.setInterval(() => {
+      void load(false);
+    }, STATUS_POLL_MS);
 
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -95,8 +120,14 @@ function App() {
     setCopyNote(ok ? "Copied." : "Could not copy.");
   };
 
+  const alertLevel = view.alertLevel ?? "green";
+
   return (
-    <main className="shell" data-status={view.kind}>
+    <main
+      className="shell"
+      data-status={view.kind}
+      data-alert={alertLevel}
+    >
       <header className="brand">
         <h1>BioFocus</h1>
       </header>
@@ -111,6 +142,8 @@ function App() {
         <p className="status-detail">{view.detail}</p>
         {view.meta && <p className="status-meta">{view.meta}</p>}
       </section>
+
+      {view.kind !== "error" && <AlertIndicator level={alertLevel} />}
 
       {view.kind === "error" && (
         <button type="button" className="retry" onClick={onRetry} disabled={busy}>
@@ -152,7 +185,11 @@ function App() {
               >
                 {tokenVisible ? "Hide" : "Show"}
               </button>
-              <button type="button" className="retry" onClick={() => void onCopyToken()}>
+              <button
+                type="button"
+                className="retry"
+                onClick={() => void onCopyToken()}
+              >
                 Copy
               </button>
               <button
