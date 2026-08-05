@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** UX + Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes, 2026-08-05)  
 **Date:** 2026-08-05  
 **Closed previous:** P5-E1-T2 (QA Pass with notes — `bind_mode` / `base_url_hints` on `/v1/status` + pairing IPC; Epic **P5-E1** ✅)  
+**Closed this:** QA Pass with notes → `docs/handoffs/P5-E2-T1-qa-to-pm.md`; Epic **P5-E2** ✅; Ready **P5-E3-T1**  
 **Evidence:** `docs/handoffs/P5-E1-T2-qa-to-pm.md`
 
 ## Task
@@ -40,4 +41,4 @@ Advertise hints ship on IPC (`ingestBaseUrl`, `bindMode`, `baseUrlHints`), but C
 - Contract: `docs/09-api.md` · how-to-read: `docs/12-development.md` (Base URL hint)
 
 ## After QA Pass
-PM → Ready **P5-E3-T1** (Runnable iOS companion + HealthKit one-shot) unless sprint re-order.
+~~PM → Ready **P5-E3-T1**~~ — done; see `docs/handoffs/P5-E3-T1-pm-brief.md`.

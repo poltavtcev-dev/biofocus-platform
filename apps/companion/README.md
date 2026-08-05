@@ -5,7 +5,7 @@ Minimal path: sample **`heart_rate`** `Observation` → Desktop **`POST /v1/inge
 | Piece | Role |
 | :--- | :--- |
 | Rust crate `companion` | Contract client + CLI smoke (`biofocus-companion-sample`) |
-| `ios/` | Swift HealthKit stub (same HTTP contract; needs Xcode / device) |
+| `ios/` | Runnable Xcode app **BioFocusCompanion** — HealthKit one-shot → same HTTP contract |
 
 ## Prerequisites
 - Desktop BioFocus running (ingest on `127.0.0.1:8787`) **or** another host that serves the same API
@@ -27,10 +27,10 @@ Exit codes: `0` queued · `2` network · `3` unauthorized (`401`) · `1` other.
 
 ## Reachability
 - **Same Mac (CLI / iOS Simulator):** `http://127.0.0.1:8787` — default Desktop bind (loopback).
-- **Physical iPhone on LAN:** set `BIOFOCUS_INGEST_LAN=1` on Desktop, then use `base_url_hints[0]` from `GET /v1/status` or pairing IPC (`ingestBaseUrl`). Companion UI polish → P5-E2-T1. Do not use cloud.
+- **Physical iPhone on LAN:** set `BIOFOCUS_INGEST_LAN=1` on Desktop, then copy **Base URL** from Desktop → Companion (or `base_url_hints[0]` / `ingestBaseUrl`). Do not use cloud.
 
-## iOS stub
-See [`ios/README.md`](ios/README.md) — HealthKit one-shot HR → same JSON array body. Paste the token from Desktop **Companion** (Copy / QR).
+## iOS companion
+See [`ios/README.md`](ios/README.md) — open `ios/BioFocusCompanion.xcodeproj`, paste Base URL + token from Desktop Companion, tap **Send one heart-rate sample**.
 
 ## Out of scope
 Feature pipeline, dashboard, cloud accounts, changing ingest HTTP contract.

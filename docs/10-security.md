@@ -13,7 +13,7 @@
 | `BIOFOCUS_INGEST_LAN=1` | off | Bind `0.0.0.0:<port>` so a phone on the same Wi-Fi can reach Desktop ingest. Truthy: `1` / `true` / `yes` / `on` (case-insensitive) |
 | `BIOFOCUS_INGEST_BIND_HOST=<ipv4>` | unset | Explicit IPv4 bind override (e.g. `0.0.0.0` or a NIC address). **Wins over** `BIOFOCUS_INGEST_LAN` |
 
-**ADR-005:** opt-in LAN for companion dogfood; default remains loopback. Restart Desktop after changing knobs. Bind mode + base URL hints are exposed via `GET /v1/status` and IPC `get_pairing_token` (no Observation / DB paths / tokens in status). Companion UI copy/QR for LAN → P5-E2-T1. No anonymous ingest on LAN — Bearer still required.
+**ADR-005:** opt-in LAN for companion dogfood; default remains loopback. Restart Desktop after changing knobs. Bind mode + base URL hints are exposed via `GET /v1/status` and IPC `get_pairing_token` (no Observation / DB paths / tokens in status). Companion UI shows copyable Base URL + token/QR (P5-E2-T1). No anonymous ingest on LAN — Bearer still required.
 
 ## 2. Pairing token (local secret)
 

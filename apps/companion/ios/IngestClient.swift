@@ -28,7 +28,9 @@ struct IngestClient {
     var session: URLSession = .shared
 
     func postObservations(_ body: Data) async throws {
-        var request = URLRequest(url: baseURL.appendingPathComponent("v1/ingest"))
+        // Prefer two path components so "/" is never percent-encoded as %2F.
+        let url = baseURL.appendingPathComponent("v1").appendingPathComponent("ingest")
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

@@ -53,7 +53,9 @@ Without these knobs, bind stays `127.0.0.1` (Simulator / same-machine unchanged)
 curl -s http://127.0.0.1:8787/v1/status | jq '{bind_mode, base_url_hints}'
 # point companion at base_url_hints[0], e.g. http://192.168.x.x:8787
 ```
-Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on read/startup (no busy-loop). Full Companion LAN UI → P5-E2-T1.
+Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on read/startup (no busy-loop).
+
+**Companion LAN UI (P5-E2-T1 Done):** Desktop **Companion** section shows copyable primary base URL (`ingestBaseUrl` from `get_pairing_token`), bind-mode / LAN opt-in copy, and existing token Show / Copy / QR. When `bindMode=lan` but primary is still loopback, UI surfaces a calm fallback hint (`BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>`). No pairing busy-loop (load on mount + manual Reload).
 
 **Pipeline (Phase 3 E1):** crate `crates/pipeline`.
 - **Intake (T1):** `pipeline::accept_observations(&[Observation])` → `AcceptedBatch` (`AcceptedForProcessing`). Empty = **Ok**. Helpers: `accept_owned`, `accept_iter`.
@@ -134,15 +136,16 @@ export BIOFOCUS_INGEST_TOKEN="$(cat ~/.biofocus/pairing_token)"
 cargo run -p companion --bin biofocus-companion-sample -- 74
 ```
 
-Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN: enable `BIOFOCUS_INGEST_LAN=1` on Desktop, then read `base_url_hints[0]` from `/v1/status` or pairing IPC (P5-E1-T2); Companion UI polish → P5-E2-T1.
+Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/` (runnable target → **P5-E3-T1**). Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN: enable `BIOFOCUS_INGEST_LAN=1` on Desktop, then copy the **Base URL** from Companion UI (or `base_url_hints[0]` from `/v1/status` / pairing IPC).
 
-### Pairing UX (P2-E3-T2)
+### Pairing UX (P2-E3-T2 + P5-E2-T1)
 
 In the Desktop shell (**Companion** section):
 
-1. **Show** reveals the local pairing token (masked by default).
-2. **Copy** puts the token on the clipboard for paste into companion / CLI / iOS stub.
-3. **Show QR** displays a QR of the token (scan with the phone camera → copy text).
+1. **Base URL** shows the primary ingest URL (LAN hint when available, else loopback) with **Copy URL** / **Reload**.
+2. **Show** reveals the local pairing token (masked by default).
+3. **Copy** puts the token on the clipboard for paste into companion / CLI / iOS stub.
+4. **Show QR** displays a QR of the token (scan with the phone camera → copy text).
 
 IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; UI does not open `~/.biofocus` itself.
 
@@ -200,5 +203,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 Done** (LAN bind ADR-005 + advertise hints); Ready **P5-E2-T1** (Companion UI: LAN base URL + token/QR). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
+**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 + P5-E2 Done** (LAN bind ADR-005 + advertise hints + Companion LAN UI); Ready **P5-E3-T1** (runnable iOS HealthKit companion). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E3-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.
