@@ -1832,6 +1832,8 @@ name = "knowledge-engine"
 version = "0.1.0"
 dependencies = [
  "bio-spec",
+ "thiserror 2.0.19",
+ "uuid",
 ]
 
 [[package]]

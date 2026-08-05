@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** UX (+ Dev IPC glue if needed)  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes, 2026-08-05)  
 **Date:** 2026-08-05  
 **Closed previous:** P4-E1-T1 (QA Pass) · P4-E1-T2 (QA Pass with notes — separate Dashboard window)
 
