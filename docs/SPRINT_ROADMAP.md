@@ -25,7 +25,7 @@
 | **Ready** | **P4-E1-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; pipeline → Feature DAG → Menubar alerts) |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) |
 
 **Epic status:** P4-E1 ⬜ · P4-E2 ⬜ · P4-E3 ⬜
 
@@ -44,7 +44,7 @@
 **Ready now:** **P4-E1-T1** — Feature snapshot (Core) + IPC — role **Dev**.  
 Brief: `docs/handoffs/P4-E1-T1-pm-brief.md`.
 
-**Prerequisite note:** Phase 3 Menubar (`P3-E3-T3`) may still have unmerged commits on `feat/p3-e3-t3-menubar-alert` — merge to `main` before (or as base of) Phase 4 work.
+**Prerequisite:** P3-E3-T3 Menubar landed on `main` via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24).
 
 ---
 
@@ -218,3 +218,5 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 9. P4-E3-T3 — Report UX  
 
 **Git:** `phase/4-dashboard-ai` → related commits → PR when cluster ready.
+
+**Wearables (later):** phone companion bridges + LAN ingest; HealthKit/CLI sample stays the contract path for now — see `docs/PROJECT_CANVAS.md` § Wearable / companion.

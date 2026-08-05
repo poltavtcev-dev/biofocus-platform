@@ -172,5 +172,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–3 **Done**. Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Ready: **P4-E1-T1** (Feature snapshot IPC) — `docs/handoffs/P4-E1-T1-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
+**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Ready: **P4-E1-T1** (Feature snapshot IPC) — `docs/handoffs/P4-E1-T1-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.
