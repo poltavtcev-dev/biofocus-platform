@@ -1,4 +1,4 @@
-//! Pluggable Insight rules (product rules land in P4-E2-T2).
+//! Pluggable Insight rules (see [`crate::rules`] / [`crate::register_insights_v1`]).
 
 use bio_spec::{Feature, Insight, Signal};
 

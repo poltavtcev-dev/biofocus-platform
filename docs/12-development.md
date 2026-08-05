@@ -55,8 +55,11 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **Feature snapshot IPC (P4-E1-T1):** `feature_engine::FeatureSnapshot` from last `EngineOutput`; desktop caches via `SnapshotState` + `invoke("get_feature_snapshot")` (pure read). `get_status` stays lean. Contract: `docs/09-api.md`.
 - **Dashboard shell (P4-E1-T2):** separate Tauri window `label: dashboard` (`index.html?view=dashboard`); Menubar **Open Dashboard** → `invoke("open_dashboard")` (show/focus; CloseRequested → hide). Calm loading/empty/error via snapshot IPC. QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error` (see `apps/desktop/README.md`).
 - **Recharts Feature series (P4-E1-T3):** Dashboard `ChartSlot` — LineChart for `FocusScore` / `StressIndex` / `FatigueIndex` (+ `ContextSwitchRate` secondary axis when present); calm labels; refresh on open + ~30s. Dep: `recharts` in `apps/desktop`.
+- **knowledge-engine skeleton (P4-E2-T1):** pluggable `InsightRule` + `KnowledgeEngine::evaluate(&[Feature], &[Signal]) → Result<Vec<Insight>>`; types `Insight` / `EvidenceRef` from `bio-spec`; empty/no-match → `Ok([])`.
+- **Rule Insights v1 (P4-E2-T2):** `knowledge_engine::register_insights_v1` — `High_Stress` Signal + elevated `ContextSwitchRate` (≥1.0) rules with calm copy / `EvidenceRef`; host must register (empty engine still `Ok([])`). IPC/UI → T3.
 ```bash
 cargo test -p feature-engine
+cargo test -p knowledge-engine
 cargo test -p desktop
 cd apps/desktop && pnpm exec tsc --noEmit
 ```
@@ -175,5 +178,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Epic **P4-E1** Done (T1–T3). Ready: **P4-E2-T1** (knowledge-engine skeleton) — `docs/handoffs/P4-E2-T1-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
+**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Done: Epic **P4-E1** · **P4-E2-T1**. Ready: **P4-E2-T2** (Rule Insights v1) — `docs/handoffs/P4-E2-T2-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.

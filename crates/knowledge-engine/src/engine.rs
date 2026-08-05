@@ -8,7 +8,7 @@ use crate::rule::InsightRule;
 /// Deterministic Insight generator over Feature / Signal inputs.
 ///
 /// Default engine has **no product rules** (empty `Ok` is valid). Register rules
-/// via [`Self::register`] — product rules arrive in P4-E2-T2.
+/// via [`Self::register`] or [`crate::register_insights_v1`].
 #[derive(Default)]
 pub struct KnowledgeEngine {
     rules: Vec<Box<dyn InsightRule>>,

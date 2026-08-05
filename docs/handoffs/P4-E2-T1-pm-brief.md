@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass, 2026-08-05)  
 **Date:** 2026-08-05  
 **Closed previous:** Epic **P4-E1** (T1–T3) — snapshot IPC · Dashboard shell · Recharts
 
