@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** UX + Dev  
-**Status:** Ready  
+**Status:** Closed  
 **Date:** 2026-08-05  
-**Closed previous:** P4-E3-T2 (QA Pass with notes — `LocalLlmConfig` + `interpret_report` in `report-engine`, opt-in default OFF)
+**Closed previous:** P4-E3-T2 (QA Pass with notes — `LocalLlmConfig` + `interpret_report` in `report-engine`, opt-in default OFF)  
+**Closed this:** QA Pass with notes → `docs/handoffs/P4-E3-T3-qa-to-pm.md`; Epic **P4-E3** ✅ · Phase 4 ✅
 
 ## Task
 **P4-E3-T3 — Report UX in Dashboard**
@@ -34,13 +35,5 @@ Offline `build_report` and optional local LLM interpret exist in Core. Next: Das
 - Branch: `phase/4-dashboard-ai`
 
 ## After QA Pass
-PM → close Epic **P4-E3** / Phase 4 gate (or next roadmap item) unless sprint re-order. Cluster PR when ready.
+Done — Epic **P4-E3** / Phase 4 closed 2026-08-05. Next ops: cluster PR on `phase/4-dashboard-ai`.
 
-## Next chat (скопируй в новый чат)
-```text
-как агент: режим build-qa для P4-E3-T3.
-Brief: docs/handoffs/P4-E3-T3-pm-brief.md
-1) Как UX + Dev — собери по AC, создай docs/handoffs/P4-E3-T3-dev-to-qa.md
-2) Сразу как QA — проверь handoff + AC, создай docs/handoffs/P4-E3-T3-qa-to-pm.md
-3) Не закрывай Done / не трогай canvas. В конце: «Передай PM» + путь к qa-to-pm.
-```

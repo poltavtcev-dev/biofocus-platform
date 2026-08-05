@@ -76,7 +76,7 @@ Observation (immutable fact)
 | Pipeline / Engines | `pipeline`, `feature-engine`, `knowledge-engine`, `report-engine` |
 | Plugins | `plugin-sdk` traits + adapters |
 | Ingest (Phase 2+) | Local HTTP (`127.0.0.1`), Bearer pairing token |
-| Desktop | Tauri v2, React/TS, Menubar → later Dashboard |
+| Desktop | Tauri v2, React/TS, Menubar + Dashboard (Phase 4) |
 
 ### Explicit Non-Goals
 
