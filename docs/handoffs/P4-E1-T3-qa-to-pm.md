@@ -39,9 +39,9 @@
 - **Note (non-blocking):** interactive `pnpm tauri dev` visual smoke not run this session — covered via mocks + static review; quick look before cluster PR recommended.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P4-E1-T3 → Done; Ready → **P4-E2-T1**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Optional: `docs/12-development.md` / README already notes Recharts series
+- [x] `/docs/SPRINT_ROADMAP.md` — P4-E1-T3 → Done; Ready → **P4-E2-T1**; Epic P4-E1 ✅
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Optional: `docs/12-development.md` / README already notes Recharts series
 
 ## Suggested next Ready task
 - **P4-E2-T1** — knowledge-engine skeleton + Insight types — role **Dev**
