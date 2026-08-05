@@ -9,7 +9,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use bio_spec::Observation;
+use bio_spec::{validate_observation_payload, Observation};
 use runtime::ObservationSender;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
@@ -179,6 +179,17 @@ async fn post_ingest(
                 .into_response();
         }
     };
+
+    for observation in &observations {
+        if let Err(err) = validate_observation_payload(observation) {
+            warn!(error = %err, data_type = %observation.data_type, "ingest rejected Observation payload");
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(error_body("invalid_life_event")),
+            )
+                .into_response();
+        }
+    }
 
     let total = observations.len();
     let mut accepted = 0usize;

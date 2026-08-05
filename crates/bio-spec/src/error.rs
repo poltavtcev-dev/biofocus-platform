@@ -15,4 +15,8 @@ pub enum SpecError {
     /// Time window end must be >= start.
     #[error("time window end ({end}) must be >= start ({start})")]
     InvalidTimeWindow { start: i64, end: i64 },
+
+    /// Life Event Observation payload failed contract validation (ADR-006).
+    #[error("invalid life event payload: {reason}")]
+    InvalidLifeEventPayload { reason: String },
 }

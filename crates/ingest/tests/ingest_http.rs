@@ -190,6 +190,75 @@ async fn post_ingest_rejects_domain_validation_failure() {
 }
 
 #[tokio::test]
+async fn post_ingest_accepts_valid_life_event() {
+    let (state, mut rx) = test_state(8);
+    let app = ingest_router(state);
+
+    let body = json!([{
+        "id": "0190ecb5-7c2a-7123-8901-23456789abcf",
+        "timestamp": 1721990400,
+        "provider_id": "com.biofocus.desktop",
+        "data_type": "life_event",
+        "payload": { "kind": "coffee", "note": "morning" },
+        "confidence": 1.0
+    }]);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(body.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::ACCEPTED);
+    let obs = rx.try_recv().expect("enqueued life event");
+    assert_eq!(obs.data_type, "life_event");
+    assert_eq!(obs.payload["kind"], json!("coffee"));
+}
+
+#[tokio::test]
+async fn post_ingest_rejects_malformed_life_event() {
+    let (state, mut rx) = test_state(8);
+    let app = ingest_router(state);
+
+    let bad = json!([{
+        "id": "0190ecb5-7c2a-7123-8901-23456789abcf",
+        "timestamp": 1721990400,
+        "provider_id": "com.biofocus.desktop",
+        "data_type": "life_event",
+        "payload": { "kind": "tea" },
+        "confidence": 1.0
+    }]);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(bad.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: serde_json::Value = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed["error"], json!("invalid_life_event"));
+    assert!(rx.try_recv().is_err(), "malformed life event must not enqueue");
+}
+
+#[tokio::test]
 async fn post_ingest_returns_202_and_enqueues() {
     let (state, mut rx) = test_state(8);
     let app = ingest_router(state);
