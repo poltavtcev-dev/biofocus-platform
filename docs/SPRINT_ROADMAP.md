@@ -1,10 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> Active: **Phase 4: Dashboard UI & Local AI Insights** (Sprint 7–8) from `/docs/14-roadmap.md`.  
-> Phase 1 Foundation · Phase 2 Ingestion · Phase 3 Pipeline & Features: **Done**.  
+> **Phase 4: Dashboard UI & Local AI Insights** (Sprint 7–8) — **Done** 2026-08-05 (QA Pass with notes on P4-E3-T3).  
+> Phase 1 Foundation · Phase 2 Ingestion · Phase 3 Pipeline & Features · Phase 4 Dashboard & AI: **Done**.  
 > Out of scope until later / ADR: LAN ingest, wearable companion bridges, **new SQLite tables** (Insights stay derived/in-memory in Phase 4 v1).
 
-**Phase 4 goal:** Local React Dashboard (Recharts) over Feature snapshots via IPC + deterministic Knowledge Insights + optional local LLM reports (Ollama / OpenAI-compatible). LLM **interprets** only — never computes Features.
+**Phase 4 goal (shipped):** Local React Dashboard (Recharts) over Feature snapshots via IPC + deterministic Knowledge Insights + optional local LLM reports (Ollama / OpenAI-compatible). LLM **interprets** only — never computes Features.
 
 **Global DoD (каждая задача):**
 - [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight`)
@@ -18,37 +18,36 @@
 
 ---
 
-## Kanban Overview (Phase 4 = Sprint 7–8)
+## Kanban Overview (Phase 4 closed)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P4-E3-T3** |
+| **Ready** | — |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) · **P4-E1** (T1–T3) · **P4-E2** (T1–T3) · **P4-E3-T1** · **P4-E3-T2** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) · **Phase 4** (**P4-E1** · **P4-E2** · **P4-E3** T1–T3) |
 
-**Epic status:** P4-E1 ✅ · P4-E2 ✅ · P4-E3 ⬜ (T1–T2 Done)
+**Epic status:** P4-E1 ✅ · P4-E2 ✅ · P4-E3 ✅
 
-**Phase 4 on `/docs/14-roadmap.md`:** opened 2026-08-05
+**Phase 4 on `/docs/14-roadmap.md`:** closed 2026-08-05 (Kanban; cluster PR pending on `phase/4-dashboard-ai`)
 
 **Рекомендуемый порядок:**  
-~~P4-E1~~ → ~~P4-E2~~ → ~~P4-E3-T1~~ → ~~P4-E3-T2~~ → **T3**
+~~P4-E1~~ → ~~P4-E2~~ → ~~P4-E3-T1~~ → ~~P4-E3-T2~~ → ~~P4-E3-T3~~ ✅
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
-**Suggested branch:** `phase/4-dashboard-ai`
+**Suggested branch:** `phase/4-dashboard-ai` → **cluster PR** when ready.
 
 ### Active assignment
 
-**Ready now:** **P4-E3-T3** — Report UX in Dashboard — role **UX + Dev**.  
-Brief: `docs/handoffs/P4-E3-T3-pm-brief.md`.
+**Ready now:** — (Phase 4 complete). Next ops: **cluster PR** on `phase/4-dashboard-ai`; Phase 5+ not in sprint until PM re-opens from `/docs/14-roadmap.md` / product choice.
 
-**Closed:** P4-E3-T2 (QA Pass with notes, 2026-08-05) — `LocalLlmConfig` + `interpret_report` / `interpret_llm_prompt` in `report-engine` (opt-in, default OFF).
+**Closed:** P4-E3-T3 (QA Pass with notes, 2026-08-05) — Dashboard `generate_report` IPC + Report UX; Epic **P4-E3** ✅ · Phase 4 ✅.
 
 ---
 
-## Epic P4-E1 — Feature IPC + Dashboard charts
+## Epic P4-E1 — Feature IPC + Dashboard charts ✅
 
 **Цель:** UI получает windowed Feature snapshot только через IPC; Recharts dashboard без LLM.
 
@@ -81,7 +80,7 @@ Brief: `docs/handoffs/P4-E3-T3-pm-brief.md`.
 
 ---
 
-## Epic P4-E2 — Knowledge Insights (deterministic)
+## Epic P4-E2 — Knowledge Insights (deterministic) ✅
 
 **Цель:** Rule-based `Insight` + Evidence из Features/Signals. LLM не участвует в генерации метрик и не обязателен для Insights.
 
@@ -114,7 +113,7 @@ Brief: `docs/handoffs/P4-E3-T3-pm-brief.md`.
 
 ---
 
-## Epic P4-E3 — Reports & optional local LLM
+## Epic P4-E3 — Reports & optional local LLM ✅
 
 **Цель:** Детерминированный report/prompt builder + opt-in local LLM (Ollama / OpenAI-compatible). Default OFF; данные не уходят без явного user action.
 
@@ -137,7 +136,7 @@ Brief: `docs/handoffs/P4-E3-T3-pm-brief.md`.
 | **Out of scope** | Cloud account UX, mandatory AI |
 | **Shipped** | `LocalLlmConfig`, `interpret_report` / `interpret_llm_prompt`; env `BIOFOCUS_LOCAL_LLM*`; QA Pass with notes 2026-08-05 |
 
-### P4-E3-T3 — Report UX in Dashboard
+### P4-E3-T3 — Report UX in Dashboard ✅
 | Field | Value |
 | :--- | :--- |
 | **Role** | UX + Dev |
@@ -145,6 +144,21 @@ Brief: `docs/handoffs/P4-E3-T3-pm-brief.md`.
 | **Depends on** | P4-E3-T1 (T2 optional for LLM path) |
 | **AC** | Кнопка/flow «Generate report»: показывает deterministic markdown/prompt; если LLM enabled — optional local output; явный copy «local / optional AI»; спокойный тон; IPC-only. Smoke steps в handoff. |
 | **Out of scope** | Insight persistence, LAN ingest |
+| **Shipped** | IPC `generate_report` → `{ markdown, llmPrompt, interpretation?, llmStatus, llmError? }`; Dashboard `ReportSlot`; QA Pass with notes 2026-08-05 |
+
+---
+
+## Phase 4 archive (Done)
+
+<details>
+<summary>Phase 4 Kanban & epics (closed 2026-08-05 — E1–E3)</summary>
+
+**Done:** P4-E1 (T1–T3) · P4-E2 (T1–T3) · P4-E3 (T1–T3).  
+Feature snapshot IPC → Dashboard + Recharts → Knowledge Insights → report-engine + optional local LLM + Report UX.
+
+Evidence: `docs/handoffs/P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR when ready).
+
+</details>
 
 ---
 
@@ -160,6 +174,8 @@ Evidence: `docs/handoffs/P3-*-qa-to-pm.md` · PRs #5–#23 (cluster) · Menubar 
 
 </details>
 
+---
+
 ## Phase 2 archive (Done)
 
 <details>
@@ -171,6 +187,8 @@ Evidence: `docs/handoffs/P2-*-qa-to-pm.md` · [PR #2](https://github.com/poltavt
 Ingest loopback + pairing · macOS collector · companion sample + Copy/QR · `dbError` sanitize.
 
 </details>
+
+---
 
 ## Phase 1 archive (Done)
 
@@ -189,12 +207,12 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P4-E1-T1 Feature snapshot IPC | ○ | ● | ○ | | runtime / feature-engine + src-tauri |
-| P4-E1-T2 Dashboard shell | | ○ | ○ | ● | apps/desktop |
+| P4-E1-T1 Feature snapshot IPC | | ● | ○ | | runtime / feature-engine / desktop host |
+| P4-E1-T2 Dashboard shell | ○ | ○ | ○ | ● | apps/desktop |
 | P4-E1-T3 Recharts series | | ○ | ○ | ● | apps/desktop |
-| P4-E2-T1 knowledge-engine skeleton | | ● | ○ | | knowledge-engine + bio-spec |
+| P4-E2-T1 knowledge-engine types | | ● | ○ | | knowledge-engine / bio-spec |
 | P4-E2-T2 Rule Insights v1 | | ● | ○ | | knowledge-engine |
-| P4-E2-T3 Insights IPC + list UI | | ● | ○ | ● | desktop + knowledge-engine |
+| P4-E2-T3 Insights IPC + list | | ● | ○ | ● | desktop + knowledge-engine |
 | P4-E3-T1 report-engine builder | | ● | ○ | | report-engine |
 | P4-E3-T2 Optional local LLM | | ● | ○ | | report-engine |
 | P4-E3-T3 Report UX | ○ | ○ | | ● | apps/desktop |
@@ -203,21 +221,19 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ---
 
-## Sprint 7 — Ready Now
+## Sprint 7–8 — Complete
 
 1. ~~P4-E1-T1 — Feature snapshot API + IPC~~ **Done**  
 2. ~~P4-E1-T2 — Dashboard shell~~ **Done**  
 3. ~~P4-E1-T3 — Recharts Feature series~~ **Done** (QA Pass with notes) — Epic **P4-E1** ✅  
-
-## Sprint 8 (after E1)
 
 4. ~~P4-E2-T1 — knowledge-engine + Insight types~~ **Done**  
 5. ~~P4-E2-T2 — Rule Insights v1~~ **Done**  
 6. ~~P4-E2-T3 — Insights IPC + Dashboard list~~ **Done** — Epic **P4-E2** ✅  
 7. ~~P4-E3-T1 — report-engine builder~~ **Done**  
 8. ~~P4-E3-T2 — Optional local LLM adapter~~ **Done**  
-9. **P4-E3-T3** — Report UX ← **Ready (UX + Dev)**  
+9. ~~P4-E3-T3 — Report UX~~ **Done** (QA Pass with notes) — Epic **P4-E3** ✅ · **Phase 4** ✅  
 
-**Git:** `phase/4-dashboard-ai` → related commits → PR when cluster ready.
+**Git:** `phase/4-dashboard-ai` → related commits → **cluster PR** (Epic P4-E3 / Phase 4 complete).
 
 **Wearables (later):** phone companion bridges + LAN ingest; HealthKit/CLI sample stays the contract path for now — see `docs/PROJECT_CANVAS.md` § Wearable / companion.

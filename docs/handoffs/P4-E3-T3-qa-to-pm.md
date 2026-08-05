@@ -44,10 +44,10 @@ None blocking.
 - QA mocks `?mockReport=…` can show a ready report without a click for visual smoke; real IPC still only on button.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — move **P4-E3-T3** → Done; close Epic **P4-E3** / Phase 4 gate (or set next Ready per roadmap)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `docs/ARCHITECTURE_STATUS.md`, `docs/12-development.md` (note Dashboard `generate_report` wiring)
-- [ ] Cluster PR on `phase/4-dashboard-ai` when ready (Epic P4-E3 complete)
+- [x] `/docs/SPRINT_ROADMAP.md` — **P4-E3-T3** → Done; Epic **P4-E3** ✅ · Phase 4 ✅; Ready empty
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/ARCHITECTURE_STATUS.md`, `docs/12-development.md`, `docs/14-roadmap.md`, `docs/PROJECT_CANVAS.md`
+- [ ] Cluster PR on `phase/4-dashboard-ai` when ready (Epic P4-E3 / Phase 4 complete) — ops, not Kanban
 
 ## Suggested next Ready task
 - Phase 4 / Epic **P4-E3** complete after PM close — pick next from `/docs/14-roadmap.md` / sprint re-order (no further P4-E3 tasks in Kanban).
