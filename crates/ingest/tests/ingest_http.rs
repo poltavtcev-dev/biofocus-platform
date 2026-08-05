@@ -7,8 +7,8 @@ use axum::http::{Request, StatusCode};
 use bio_spec::Observation;
 use http::header::AUTHORIZATION;
 use ingest::{
-    bind_loopback, ingest_router, IngestConfig, IngestResponse, IngestState, QueuePressureBody,
-    StatusResponse, INGEST_BIND_HOST,
+    bind_host, bind_loopback, ingest_router, IngestConfig, IngestResponse, IngestState,
+    QueuePressureBody, StatusResponse, INGEST_BIND_HOST, INGEST_LAN_BIND_HOST,
 };
 use runtime::observation_channel;
 use serde_json::json;
@@ -39,6 +39,62 @@ async fn bind_loopback_is_localhost_only() {
     assert_eq!(addr.ip(), std::net::IpAddr::V4(INGEST_BIND_HOST));
     assert_ne!(addr.port(), 0);
     drop(listener);
+}
+
+#[tokio::test]
+async fn bind_lan_opt_in_accepts_on_unspecified() {
+    let (listener, addr) = bind_host(INGEST_LAN_BIND_HOST, 0)
+        .await
+        .expect("bind LAN ephemeral");
+    // OS may report 0.0.0.0 after bind on unspecified.
+    assert_eq!(addr.ip(), std::net::IpAddr::V4(INGEST_LAN_BIND_HOST));
+    assert_ne!(addr.port(), 0);
+    drop(listener);
+}
+
+#[tokio::test]
+async fn live_server_on_lan_bind_still_requires_bearer() {
+    let (tx, mut rx) = observation_channel(8).expect("channel");
+    let (listener, addr) = bind_host(INGEST_LAN_BIND_HOST, 0)
+        .await
+        .expect("bind LAN");
+
+    let state = IngestState::new(TOKEN, tx);
+    let app = ingest_router(state);
+
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.expect("serve");
+    });
+
+    tokio::time::sleep(Duration::from_millis(20)).await;
+
+    let client = reqwest::Client::new();
+    // Hit via loopback address while listening on 0.0.0.0 — proves LAN bind accepts
+    // local traffic and still enforces Bearer (no anonymous access).
+    let url = format!("http://127.0.0.1:{}/v1/ingest", addr.port());
+
+    let unauthorized = client
+        .post(&url)
+        .header("content-type", "application/json")
+        .body("[]")
+        .send()
+        .await
+        .expect("http no auth");
+    assert_eq!(unauthorized.status(), StatusCode::UNAUTHORIZED);
+
+    let accepted = client
+        .post(&url)
+        .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+        .json(&json!([sample_observation_json()]))
+        .send()
+        .await
+        .expect("http with auth");
+    assert_eq!(accepted.status(), StatusCode::ACCEPTED);
+
+    let obs: Observation = rx.recv().await.expect("queued");
+    assert_eq!(obs.provider_id, "com.biofocus.applehealth");
+
+    server.abort();
 }
 
 #[tokio::test]
@@ -314,6 +370,8 @@ fn default_config_documents_port_and_test_token() {
     let cfg = IngestConfig::default();
     assert_eq!(cfg.port, ingest::DEFAULT_INGEST_PORT);
     assert_eq!(cfg.token, ingest::DEFAULT_TEST_TOKEN);
+    assert_eq!(cfg.bind_host, INGEST_BIND_HOST);
+    assert!(!cfg.is_lan_bind());
     assert_eq!(ingest::DEFAULT_SKELETON_TOKEN, ingest::DEFAULT_TEST_TOKEN);
 }
 

@@ -1,9 +1,19 @@
 # 10. Security, Privacy & Local Isolation
 
 ## 1. Rules
-1. **Network Binding:** Встроенный сервер (Axum) слушает только локальные интерфейсы (`127.0.0.1` или назначенный IP локальной сети Wi-Fi при сопряжении с телефоном).
+1. **Network Binding:** Встроенный сервер (Axum) по умолчанию слушает только loopback (`127.0.0.1`). LAN-reachable bind — **явный opt-in** (см. §1.1). Даже при LAN bind доступ к `/v1/ingest` только с Bearer pairing token.
 2. **Pairing Token:** Доступ к `/v1/ingest` разрешён только по секретному Bearer-токену.
 3. **No External Telemetry:** Отправка анонимной аналитики или телеметрии по умолчанию отключена.
+
+### 1.1 Ingest bind (opt-in LAN)
+
+| Knob | Default | Effect |
+| :--- | :--- | :--- |
+| *(none)* | `127.0.0.1:8787` | Same-machine / Simulator path; unchanged from Phase 2 |
+| `BIOFOCUS_INGEST_LAN=1` | off | Bind `0.0.0.0:<port>` so a phone on the same Wi-Fi can reach Desktop ingest. Truthy: `1` / `true` / `yes` / `on` (case-insensitive) |
+| `BIOFOCUS_INGEST_BIND_HOST=<ipv4>` | unset | Explicit IPv4 bind override (e.g. `0.0.0.0` or a NIC address). **Wins over** `BIOFOCUS_INGEST_LAN` |
+
+**ADR-005:** opt-in LAN for companion dogfood; default remains loopback. Restart Desktop after changing knobs. Advertise / copy of LAN base URL → later tasks (status/IPC). No anonymous ingest on LAN — Bearer still required.
 
 ## 2. Pairing token (local secret)
 

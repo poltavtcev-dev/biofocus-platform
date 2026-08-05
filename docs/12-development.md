@@ -35,8 +35,15 @@ pnpm tauri dev
 # combine: ?mockStatus=ready&mockAlert=yellow
 ```
 
-Ingest (Phase 2): loopback **`127.0.0.1:8787`**, crate `crates/ingest`.
+Ingest (Phase 2+): default loopback **`127.0.0.1:8787`**, crate `crates/ingest`.
 Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and stops it on exit.
+
+**LAN opt-in (P5-E1-T1 / ADR-005):** for a physical phone on the same Wi-Fi, restart Desktop with:
+```bash
+export BIOFOCUS_INGEST_LAN=1
+# optional override: export BIOFOCUS_INGEST_BIND_HOST=0.0.0.0   # or a specific LAN IPv4
+```
+Without these knobs, bind stays `127.0.0.1` (Simulator / same-machine unchanged). `POST /v1/ingest` still requires Bearer (`BIOFOCUS_INGEST_TOKEN` / `~/.biofocus/pairing_token`). Status/IPC LAN URL advertise → P5-E1-T2.
 
 **Pipeline (Phase 3 E1):** crate `crates/pipeline`.
 - **Intake (T1):** `pipeline::accept_observations(&[Observation])` → `AcceptedBatch` (`AcceptedForProcessing`). Empty = **Ok**. Helpers: `accept_owned`, `accept_iter`.
@@ -117,7 +124,7 @@ export BIOFOCUS_INGEST_TOKEN="$(cat ~/.biofocus/pairing_token)"
 cargo run -p companion --bin biofocus-companion-sample -- 74
 ```
 
-Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN needs a reachable host (loopback bind today — LAN later).
+Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN: enable `BIOFOCUS_INGEST_LAN=1` on Desktop, then point companion at `http://<desktop-lan-ip>:8787` (URL advertise/copy → later Phase 5 tasks).
 
 ### Pairing UX (P2-E3-T2)
 
