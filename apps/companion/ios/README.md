@@ -1,6 +1,8 @@
-# iOS HealthKit companion (P5-E3-T1)
+# iOS HealthKit companion (P5-E3)
 
 Runnable Xcode app that posts one HealthKit heart-rate `Observation` to Desktop ingest — same HTTP contract as Rust `apps/companion`.
+
+**Full operator path** (enable LAN → Base URL → pair → one-shot → confirm Observation): `docs/12-development.md` § Wearable dogfood runbook. Parent overview: [`../README.md`](../README.md).
 
 ## Open & run
 
@@ -49,11 +51,14 @@ xcodebuild -project BioFocusCompanion.xcodeproj -scheme BioFocusCompanion -showd
 
 ## Pairing (Desktop → Companion)
 
+Same steps as the dogfood runbook (`docs/12-development.md`):
+
 1. Start Desktop ingest (normal `pnpm tauri dev` / app launch).
 2. **Simulator / same Mac:** Base URL `http://127.0.0.1:8787` (default in the form).
-3. **Physical phone:** restart Desktop with `BIOFOCUS_INGEST_LAN=1`, then copy **Base URL** from Desktop → Companion (see `docs/12-development.md`).
-4. Paste the pairing token (Show / Copy / QR on Desktop Companion).
+3. **Physical phone:** restart Desktop with `BIOFOCUS_INGEST_LAN=1`, then copy **Base URL** from Desktop → Companion.
+4. Paste the pairing token (Show / Copy / QR on Desktop Companion). Do not commit the token.
 5. Tap **Send one heart-rate sample** once.
+6. Confirm: Companion Status success; optional `sqlite3 ~/.biofocus/data/biofocus_main.db` query for `com.biofocus.applehealth` / `heart_rate` (see runbook § E).
 
 Contract: JSON array of `Observation` (`provider_id=com.biofocus.applehealth`, `data_type=heart_rate`) → `POST {baseURL}/v1/ingest` with `Authorization: Bearer …`. Errors (401, network, HTTP) surface in the Status section — not swallowed.
 

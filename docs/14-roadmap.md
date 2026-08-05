@@ -19,7 +19,7 @@
 - [ ] **Phase 5: Wearable dogfood (Sprint 9–10)** — **opened 2026-08-05**
   - Opt-in **LAN-reachable ingest** + URL advertise — **P5-E1 Done** (T1 ADR-005 · T2 `bind_mode` / `base_url_hints`).
   - Pairing UX exposes LAN base URL for physical phone — **P5-E2 Done** (Companion Base URL + token/QR).
-  - Runnable **iOS HealthKit companion** → `Observation` → Desktop ingest (same LAN) — Ready **P5-E3-T1**.
+  - Runnable **iOS HealthKit companion** → `Observation` → Desktop ingest (same LAN) — **P5-E3-T1 Done**; dogfood runbook Ready **P5-E3-T2**.
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
@@ -37,6 +37,6 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM ga
 **Phase 2:** merged [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)  
 **Phase 3:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` archive · handoffs `P3-*-qa-to-pm.md`  
 **Phase 4:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR when ready)  
-**Phase 5:** active — `docs/SPRINT_ROADMAP.md` · Ready **P5-E3-T1** · branch `phase/5-wearable-dogfood`  
+**Phase 5:** active — `docs/SPRINT_ROADMAP.md` · Ready **P5-E3-T2** · branch `phase/5-wearable-dogfood`  
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → PR (classic); see `docs/12-development.md`.

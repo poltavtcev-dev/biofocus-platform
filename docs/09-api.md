@@ -4,11 +4,11 @@
 
 Default bind: **`127.0.0.1:8787`** (`crates/ingest`). LAN-reachable bind is **opt-in** (`BIOFOCUS_INGEST_LAN=1` and/or `BIOFOCUS_INGEST_BIND_HOST` — see `docs/10-security.md` §1.1 / ADR-005). Bearer auth unchanged.
 
-### Companion sample path (P2-E3-T1)
+### Companion sample path (P2-E3-T1 / P5-E3)
 - Rust: `apps/companion` — `CompanionClient::post_sample_heart_rate` / CLI `biofocus-companion-sample`
-- iOS stub: `apps/companion/ios/` — HealthKit one-shot → same body
+- iOS (runnable): `apps/companion/ios/BioFocusCompanion.xcodeproj` — HealthKit one-shot → same body (not a stub-only path)
 - Auth errors: client maps **`401` → unauthorized** (must not be swallowed); transport failures → network error
-- Docs / smoke: `apps/companion/README.md`, `docs/12-development.md`
+- Docs / dogfood: `apps/companion/README.md`, `apps/companion/ios/README.md`, `docs/12-development.md` § Wearable dogfood runbook
 
 ### `POST /v1/ingest`
 - **Description:** Приём `Observation` от companion/collectors (локально). Enqueue в bounded channel; async worker пишет через `ObservationRepository::insert` (immutable append).

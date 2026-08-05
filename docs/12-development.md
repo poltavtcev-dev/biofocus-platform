@@ -136,7 +136,64 @@ export BIOFOCUS_INGEST_TOKEN="$(cat ~/.biofocus/pairing_token)"
 cargo run -p companion --bin biofocus-companion-sample -- 74
 ```
 
-Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/` (runnable target → **P5-E3-T1**). Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN: enable `BIOFOCUS_INGEST_LAN=1` on Desktop, then copy the **Base URL** from Companion UI (or `base_url_hints[0]` from `/v1/status` / pairing IPC).
+Rust client + CLI in `apps/companion`; runnable iOS app: open `apps/companion/ios/BioFocusCompanion.xcodeproj` (scheme `BioFocusCompanion`). Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN: follow the **Wearable dogfood runbook** below.
+
+### Wearable dogfood runbook (P5-E3-T2)
+
+End-to-end operator path: Desktop ingest → pair → iOS one-shot HR → confirm the `Observation` landed. No personal hostnames, serials, or tokens in git.
+
+**A. Desktop + reachability**
+
+1. Start Desktop (`cd apps/desktop && pnpm tauri dev` or installed app).
+2. **Simulator / same Mac:** leave default loopback bind (`127.0.0.1:8787`). Skip LAN knobs.
+3. **Physical iPhone (same Wi-Fi):** restart Desktop with LAN opt-in:
+   ```bash
+   export BIOFOCUS_INGEST_LAN=1
+   # if Base URL stays loopback: export BIOFOCUS_INGEST_BIND_HOST=<your-lan-ipv4>
+   cd apps/desktop && pnpm tauri dev
+   ```
+4. Confirm ingest is up (no Observation payload — `db_status` only):
+   ```bash
+   curl -s http://127.0.0.1:8787/v1/status | jq '{version, db_status, bind_mode, base_url_hints}'
+   ```
+
+**B. Note Base URL + pairing token**
+
+1. Open Desktop shell → **Companion**.
+2. Note / **Copy URL** the primary **Base URL** (`ingestBaseUrl`). Loopback → `http://127.0.0.1:8787`. LAN → first `base_url_hints` entry (or set `BIOFOCUS_INGEST_BIND_HOST` if still loopback).
+3. **Show** / **Copy** / **Show QR** the pairing Bearer token. Do not commit it. CLI alternative: `cat ~/.biofocus/pairing_token` (or `BIOFOCUS_INGEST_TOKEN` if set).
+
+**C. Open / run iOS companion**
+
+1. `open apps/companion/ios/BioFocusCompanion.xcodeproj` — scheme **BioFocusCompanion**.
+2. Destination: **iOS Simulator** (loopback) or a signed physical device (Development Team under Signing & Capabilities).
+3. Run (⌘R). Details / `swiftc` check: `apps/companion/ios/README.md`.
+
+**D. One-shot post**
+
+1. Paste **Base URL** + pairing token into the form (Simulator default URL is already loopback).
+2. Tap **Send one heart-rate sample** once (authorize HealthKit read when prompted).
+3. Simulator with no HR data: add a sample in the Simulator **Health** app, then send again.
+4. Expect Status **success**, or an explicit **401** / network message (not a hang).
+
+**E. Confirm the Observation landed**
+
+| Check | How |
+| :--- | :--- |
+| Companion Status | Success copy after the one-shot (primary dogfood signal). |
+| Ingest health | `curl -s http://127.0.0.1:8787/v1/status` → `db_status: "ok"` (still **no** Observation rows in this JSON). |
+| Storage (optional) | Local DB only: `sqlite3 ~/.biofocus/data/biofocus_main.db "SELECT id, provider_id, data_type, timestamp FROM observations WHERE provider_id = 'com.biofocus.applehealth' AND data_type = 'heart_rate' ORDER BY created_at DESC LIMIT 5;"` — expect a recent row after a successful post. UI must **not** open SQLite. |
+| Dashboard | Optional. A single `heart_rate` sample may not change catalog Features (`FocusScore` / stress need other inputs). Use storage or Companion Status for dogfood proof, not Feature charts. |
+
+**F. CLI alternative (same contract)**
+
+```bash
+export BIOFOCUS_INGEST_TOKEN="$(cat ~/.biofocus/pairing_token)"
+# LAN phone path uses Desktop Base URL; same-machine default is fine for CLI:
+cargo run -p companion --bin biofocus-companion-sample -- 74
+```
+
+Contract summary: JSON array of `Observation` → `POST {baseURL}/v1/ingest` with `Authorization: Bearer …` (`docs/09-api.md`, `docs/07-contracts.md`). Companion READMEs: `apps/companion/README.md`, `apps/companion/ios/README.md`.
 
 ### Pairing UX (P2-E3-T2 + P5-E2-T1)
 
@@ -144,7 +201,7 @@ In the Desktop shell (**Companion** section):
 
 1. **Base URL** shows the primary ingest URL (LAN hint when available, else loopback) with **Copy URL** / **Reload**.
 2. **Show** reveals the local pairing token (masked by default).
-3. **Copy** puts the token on the clipboard for paste into companion / CLI / iOS stub.
+3. **Copy** puts the token on the clipboard for paste into companion / CLI / iOS app.
 4. **Show QR** displays a QR of the token (scan with the phone camera → copy text).
 
 IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; UI does not open `~/.biofocus` itself.
@@ -203,5 +260,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 + P5-E2 Done** (LAN bind ADR-005 + advertise hints + Companion LAN UI); Ready **P5-E3-T1** (runnable iOS HealthKit companion). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E3-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
+**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5** — Wearable dogfood path documented: LAN + Companion pairing + runnable `BioFocusCompanion.xcodeproj` + § Wearable dogfood runbook above. Branch: `phase/5-wearable-dogfood`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.

@@ -77,6 +77,6 @@ Same Observation JSON; companion posts a **JSON array** to `POST /v1/ingest`.
 | Path | Location |
 | :--- | :--- |
 | Rust client + CLI | `apps/companion` (`cargo test -p companion`, `biofocus-companion-sample`) |
-| iOS HealthKit stub | `apps/companion/ios/` (Swift; Xcode / device) |
+| iOS HealthKit companion | `apps/companion/ios/BioFocusCompanion.xcodeproj` (scheme `BioFocusCompanion`; HealthKit one-shot) |
 
-Default host for same-machine / Simulator: `http://127.0.0.1:8787`. See `apps/companion/README.md`.
+Default host for same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone: LAN opt-in + Base URL from Desktop Companion. Dogfood steps: `docs/12-development.md` § Wearable dogfood runbook. See `apps/companion/README.md`.

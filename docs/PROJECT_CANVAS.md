@@ -35,8 +35,9 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 
 ### Wearable / companion (Phase 5)
 
-- **Phase 5 (active):** **P5-E1 + P5-E2 Done** — opt-in LAN bind (ADR-005) + advertise hints + Companion Base URL / token/QR. Next: runnable **iOS HealthKit** companion (**P5-E3-T1**) posts HR `Observation`s to Desktop on the same LAN.
-- Today: HealthKit / CLI **sample** sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; iOS runnable target remains.
+- **Phase 5 path:** opt-in LAN bind (ADR-005) + advertise hints + Companion Base URL / token/QR + runnable **iOS HealthKit** companion (`apps/companion/ios/BioFocusCompanion.xcodeproj`) posts HR `Observation`s to Desktop ingest (Simulator loopback or physical phone on LAN).
+- **Dogfood:** end-to-end operator runbook in `docs/12-development.md` § Wearable dogfood runbook (LAN → Base URL → pair → one-shot → confirm Observation). Companion READMEs mirror the same steps.
+- Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
 - Later (post–Phase 5): Life Events + Calendar (P6); additional wearable bridges; plugins (IDE/Git/Browser) later.
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 

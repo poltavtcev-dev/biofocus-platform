@@ -28,9 +28,9 @@
 - None blocking. Host gap: install iOS 26.2 platform (Xcode → Settings → Components) before local `xcodebuild`/Simulator Run on this machine.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P5-E3-T1 → Done; Ready **P5-E3-T2**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `docs/12-development.md` (point at `BioFocusCompanion.xcodeproj`), `ARCHITECTURE_STATUS` / Phase 5 notes; full dogfood runbook stays **P5-E3-T2**
+- [x] `/docs/SPRINT_ROADMAP.md` — P5-E3-T1 → Done; Ready **P5-E3-T2**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `docs/12-development.md` (point at `BioFocusCompanion.xcodeproj`), `ARCHITECTURE_STATUS` / Phase 5 notes; full dogfood runbook stays **P5-E3-T2**
 
 ## Suggested next Ready task
 - **P5-E3-T2** — Dogfood runbook + contract docs

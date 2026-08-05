@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev (+ UX for minimal UI copy)  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes, 2026-08-05)  
 **Date:** 2026-08-05  
 **Closed previous:** P5-E2-T1 (QA Pass with notes — Companion LAN Base URL + token/QR; Epic **P5-E2** ✅)  
+**Closed this:** QA Pass with notes → `docs/handoffs/P5-E3-T1-qa-to-pm.md`; Ready **P5-E3-T2**  
 **Evidence:** `docs/handoffs/P5-E2-T1-qa-to-pm.md`
 
 ## Task
@@ -42,4 +43,4 @@ Desktop pairing now exposes a copyable LAN (or loopback) base URL + token. Dogfo
 - Desktop how-to: `docs/12-development.md` (LAN opt-in + Companion Base URL)
 
 ## After QA Pass
-PM → Ready **P5-E3-T2** (Dogfood runbook + contract docs) unless sprint re-order.
+~~PM → Ready **P5-E3-T2**~~ — done; see `docs/handoffs/P5-E3-T2-pm-brief.md`.
