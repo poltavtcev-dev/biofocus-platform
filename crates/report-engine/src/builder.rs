@@ -6,9 +6,9 @@ use crate::error::{ReportEngineError, ReportResult};
 
 /// Offline report document: human markdown plus an optional-LLM prompt string.
 ///
-/// Both fields are produced without network I/O. The LLM path (Phase 4 E3-T2)
-/// may consume [`Self::llm_prompt`]; it must **interpret** only — never compute
-/// Features.
+/// Both fields are produced without network I/O. The optional LLM adapter
+/// ([`crate::interpret_report`]) may consume [`Self::llm_prompt`]; it must
+/// **interpret** only — never compute Features.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReportDocument {
     /// Calm markdown summary suitable for Dashboard / copy-paste.

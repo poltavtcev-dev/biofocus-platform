@@ -59,6 +59,7 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **Rule Insights v1 (P4-E2-T2):** `knowledge_engine::register_insights_v1` — `High_Stress` Signal + elevated `ContextSwitchRate` (≥1.0) rules with calm copy / `EvidenceRef`; host must register (empty engine still `Ok([])`). IPC/UI → T3.
 - **Insights IPC + Dashboard list (P4-E2-T3):** Desktop `invoke("get_insights")` — evaluate-on-read over cached `FeatureSnapshot`; host `KnowledgeEngine::new()` + `register_insights_v1` at startup. Dashboard Insights list (evidence refs) + calm empty state; refresh on open + ~30s. Contract: `docs/09-api.md`.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
+- **Optional local LLM (P4-E3-T2):** **Off by default.** Set `BIOFOCUS_LOCAL_LLM=1` to opt in. Then `report_engine::interpret_report(&doc, &LocalLlmConfig::from_env()).await` POSTs only `ReportDocument::llm_prompt` to an OpenAI-compatible base URL (default `http://127.0.0.1:11434/v1` — local Ollama). Optional: `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL` (default `llama3.2`), `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS` (default `30`). HTTP timeout applies. **Never auto-called on app startup** — hosts must invoke only on explicit user action (Dashboard button → P4-E3-T3). Privacy: when disabled, no network. When enabled, the prompt text (offline report facts + interpret-only instructions) leaves the BioFocus process toward the configured base URL only — prefer localhost; a remote URL is the operator’s choice/responsibility. No Feature math in this path; no vendor cloud telemetry by default.
 ```bash
 cargo test -p feature-engine
 cargo test -p knowledge-engine
@@ -181,5 +182,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Done: Epic **P4-E1** · Epic **P4-E2** (`get_insights` + Dashboard list). Ready: **P4-E3-T1** (report-engine builder) — `docs/handoffs/P4-E3-T1-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
+**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Done: Epic **P4-E1** · Epic **P4-E2** · **P4-E3-T1** (`build_report` offline). Ready: **P4-E3-T2** (optional local LLM adapter) — `docs/handoffs/P4-E3-T2-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.

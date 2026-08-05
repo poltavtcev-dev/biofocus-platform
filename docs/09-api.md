@@ -198,22 +198,28 @@ register_insights_v1(&mut engine)?;
 let insights = engine.evaluate(&features, &signals)?;
 ```
 
-### report-engine (crate API, P4-E3-T1)
+### report-engine (crate API, P4-E3-T1 / T2)
 
-Offline builder — **not** an IPC command yet (Dashboard button → P4-E3-T3; local LLM HTTP → P4-E3-T2).
+Offline builder + optional local LLM interpret — **not** an IPC command yet (Dashboard button → P4-E3-T3).
 
 ```rust
-use report_engine::{build_report, ReportDocument};
+use report_engine::{
+    build_report, interpret_report, LocalLlmConfig, ReportDocument,
+};
 
-let ReportDocument { markdown, llm_prompt } = build_report(&features, &insights)?;
+let doc = build_report(&features, &insights)?;
+// Opt-in only — default OFF; never call on app startup.
+let config = LocalLlmConfig::from_env(); // or LocalLlmConfig { enabled: true, .. }
+let interpreted = interpret_report(&doc, &config).await?; // Err(LocalLlmDisabled) if off
 ```
 
-| Output | Notes |
+| Output / API | Notes |
 | :--- | :--- |
 | `markdown` | Calm deterministic summary: `# BioFocus report`, Features table (sorted by id / window), Insights sections (sorted by UUID). Empty inputs → short “Nothing to summarize…” body. |
-| `llm_prompt` | Same markdown wrapped with interpret-only instructions (no Feature math, non-clinical). No network in this crate. |
+| `llm_prompt` | Same markdown wrapped with interpret-only instructions (no Feature math, non-clinical). |
+| `interpret_report` / `interpret_llm_prompt` | Opt-in HTTP to OpenAI-compatible `/chat/completions` (default Ollama `http://127.0.0.1:11434/v1`). Sends prompt string only. Timeout + `thiserror`. |
 
-Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite or call HTTP.
+Env: `BIOFOCUS_LOCAL_LLM=1`, optional `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL`, `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS`. Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite. Builder path has no HTTP; LLM path is explicit + disabled by default.
 
 ### `core_ping` (legacy fallback)
 

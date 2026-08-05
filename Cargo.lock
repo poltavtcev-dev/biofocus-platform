@@ -2820,9 +2820,13 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 name = "report-engine"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "bio-spec",
+ "reqwest 0.12.28",
+ "serde",
  "serde_json",
  "thiserror 2.0.19",
+ "tokio",
  "uuid",
 ]
 
