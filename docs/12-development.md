@@ -52,6 +52,7 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **Alert level (E3-T1):** `feature_engine::map_alert_level(&EngineOutput) → AlertLevel` — Red if `High_Stress`; Yellow if latest StressIndex or FatigueIndex > 60; else Green (empty → Green).
 - **IPC alert (E3-T2):** Desktop `get_status` includes `alertLevel` (`green`/`yellow`/`red`). Feature Worker hook runs catalog → map → shared `AlertState`. Idle/Ready/Error (`dbStatus`) unchanged. UI reads via IPC only.
 - **Menubar alert UX (E3-T3):** Shell shows calm Steady/Elevated/High indicator (color + copy) from `alertLevel`; tray tooltip includes the label. Poll ~5s. QA: `?mockAlert=green|yellow|red`.
+- **Feature snapshot IPC (P4-E1-T1):** `feature_engine::FeatureSnapshot` from last `EngineOutput`; desktop caches via `SnapshotState` + `invoke("get_feature_snapshot")` (pure read). `get_status` stays lean. Contract: `docs/09-api.md`.
 ```bash
 cargo test -p feature-engine
 cargo test -p desktop
@@ -171,5 +172,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-04):** Phase 2 **merged**. Phase 3: **P3-E1–E3 Done** (alerts: map + IPC + Menubar UX). Next: Phase 4 when opened.  
+**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Ready: **P4-E1-T1** (Feature snapshot IPC) — `docs/handoffs/P4-E1-T1-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.

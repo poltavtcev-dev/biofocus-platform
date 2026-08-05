@@ -14,7 +14,7 @@ use storage::{Database, ObservationRepository};
 use tauri::{AppHandle, Manager, Runtime};
 use tracing::{error, info, warn};
 
-use crate::alert_state::{AlertState, CatalogAlertHook};
+use crate::alert_state::{AlertState, CatalogAlertHook, SnapshotState};
 
 /// Managed handle so Tauri exit can stop the Feature Worker.
 pub struct FeatureHost {
@@ -113,11 +113,13 @@ pub fn start_feature_host<R: Runtime>(app: &AppHandle<R>) {
     };
 
     let alert_state = AlertState::new();
-    let hook = CatalogAlertHook::new(alert_state.share());
+    let snapshot_state = SnapshotState::new();
+    let hook = CatalogAlertHook::new(alert_state.share(), snapshot_state.share());
     let handle = spawn_feature_worker(source, hook, FeatureWorkerConfig::default());
     info!("feature worker armed (poll ≥1s when idle; pipeline → catalog alert hook)");
 
     app.manage(alert_state);
+    app.manage(snapshot_state);
     app.manage(FeatureHost {
         worker: Mutex::new(Some(handle)),
     });

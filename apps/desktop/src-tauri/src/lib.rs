@@ -9,12 +9,34 @@
 //!
 //! Returns app version + DB probe result (`ok` | `error`) + Menubar
 //! `alertLevel` (`green` | `yellow` | `red`). Never includes raw Observation
-//! or biometric payloads.
+//! or biometric payloads. Kept lean — Feature series live in
+//! [`get_feature_snapshot`].
 //!
 //! Example (camelCase JSON):
 //! ```json
 //! { "version": "0.1.0", "dbStatus": "ok", "alertLevel": "green" }
 //! { "version": "0.1.0", "dbStatus": "error", "dbError": "…", "alertLevel": "green" }
+//! ```
+//!
+//! ## `get_feature_snapshot`
+//!
+//! Returns the latest cached Feature snapshot (+ optional Signals) from the
+//! Feature Worker. Pure read of in-memory cache — no busy-loop, no SQLite from
+//! the command path. Empty when idle / no evidence yet.
+//!
+//! Example (camelCase JSON):
+//! ```json
+//! {
+//!   "features": [
+//!     {
+//!       "featureId": "FocusScore",
+//!       "timeWindow": { "start": 100, "end": 1000 },
+//!       "value": 72.5,
+//!       "provenance": ["…uuid…"]
+//!     }
+//!   ],
+//!   "signals": []
+//! }
 //! ```
 //!
 //! ## `core_ping`
@@ -32,12 +54,13 @@
 //! spawns the persist worker, and serves loopback ingest (`127.0.0.1:8787`).
 //! Companion/debug use `GET /v1/status`; the shell UI still uses IPC `get_status`.
 //!
-//! ## Feature Worker (Phase 3)
+//! ## Feature Worker (Phase 3 / 4)
 //!
 //! A Core Feature Worker polls new Observations from SQLite, runs pipeline
 //! quality stages (accept → dedupe → normalize), then catalog Feature Engine +
 //! [`feature_engine::map_alert_level`] into shared [`alert_state::AlertState`]
-//! for IPC. Started/stopped with the desktop process.
+//! and caches [`feature_engine::FeatureSnapshot`] in
+//! [`alert_state::SnapshotState`] for IPC. Started/stopped with the desktop process.
 //!
 //! See also `docs/09-api.md`.
 
@@ -49,15 +72,16 @@ mod ingest_host;
 
 use std::path::Path;
 
-use feature_engine::AlertLevel;
+use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use serde::Serialize;
+use serde_json::Value as JsonValue;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, RunEvent};
 use thiserror::Error;
 
-use crate::alert_state::AlertState;
+use crate::alert_state::{AlertState, SnapshotState};
 
 /// Errors from the desktop host bootstrap (no panics on the production path).
 #[derive(Debug, Error)]
@@ -86,6 +110,106 @@ struct CoreStatus {
     /// Menubar traffic-light level (`green` / `yellow` / `red`). Independent of
     /// Idle/Ready/Error (`db_status`); defaults to green without Feature evidence.
     alert_level: String,
+}
+
+/// IPC wire value for a Feature (scalar or JSON object).
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(untagged)]
+enum FeatureValueDto {
+    Scalar(f64),
+    Object(JsonValue),
+}
+
+impl From<&FeatureValue> for FeatureValueDto {
+    fn from(value: &FeatureValue) -> Self {
+        match value {
+            FeatureValue::Scalar(v) => Self::Scalar(*v),
+            FeatureValue::Object(v) => Self::Object(v.clone()),
+        }
+    }
+}
+
+/// One Feature in the IPC snapshot (camelCase; provenance = Observation ids only).
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct FeatureDto {
+    feature_id: String,
+    time_window: TimeWindowDto,
+    value: FeatureValueDto,
+    provenance: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct TimeWindowDto {
+    start: i64,
+    end: i64,
+}
+
+/// One Signal in the IPC snapshot (no Observation payloads).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct SignalDto {
+    id: String,
+    #[serde(rename = "type")]
+    signal_type: String,
+    timestamp_start: i64,
+    timestamp_end: i64,
+    severity: String,
+}
+
+/// IPC payload for [`get_feature_snapshot`].
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct FeatureSnapshotDto {
+    features: Vec<FeatureDto>,
+    signals: Vec<SignalDto>,
+}
+
+impl From<&Feature> for FeatureDto {
+    fn from(feature: &Feature) -> Self {
+        Self {
+            feature_id: feature.feature_id.clone(),
+            time_window: TimeWindowDto {
+                start: feature.time_window.start.as_secs(),
+                end: feature.time_window.end.as_secs(),
+            },
+            value: FeatureValueDto::from(&feature.value),
+            provenance: feature
+                .provenance
+                .iter()
+                .map(|id| id.to_string())
+                .collect(),
+        }
+    }
+}
+
+impl From<&Signal> for SignalDto {
+    fn from(signal: &Signal) -> Self {
+        Self {
+            id: signal.id.to_string(),
+            signal_type: signal.signal_type.clone(),
+            timestamp_start: signal.timestamp_start.as_secs(),
+            timestamp_end: signal.timestamp_end.as_secs(),
+            severity: severity_wire(signal.severity),
+        }
+    }
+}
+
+fn severity_wire(severity: bio_spec::Severity) -> String {
+    match severity {
+        bio_spec::Severity::Low => "low".into(),
+        bio_spec::Severity::Medium => "medium".into(),
+        bio_spec::Severity::High => "high".into(),
+        bio_spec::Severity::Critical => "critical".into(),
+    }
+}
+
+fn snapshot_to_dto(snapshot: &FeatureSnapshot) -> FeatureSnapshotDto {
+    FeatureSnapshotDto {
+        features: snapshot.features.iter().map(FeatureDto::from).collect(),
+        signals: snapshot.signals.iter().map(SignalDto::from).collect(),
+    }
 }
 
 /// Placeholder IPC payload kept for T2 fallback until consumers drop it.
@@ -196,10 +320,22 @@ fn current_alert_level(app: &AppHandle) -> AlertLevel {
         .unwrap_or(AlertLevel::Green)
 }
 
+fn current_feature_snapshot(app: &AppHandle) -> FeatureSnapshot {
+    app.try_state::<SnapshotState>()
+        .map(|state| state.current())
+        .unwrap_or_else(FeatureSnapshot::empty)
+}
+
 /// Core status for Menubar/UI. Soft-fails DB problems into `dbStatus: "error"`.
 #[tauri::command]
 fn get_status(app: AppHandle) -> CoreStatus {
     build_status(probe_default_database(), current_alert_level(&app))
+}
+
+/// Latest cached Feature snapshot for Dashboard (P4-E1-T1). Pure cache read.
+#[tauri::command]
+fn get_feature_snapshot(app: AppHandle) -> FeatureSnapshotDto {
+    snapshot_to_dto(&current_feature_snapshot(&app))
 }
 
 /// Trivial Core link check (T1). Does not open SQLite or expose Observation rows.
@@ -263,6 +399,7 @@ pub fn run() -> DesktopResult<()> {
         })
         .invoke_handler(tauri::generate_handler![
             get_status,
+            get_feature_snapshot,
             core_ping,
             get_pairing_token
         ])
@@ -281,8 +418,13 @@ pub fn run() -> DesktopResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io;
     use std::sync::Mutex;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    use bio_spec::{Severity, TimeWindow, UnixTimestamp};
+    use feature_engine::FeatureValue;
+    use uuid::Uuid;
 
     /// Serializes env-mutating pairing tests.
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -313,7 +455,6 @@ mod tests {
 
     #[test]
     fn storage_public_message_hides_paths_in_db_error() {
-        use std::io;
         use std::path::PathBuf;
 
         let err = storage::StorageError::CreateDir {
@@ -366,6 +507,95 @@ mod tests {
         assert!(!obj.contains_key("payload"));
         assert!(!obj.contains_key("hrv"));
         assert!(!obj.contains_key("stressIndex"));
+        assert!(!obj.contains_key("features"));
+    }
+
+    #[test]
+    fn empty_feature_snapshot_dto_is_idle() {
+        let dto = snapshot_to_dto(&FeatureSnapshot::empty());
+        assert!(dto.features.is_empty());
+        assert!(dto.signals.is_empty());
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(
+            obj.get("features")
+                .and_then(|v| v.as_array())
+                .map(|a| a.len()),
+            Some(0)
+        );
+        assert_eq!(
+            obj.get("signals")
+                .and_then(|v| v.as_array())
+                .map(|a| a.len()),
+            Some(0)
+        );
+        assert!(!obj.contains_key("payload"));
+        assert!(!obj.contains_key("path"));
+    }
+
+    #[test]
+    fn non_empty_feature_snapshot_dto_has_provenance_no_biometrics() {
+        let window =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let snap = FeatureSnapshot {
+            features: vec![Feature {
+                feature_id: "FocusScore".into(),
+                time_window: window,
+                value: FeatureValue::Scalar(72.5),
+                provenance: vec![Uuid::from_u128(1)],
+            }],
+            signals: vec![Signal {
+                id: Uuid::from_u128(9),
+                signal_type: "High_Stress".into(),
+                timestamp_start: UnixTimestamp::from_secs(900),
+                timestamp_end: UnixTimestamp::from_secs(1260),
+                severity: Severity::High,
+            }],
+        };
+        let dto = snapshot_to_dto(&snap);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+
+        let features = obj
+            .get("features")
+            .and_then(|v| v.as_array())
+            .expect("features");
+        assert_eq!(features.len(), 1);
+        let f = features[0].as_object().expect("feature obj");
+        assert_eq!(
+            f.get("featureId").and_then(|v| v.as_str()),
+            Some("FocusScore")
+        );
+        assert_eq!(f.get("value").and_then(|v| v.as_f64()), Some(72.5));
+        let tw = f.get("timeWindow").and_then(|v| v.as_object()).expect("tw");
+        assert_eq!(tw.get("start").and_then(|v| v.as_i64()), Some(100));
+        assert_eq!(tw.get("end").and_then(|v| v.as_i64()), Some(1000));
+        let prov = f
+            .get("provenance")
+            .and_then(|v| v.as_array())
+            .expect("prov");
+        assert_eq!(prov.len(), 1);
+        assert!(!f.contains_key("payload"));
+        assert!(!f.contains_key("rmssd_ms"));
+
+        let signals = obj
+            .get("signals")
+            .and_then(|v| v.as_array())
+            .expect("signals");
+        assert_eq!(signals.len(), 1);
+        let s = signals[0].as_object().expect("signal obj");
+        assert_eq!(s.get("type").and_then(|v| v.as_str()), Some("High_Stress"));
+        assert_eq!(s.get("severity").and_then(|v| v.as_str()), Some("high"));
+        assert_eq!(
+            s.get("timestampStart").and_then(|v| v.as_i64()),
+            Some(900)
+        );
+
+        let raw = serde_json::to_string(&dto).expect("string");
+        assert!(!raw.contains("/Users"));
+        assert!(!raw.contains(".biofocus"));
+        assert!(!raw.contains("rmssd"));
     }
 
     #[test]
@@ -373,7 +603,10 @@ mod tests {
         let info = build_pairing_info("abc123deadbeef".into(), false).expect("qr");
         let json = serde_json::to_value(&info).expect("serialize");
         let obj = json.as_object().expect("object");
-        assert_eq!(obj.get("token").and_then(|v| v.as_str()), Some("abc123deadbeef"));
+        assert_eq!(
+            obj.get("token").and_then(|v| v.as_str()),
+            Some("abc123deadbeef")
+        );
         assert_eq!(
             obj.get("ingestBaseUrl").and_then(|v| v.as_str()),
             Some("http://127.0.0.1:8787")
@@ -390,7 +623,7 @@ mod tests {
     fn pairing_error_message_hides_paths() {
         let msg = pairing_error_message(ingest::IngestError::TokenIo {
             path: "/Users/secret/.biofocus/pairing_token".into(),
-            source: std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied"),
+            source: io::Error::new(io::ErrorKind::PermissionDenied, "denied"),
         });
         assert!(!msg.contains("/Users"));
         assert!(!msg.contains(".biofocus"));
