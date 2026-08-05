@@ -97,7 +97,8 @@
 //! ## Local ingest HTTP (Phase 2)
 //!
 //! On startup the host opens the default DB, loads [`ingest::IngestConfig`],
-//! spawns the persist worker, and serves loopback ingest (`127.0.0.1:8787`).
+//! spawns the persist worker, and serves ingest (default `127.0.0.1:8787`;
+//! LAN opt-in via `BIOFOCUS_INGEST_LAN` / bind-host — ADR-005).
 //! Companion/debug use `GET /v1/status`; the shell UI still uses IPC `get_status`.
 //!
 //! ## Feature Worker (Phase 3 / 4)

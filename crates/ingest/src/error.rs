@@ -46,4 +46,11 @@ pub enum IngestError {
     /// OS entropy source failed while generating a pairing token.
     #[error("failed to gather entropy for pairing token: {0}")]
     TokenEntropy(String),
+
+    /// `BIOFOCUS_INGEST_BIND_HOST` was set but is not a valid IPv4 address.
+    #[error("invalid BIOFOCUS_INGEST_BIND_HOST value: {value}")]
+    InvalidBindHost {
+        /// Raw env value (trimmed).
+        value: String,
+    },
 }

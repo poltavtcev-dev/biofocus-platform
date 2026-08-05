@@ -1,7 +1,8 @@
 //! Local ingest + collector lifecycle owned by the desktop host.
 //!
 //! Startup: open default DB → [`IngestConfig::load`] → Observation channel →
-//! persist worker → loopback Axum serve → active window collector (same `tx`).
+//! persist worker → Axum serve (default loopback; LAN opt-in via env) →
+//! active window collector (same `tx`).
 //! Opt-in input aggregates when `BIOFOCUS_INPUT_AGGREGATES=1`.
 //! Shutdown stops collectors, then accept loop, then joins the worker.
 
@@ -79,7 +80,10 @@ impl IngestHost {
     }
 }
 
-/// Starts loopback ingest + persist if config/DB allow. Soft-fails (logs, no panic).
+/// Starts ingest + persist if config/DB allow. Soft-fails (logs, no panic).
+///
+/// Default bind is loopback; set `BIOFOCUS_INGEST_LAN=1` (or bind-host override)
+/// for LAN-reachable dogfood. Bearer pairing token still required.
 ///
 /// Menubar UI continues to use IPC `get_status`; HTTP `/v1/status` is for companion/debug.
 pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
@@ -108,6 +112,8 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
     };
 
     let port = config.port;
+    let bind_host = config.bind_host;
+    let lan_bind = config.is_lan_bind();
     let collector_tx = tx.clone();
 
     let worker = match storage::Database::open(&db_path) {
@@ -149,7 +155,19 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         let _ = done_tx.send(());
     });
 
-    info!(%port, host = "127.0.0.1", "ingest HTTP starting on loopback (idle on accept)");
+    if lan_bind {
+        info!(
+            %port,
+            %bind_host,
+            "ingest HTTP starting with LAN opt-in bind (idle on accept; Bearer required)"
+        );
+    } else {
+        info!(
+            %port,
+            %bind_host,
+            "ingest HTTP starting on loopback (idle on accept)"
+        );
+    }
 
     let collector = Arc::new(ActiveWindowPlugin::system_default());
     match tauri::async_runtime::block_on(collector.start_stream(collector_tx.clone())) {

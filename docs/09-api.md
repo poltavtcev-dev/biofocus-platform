@@ -2,7 +2,7 @@
 
 ## 1. Endpoints (Phase 2)
 
-Default bind (skeleton): **`127.0.0.1:8787`** (`crates/ingest`). Loopback only until pairing/LAN epic.
+Default bind: **`127.0.0.1:8787`** (`crates/ingest`). LAN-reachable bind is **opt-in** (`BIOFOCUS_INGEST_LAN=1` and/or `BIOFOCUS_INGEST_BIND_HOST` — see `docs/10-security.md` §1.1 / ADR-005). Bearer auth unchanged.
 
 ### Companion sample path (P2-E3-T1)
 - Rust: `apps/companion` — `CompanionClient::post_sample_heart_rate` / CLI `biofocus-companion-sample`
@@ -42,8 +42,8 @@ Bounded `try_send` per item. If a later item in the same request hits a full (or
 Same shape when the channel is full on the **first** item (`accepted: 0`). Collectors should back off and retry rejected Observations (new request).
 
 ### `GET /v1/status`
-- **Description:** Статус Core / ingest для companion/debug (loopback). Shell UI uses IPC `get_status`, not this endpoint.
-- **Auth:** none (loopback-only bind).
+- **Description:** Статус Core / ingest для companion/debug. Shell UI uses IPC `get_status`, not this endpoint.
+- **Auth:** none (intended for local/debug; prefer loopback; when LAN opt-in is on the endpoint is reachable on the LAN without Bearer — do not expose Observation data here).
 - **Response:** `200 OK` — **без** Observation / biometric payload:
 
 ```json
