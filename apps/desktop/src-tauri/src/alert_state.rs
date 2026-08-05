@@ -3,7 +3,7 @@
 //! Latest [`AlertLevel`](feature_engine::AlertLevel) and
 //! [`FeatureSnapshot`](feature_engine::FeatureSnapshot) are computed in-process
 //! from normalized Observation batches (catalog Features + Signals). Exposed to
-//! the UI only via IPC (`get_status` / `get_feature_snapshot`) — never Observation
+//! the UI only via IPC (`get_status` / `get_feature_snapshot` / `get_insights`) — never Observation
 //! payloads.
 
 use std::sync::{Arc, Mutex};

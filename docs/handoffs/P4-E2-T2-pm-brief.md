@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass, 2026-08-05)  
 **Date:** 2026-08-05  
 **Closed previous:** P4-E2-T1 (QA Pass — `KnowledgeEngine` + `bio-spec` Insight/Evidence)
 

@@ -33,10 +33,14 @@ via **Open Dashboard** (`invoke("open_dashboard")`). Snapshot via
 `get_feature_snapshot` only — loading / empty / error / ready. Chart slot shows
 Recharts series for `FocusScore`, `StressIndex`, `FatigueIndex`, and
 `ContextSwitchRate` when present (calm labels; scores 0–100; CSR on secondary
-axis). Soft refresh ~30s.
+axis). Insights list via `get_insights` (evaluate-on-read over the same Feature
+cache; calm empty state when none). Soft refresh ~30s.
 
-QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error`
-(`ready` includes a multi-window series for chart smoke).
+QA mocks:
+- `?view=dashboard&mockSnapshot=empty|ready|error`
+  (`ready` includes a multi-window series for chart smoke)
+- `?view=dashboard&mockInsights=empty|ready|error`
+  (`ready` includes two sample Insights with evidence refs)
 
 ## Companion pairing (P2-E3-T2)
 

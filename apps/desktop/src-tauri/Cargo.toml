@@ -21,6 +21,7 @@ runtime = { workspace = true }
 storage = { workspace = true }
 ingest = { workspace = true }
 feature-engine = { workspace = true }
+knowledge-engine = { workspace = true }
 pipeline = { workspace = true }
 bio-spec = { workspace = true }
 plugin-sdk = { workspace = true }

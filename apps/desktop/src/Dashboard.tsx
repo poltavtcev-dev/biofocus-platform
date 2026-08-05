@@ -25,6 +25,12 @@ import {
   type FeatureDto,
   type SnapshotView,
 } from "./featureSnapshot";
+import {
+  fetchInsights,
+  formatEvidenceRef,
+  loadingInsightsView,
+  type InsightsView,
+} from "./insights";
 
 /** Soft refresh — idle-safe; no busy-loop. */
 const SNAPSHOT_POLL_MS = 30_000;
@@ -178,17 +184,49 @@ function FeatureSeriesChart({
   );
 }
 
-function InsightsSlot() {
+function InsightsSlot({ view }: { view: InsightsView }) {
+  const showList = view.kind === "ready" && view.insights.length > 0;
+
   return (
-    <section className="insights-slot" aria-label="Insights">
+    <section className="insights-slot" aria-label="Insights" aria-live="polite">
       <p className="chart-slot-title">Insights</p>
-      <p className="status-meta">Insights will appear here later.</p>
+      {showList ? (
+        <ul className="insight-rows">
+          {view.insights.map((insight) => (
+            <li key={insight.id} className="insight-row">
+              <p className="insight-title">{insight.title}</p>
+              <p className="insight-description">{insight.description}</p>
+              {insight.evidenceList.length > 0 && (
+                <p className="insight-evidence">
+                  Evidence:{" "}
+                  {insight.evidenceList.map(formatEvidenceRef).join(" · ")}
+                </p>
+              )}
+              {insight.actionRecommendation && (
+                <p className="insight-action">{insight.actionRecommendation}</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <>
+          <p className="status-meta">
+            {view.kind === "loading" ? view.detail : view.label}
+          </p>
+          {view.kind !== "loading" && (
+            <p className="status-meta">{view.detail}</p>
+          )}
+        </>
+      )}
     </section>
   );
 }
 
 export function Dashboard() {
   const [view, setView] = useState<SnapshotView>(() => loadingView());
+  const [insightsView, setInsightsView] = useState<InsightsView>(() =>
+    loadingInsightsView(),
+  );
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
@@ -198,12 +236,17 @@ export function Dashboard() {
       if (isFirst) {
         setBusy(true);
         setView(loadingView());
+        setInsightsView(loadingInsightsView());
       }
-      const next = await fetchFeatureSnapshot();
+      const [next, nextInsights] = await Promise.all([
+        fetchFeatureSnapshot(),
+        fetchInsights(),
+      ]);
       if (cancelled) {
         return;
       }
       setView(next);
+      setInsightsView(nextInsights);
       if (isFirst) {
         setBusy(false);
       }
@@ -223,10 +266,14 @@ export function Dashboard() {
   const onRetry = () => {
     setBusy(true);
     setView(loadingView());
-    void fetchFeatureSnapshot().then((next) => {
-      setView(next);
-      setBusy(false);
-    });
+    setInsightsView(loadingInsightsView());
+    void Promise.all([fetchFeatureSnapshot(), fetchInsights()]).then(
+      ([next, nextInsights]) => {
+        setView(next);
+        setInsightsView(nextInsights);
+        setBusy(false);
+      },
+    );
   };
 
   const features = view.snapshot?.features ?? [];
@@ -294,7 +341,7 @@ export function Dashboard() {
         </section>
       )}
 
-      <InsightsSlot />
+      <InsightsSlot view={insightsView} />
     </main>
   );
 }

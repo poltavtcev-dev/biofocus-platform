@@ -152,6 +152,69 @@ Example (non-empty):
 
 Core API (crate): `feature_engine::FeatureSnapshot::from_engine_output` — Features + Signals without Observation payloads.
 
+### `get_insights` (P4-E2-T3)
+
+- **Invoke:** `invoke("get_insights")`
+- **Purpose:** Recent Insights for the Dashboard list (calm copy + evidence refs).
+- **Source:** Evaluate-on-read over the same in-memory Feature snapshot cache as [`get_feature_snapshot`](#get_feature_snapshot-p4-e1-t1). Host registers `knowledge_engine::register_insights_v1` once at startup, then `KnowledgeEngine::evaluate(&features, &signals)`.
+- **Empty:** `{ "insights": [] }` when idle / no matching rules / evaluate soft-fail / engine not managed. An empty/`new()` engine without registration also yields `[]`.
+- **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM text. No SQLite on the command path.
+
+Example (non-empty):
+
+```json
+{
+  "insights": [
+    {
+      "id": "0190…",
+      "title": "Sustained stress pattern",
+      "description": "Stress stayed elevated long enough in this period to raise a High_Stress signal.",
+      "category": "stress",
+      "evidenceList": [
+        { "kind": "signal", "id": "0190…" },
+        { "kind": "feature", "id": "StressIndex" }
+      ],
+      "actionRecommendation": "A brief pause or slower pace may help when it fits your schedule."
+    }
+  ]
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `insights[]` | object | Zero or more Insights from v1 product rules |
+| `insights[].id` | string | Insight UUID |
+| `insights[].title` | string | Calm, non-clinical title |
+| `insights[].description` | string | Short explanatory copy |
+| `insights[].category` | string | e.g. `stress`, `focus` |
+| `insights[].evidenceList[]` | object | `kind`: `"feature"` \| `"signal"`; `id`: Feature id or Signal UUID |
+| `insights[].actionRecommendation` | string? | Optional gentle suggestion |
+
+Host contract:
+
+```rust
+let mut engine = KnowledgeEngine::new();
+register_insights_v1(&mut engine)?;
+let insights = engine.evaluate(&features, &signals)?;
+```
+
+### report-engine (crate API, P4-E3-T1)
+
+Offline builder — **not** an IPC command yet (Dashboard button → P4-E3-T3; local LLM HTTP → P4-E3-T2).
+
+```rust
+use report_engine::{build_report, ReportDocument};
+
+let ReportDocument { markdown, llm_prompt } = build_report(&features, &insights)?;
+```
+
+| Output | Notes |
+| :--- | :--- |
+| `markdown` | Calm deterministic summary: `# BioFocus report`, Features table (sorted by id / window), Insights sections (sorted by UUID). Empty inputs → short “Nothing to summarize…” body. |
+| `llm_prompt` | Same markdown wrapped with interpret-only instructions (no Feature math, non-clinical). No network in this crate. |
+
+Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite or call HTTP.
+
 ### `core_ping` (legacy fallback)
 
 Scaffold probe from P1-E3-T1. UI prefers `get_status`. Still registered for
