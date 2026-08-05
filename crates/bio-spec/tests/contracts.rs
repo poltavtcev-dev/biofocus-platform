@@ -4,8 +4,9 @@ use serde_json::json;
 use uuid::Uuid;
 
 use bio_spec::{
-    Confidence, EvidenceRef, Feature, FeatureValue, Insight, Observation, Severity, Signal,
-    SpecError, TimeWindow, UnixTimestamp,
+    validate_life_event_payload, validate_observation_payload, Confidence, EvidenceRef, Feature,
+    FeatureValue, Insight, Observation, Severity, Signal, SpecError, TimeWindow, UnixTimestamp,
+    DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, V1_LIFE_EVENT_KINDS,
 };
 
 /// Sample Observation JSON from `docs/07-contracts.md`.
@@ -39,6 +40,76 @@ fn observation_contract_json_round_trip() {
     let encoded = serde_json::to_value(&parsed).expect("serialize");
     let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
     assert_eq!(again, parsed);
+}
+
+/// Sample Life Event Observation JSON from `docs/07-contracts.md` (ADR-006).
+const CONTRACT_LIFE_EVENT_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abcf",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.desktop",
+  "data_type": "life_event",
+  "payload": {
+    "kind": "coffee",
+    "note": "morning"
+  },
+  "confidence": 1.0
+}"#;
+
+#[test]
+fn life_event_contract_json_round_trip() {
+    let parsed: Observation = serde_json::from_str(CONTRACT_LIFE_EVENT_JSON)
+        .expect("life event contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_LIFE_EVENT);
+    assert_eq!(parsed.payload["kind"], json!(LIFE_EVENT_KIND_COFFEE));
+    assert_eq!(parsed.payload["note"], json!("morning"));
+    validate_observation_payload(&parsed).expect("valid life event");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
+#[test]
+fn life_event_v1_kinds_documented() {
+    assert_eq!(
+        V1_LIFE_EVENT_KINDS,
+        &["coffee", "walk", "lunch", "workout"]
+    );
+    for kind in V1_LIFE_EVENT_KINDS {
+        validate_life_event_payload(&json!({ "kind": kind })).expect("v1 kind ok");
+    }
+}
+
+#[test]
+fn life_event_rejects_malformed_payloads() {
+    let cases = [
+        json!("not-an-object"),
+        json!({}),
+        json!({ "kind": "tea" }),
+        json!({ "kind": 1 }),
+        json!({ "kind": "coffee", "note": 12 }),
+        json!({ "kind": "walk", "duration_secs": -1 }),
+        json!({ "kind": "walk", "duration_secs": "long" }),
+    ];
+    for payload in cases {
+        let err = validate_life_event_payload(&payload).expect_err("must reject");
+        assert!(matches!(err, SpecError::InvalidLifeEventPayload { .. }));
+    }
+}
+
+#[test]
+fn life_event_observation_validate_skips_other_types() {
+    let hr = Observation::try_new(
+        Uuid::nil(),
+        UnixTimestamp::from_secs(0),
+        "com.biofocus.test",
+        "heart_rate",
+        json!({}),
+        1.0,
+    )
+    .expect("hr");
+    validate_observation_payload(&hr).expect("non-life-event pass-through");
 }
 
 #[test]

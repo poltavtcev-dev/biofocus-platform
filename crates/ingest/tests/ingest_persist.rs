@@ -111,6 +111,69 @@ async fn http_ingest_persists_to_sqlite_round_trip() {
     worker.join().expect("persist worker");
 }
 
+fn life_event_json(id: &str, kind: &str) -> serde_json::Value {
+    json!({
+        "id": id,
+        "timestamp": 1721990400,
+        "provider_id": "com.biofocus.desktop",
+        "data_type": "life_event",
+        "payload": { "kind": kind, "note": "morning" },
+        "confidence": 1.0
+    })
+}
+
+#[tokio::test]
+async fn http_ingest_persists_life_event_round_trip() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let state = IngestState::new(TOKEN, tx.clone());
+    let app = ingest_router(state);
+
+    const LIFE_ID: &str = "0190ecb5-7c2a-7123-8901-23456789abcf";
+    let body = json!([life_event_json(LIFE_ID, "coffee")]);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(body.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::ACCEPTED);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: IngestResponse = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed, IngestResponse::queued(1));
+
+    let id = Uuid::parse_str(LIFE_ID).expect("uuid");
+    let obs = wait_for_id(&db_path, id, Duration::from_secs(2)).await;
+    assert_eq!(obs.data_type, "life_event");
+    assert_eq!(obs.payload["kind"], json!("coffee"));
+    assert_eq!(obs.payload["note"], json!("morning"));
+    assert_eq!(obs.provider_id, "com.biofocus.desktop");
+
+    let db = Database::open(&db_path).expect("list db");
+    let repo = ObservationRepository::new(&db);
+    let listed = repo.list_by_data_type("life_event").expect("list");
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].id, id);
+
+    drop(tx);
+    worker.join().expect("persist worker");
+}
+
 #[tokio::test]
 async fn duplicate_pk_does_not_overwrite_persisted_observation() {
     let dir = tempfile::tempdir().expect("tempdir");
