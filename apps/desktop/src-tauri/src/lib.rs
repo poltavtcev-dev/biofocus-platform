@@ -39,6 +39,11 @@
 //! }
 //! ```
 //!
+//! ## `open_dashboard` (P4-E1-T2)
+//!
+//! Shows the preconfigured `dashboard` webview (hide-on-close). Menubar shell
+//! invokes this; no SQLite.
+//!
 //! ## `core_ping`
 //!
 //! Legacy scaffold probe (T1). UI prefers `get_status`; kept as fallback.
@@ -78,7 +83,7 @@ use qrcode::QrCode;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, RunEvent};
+use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
 use thiserror::Error;
 
 use crate::alert_state::{AlertState, SnapshotState};
@@ -338,6 +343,20 @@ fn get_feature_snapshot(app: AppHandle) -> FeatureSnapshotDto {
     snapshot_to_dto(&current_feature_snapshot(&app))
 }
 
+/// Shows the Dashboard window (P4-E1-T2). Soft-fail if the window is missing.
+#[tauri::command]
+fn open_dashboard(app: AppHandle) -> Result<(), String> {
+    let Some(window) = app.get_webview_window("dashboard") else {
+        return Err("Dashboard window is not available.".into());
+    };
+    window
+        .unminimize()
+        .map_err(|err| err.to_string())?;
+    window.show().map_err(|err| err.to_string())?;
+    window.set_focus().map_err(|err| err.to_string())?;
+    Ok(())
+}
+
 /// Trivial Core link check (T1). Does not open SQLite or expose Observation rows.
 #[tauri::command]
 fn core_ping() -> Result<CorePing, String> {
@@ -392,6 +411,17 @@ pub fn run() -> DesktopResult<()> {
                 })
                 .build(app)?;
 
+            // Dashboard closes hide the window so reopen stays cheap (P4-E1-T2).
+            if let Some(dashboard) = app.get_webview_window("dashboard") {
+                let hide_target = dashboard.clone();
+                dashboard.on_window_event(move |event| {
+                    if let WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = hide_target.hide();
+                    }
+                });
+            }
+
             ingest_host::start_ingest_host(app.handle());
             feature_host::start_feature_host(app.handle());
 
@@ -400,6 +430,7 @@ pub fn run() -> DesktopResult<()> {
         .invoke_handler(tauri::generate_handler![
             get_status,
             get_feature_snapshot,
+            open_dashboard,
             core_ping,
             get_pairing_token
         ])

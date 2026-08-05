@@ -170,6 +170,108 @@ body {
   cursor: default;
 }
 
+.dashboard-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.shell--dashboard {
+  max-width: 720px;
+  margin: 0 auto;
+  gap: 1rem;
+  padding: 1.35rem 1.4rem 1.25rem;
+}
+
+.brand--dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.brand-sub {
+  margin: 0;
+  color: var(--bf-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.chart-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chart-slot-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.chart-slot-body {
+  min-height: 9.5rem;
+  border: 1px dashed var(--bf-retry-border);
+  border-radius: 8px;
+  background: var(--bf-bg-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.chart-slot-placeholder {
+  margin: 0;
+  color: var(--bf-meta);
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 18rem;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.feature-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.feature-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--bf-bg-accent);
+}
+
+.feature-id {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.feature-value {
+  color: var(--bf-muted);
+  font-variant-numeric: tabular-nums;
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.insights-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--bf-bg-accent);
+}
+
 .pairing-block {
   margin-top: 0.35rem;
   padding-top: 0.7rem;

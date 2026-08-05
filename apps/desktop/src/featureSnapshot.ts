@@ -1,0 +1,222 @@
+import { invoke } from "@tauri-apps/api/core";
+
+/** Wire Feature from `get_feature_snapshot` (`docs/09-api.md`). */
+export type FeatureDto = {
+  featureId: string;
+  timeWindow: { start: number; end: number };
+  value: number | Record<string, unknown>;
+  provenance: string[];
+};
+
+/** Wire Signal from `get_feature_snapshot`. */
+export type SignalDto = {
+  id: string;
+  type: string;
+  timestampStart: number;
+  timestampEnd: number;
+  severity: string;
+};
+
+export type FeatureSnapshotDto = {
+  features: FeatureDto[];
+  signals: SignalDto[];
+};
+
+export type SnapshotSource = "get_feature_snapshot" | "mock";
+
+/** Calm Dashboard shell states (non-evaluative). */
+export type SnapshotViewKind = "loading" | "empty" | "ready" | "error";
+
+export type SnapshotView = {
+  kind: SnapshotViewKind;
+  label: string;
+  detail: string;
+  source: SnapshotSource;
+  /** Present when kind is ready (and optionally empty for layout). */
+  snapshot?: FeatureSnapshotDto;
+};
+
+const COPY: Record<
+  Exclude<SnapshotViewKind, "loading">,
+  { label: string; detail: string }
+> = {
+  empty: {
+    label: "No features yet",
+    detail: "Waiting for Feature evidence from Core.",
+  },
+  ready: {
+    label: "Features available",
+    detail: "Latest snapshot from Core.",
+  },
+  error: {
+    label: "Could not load",
+    detail: "Could not reach the Feature snapshot.",
+  },
+};
+
+export function snapshotView(
+  kind: Exclude<SnapshotViewKind, "loading">,
+  source: SnapshotSource,
+  snapshot?: FeatureSnapshotDto,
+): SnapshotView {
+  const copy = COPY[kind];
+  return {
+    kind,
+    label: copy.label,
+    detail: copy.detail,
+    source,
+    snapshot,
+  };
+}
+
+export function loadingView(): SnapshotView {
+  return {
+    kind: "loading",
+    label: "Loading",
+    detail: "Fetching Feature snapshot…",
+    source: "get_feature_snapshot",
+  };
+}
+
+/** QA: `?mockSnapshot=empty|ready|error` forces a Dashboard state without Core. */
+export function mockSnapshotFromLocation(
+  search: string = typeof window !== "undefined" ? window.location.search : "",
+): SnapshotView | null {
+  const raw = new URLSearchParams(search).get("mockSnapshot");
+  if (raw === "empty") {
+    return snapshotView("empty", "mock", { features: [], signals: [] });
+  }
+  if (raw === "error") {
+    return snapshotView("error", "mock");
+  }
+  if (raw === "ready") {
+    return snapshotView("ready", "mock", {
+      features: [
+        {
+          featureId: "FocusScore",
+          timeWindow: { start: 100, end: 1000 },
+          value: 72.5,
+          provenance: ["00000000-0000-0000-0000-000000000001"],
+        },
+        {
+          featureId: "StressIndex",
+          timeWindow: { start: 100, end: 1000 },
+          value: 0.42,
+          provenance: ["00000000-0000-0000-0000-000000000002"],
+        },
+      ],
+      signals: [
+        {
+          id: "00000000-0000-0000-0000-000000000009",
+          type: "High_Stress",
+          timestampStart: 900,
+          timestampEnd: 1260,
+          severity: "high",
+        },
+      ],
+    });
+  }
+  return null;
+}
+
+type WireSnapshot = {
+  features?: unknown;
+  signals?: unknown;
+};
+
+function asFeature(raw: unknown): FeatureDto | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const o = raw as Record<string, unknown>;
+  const featureId = o.featureId ?? o.feature_id;
+  const tw = o.timeWindow ?? o.time_window;
+  if (typeof featureId !== "string" || !tw || typeof tw !== "object") {
+    return null;
+  }
+  const window = tw as Record<string, unknown>;
+  const start = window.start;
+  const end = window.end;
+  if (typeof start !== "number" || typeof end !== "number") {
+    return null;
+  }
+  const provenance = Array.isArray(o.provenance)
+    ? o.provenance.filter((id): id is string => typeof id === "string")
+    : [];
+  const value = o.value;
+  if (typeof value !== "number" && (typeof value !== "object" || value === null)) {
+    return null;
+  }
+  return {
+    featureId,
+    timeWindow: { start, end },
+    value: value as number | Record<string, unknown>,
+    provenance,
+  };
+}
+
+function asSignal(raw: unknown): SignalDto | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const o = raw as Record<string, unknown>;
+  const id = o.id;
+  const type = o.type;
+  const timestampStart = o.timestampStart ?? o.timestamp_start;
+  const timestampEnd = o.timestampEnd ?? o.timestamp_end;
+  const severity = o.severity;
+  if (
+    typeof id !== "string" ||
+    typeof type !== "string" ||
+    typeof timestampStart !== "number" ||
+    typeof timestampEnd !== "number" ||
+    typeof severity !== "string"
+  ) {
+    return null;
+  }
+  return { id, type, timestampStart, timestampEnd, severity };
+}
+
+function parseSnapshot(payload: WireSnapshot): FeatureSnapshotDto {
+  const features = Array.isArray(payload.features)
+    ? payload.features.map(asFeature).filter((f): f is FeatureDto => f !== null)
+    : [];
+  const signals = Array.isArray(payload.signals)
+    ? payload.signals.map(asSignal).filter((s): s is SignalDto => s !== null)
+    : [];
+  return { features, signals };
+}
+
+/**
+ * Loads Feature snapshot via IPC only (`get_feature_snapshot`).
+ * Empty cache → empty state; invoke failure → error. No busy-loop.
+ */
+export async function fetchFeatureSnapshot(): Promise<SnapshotView> {
+  const mocked = mockSnapshotFromLocation();
+  if (mocked) {
+    return mocked;
+  }
+
+  try {
+    const payload = await invoke<WireSnapshot>("get_feature_snapshot");
+    const snapshot = parseSnapshot(payload ?? {});
+    if (snapshot.features.length === 0 && snapshot.signals.length === 0) {
+      return snapshotView("empty", "get_feature_snapshot", snapshot);
+    }
+    return snapshotView("ready", "get_feature_snapshot", snapshot);
+  } catch {
+    return snapshotView("error", "get_feature_snapshot");
+  }
+}
+
+/** Format a Feature value for shell list (no charts). */
+export function formatFeatureValue(value: number | Record<string, unknown>): string {
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "—";
+  }
+}
