@@ -38,3 +38,6 @@ Keystroke collector is **opt-in** (`BIOFOCUS_INPUT_AGGREGATES=1`, default off). 
 | Disable | Unset/remove env flag (or set to `0`) and restart Desktop |
 
 Grant Accessibility to the BioFocus app (System Settings → Privacy & Security → Accessibility) before enabling the flag if you want live aggregates.
+
+### Optional local LLM reports (P4-E3-T2)
+Local LLM interpret is **opt-in** (`BIOFOCUS_LOCAL_LLM=1`, default off). When disabled, `report-engine` opens no sockets for LLM. When enabled, only `ReportDocument::llm_prompt` is POSTed to a user-configured OpenAI-compatible endpoint (default localhost Ollama). Not invoked on startup — explicit host call only. Prefer `127.0.0.1`; pointing the base URL off-machine is operator-controlled. See `docs/12-development.md`.

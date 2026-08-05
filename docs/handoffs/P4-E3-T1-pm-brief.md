@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass, 2026-08-05)  
 **Date:** 2026-08-05  
-**Closed previous:** Epic **P4-E2** (T1–T3) — knowledge-engine · rules v1 · IPC `get_insights` + Dashboard list
+**Closed previous:** Epic **P4-E2** (T1–T3) — knowledge-engine · rules v1 · IPC `get_insights` + Dashboard list  
+**Closed this:** QA Pass → `docs/handoffs/P4-E3-T1-qa-to-pm.md`; Ready **P4-E3-T2**
 
 ## Task
 **P4-E3-T1 — report-engine prompt / markdown builder**
@@ -32,14 +33,9 @@ Insights and Features are available in Core/Dashboard. Next: leave stub `report-
 - Reuse `bio-spec` / existing Feature & Insight types; calm non-clinical copy in generated text
 - Branch: `phase/4-dashboard-ai`
 
+## Shipped
+- Public: `report_engine::build_report` → `ReportDocument { markdown, llm_prompt }`, `ReportEngineError`
+- Format: `docs/09-api.md` § report-engine · `docs/12-development.md` bullet
+
 ## After QA Pass
 PM → Ready **P4-E3-T2** (optional local LLM adapter — Dev) unless sprint re-order.
-
-## Next chat (скопируй в новый чат)
-```text
-как агент: режим build-qa для P4-E3-T1.
-Brief: docs/handoffs/P4-E3-T1-pm-brief.md
-1) Как Dev — собери по AC, создай docs/handoffs/P4-E3-T1-dev-to-qa.md
-2) Сразу как QA — проверь handoff + AC, создай docs/handoffs/P4-E3-T1-qa-to-pm.md
-3) Не закрывай Done / не трогай canvas. В конце: «Передай PM» + путь к qa-to-pm.
-```

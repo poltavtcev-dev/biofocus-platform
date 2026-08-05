@@ -35,9 +35,9 @@ cargo check -p report-engine  # ok
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — move **P4-E3-T1** to Done; Ready → **P4-E3-T2** (optional local LLM adapter)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: status line in `docs/12-development.md` / `ARCHITECTURE_STATUS.md` (builder note already present; mark Ready→next)
+- [x] `/docs/SPRINT_ROADMAP.md` — move **P4-E3-T1** to Done; Ready → **P4-E3-T2** (optional local LLM adapter)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: status line in `docs/12-development.md` / `ARCHITECTURE_STATUS.md` (builder note already present; mark Ready→next)
 - [ ] Optional: fold code + docs into next cluster PR on `phase/4-dashboard-ai` (no PR required for handoffs alone)
 
 ## Suggested next Ready task
