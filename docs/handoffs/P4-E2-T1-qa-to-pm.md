@@ -35,10 +35,10 @@ cargo check -p knowledge-engine
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P4-E2-T1 → Done; Ready → **P4-E2-T2** (Rule Insights v1)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `docs/12-development.md` / `docs/ARCHITECTURE_STATUS.md` (crate no longer stub-only)
-- [ ] Issue `P4-E2-T2-pm-brief.md` + pasteable build-qa command
+- [x] `/docs/SPRINT_ROADMAP.md` — P4-E2-T1 → Done; Ready → **P4-E2-T2** (Rule Insights v1)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `docs/12-development.md` / `docs/ARCHITECTURE_STATUS.md` (crate no longer stub-only)
+- [x] Issue `P4-E2-T2-pm-brief.md` + pasteable build-qa command
 
 ## Suggested next Ready task
 - **P4-E2-T2** — Rule Insights v1 (≥2 deterministic rules) — role **Dev**
