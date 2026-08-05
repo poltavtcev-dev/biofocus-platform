@@ -337,6 +337,70 @@ body {
   color: var(--bf-muted);
 }
 
+.report-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--bf-bg-accent);
+}
+
+.report-ai-note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--bf-meta);
+}
+
+.report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.report-markdown {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--bf-retry-border);
+  border-radius: 8px;
+  background: var(--bf-bg-accent);
+  color: var(--bf-muted);
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+.report-markdown--prompt {
+  max-height: 12rem;
+  margin-top: 0.4rem;
+}
+
+.report-prompt {
+  font-size: 0.8rem;
+  color: var(--bf-muted);
+}
+
+.report-prompt summary {
+  cursor: pointer;
+  color: var(--bf-retry-fg);
+}
+
+.report-prompt summary:focus-visible {
+  outline: 2px solid var(--bf-focus);
+  outline-offset: 2px;
+}
+
+.report-interpretation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .pairing-block {
   margin-top: 0.35rem;
   padding-top: 0.7rem;

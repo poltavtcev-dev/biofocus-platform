@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes, 2026-08-05)  
 **Date:** 2026-08-05  
-**Closed previous:** P4-E3-T1 (QA Pass — `build_report` → offline `ReportDocument { markdown, llm_prompt }`)
+**Closed previous:** P4-E3-T1 (QA Pass — `build_report` → offline `ReportDocument { markdown, llm_prompt }`)  
+**Closed this:** QA Pass with notes → `docs/handoffs/P4-E3-T2-qa-to-pm.md`; Ready **P4-E3-T3**
 
 ## Task
 **P4-E3-T2 — Optional local LLM adapter**
@@ -30,18 +31,13 @@ Deterministic report/prompt exists offline. Next: optional opt-in path to call a
 ## Constraints
 - Global DoD from `docs/SPRINT_ROADMAP.md`
 - LLM **interprets** only — Features stay in `feature-engine`
-- Modules: `crates/report-engine` and/or desktop host (document placement in handoff)
+- Modules: `crates/report-engine` (shipped here, not desktop host)
 - Reuse T1: `build_report` / `ReportDocument`
 - Branch: `phase/4-dashboard-ai`
 
+## Shipped
+- Public: `LocalLlmConfig`, `interpret_report` / `interpret_llm_prompt`; env `BIOFOCUS_LOCAL_LLM*` (default OFF)
+- Placement: `crates/report-engine` · privacy: `docs/12-development.md` · `docs/10-security.md` · API: `docs/09-api.md`
+
 ## After QA Pass
 PM → Ready **P4-E3-T3** (Report UX in Dashboard — UX + Dev) unless sprint re-order.
-
-## Next chat (скопируй в новый чат)
-```text
-как агент: режим build-qa для P4-E3-T2.
-Brief: docs/handoffs/P4-E3-T2-pm-brief.md
-1) Как Dev — собери по AC, создай docs/handoffs/P4-E3-T2-dev-to-qa.md
-2) Сразу как QA — проверь handoff + AC, создай docs/handoffs/P4-E3-T2-qa-to-pm.md
-3) Не закрывай Done / не трогай canvas. В конце: «Передай PM» + путь к qa-to-pm.
-```

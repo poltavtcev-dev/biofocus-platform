@@ -22,17 +22,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P4-E3-T2** |
+| **Ready** | **P4-E3-T3** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) · **P4-E1** (T1–T3) · **P4-E2** (T1–T3) · **P4-E3-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3; Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)) · **P4-E1** (T1–T3) · **P4-E2** (T1–T3) · **P4-E3-T1** · **P4-E3-T2** |
 
-**Epic status:** P4-E1 ✅ · P4-E2 ✅ · P4-E3 ⬜ (T1 Done)
+**Epic status:** P4-E1 ✅ · P4-E2 ✅ · P4-E3 ⬜ (T1–T2 Done)
 
 **Phase 4 on `/docs/14-roadmap.md`:** opened 2026-08-05
 
 **Рекомендуемый порядок:**  
-~~P4-E1~~ → ~~P4-E2~~ → ~~P4-E3-T1~~ → **P4-E3-T2** → T3
+~~P4-E1~~ → ~~P4-E2~~ → ~~P4-E3-T1~~ → ~~P4-E3-T2~~ → **T3**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -41,10 +41,10 @@
 
 ### Active assignment
 
-**Ready now:** **P4-E3-T2** — Optional local LLM adapter — role **Dev**.  
-Brief: `docs/handoffs/P4-E3-T2-pm-brief.md`.
+**Ready now:** **P4-E3-T3** — Report UX in Dashboard — role **UX + Dev**.  
+Brief: `docs/handoffs/P4-E3-T3-pm-brief.md`.
 
-**Closed:** P4-E3-T1 (QA Pass, 2026-08-05) — `report_engine::build_report` → `ReportDocument { markdown, llm_prompt }` offline.
+**Closed:** P4-E3-T2 (QA Pass with notes, 2026-08-05) — `LocalLlmConfig` + `interpret_report` / `interpret_llm_prompt` in `report-engine` (opt-in, default OFF).
 
 ---
 
@@ -127,14 +127,15 @@ Brief: `docs/handoffs/P4-E3-T2-pm-brief.md`.
 | **AC** | Crate API: Features (+ Insights) → deterministic markdown и/или LLM prompt string; offline; unit-тесты; нет network calls. Документировать формат. |
 | **Out of scope** | HTTP к Ollama/OpenAI (→ T2), Dashboard button (→ T3) |
 
-### P4-E3-T2 — Optional local LLM adapter
+### P4-E3-T2 — Optional local LLM adapter ✅
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `report-engine` and/or desktop host |
+| **Modules** | `crates/report-engine` (shipped; not desktop host) |
 | **Depends on** | P4-E3-T1 |
 | **AC** | Opt-in (env/flag/config); default **OFF**; предпочтительно localhost Ollama / OpenAI-compatible base URL; `Result` errors; timeout; never auto-send on startup; docs privacy note в `12-development.md`. Нет Feature math в LLM. |
 | **Out of scope** | Cloud account UX, mandatory AI |
+| **Shipped** | `LocalLlmConfig`, `interpret_report` / `interpret_llm_prompt`; env `BIOFOCUS_LOCAL_LLM*`; QA Pass with notes 2026-08-05 |
 
 ### P4-E3-T3 — Report UX in Dashboard
 | Field | Value |
@@ -195,7 +196,7 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 | P4-E2-T2 Rule Insights v1 | | ● | ○ | | knowledge-engine |
 | P4-E2-T3 Insights IPC + list UI | | ● | ○ | ● | desktop + knowledge-engine |
 | P4-E3-T1 report-engine builder | | ● | ○ | | report-engine |
-| P4-E3-T2 Optional local LLM | | ● | ○ | | report-engine / host |
+| P4-E3-T2 Optional local LLM | | ● | ○ | | report-engine |
 | P4-E3-T3 Report UX | ○ | ○ | | ● | apps/desktop |
 
 ● = owner · ○ = collaborator
@@ -214,8 +215,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 5. ~~P4-E2-T2 — Rule Insights v1~~ **Done**  
 6. ~~P4-E2-T3 — Insights IPC + Dashboard list~~ **Done** — Epic **P4-E2** ✅  
 7. ~~P4-E3-T1 — report-engine builder~~ **Done**  
-8. **P4-E3-T2** — Optional local LLM adapter ← **Ready (Dev)**  
-9. P4-E3-T3 — Report UX  
+8. ~~P4-E3-T2 — Optional local LLM adapter~~ **Done**  
+9. **P4-E3-T3** — Report UX ← **Ready (UX + Dev)**  
 
 **Git:** `phase/4-dashboard-ai` → related commits → PR when cluster ready.
 

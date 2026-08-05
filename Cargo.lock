@@ -666,6 +666,7 @@ dependencies = [
  "pipeline",
  "plugin-sdk",
  "qrcode",
+ "report-engine",
  "runtime",
  "serde",
  "serde_json",

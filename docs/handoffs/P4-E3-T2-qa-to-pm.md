@@ -34,10 +34,10 @@ cargo check -p report-engine  # ok
 - None blocking. Docs duplicate in `10-security.md` fixed in-tree before this report.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P4-E3-T2 → Done; Ready → **P4-E3-T3**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs: `docs/ARCHITECTURE_STATUS.md` / status line in `docs/12-development.md` / `docs/14-roadmap.md` as needed
-- [ ] Note public surface for canvas: `LocalLlmConfig`, `interpret_report` / `interpret_llm_prompt`, env `BIOFOCUS_LOCAL_LLM*`
+- [x] `/docs/SPRINT_ROADMAP.md` — P4-E3-T2 → Done; Ready → **P4-E3-T3**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/ARCHITECTURE_STATUS.md` / status line in `docs/12-development.md` / `docs/14-roadmap.md` as needed
+- [x] Note public surface for canvas: `LocalLlmConfig`, `interpret_report` / `interpret_llm_prompt`, env `BIOFOCUS_LOCAL_LLM*`
 
 ## Suggested next Ready task
 - **P4-E3-T3** — Report UX in Dashboard (UX + Dev): wire `build_report` (+ optional interpret) behind explicit user action; no auto-send.
