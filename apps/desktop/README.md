@@ -26,14 +26,17 @@ Compact window + tray tooltip show a neutral Core state: **Idle** / **Ready** /
 
 QA mock (no DB): open with `?mockStatus=idle|ready|error` to force a state.
 
-## Dashboard shell (P4-E1-T2)
+## Dashboard shell (P4-E1-T2 / T3)
 
 Separate Tauri window (`label: dashboard`, `?view=dashboard`). Open from Menubar
 via **Open Dashboard** (`invoke("open_dashboard")`). Snapshot via
-`get_feature_snapshot` only — loading / empty / error / ready list; chart slot
-is a placeholder (Recharts → P4-E1-T3).
+`get_feature_snapshot` only — loading / empty / error / ready. Chart slot shows
+Recharts series for `FocusScore`, `StressIndex`, `FatigueIndex`, and
+`ContextSwitchRate` when present (calm labels; scores 0–100; CSR on secondary
+axis). Soft refresh ~30s.
 
-QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error`.
+QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error`
+(`ready` includes a multi-window series for chart smoke).
 
 ## Companion pairing (P2-E3-T2)
 

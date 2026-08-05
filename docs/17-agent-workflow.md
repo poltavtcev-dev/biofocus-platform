@@ -1,38 +1,54 @@
 # Agent Team — как работать
 
-Команда ролей: **PM**, **Dev**, **QA**, **UX**. Конвейер зафиксирован в `.cursor/rules/05-agent-workflow.mdc`.
+Команда ролей: **PM**, **Dev**, **QA**, **UX**.  
+Конвейер: `.cursor/rules/05-agent-workflow.mdc`.  
+Режимы чатов и бюджет контекста: `.cursor/rules/07-role-dispatch.mdc` · skill `.cursor/skills/role-dispatch/`.
 
-## Вызов в чате
+## Зачем режимы
 
-| Фраза | Кто работает | Результат шага |
+Один чат не должен тащить brief + большой билд + QA + закрытие PM — выгорает контекст.  
+Память между чатами = файлы в `docs/handoffs/`.
+
+## Режимы
+
+| Режим | Фраза / когда | Стоп |
 | :--- | :--- | :--- |
-| `как PM: …` | Product Manager | задача/AC или закрытие Done + docs/canvas |
-| `как Dev: …` | Rust/Tauri Engineer | код + `docs/handoffs/{ID}-dev-to-qa.md` |
-| `как UX: …` | Desktop UI | UI + handoff для QA |
-| `как QA: …` | Lead QA | проверка + `docs/handoffs/{ID}-qa-to-pm.md` |
+| **pm-brief** | `как PM:` выдай Ready | Brief + **Next chat** команда; без билда |
+| **build-qa** | дефолт после Ready; `прогони build→QA` | Dev\|UX → QA → «Передай PM» (без Done) |
+| **build-only** | `как Dev:` / `как UX:` | Handoff QA; стоп |
+| **design-only** | `только дизайн` / UX без проверки | UI/copy; без QA и без Done |
+| **qa-only** | `как QA:` | `qa-to-pm` → «Передай PM» |
+| **pm-close** | `как PM: закрой …` | Roadmap + canvas → Done + next |
+| **full-pipeline** | явно и задача маленькая | Dev→QA→PM; иначе дробить |
 
-## Порядок на задачу
+## Типовой поток (рекомендуется)
 
-1. PM (или Ready из roadmap) → берём Task ID.  
-2. Dev/UX собирает → **обязательный** handoff QA.  
-3. QA проверяет → **обязательный** отчёт PM.  
-4. PM обновляет `SPRINT_ROADMAP.md` + canvas → Done.
+```text
+Чат 1  как PM: brief          →  Next chat = build-qa
+Чат 2  build-qa               →  Next chat = pm-close
+Чат 3  как PM: закрой по отчёту
+```
 
-Шаблоны: `docs/handoffs/TEMPLATE-*.md`.
+Шаблоны фраз: `.cursor/skills/role-dispatch/modes.md`.
+
+## Вызов роли (без режима)
+
+| Фраза | Кто | Результат шага |
+| :--- | :--- | :--- |
+| `как PM: …` | Product Manager | brief или close Done + docs/canvas |
+| `как Dev: …` | Rust/Tauri | код + `*-dev-to-qa.md` |
+| `как UX: …` | Desktop UI | UI + handoff (или design-only) |
+| `как QA: …` | Lead QA | `*-qa-to-pm.md` |
 
 ## Git / PR
 
 1. Ветка под **код-кластер** (`phase/…`, `epic/…`, `feat/…`) — не `main`.  
-2. Handoffs пишем на каждый шаг роли **на диск**; коммит/PR на каждый handoff **не нужен**.  
-3. **Push + PR → `main`** только при substantive code и (кластер готов **или** явный «PR»). Один PR на ветку — не дубли.  
+2. Handoffs на диск каждый роль-шаг; коммит/PR на каждый handoff **не нужен**.  
+3. **Push + PR → `main`** только при substantive code и (кластер готов **или** явный «PR»).  
 4. Docs / roadmap / canvas — отдельно позже или вместе со следующим code PR.  
 5. Merge после зелёного CI; предпочтительно **squash**. Прямой push в `main` — запрещён.
 
-Команды: `docs/12-development.md` § Git workflow · правило `.cursor/rules/06-git-agent-policy.mdc` · hook `.cursor/hooks/git-policy-stop.sh`.
-
-## Оркестрация «от разных лиц»
-
-Фраза вроде `прогони pipeline` / `сделай сам от разных лиц` разрешает одному чату пройти Dev→QA→PM подряд. Handoff-файлы обязательны; git — мало коммитов и **один** PR на код-кластер, не PR на каждый роль-шаг.
+Команды: `docs/12-development.md` · `.cursor/rules/06-git-agent-policy.mdc`.
 
 ## Сейчас в очереди
 

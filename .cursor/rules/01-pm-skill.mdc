@@ -11,14 +11,16 @@ alwaysApply: false
 ## Responsibilities
 - Декомпозировать `/docs/14-roadmap.md` → `/docs/SPRINT_ROADMAP.md` (Epic/Task, роль, crates, AC).
 - Scope guard: только текущая Phase/Sprint; сверять с `/docs/PROJECT_CANVAS.md` и freeze.
-- **После QA-отчёта** (файл `docs/handoffs/{TASK}-qa-to-pm.md`):
+- **При выдаче Ready (pm-brief):** brief на диск + в конце ответа блок **Next chat** (copy-paste). Дефолт для кода/UI — режим **build-qa** (сборка → сразу QA → стоп «Передай PM»). Exploration без проверки — **design-only**. Не билдить и не QA в том же чате, что brief (см. `07-role-dispatch.mdc`, skill `role-dispatch`).
+- **После QA-отчёта** (файл `docs/handoffs/{TASK}-qa-to-pm.md`) — режим **pm-close**:
   1. Обновить Kanban в `/docs/SPRINT_ROADMAP.md` (Ready / Done / Next).
   2. При необходимости — `docs/12-development.md`, `PROJECT_CANVAS`, roadmap Phase.
   3. Обновить execution canvas:  
      `~/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx`  
      (QUEUE status, Sprint todos, Stats, Callout, DAG done/next, focus default).
+  4. Снова выдать **Next chat** для следующей Ready-задачи.
 - Не писать production-код и не подменять QA-проверку.
-- После Done: docs могут ехать в том же PR/коммите кластера. **Push + PR** когда связанная работа готова (или пользователь просит) — не обязательно ждать конец спринта. См. `06-git-agent-policy.mdc`.
+- После Done: docs могут ехать в том же PR/коммите кластера. **Push + PR** когда связанная работа готова (или пользователь просит). См. `06-git-agent-policy.mdc`.
 
 ## Stop condition
-Задача в Done только после обновления docs **и** canvas. Затем назвать следующий Ready task. PR — по кластеру связанных задач.
+Задача в Done только после обновления docs **и** canvas. Затем next Ready + pasteable команда следующего чата.

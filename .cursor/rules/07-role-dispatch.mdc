@@ -1,0 +1,30 @@
+---
+description: Режимы чатов ролей (build→QA, design-only, pm-close…) и бюджет контекста — не раздувать один чат.
+alwaysApply: true
+---
+# Role Dispatch & Context Budget
+
+## Принцип
+Один чат = **один режим**. Память между чатами — файлы в `docs/handoffs/`, не история чата.
+
+## Режимы (выбрать один)
+
+| Режим | Когда | Что делает чат | Стоп |
+| :--- | :--- | :--- | :--- |
+| **pm-brief** | PM выдаёт Ready | AC + brief + **готовая команда** следующего чата | Не билдит |
+| **build-qa** | Дефолт после Ready (код/UI) | Dev\|UX → handoff → QA → `qa-to-pm` | «Передай PM» — **не** закрывает Done |
+| **build-only** | `как Dev` / `как UX` | Только сборка + `*-dev-to-qa.md` | «Передаю QA» |
+| **design-only** | `только дизайн` / UX без AC-проверки | Макеты/copy/UI-итерации | Без QA-отчёта; не Done |
+| **qa-only** | `как QA` + путь handoff | Проверка + `*-qa-to-pm.md` | «Передаю PM» |
+| **pm-close** | `как PM: закрой` + qa-to-pm | Roadmap + canvas + docs | Done + next Ready |
+| **full-pipeline** | Явно и задача **маленькая** | Dev→QA→PM | Done; иначе дробить |
+
+## Бюджет контекста
+- Не гонять **pm-brief + build-qa + pm-close** в одном чате на обычной задаче.
+- `build-qa` — максимум для одного чата; при раздувании истории — закончить handoff и остановиться.
+- Новый чат читает brief/handoff с диска, не просит «продолжи прошлый тред».
+- PM в конце brief **обязан** выдать copy-paste команду (см. skill `role-dispatch`).
+
+## Запреты
+- В `build-qa` / `qa-only` / `build-only` / `design-only` — **не** править Kanban Done и execution canvas.
+- `design-only` ≠ обход AC для shippable task: перед Done всё равно нужен QA (отдельный чат).
