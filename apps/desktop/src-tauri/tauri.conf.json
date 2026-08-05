@@ -15,9 +15,22 @@
         "label": "main",
         "title": "BioFocus",
         "width": 320,
-        "height": 420,
+        "height": 460,
         "resizable": false,
         "maximizable": false,
+        "fullscreen": false
+      },
+      {
+        "label": "dashboard",
+        "title": "BioFocus — Dashboard",
+        "url": "index.html?view=dashboard",
+        "width": 720,
+        "height": 520,
+        "minWidth": 480,
+        "minHeight": 360,
+        "resizable": true,
+        "visible": false,
+        "maximizable": true,
         "fullscreen": false
       }
     ],

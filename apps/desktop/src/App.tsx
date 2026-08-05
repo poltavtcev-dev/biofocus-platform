@@ -8,6 +8,8 @@ import {
   type AlertLevel,
   type CoreStatusView,
 } from "./coreStatus";
+import { Dashboard } from "./Dashboard";
+import { isDashboardSurface, openDashboardWindow } from "./dashboardWindow";
 import {
   copyText,
   fetchPairingToken,
@@ -44,7 +46,7 @@ function AlertIndicator({ level }: { level: AlertLevel }) {
   );
 }
 
-function App() {
+function MenubarShell() {
   const [view, setView] = useState<CoreStatusView>(() =>
     statusView("idle", "core_ping"),
   );
@@ -53,6 +55,7 @@ function App() {
   const [tokenVisible, setTokenVisible] = useState(false);
   const [qrVisible, setQrVisible] = useState(false);
   const [copyNote, setCopyNote] = useState<string | null>(null);
+  const [dashNote, setDashNote] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,6 +123,15 @@ function App() {
     setCopyNote(ok ? "Copied." : "Could not copy.");
   };
 
+  const onOpenDashboard = () => {
+    setDashNote(null);
+    void openDashboardWindow().then((ok) => {
+      if (!ok) {
+        setDashNote("Could not open Dashboard.");
+      }
+    });
+  };
+
   const alertLevel = view.alertLevel ?? "green";
 
   return (
@@ -150,6 +162,13 @@ function App() {
           Try again
         </button>
       )}
+
+      <section className="dashboard-entry" aria-label="Dashboard">
+        <button type="button" className="retry" onClick={onOpenDashboard}>
+          Open Dashboard
+        </button>
+        {dashNote && <p className="status-meta">{dashNote}</p>}
+      </section>
 
       <section className="pairing-block" aria-label="Companion pairing">
         <h2 className="pairing-title">Companion</h2>
@@ -218,6 +237,13 @@ function App() {
       </section>
     </main>
   );
+}
+
+function App() {
+  if (isDashboardSurface()) {
+    return <Dashboard />;
+  }
+  return <MenubarShell />;
 }
 
 export default App;

@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main BioFocus window",
-  "windows": ["main"],
+  "description": "Capability for Menubar + Dashboard BioFocus windows",
+  "windows": ["main", "dashboard"],
   "permissions": [
     "core:default"
   ]

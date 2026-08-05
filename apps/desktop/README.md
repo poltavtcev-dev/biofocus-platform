@@ -26,6 +26,15 @@ Compact window + tray tooltip show a neutral Core state: **Idle** / **Ready** /
 
 QA mock (no DB): open with `?mockStatus=idle|ready|error` to force a state.
 
+## Dashboard shell (P4-E1-T2)
+
+Separate Tauri window (`label: dashboard`, `?view=dashboard`). Open from Menubar
+via **Open Dashboard** (`invoke("open_dashboard")`). Snapshot via
+`get_feature_snapshot` only — loading / empty / error / ready list; chart slot
+is a placeholder (Recharts → P4-E1-T3).
+
+QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error`.
+
 ## Companion pairing (P2-E3-T2)
 
 The shell **Companion** section loads the local pairing token via IPC
