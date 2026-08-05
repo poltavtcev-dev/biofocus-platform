@@ -22,4 +22,5 @@ UI/Menubar/React задачи с ролью UX.
 **Запрещено:** Done в roadmap; правки execution canvas.
 
 ## Stop condition
-«Передаю QA» + путь к handoff.
+«Передаю QA» + путь к handoff.  
+Режим **design-only** (`07-role-dispatch`): без QA-отчёта и без Done. Режим **build-qa**: после handoff сразу QA в том же чате.

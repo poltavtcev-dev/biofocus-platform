@@ -90,27 +90,54 @@ export function mockSnapshotFromLocation(
     return snapshotView("error", "mock");
   }
   if (raw === "ready") {
-    return snapshotView("ready", "mock", {
-      features: [
+    // Multi-window series for Recharts smoke (P4-E1-T3). Values are synthetic.
+    const base = 1_700_000_000;
+    const windows = [0, 60, 120, 180, 240].map((offset) => ({
+      start: base + offset - 900,
+      end: base + offset,
+    }));
+    const focus = [68, 71, 74, 72.5, 76];
+    const stress = [38, 41, 44, 42, 40];
+    const fatigue = [28, 30, 33, 35, 36];
+    const csr = [0.8, 1.1, 0.9, 1.2, 1.0];
+    const features: FeatureDto[] = [];
+    for (let i = 0; i < windows.length; i += 1) {
+      const tw = windows[i];
+      features.push(
         {
           featureId: "FocusScore",
-          timeWindow: { start: 100, end: 1000 },
-          value: 72.5,
+          timeWindow: tw,
+          value: focus[i],
           provenance: ["00000000-0000-0000-0000-000000000001"],
         },
         {
           featureId: "StressIndex",
-          timeWindow: { start: 100, end: 1000 },
-          value: 0.42,
+          timeWindow: tw,
+          value: stress[i],
           provenance: ["00000000-0000-0000-0000-000000000002"],
         },
-      ],
+        {
+          featureId: "FatigueIndex",
+          timeWindow: tw,
+          value: fatigue[i],
+          provenance: ["00000000-0000-0000-0000-000000000003"],
+        },
+        {
+          featureId: "ContextSwitchRate",
+          timeWindow: tw,
+          value: csr[i],
+          provenance: ["00000000-0000-0000-0000-000000000004"],
+        },
+      );
+    }
+    return snapshotView("ready", "mock", {
+      features,
       signals: [
         {
           id: "00000000-0000-0000-0000-000000000009",
           type: "High_Stress",
-          timestampStart: 900,
-          timestampEnd: 1260,
+          timestampStart: base + 180,
+          timestampEnd: base + 540,
           severity: "high",
         },
       ],

@@ -1,13 +1,21 @@
 # BioFocus — Agent roles
 
-Этот репозиторий ведётся **мультиагентно**. Перед работой прочитай:
+Этот репозиторий ведётся **мультиагентно**. Перед работой:
 
 1. `.cursor/rules/05-agent-workflow.mdc` — конвейер Dev|UX → QA → PM  
-2. `.cursor/rules/00-core.mdc` — архитектурные запреты  
-3. `docs/17-agent-workflow.md` — как вызывать роли в чате  
-4. `docs/SPRINT_ROADMAP.md` — очередь задач  
+2. `.cursor/rules/07-role-dispatch.mdc` — режимы чатов + бюджет контекста  
+3. `.cursor/skills/role-dispatch/` — playbooks и copy-paste команд  
+4. `.cursor/rules/00-core.mdc` — архитектурные запреты  
+5. `docs/17-agent-workflow.md` — как вызывать роли  
+6. `docs/SPRINT_ROADMAP.md` — очередь задач  
 
 Handoffs: `docs/handoffs/`.
+
+## Рекомендуемый ритм чатов
+
+`pm-brief` → новый чат `build-qa` → новый чат `pm-close`.  
+Не смешивать brief + большой билд + close в одном треде.  
+`design-only` — отдельно, без QA/Done.
 
 ## Git / PR
 

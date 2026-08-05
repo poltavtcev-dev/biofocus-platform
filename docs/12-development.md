@@ -53,9 +53,11 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 - **IPC alert (E3-T2):** Desktop `get_status` includes `alertLevel` (`green`/`yellow`/`red`). Feature Worker hook runs catalog → map → shared `AlertState`. Idle/Ready/Error (`dbStatus`) unchanged. UI reads via IPC only.
 - **Menubar alert UX (E3-T3):** Shell shows calm Steady/Elevated/High indicator (color + copy) from `alertLevel`; tray tooltip includes the label. Poll ~5s. QA: `?mockAlert=green|yellow|red`.
 - **Feature snapshot IPC (P4-E1-T1):** `feature_engine::FeatureSnapshot` from last `EngineOutput`; desktop caches via `SnapshotState` + `invoke("get_feature_snapshot")` (pure read). `get_status` stays lean. Contract: `docs/09-api.md`.
+- **Dashboard shell (P4-E1-T2):** separate Tauri window `label: dashboard` (`index.html?view=dashboard`); Menubar **Open Dashboard** → `invoke("open_dashboard")` (show/focus; CloseRequested → hide). Calm loading/empty/error via snapshot IPC; chart slot placeholder until T3. QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error` (see `apps/desktop/README.md`).
 ```bash
 cargo test -p feature-engine
 cargo test -p desktop
+cd apps/desktop && pnpm exec tsc --noEmit
 ```
 
 ### Pipeline E2E (P3-E2-T4)
@@ -172,5 +174,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Ready: **P4-E1-T1** (Feature snapshot IPC) — `docs/handoffs/P4-E1-T1-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
+**Status (2026-08-05):** Phase 1–3 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24)). Phase 4 **open** (Sprint 7–8): Dashboard + Insights + optional local LLM. Done: **P4-E1-T1** (snapshot IPC) · **P4-E1-T2** (Dashboard shell window). Ready: **P4-E1-T3** (Recharts Feature series) — `docs/handoffs/P4-E1-T3-pm-brief.md`. Branch: `phase/4-dashboard-ai`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.
