@@ -62,6 +62,24 @@
 //! }
 //! ```
 //!
+//! ## `generate_report` (P4-E3-T3)
+//!
+//! Explicit user action only — never call on app / Dashboard open. Builds an
+//! offline report from the cached Feature snapshot + evaluate-on-read Insights
+//! via `report_engine::build_report`. When `BIOFOCUS_LOCAL_LLM` is enabled,
+//! optionally runs `interpret_report` (local HTTP). When disabled, returns
+//! deterministic markdown/prompt with `llmStatus: "disabled"` and **no**
+//! network. Soft-fails LLM errors into typed status so markdown still returns.
+//!
+//! Example (camelCase JSON):
+//! ```json
+//! {
+//!   "markdown": "# BioFocus report\n…",
+//!   "llmPrompt": "…",
+//!   "llmStatus": "disabled"
+//! }
+//! ```
+//!
 //! ## `open_dashboard` (P4-E1-T2)
 //!
 //! Shows the preconfigured `dashboard` webview (hide-on-close). Menubar shell
@@ -105,6 +123,9 @@ use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal}
 use knowledge_engine::{register_insights_v1, KnowledgeEngine};
 use qrcode::render::svg;
 use qrcode::QrCode;
+use report_engine::{
+    build_report, interpret_report, LocalLlmConfig, ReportDocument, ReportEngineError,
+};
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -324,15 +345,97 @@ fn insights_to_dto(insights: &[Insight]) -> InsightsDto {
     }
 }
 
-fn evaluate_insights(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> InsightsDto {
+fn evaluate_insights_list(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> Vec<Insight> {
     match engine.evaluate(&snapshot.features, &snapshot.signals) {
-        Ok(insights) => insights_to_dto(&insights),
+        Ok(insights) => insights,
         Err(err) => {
-            warn!(error = %err, "get_insights: evaluate failed; returning empty list");
-            InsightsDto {
-                insights: Vec::new(),
-            }
+            warn!(error = %err, "insights: evaluate failed; returning empty list");
+            Vec::new()
         }
+    }
+}
+
+fn evaluate_insights(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> InsightsDto {
+    insights_to_dto(&evaluate_insights_list(engine, snapshot))
+}
+
+/// IPC payload for [`generate_report`] (P4-E3-T3).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct ReportDto {
+    markdown: String,
+    llm_prompt: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    interpretation: Option<String>,
+    /// `"disabled"` | `"ok"` | `"error"` | `"timeout"`.
+    llm_status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    llm_error: Option<String>,
+}
+
+fn report_dto_offline(doc: ReportDocument) -> ReportDto {
+    ReportDto {
+        markdown: doc.markdown,
+        llm_prompt: doc.llm_prompt,
+        interpretation: None,
+        llm_status: "disabled".into(),
+        llm_error: None,
+    }
+}
+
+fn calm_llm_error(err: &ReportEngineError) -> String {
+    match err {
+        ReportEngineError::LocalLlmTimeout { .. } => {
+            "Local AI did not respond in time.".into()
+        }
+        ReportEngineError::LocalLlmHttp { .. } => {
+            "Could not reach the local AI endpoint.".into()
+        }
+        ReportEngineError::LocalLlmResponse { .. } => {
+            "Local AI returned an unusable response.".into()
+        }
+        ReportEngineError::LocalLlmDisabled => {
+            "Local AI is optional and currently off.".into()
+        }
+        ReportEngineError::BuildFailed { .. } => "Could not build the report.".into(),
+    }
+}
+
+async fn assemble_report_dto(
+    features: &[Feature],
+    insights: &[Insight],
+    config: &LocalLlmConfig,
+) -> Result<ReportDto, String> {
+    let doc = build_report(features, insights).map_err(|err| err.to_string())?;
+
+    if !config.enabled {
+        // No network when off — explicit offline path for the Dashboard.
+        return Ok(report_dto_offline(doc));
+    }
+
+    match interpret_report(&doc, config).await {
+        Ok(text) => Ok(ReportDto {
+            markdown: doc.markdown,
+            llm_prompt: doc.llm_prompt,
+            interpretation: Some(text),
+            llm_status: "ok".into(),
+            llm_error: None,
+        }),
+        Err(ReportEngineError::LocalLlmDisabled) => Ok(report_dto_offline(doc)),
+        Err(err @ ReportEngineError::LocalLlmTimeout { .. }) => Ok(ReportDto {
+            markdown: doc.markdown,
+            llm_prompt: doc.llm_prompt,
+            interpretation: None,
+            llm_status: "timeout".into(),
+            llm_error: Some(calm_llm_error(&err)),
+        }),
+        Err(err) => Ok(ReportDto {
+            markdown: doc.markdown,
+            llm_prompt: doc.llm_prompt,
+            interpretation: None,
+            llm_status: "error".into(),
+            llm_error: Some(calm_llm_error(&err)),
+        }),
     }
 }
 
@@ -476,6 +579,19 @@ fn get_insights(app: AppHandle) -> InsightsDto {
     evaluate_insights(&state.engine, &snapshot)
 }
 
+/// Offline report (+ optional local LLM) for Dashboard — **explicit invoke only**
+/// (P4-E3-T3). Never auto-called on app / Dashboard open.
+#[tauri::command]
+async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
+    let snapshot = current_feature_snapshot(&app);
+    let insights = match app.try_state::<InsightsEngineState>() {
+        Some(state) => evaluate_insights_list(&state.engine, &snapshot),
+        None => Vec::new(),
+    };
+    let config = LocalLlmConfig::from_env();
+    assemble_report_dto(&snapshot.features, &insights, &config).await
+}
+
 /// Shows the Dashboard window (P4-E1-T2). Soft-fail if the window is missing.
 #[tauri::command]
 fn open_dashboard(app: AppHandle) -> Result<(), String> {
@@ -565,6 +681,7 @@ pub fn run() -> DesktopResult<()> {
             get_status,
             get_feature_snapshot,
             get_insights,
+            generate_report,
             open_dashboard,
             core_ping,
             get_pairing_token
@@ -875,6 +992,52 @@ mod tests {
         assert!(!raw.contains("/Users"));
         assert!(!raw.contains(".biofocus"));
         assert!(!raw.contains("rmssd"));
+    }
+
+    #[tokio::test]
+    async fn assemble_report_disabled_has_no_interpretation() {
+        let dto = assemble_report_dto(&[], &[], &LocalLlmConfig::disabled())
+            .await
+            .expect("offline report");
+        assert_eq!(dto.llm_status, "disabled");
+        assert!(dto.interpretation.is_none());
+        assert!(dto.llm_error.is_none());
+        assert!(dto.markdown.contains("BioFocus"));
+        assert!(!dto.llm_prompt.is_empty());
+
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert!(obj.contains_key("markdown"));
+        assert!(obj.contains_key("llmPrompt"));
+        assert_eq!(
+            obj.get("llmStatus").and_then(|v| v.as_str()),
+            Some("disabled")
+        );
+        assert!(!obj.contains_key("interpretation"));
+        assert!(!obj.contains_key("payload"));
+        assert!(!obj.contains_key("path"));
+    }
+
+    #[tokio::test]
+    async fn assemble_report_with_features_keeps_deterministic_markdown() {
+        let window =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let features = vec![Feature {
+            feature_id: "FocusScore".into(),
+            time_window: window,
+            value: FeatureValue::Scalar(72.5),
+            provenance: vec![Uuid::from_u128(1)],
+        }];
+        let dto = assemble_report_dto(&features, &[], &LocalLlmConfig::disabled())
+            .await
+            .expect("report");
+        assert_eq!(dto.llm_status, "disabled");
+        assert!(dto.markdown.contains("FocusScore"));
+        assert!(dto.llm_prompt.contains("FocusScore"));
+        let raw = serde_json::to_string(&dto).expect("string");
+        assert!(!raw.contains("/Users"));
+        assert!(!raw.contains(".biofocus"));
     }
 
     #[test]

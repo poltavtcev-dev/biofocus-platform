@@ -31,8 +31,16 @@ import {
   loadingInsightsView,
   type InsightsView,
 } from "./insights";
+import {
+  generateReport,
+  idleReportView,
+  llmStatusDetail,
+  loadingReportView,
+  mockReportFromLocation,
+  type ReportView,
+} from "./report";
 
-/** Soft refresh — idle-safe; no busy-loop. */
+/** Soft refresh — idle-safe; no busy-loop. Does not regenerate reports. */
 const SNAPSHOT_POLL_MS = 30_000;
 
 function ChartSlot({
@@ -222,12 +230,71 @@ function InsightsSlot({ view }: { view: InsightsView }) {
   );
 }
 
+function ReportSlot({
+  view,
+  busy,
+  onGenerate,
+}: {
+  view: ReportView;
+  busy: boolean;
+  onGenerate: () => void;
+}) {
+  const report = view.report;
+  const showBody = view.kind === "ready" && report;
+
+  return (
+    <section className="report-slot" aria-label="Report" aria-live="polite">
+      <p className="chart-slot-title">Report</p>
+      <p className="status-meta">
+        {view.kind === "loading" ? view.detail : view.label}
+      </p>
+      {view.kind !== "loading" && (
+        <p className="status-meta">{view.detail}</p>
+      )}
+      <p className="report-ai-note">
+        AI interpretation is local and optional — never sent automatically.
+      </p>
+      <button
+        type="button"
+        className="retry"
+        onClick={onGenerate}
+        disabled={busy || view.kind === "loading"}
+      >
+        {view.kind === "loading" ? "Generating…" : "Generate report"}
+      </button>
+
+      {showBody && (
+        <div className="report-body">
+          <pre className="report-markdown">{report.markdown}</pre>
+          <details className="report-prompt">
+            <summary>Prompt for local AI</summary>
+            <pre className="report-markdown report-markdown--prompt">
+              {report.llmPrompt}
+            </pre>
+          </details>
+          <p className="status-meta">{llmStatusDetail(report)}</p>
+          {report.interpretation && (
+            <div className="report-interpretation">
+              <p className="chart-slot-title">Local AI (optional)</p>
+              <pre className="report-markdown">{report.interpretation}</pre>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function Dashboard() {
   const [view, setView] = useState<SnapshotView>(() => loadingView());
   const [insightsView, setInsightsView] = useState<InsightsView>(() =>
     loadingInsightsView(),
   );
+  const [reportView, setReportView] = useState<ReportView>(
+    () => mockReportFromLocation() ?? idleReportView(),
+  );
   const [busy, setBusy] = useState(true);
+  const [reportBusy, setReportBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -238,6 +305,7 @@ export function Dashboard() {
         setView(loadingView());
         setInsightsView(loadingInsightsView());
       }
+      // Snapshot / Insights only — never auto-invoke generate_report / LLM.
       const [next, nextInsights] = await Promise.all([
         fetchFeatureSnapshot(),
         fetchInsights(),
@@ -274,6 +342,15 @@ export function Dashboard() {
         setBusy(false);
       },
     );
+  };
+
+  const onGenerateReport = () => {
+    setReportBusy(true);
+    setReportView(loadingReportView());
+    void generateReport().then((next) => {
+      setReportView(next);
+      setReportBusy(false);
+    });
   };
 
   const features = view.snapshot?.features ?? [];
@@ -342,6 +419,12 @@ export function Dashboard() {
       )}
 
       <InsightsSlot view={insightsView} />
+
+      <ReportSlot
+        view={reportView}
+        busy={reportBusy}
+        onGenerate={onGenerateReport}
+      />
     </main>
   );
 }

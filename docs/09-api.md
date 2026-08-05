@@ -200,7 +200,7 @@ let insights = engine.evaluate(&features, &signals)?;
 
 ### report-engine (crate API, P4-E3-T1 / T2)
 
-Offline builder + optional local LLM interpret — **not** an IPC command yet (Dashboard button → P4-E3-T3).
+Offline builder + optional local LLM interpret.
 
 ```rust
 use report_engine::{
@@ -220,6 +220,28 @@ let interpreted = interpret_report(&doc, &config).await?; // Err(LocalLlmDisable
 | `interpret_report` / `interpret_llm_prompt` | Opt-in HTTP to OpenAI-compatible `/chat/completions` (default Ollama `http://127.0.0.1:11434/v1`). Sends prompt string only. Timeout + `thiserror`. |
 
 Env: `BIOFOCUS_LOCAL_LLM=1`, optional `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL`, `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS`. Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite. Builder path has no HTTP; LLM path is explicit + disabled by default.
+
+### `generate_report` (P4-E3-T3)
+
+- **Invoke:** `invoke("generate_report")` — **explicit user action only** (Dashboard «Generate report»). Never on app / Dashboard open or soft poll.
+- **Purpose:** Offline `build_report` from cached Feature snapshot + evaluate-on-read Insights; optional `interpret_report` when `BIOFOCUS_LOCAL_LLM` is enabled on the host process.
+- **UI ↛ SQLite / Core crates.** Soft-fails LLM errors into `llmStatus` so markdown still returns. When disabled: no network.
+
+```json
+{
+  "markdown": "# BioFocus report\n…",
+  "llmPrompt": "…",
+  "llmStatus": "disabled"
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `markdown` | string | Deterministic offline report |
+| `llmPrompt` | string | Prompt for optional local interpret |
+| `interpretation` | string? | Present when `llmStatus == "ok"` |
+| `llmStatus` | string | `"disabled"` \| `"ok"` \| `"error"` \| `"timeout"` |
+| `llmError` | string? | Calm short detail when error/timeout |
 
 ### `core_ping` (legacy fallback)
 
