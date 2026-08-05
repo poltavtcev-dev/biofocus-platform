@@ -33,10 +33,10 @@
 2. Full Companion LAN UI / QR copy polish remains **P5-E2-T1** (out of scope; types already forward-compatible).
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P5-E1-T2 → Done; Ready **P5-E2-T1**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: status line in `ARCHITECTURE_STATUS` / `12-development` footer (Dev already updated API + how-to-read-hint)
-- [ ] Epic P5-E1 can be marked closed when T2 Done (T1 already Done)
+- [x] `/docs/SPRINT_ROADMAP.md` — P5-E1-T2 → Done; Ready **P5-E2-T1**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: status line in `ARCHITECTURE_STATUS` / `12-development` footer (Dev already updated API + how-to-read-hint)
+- [x] Epic P5-E1 can be marked closed when T2 Done (T1 already Done)
 
 ## Suggested next Ready task
 - **P5-E2-T1** — Companion UI: LAN base URL + token/QR (consume `bindMode` / `baseUrlHints` / `ingestBaseUrl`)

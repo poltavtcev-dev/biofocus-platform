@@ -35,12 +35,12 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 
 ### Wearable / companion (Phase 5)
 
-- **Phase 5 (active):** opt-in **LAN-reachable ingest** shipped (**P5-E1-T1** / ADR-005: `BIOFOCUS_INGEST_LAN=1`, default still loopback) → next: advertise LAN base URL (**T2**) → Companion pairing UX → runnable **iOS HealthKit** companion posts HR `Observation`s to Desktop on the same LAN.
-- Today: HealthKit / CLI **sample** sources + loopback ingest; physical-phone dogfood needs URL hints (T2) + pairing UX + iOS runnable.
+- **Phase 5 (active):** **P5-E1 Done** — opt-in LAN bind (ADR-005) + advertise `bind_mode` / `base_url_hints` on status/pairing IPC. Next: Companion pairing UX (**P5-E2-T1**) → runnable **iOS HealthKit** companion posts HR `Observation`s to Desktop on the same LAN.
+- Today: HealthKit / CLI **sample** sources + loopback ingest; LAN hints available via `/v1/status` / pairing IPC; Companion UI polish + iOS runnable remain.
 - Later (post–Phase 5): Life Events + Calendar (P6); additional wearable bridges; plugins (IDE/Git/Browser) later.
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 
-Until URL advertise ships: macOS `context_window` / optional `keystrokes` + sample HR via loopback / Simulator; LAN bind opt-in already available for manual IP.
+Dogfood tip: if `base_url_hints` is empty under `BIOFOCUS_INGEST_LAN=1`, set `BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>` before pairing.
 
 ---
 

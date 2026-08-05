@@ -200,5 +200,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1-T1 Done** (opt-in LAN bind / ADR-005); Ready **P5-E1-T2** (advertise bind mode + base URL hints). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E1-T2-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
+**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 Done** (LAN bind ADR-005 + advertise hints); Ready **P5-E2-T1** (Companion UI: LAN base URL + token/QR). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.

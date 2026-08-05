@@ -423,6 +423,23 @@ body {
   font-size: 0.78rem;
 }
 
+.pairing-url-block,
+.pairing-token-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pairing-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--bf-meta);
+  text-transform: uppercase;
+}
+
+.pairing-url,
 .pairing-token {
   margin: 0.15rem 0 0;
   font-family: "SF Mono", ui-monospace, Menlo, monospace;

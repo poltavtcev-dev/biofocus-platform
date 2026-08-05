@@ -24,17 +24,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P5-E1-T2** |
+| **Ready** | **P5-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **P5-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **P5-E1** (T1–T2) |
 
-**Epic status:** P5-E1 ⬜ (T1 ✅) · P5-E2 ⬜ · P5-E3 ⬜
+**Epic status:** P5-E1 ✅ · P5-E2 ⬜ · P5-E3 ⬜
 
 **Phase 5 on `/docs/14-roadmap.md`:** opened 2026-08-05
 
 **Рекомендуемый порядок:**  
-~~P5-E1-T1~~ → **P5-E1-T2** → P5-E2-T1 → P5-E3-T1 → P5-E3-T2
+~~P5-E1-T1~~ → ~~P5-E1-T2~~ → **P5-E2-T1** → P5-E3-T1 → P5-E3-T2
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -43,16 +43,18 @@
 
 ### Active assignment
 
-**Ready now:** **P5-E1-T2** — Advertise bind mode + base URL hints (Dev).  
-Brief: `docs/handoffs/P5-E1-T2-pm-brief.md`.
+**Ready now:** **P5-E2-T1** — Companion UI: LAN base URL + token/QR (UX + Dev).  
+Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`.
 
-**Closed:** P5-E1-T1 (QA Pass with notes, 2026-08-05) — opt-in LAN bind (`BIOFOCUS_INGEST_LAN` / `BIOFOCUS_INGEST_BIND_HOST`); ADR-005; default loopback. Evidence: `docs/handoffs/P5-E1-T1-qa-to-pm.md`.
+**Closed:** P5-E1-T2 (QA Pass with notes, 2026-08-05) — `bind_mode` / `base_url_hints` on `/v1/status` + pairing IPC; Epic **P5-E1** ✅. Evidence: `docs/handoffs/P5-E1-T2-qa-to-pm.md`.
+
+**Previously closed:** P5-E1-T1 — opt-in LAN bind (`BIOFOCUS_INGEST_LAN` / `BIOFOCUS_INGEST_BIND_HOST`); ADR-005. Evidence: `docs/handoffs/P5-E1-T1-qa-to-pm.md`.
 
 **Ops note:** Phase 4 cluster PR on `phase/4-dashboard-ai` remains optional parallel ops — does not block Phase 5.
 
 ---
 
-## Epic P5-E1 — Opt-in LAN ingest
+## Epic P5-E1 — Opt-in LAN ingest ✅ Done
 
 **Цель:** Physical phone on the same Wi-Fi can reach Desktop `/v1/ingest`. Default remains **loopback-only**; LAN bind is opt-in and documented.
 
@@ -66,7 +68,7 @@ Brief: `docs/handoffs/P5-E1-T2-pm-brief.md`.
 | **Out of scope** | Companion UI LAN URL/QR (→ **E2-T1**), iOS runnable app (→ **E3**), cloud / mDNS discovery, TLS termination, new Observation types |
 | **Shipped** | `IngestConfig.bind_host`; `BIOFOCUS_INGEST_LAN` → `0.0.0.0`; `BIOFOCUS_INGEST_BIND_HOST` override; ADR-005; QA Pass with notes 2026-08-05. Pairing `ingestBaseUrl` still loopback → **T2**. |
 
-### P5-E1-T2 — Advertise bind mode + base URL hints ✅ Ready
+### P5-E1-T2 — Advertise bind mode + base URL hints ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
@@ -74,6 +76,7 @@ Brief: `docs/handoffs/P5-E1-T2-pm-brief.md`.
 | **Depends on** | P5-E1-T1 |
 | **AC** | When LAN opt-in is on, host exposes enough for dogfood: bind mode + usable base URL hint(s) (e.g. primary LAN IPv4 + port) via documented status/IPC — **no** Observation payloads, **no** absolute DB paths. Loopback mode still reports loopback URL. Tests for status shape. Idle-safe. Docs note how to read the hint. |
 | **Out of scope** | Full pairing QR redesign (→ E2), iOS UI |
+| **Shipped** | `AdvertiseInfo` / `BindMode`; `/v1/status` + pairing IPC `bindMode` / `baseUrlHints` / primary `ingestBaseUrl`; QA Pass with notes 2026-08-05. Epic **P5-E1** closed. |
 
 ---
 
@@ -81,7 +84,7 @@ Brief: `docs/handoffs/P5-E1-T2-pm-brief.md`.
 
 **Цель:** Desktop Companion section makes physical-phone pairing obvious: LAN base URL + token (copy / QR).
 
-### P5-E2-T1 — Companion UI: LAN base URL + token/QR
+### P5-E2-T1 — Companion UI: LAN base URL + token/QR ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | UX + Dev |
@@ -188,8 +191,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 ## Sprint 9–10 — Queue
 
 1. ~~P5-E1-T1 — Opt-in LAN ingest bind + config~~ **Done** (QA Pass with notes)  
-2. **P5-E1-T2 — Advertise bind mode + base URL hints** ← **Ready**  
-3. P5-E2-T1 — Companion UI: LAN base URL + token/QR  
+2. ~~P5-E1-T2 — Advertise bind mode + base URL hints~~ **Done** (QA Pass with notes) · Epic **P5-E1** ✅  
+3. **P5-E2-T1 — Companion UI: LAN base URL + token/QR** ← **Ready**  
 4. P5-E3-T1 — Runnable iOS companion + HealthKit one-shot  
 5. P5-E3-T2 — Dogfood runbook + contract docs  
 

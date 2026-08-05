@@ -42,11 +42,13 @@ QA mocks:
 - `?view=dashboard&mockInsights=empty|ready|error`
   (`ready` includes two sample Insights with evidence refs)
 
-## Companion pairing (P2-E3-T2)
+## Companion pairing (P2-E3-T2 / P5-E2-T1)
 
-The shell **Companion** section loads the local pairing token via IPC
-`get_pairing_token` (Show / Copy / QR). Paste into the companion CLI or iOS stub.
-No cloud account; frontend never opens `~/.biofocus` itself.
+The shell **Companion** section loads pairing via IPC `get_pairing_token`:
+copyable **Base URL** (`ingestBaseUrl` / primary `baseUrlHints`), plus token
+Show / Copy / QR. Loopback by default; after LAN opt-in the primary hint is a
+LAN URL when discovery succeeds. No cloud account; frontend never opens
+`~/.biofocus` itself. See `docs/12-development.md` (Base URL hint).
 
 ## Boundary
 

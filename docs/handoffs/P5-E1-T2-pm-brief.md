@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (QA Pass with notes, 2026-08-05)  
 **Date:** 2026-08-05  
-**Closed previous:** P5-E1-T1 (QA Pass with notes — opt-in LAN bind `BIOFOCUS_INGEST_LAN` / `BIOFOCUS_INGEST_BIND_HOST`, ADR-005; pairing `ingestBaseUrl` still hardcodes loopback)
+**Closed previous:** P5-E1-T1 (QA Pass with notes — opt-in LAN bind `BIOFOCUS_INGEST_LAN` / `BIOFOCUS_INGEST_BIND_HOST`, ADR-005; pairing `ingestBaseUrl` still hardcodes loopback)  
+**Closed this:** QA Pass with notes → `docs/handoffs/P5-E1-T2-qa-to-pm.md`; Epic **P5-E1** ✅; Ready **P5-E2-T1**
 
 ## Task
 **P5-E1-T2 — Advertise bind mode + base URL hints**

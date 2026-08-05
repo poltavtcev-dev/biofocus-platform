@@ -14,6 +14,9 @@ import {
   copyText,
   fetchPairingToken,
   maskToken,
+  networkModeDetail,
+  networkModeLabel,
+  primaryBaseUrl,
   type PairingView,
 } from "./pairing";
 import "./App.css";
@@ -120,7 +123,15 @@ function MenubarShell() {
       return;
     }
     const ok = await copyText(pairing.info.token);
-    setCopyNote(ok ? "Copied." : "Could not copy.");
+    setCopyNote(ok ? "Token copied." : "Could not copy.");
+  };
+
+  const onCopyBaseUrl = async () => {
+    if (pairing.kind !== "ready") {
+      return;
+    }
+    const ok = await copyText(primaryBaseUrl(pairing.info));
+    setCopyNote(ok ? "Base URL copied." : "Could not copy.");
   };
 
   const onOpenDashboard = () => {
@@ -173,7 +184,8 @@ function MenubarShell() {
       <section className="pairing-block" aria-label="Companion pairing">
         <h2 className="pairing-title">Companion</h2>
         <p className="pairing-detail">
-          Share this local token with your phone. No cloud account.
+          Local pairing only — no cloud account. Share this Mac’s base URL and
+          token with a phone on the same network when LAN is enabled.
         </p>
 
         {pairing.kind === "loading" && (
@@ -191,47 +203,75 @@ function MenubarShell() {
 
         {pairing.kind === "ready" && (
           <>
-            <p className="pairing-token" aria-live="polite">
-              {tokenVisible
-                ? pairing.info.token
-                : maskToken(pairing.info.token)}
-            </p>
-            <div className="pairing-actions">
-              <button
-                type="button"
-                className="retry"
-                onClick={() => setTokenVisible((v) => !v)}
-              >
-                {tokenVisible ? "Hide" : "Show"}
-              </button>
-              <button
-                type="button"
-                className="retry"
-                onClick={() => void onCopyToken()}
-              >
-                Copy
-              </button>
-              <button
-                type="button"
-                className="retry"
-                onClick={() => setQrVisible((v) => !v)}
-              >
-                {qrVisible ? "Hide QR" : "Show QR"}
-              </button>
+            <div className="pairing-url-block">
+              <p className="pairing-subtitle">Base URL</p>
+              <p className="pairing-url" aria-live="polite">
+                {primaryBaseUrl(pairing.info)}
+              </p>
+              <div className="pairing-actions">
+                <button
+                  type="button"
+                  className="retry"
+                  onClick={() => void onCopyBaseUrl()}
+                >
+                  Copy URL
+                </button>
+                <button
+                  type="button"
+                  className="retry"
+                  onClick={onReloadPairing}
+                >
+                  Reload
+                </button>
+              </div>
+              <p className="status-meta">
+                {networkModeLabel(pairing.info)}
+                {pairing.info.fromEnv ? " · token env override" : ""}
+              </p>
+              <p className="pairing-detail">{networkModeDetail(pairing.info)}</p>
             </div>
+
+            <div className="pairing-token-block">
+              <p className="pairing-subtitle">Token</p>
+              <p className="pairing-token" aria-live="polite">
+                {tokenVisible
+                  ? pairing.info.token
+                  : maskToken(pairing.info.token)}
+              </p>
+              <div className="pairing-actions">
+                <button
+                  type="button"
+                  className="retry"
+                  onClick={() => setTokenVisible((v) => !v)}
+                >
+                  {tokenVisible ? "Hide" : "Show"}
+                </button>
+                <button
+                  type="button"
+                  className="retry"
+                  onClick={() => void onCopyToken()}
+                >
+                  Copy
+                </button>
+                <button
+                  type="button"
+                  className="retry"
+                  onClick={() => setQrVisible((v) => !v)}
+                >
+                  {qrVisible ? "Hide QR" : "Show QR"}
+                </button>
+              </div>
+              {qrVisible && (
+                <div
+                  className="pairing-qr"
+                  role="img"
+                  aria-label="QR code for pairing token"
+                  dangerouslySetInnerHTML={{ __html: pairing.info.qrSvg }}
+                />
+              )}
+            </div>
+
             {copyNote && <p className="status-meta">{copyNote}</p>}
-            {qrVisible && (
-              <div
-                className="pairing-qr"
-                role="img"
-                aria-label="QR code for pairing token"
-                dangerouslySetInnerHTML={{ __html: pairing.info.qrSvg }}
-              />
-            )}
-            <p className="status-meta">
-              {pairing.info.ingestBaseUrl}
-              {pairing.info.fromEnv ? " · env override" : ""}
-            </p>
           </>
         )}
       </section>
