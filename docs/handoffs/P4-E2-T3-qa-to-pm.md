@@ -40,12 +40,12 @@ cd apps/desktop && pnpm exec tsc --noEmit
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P4-E2-T3 → Done; Ready → **P4-E3-T1** (unless re-order)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `ARCHITECTURE_STATUS.md` / `14-roadmap.md` Ready pointer; `12-development.md` status line (T3 already documented as implemented)
+- [x] `/docs/SPRINT_ROADMAP.md` — P4-E2-T3 → Done; Ready → **P4-E3-T1**; Epic P4-E2 ✅
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `ARCHITECTURE_STATUS.md` / `14-roadmap.md` Ready → T1; `12-development.md` status line
 
 ## Suggested next Ready task
-- **P4-E3-T1** — report-engine prompt / markdown builder (Dev), per brief.
+- **P4-E3-T1** — report-engine prompt / markdown builder (Dev); brief `docs/handoffs/P4-E3-T1-pm-brief.md`.
 
 ## Notes for PM
 - Branch: `phase/4-dashboard-ai` (code cluster continues; no PR required from QA).

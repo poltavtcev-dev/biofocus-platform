@@ -2,9 +2,10 @@
 
 **From:** PM  
 **To:** Dev + UX  
-**Status:** Ready  
+**Status:** Done (QA Pass, 2026-08-05)  
 **Date:** 2026-08-05  
-**Closed previous:** P4-E2-T2 (QA Pass — `register_insights_v1`: `high_stress_period_v1` + `context_switch_elevated_v1`)
+**Closed previous:** P4-E2-T2 (QA Pass — `register_insights_v1`: `high_stress_period_v1` + `context_switch_elevated_v1`)  
+**Closed this:** QA Pass → `docs/handoffs/P4-E2-T3-qa-to-pm.md`; Epic **P4-E2** ✅; Ready **P4-E3-T1**
 
 ## Task
 **P4-E2-T3 — Insights IPC + Dashboard list**

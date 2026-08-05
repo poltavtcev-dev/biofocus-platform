@@ -198,6 +198,23 @@ register_insights_v1(&mut engine)?;
 let insights = engine.evaluate(&features, &signals)?;
 ```
 
+### report-engine (crate API, P4-E3-T1)
+
+Offline builder — **not** an IPC command yet (Dashboard button → P4-E3-T3; local LLM HTTP → P4-E3-T2).
+
+```rust
+use report_engine::{build_report, ReportDocument};
+
+let ReportDocument { markdown, llm_prompt } = build_report(&features, &insights)?;
+```
+
+| Output | Notes |
+| :--- | :--- |
+| `markdown` | Calm deterministic summary: `# BioFocus report`, Features table (sorted by id / window), Insights sections (sorted by UUID). Empty inputs → short “Nothing to summarize…” body. |
+| `llm_prompt` | Same markdown wrapped with interpret-only instructions (no Feature math, non-clinical). No network in this crate. |
+
+Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite or call HTTP.
+
 ### `core_ping` (legacy fallback)
 
 Scaffold probe from P1-E3-T1. UI prefers `get_status`. Still registered for
