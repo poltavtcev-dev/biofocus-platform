@@ -26,8 +26,8 @@ cargo run -p companion --bin biofocus-companion-sample -- 74
 Exit codes: `0` queued · `2` network · `3` unauthorized (`401`) · `1` other.
 
 ## Reachability
-- **Same Mac (CLI / iOS Simulator):** `http://127.0.0.1:8787` — matches current Desktop bind (loopback only).
-- **Physical iPhone on LAN:** needs Desktop ingest reachable on LAN (not shipped in E1 bind; documented for later pairing / host config). Do not use cloud.
+- **Same Mac (CLI / iOS Simulator):** `http://127.0.0.1:8787` — default Desktop bind (loopback).
+- **Physical iPhone on LAN:** set `BIOFOCUS_INGEST_LAN=1` on Desktop, then use `base_url_hints[0]` from `GET /v1/status` or pairing IPC (`ingestBaseUrl`). Companion UI polish → P5-E2-T1. Do not use cloud.
 
 ## iOS stub
 See [`ios/README.md`](ios/README.md) — HealthKit one-shot HR → same JSON array body. Paste the token from Desktop **Companion** (Copy / QR).

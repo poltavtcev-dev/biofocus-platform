@@ -44,14 +44,18 @@ Same shape when the channel is full on the **first** item (`accepted: 0`). Colle
 ### `GET /v1/status`
 - **Description:** Статус Core / ingest для companion/debug. Shell UI uses IPC `get_status`, not this endpoint.
 - **Auth:** none (intended for local/debug; prefer loopback; when LAN opt-in is on the endpoint is reachable on the LAN without Bearer — do not expose Observation data here).
-- **Response:** `200 OK` — **без** Observation / biometric payload:
+- **Response:** `200 OK` — **без** Observation / biometric payload, tokens, or absolute DB paths:
 
 ```json
-{"version":"0.1.0","db_status":"ok"}
+{"version":"0.1.0","db_status":"ok","bind_mode":"loopback","base_url_hints":["http://127.0.0.1:8787"]}
 ```
 
 ```json
-{"version":"0.1.0","db_status":"error","db_error":"…"}
+{"version":"0.1.0","db_status":"ok","bind_mode":"lan","base_url_hints":["http://192.168.1.40:8787"]}
+```
+
+```json
+{"version":"0.1.0","db_status":"error","db_error":"…","bind_mode":"loopback","base_url_hints":["http://127.0.0.1:8787"]}
 ```
 
 | Field | Type | Notes |
@@ -59,8 +63,11 @@ Same shape when the channel is full on the **first** item (`accepted: 0`). Colle
 | `version` | string | Host / desktop package version |
 | `db_status` | `"ok"` \| `"error"` | Soft-fail probe (open + WAL + migrate) |
 | `db_error` | string? | Present only when `db_status` is `"error"`; short + **no absolute filesystem paths** |
+| `bind_mode` | `"loopback"` \| `"lan"` | Reflects TCP bind (default loopback; LAN when opt-in / non-loopback host) |
+| `base_url_hints` | string[] | Usable `http://<host>:<port>` URLs (primary first). Loopback mode → `http://127.0.0.1:<port>`. LAN + `0.0.0.0` → best-effort primary LAN IPv4; LAN + explicit bind host → that host. Hints derived on status build (no spin). |
 
 - **Host:** Desktop starts ingest on app launch via `IngestConfig::load()` (pairing file / `BIOFOCUS_INGEST_TOKEN`) and stops accept + persist worker on exit.
+- **Read the hint:** `curl -s http://127.0.0.1:8787/v1/status` (or the LAN URL once known) → use `base_url_hints[0]` as companion ingest base. Pairing IPC exposes the same fields (camelCase) — see [`get_pairing_token`](#get_pairing_token-p2-e3-t2).
 
 ---
 
@@ -271,6 +278,21 @@ Does **not** open SQLite. Do not treat `dbFile` as a frontend open path.
 {
   "token": "…64 hex…",
   "ingestBaseUrl": "http://127.0.0.1:8787",
+  "bindMode": "loopback",
+  "baseUrlHints": ["http://127.0.0.1:8787"],
+  "fromEnv": false,
+  "qrSvg": "<svg …>…</svg>"
+}
+```
+
+LAN opt-in (`BIOFOCUS_INGEST_LAN=1`) example:
+
+```json
+{
+  "token": "…",
+  "ingestBaseUrl": "http://192.168.1.40:8787",
+  "bindMode": "lan",
+  "baseUrlHints": ["http://192.168.1.40:8787"],
   "fromEnv": false,
   "qrSvg": "<svg …>…</svg>"
 }
@@ -279,8 +301,10 @@ Does **not** open SQLite. Do not treat `dbFile` as a frontend open path.
 | Field | Type | Notes |
 | :--- | :--- | :--- |
 | `token` | string | Bearer value for `Authorization` |
-| `ingestBaseUrl` | string | Loopback ingest base (Simulator / same Mac) |
+| `ingestBaseUrl` | string | Primary hint (`baseUrlHints[0]`); loopback when bind is local-only |
+| `bindMode` | `"loopback"` \| `"lan"` | Same meaning as HTTP `/v1/status` `bind_mode` |
+| `baseUrlHints` | string[] | Same as HTTP `base_url_hints` (derived on invoke; no spin) |
 | `fromEnv` | bool | `true` when env override is active |
 | `qrSvg` | string | SVG QR encoding the token |
 
-Errors are short UI-safe strings (no absolute paths).
+Errors are short UI-safe strings (no absolute paths). Never returns Observation payloads or DB paths.

@@ -7,8 +7,8 @@ use axum::http::{Request, StatusCode};
 use bio_spec::Observation;
 use http::header::AUTHORIZATION;
 use ingest::{
-    bind_host, bind_loopback, ingest_router, IngestConfig, IngestResponse, IngestState,
-    QueuePressureBody, StatusResponse, INGEST_BIND_HOST, INGEST_LAN_BIND_HOST,
+    bind_host, bind_loopback, ingest_router, AdvertiseInfo, BindMode, IngestConfig, IngestResponse,
+    IngestState, QueuePressureBody, StatusResponse, INGEST_BIND_HOST, INGEST_LAN_BIND_HOST,
 };
 use runtime::observation_channel;
 use serde_json::json;
@@ -446,15 +446,26 @@ async fn get_status_ok_shape_has_no_observation_fields() {
     assert_eq!(parsed.version, "9.9.9");
     assert_eq!(parsed.db_status, "ok");
     assert_eq!(parsed.db_error, None);
+    assert_eq!(parsed.bind_mode, BindMode::Loopback);
+    assert_eq!(
+        parsed.base_url_hints,
+        vec!["http://127.0.0.1:8787".to_owned()]
+    );
 
     let value: serde_json::Value = serde_json::from_slice(&bytes).expect("value");
     let obj = value.as_object().expect("object");
     assert!(obj.contains_key("version"));
     assert!(obj.contains_key("db_status"));
+    assert!(obj.contains_key("bind_mode"));
+    assert!(obj.contains_key("base_url_hints"));
     assert!(!obj.contains_key("observations"));
     assert!(!obj.contains_key("payload"));
     assert!(!obj.contains_key("hrv"));
     assert!(!obj.contains_key("dbStatus")); // HTTP uses snake_case
+    assert!(!obj.contains_key("path"));
+    let raw = String::from_utf8(bytes.to_vec()).expect("utf8");
+    assert!(!raw.contains(".biofocus"));
+    assert!(!raw.contains("/Users"));
 }
 
 #[tokio::test]
@@ -515,11 +526,51 @@ async fn get_status_probes_real_temp_db_path() {
 
 #[test]
 fn status_response_unit_mapping() {
-    let ok = StatusResponse::from_probe("1.0.0", Ok(()));
+    let ok = StatusResponse::from_probe_loopback("1.0.0", Ok(()));
     assert_eq!(ok.db_status, "ok");
     assert!(ok.db_error.is_none());
+    assert_eq!(ok.bind_mode, BindMode::Loopback);
 
-    let err = StatusResponse::from_probe("1.0.0", Err("disk full".into()));
+    let err = StatusResponse::from_probe_loopback("1.0.0", Err("disk full".into()));
     assert_eq!(err.db_status, "error");
     assert_eq!(err.db_error.as_deref(), Some("disk full"));
+}
+
+#[tokio::test]
+async fn get_status_lan_advertise_shape() {
+    use std::net::Ipv4Addr;
+
+    let (state, _rx) = test_state(8);
+    let advertise = AdvertiseInfo::for_bind_with(INGEST_LAN_BIND_HOST, 8787, || {
+        vec![Ipv4Addr::new(10, 0, 0, 8)]
+    });
+    let app = ingest_router(state.with_advertise(advertise));
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/status")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: StatusResponse = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed.bind_mode, BindMode::Lan);
+    assert_eq!(
+        parsed.base_url_hints,
+        vec!["http://10.0.0.8:8787".to_owned()]
+    );
+    assert_eq!(parsed.db_status, "ok");
+    let value: serde_json::Value = serde_json::from_slice(&bytes).expect("value");
+    let obj = value.as_object().expect("object");
+    assert!(!obj.contains_key("observations"));
+    assert!(!obj.contains_key("token"));
+    assert!(!obj.contains_key("path"));
 }

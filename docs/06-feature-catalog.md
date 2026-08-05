@@ -42,3 +42,27 @@
 - **Output:** Float (0.0 — 100.0).
 - **Provenance:** keystrokes / HR / context Observation IDs in window.
 - **DAG:** зависит от `FocusScore`; `register_stress_v1` (after `register_focus_v1`) or `register_catalog_v1`.
+
+## 2. Planned backlog (not sprint-Ready)
+
+Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
+
+| Working name | Intent | Likely inputs (later) | Earliest phase |
+| :--- | :--- | :--- | :--- |
+| `MeetingDensity` | Meeting load in window | Calendar Observations | P6 |
+| `RecoveryBetweenMeetings` | Gap quality between meetings | Calendar | P6 |
+| `RecoveryScore` | Short-term physiological recovery | HRV / sleep / HR | P7 |
+| `EnergyScore` | Subjective energy proxy from bio + activity | HR, activity, sleep | P7 |
+| `DeepWorkScore` | Sustained focus windows | FocusScore, CSR, idle | P7 |
+| `AttentionStability` | Variance of focus / switches | FocusScore, CSR | P7 |
+| `CognitiveLoad` | Combined demand proxy | MeetingDensity, CSR, notifications | P7–P8 |
+| `SleepDebt` | Sleep shortfall vs baseline | Sleep Observations | P7 |
+| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 |
+| `NotificationPressure` | Interruption intensity | notification Observations | P10 |
+| `DistractionScore` | Context fragmentation | CSR, browser categories | P10 |
+| `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
+| `ActivityBalance` | Movement vs sedentary | steps / workout Life Events | P6–P7 |
+| `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
+| `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
+
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance in this doc; Feature-level **confidence** and **explanation factors** → Phase 7 (ADR if IPC grows).

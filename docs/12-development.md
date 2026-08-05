@@ -43,7 +43,17 @@ Desktop host starts ingest on launch (`IngestConfig::load` + persist worker) and
 export BIOFOCUS_INGEST_LAN=1
 # optional override: export BIOFOCUS_INGEST_BIND_HOST=0.0.0.0   # or a specific LAN IPv4
 ```
-Without these knobs, bind stays `127.0.0.1` (Simulator / same-machine unchanged). `POST /v1/ingest` still requires Bearer (`BIOFOCUS_INGEST_TOKEN` / `~/.biofocus/pairing_token`). Status/IPC LAN URL advertise → P5-E1-T2.
+Without these knobs, bind stays `127.0.0.1` (Simulator / same-machine unchanged). `POST /v1/ingest` still requires Bearer (`BIOFOCUS_INGEST_TOKEN` / `~/.biofocus/pairing_token`).
+
+**Base URL hint (P5-E1-T2):** after LAN opt-in, read bind mode + usable URLs from:
+- `GET /v1/status` → `bind_mode` / `base_url_hints` (snake_case), or
+- IPC `get_pairing_token` → `bindMode` / `baseUrlHints` / `ingestBaseUrl` (primary = first hint).
+
+```bash
+curl -s http://127.0.0.1:8787/v1/status | jq '{bind_mode, base_url_hints}'
+# point companion at base_url_hints[0], e.g. http://192.168.x.x:8787
+```
+Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on read/startup (no busy-loop). Full Companion LAN UI → P5-E2-T1.
 
 **Pipeline (Phase 3 E1):** crate `crates/pipeline`.
 - **Intake (T1):** `pipeline::accept_observations(&[Observation])` → `AcceptedBatch` (`AcceptedForProcessing`). Empty = **Ok**. Helpers: `accept_owned`, `accept_iter`.
@@ -124,7 +134,7 @@ export BIOFOCUS_INGEST_TOKEN="$(cat ~/.biofocus/pairing_token)"
 cargo run -p companion --bin biofocus-companion-sample -- 74
 ```
 
-Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN: enable `BIOFOCUS_INGEST_LAN=1` on Desktop, then point companion at `http://<desktop-lan-ip>:8787` (URL advertise/copy → later Phase 5 tasks).
+Rust client + CLI in `apps/companion`; iOS HealthKit stub under `apps/companion/ios/`. Same-machine / Simulator: `http://127.0.0.1:8787`. Physical phone on LAN: enable `BIOFOCUS_INGEST_LAN=1` on Desktop, then read `base_url_hints[0]` from `/v1/status` or pairing IPC (P5-E1-T2); Companion UI polish → P5-E2-T1.
 
 ### Pairing UX (P2-E3-T2)
 
@@ -190,5 +200,5 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 
 ## Status
 
-**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`). Dashboard + Insights + optional local LLM + Report UX (`generate_report`). Cluster PR pending. Phase 5+ not opened.  
+**Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 Done** (LAN bind ADR-005 + advertise hints); Ready **P5-E2-T1** (Companion UI: LAN base URL + token/QR). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
 **Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.

@@ -138,7 +138,8 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
 
     let state = IngestState::new(config.token.clone(), tx)
         .with_version(env!("CARGO_PKG_VERSION"))
-        .with_db_path(db_path);
+        .with_db_path(db_path)
+        .with_bind(config.bind_host, config.port);
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
     let (done_tx, done_rx) = std::sync::mpsc::channel();
