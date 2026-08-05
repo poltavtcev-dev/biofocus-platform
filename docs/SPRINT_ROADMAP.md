@@ -24,17 +24,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P5-E2-T1** |
+| **Ready** | **P5-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **P5-E1** (T1–T2) |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **P5-E1** (T1–T2) · **P5-E2** (T1) |
 
-**Epic status:** P5-E1 ✅ · P5-E2 ⬜ · P5-E3 ⬜
+**Epic status:** P5-E1 ✅ · P5-E2 ✅ · P5-E3 ⬜
 
 **Phase 5 on `/docs/14-roadmap.md`:** opened 2026-08-05
 
 **Рекомендуемый порядок:**  
-~~P5-E1-T1~~ → ~~P5-E1-T2~~ → **P5-E2-T1** → P5-E3-T1 → P5-E3-T2
+~~P5-E1-T1~~ → ~~P5-E1-T2~~ → ~~P5-E2-T1~~ → **P5-E3-T1** → P5-E3-T2
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -43,12 +43,12 @@
 
 ### Active assignment
 
-**Ready now:** **P5-E2-T1** — Companion UI: LAN base URL + token/QR (UX + Dev).  
-Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`.
+**Ready now:** **P5-E3-T1** — Runnable iOS companion + HealthKit one-shot (Dev + UX).  
+Brief: `docs/handoffs/P5-E3-T1-pm-brief.md`.
 
-**Closed:** P5-E1-T2 (QA Pass with notes, 2026-08-05) — `bind_mode` / `base_url_hints` on `/v1/status` + pairing IPC; Epic **P5-E1** ✅. Evidence: `docs/handoffs/P5-E1-T2-qa-to-pm.md`.
+**Closed:** P5-E2-T1 (QA Pass with notes, 2026-08-05) — Companion LAN base URL + token/QR; Epic **P5-E2** ✅. Evidence: `docs/handoffs/P5-E2-T1-qa-to-pm.md`. Live Menubar smoke A/B left for operator.
 
-**Previously closed:** P5-E1-T1 — opt-in LAN bind (`BIOFOCUS_INGEST_LAN` / `BIOFOCUS_INGEST_BIND_HOST`); ADR-005. Evidence: `docs/handoffs/P5-E1-T1-qa-to-pm.md`.
+**Previously closed:** P5-E1-T2 — `bind_mode` / `base_url_hints` on `/v1/status` + pairing IPC; Epic **P5-E1** ✅. Evidence: `docs/handoffs/P5-E1-T2-qa-to-pm.md`. P5-E1-T1 — opt-in LAN bind; ADR-005. Evidence: `docs/handoffs/P5-E1-T1-qa-to-pm.md`.
 
 **Ops note:** Phase 4 cluster PR on `phase/4-dashboard-ai` remains optional parallel ops — does not block Phase 5.
 
@@ -80,11 +80,11 @@ Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`.
 
 ---
 
-## Epic P5-E2 — Pairing UX for LAN dogfood
+## Epic P5-E2 — Pairing UX for LAN dogfood ✅ Done
 
 **Цель:** Desktop Companion section makes physical-phone pairing obvious: LAN base URL + token (copy / QR).
 
-### P5-E2-T1 — Companion UI: LAN base URL + token/QR ✅ Ready
+### P5-E2-T1 — Companion UI: LAN base URL + token/QR ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | UX + Dev |
@@ -92,6 +92,7 @@ Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`.
 | **Depends on** | P5-E1-T2 (URL hint); token IPC already exists (`get_pairing_token`) |
 | **AC** | Companion UI shows copyable LAN (or loopback) base URL when available; token Show/Copy/QR still works; calm copy that LAN is opt-in / local network only; UI↛DB; smoke steps in handoff. No cloud account. |
 | **Out of scope** | iOS app (→ E3), changing ingest auth scheme |
+| **Shipped** | Companion Base URL block (`ingestBaseUrl` / bindMode / LAN fallback hint); token Show/Copy/QR preserved; idle-safe (no pairing poll); QA Pass with notes 2026-08-05. Epic **P5-E2** closed. |
 
 ---
 
@@ -99,7 +100,7 @@ Brief: `docs/handoffs/P5-E2-T1-pm-brief.md`.
 
 **Цель:** Runnable iOS path: HealthKit heart-rate sample → same Observation JSON → `POST /v1/ingest` over LAN (or Simulator loopback).
 
-### P5-E3-T1 — Runnable iOS companion + HealthKit one-shot
+### P5-E3-T1 — Runnable iOS companion + HealthKit one-shot ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev (+ UX for minimal UI copy) |
@@ -192,8 +193,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 1. ~~P5-E1-T1 — Opt-in LAN ingest bind + config~~ **Done** (QA Pass with notes)  
 2. ~~P5-E1-T2 — Advertise bind mode + base URL hints~~ **Done** (QA Pass with notes) · Epic **P5-E1** ✅  
-3. **P5-E2-T1 — Companion UI: LAN base URL + token/QR** ← **Ready**  
-4. P5-E3-T1 — Runnable iOS companion + HealthKit one-shot  
+3. ~~P5-E2-T1 — Companion UI: LAN base URL + token/QR~~ **Done** (QA Pass with notes) · Epic **P5-E2** ✅  
+4. **P5-E3-T1 — Runnable iOS companion + HealthKit one-shot** ← **Ready**  
 5. P5-E3-T2 — Dogfood runbook + contract docs  
 
 **Git:** `phase/5-wearable-dogfood` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship.

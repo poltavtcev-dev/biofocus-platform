@@ -16,10 +16,21 @@ struct HeartRateObservationDTO: Encodable {
     }
 }
 
-enum HeartRateSampleError: Error {
+enum HeartRateSampleError: Error, LocalizedError {
     case healthDataUnavailable
     case notAuthorized
     case noSample
+
+    var errorDescription: String? {
+        switch self {
+        case .healthDataUnavailable:
+            return "Health data is not available on this device"
+        case .notAuthorized:
+            return "Heart-rate read was not authorized"
+        case .noSample:
+            return "No heart-rate sample yet — add one in Health, then try again"
+        }
+    }
 }
 
 enum HeartRateSample {

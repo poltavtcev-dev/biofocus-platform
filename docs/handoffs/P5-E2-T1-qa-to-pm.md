@@ -36,9 +36,9 @@ cargo test -p desktop --lib pairing_       # 6 passed
 - None blocking. Live smoke A/B left for operator on `phase/5-wearable-dogfood` Desktop run.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P5-E2-T1 → Done; Ready **P5-E3-T1**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs: `docs/12-development.md` — mark Companion LAN UI done (retire “→ P5-E2-T1”); optionally `docs/14-roadmap.md` / `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` Phase 5 next pointer
+- [x] `/docs/SPRINT_ROADMAP.md` — P5-E2-T1 → Done; Ready **P5-E3-T1**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/12-development.md` — mark Companion LAN UI done (retire “→ P5-E2-T1”); optionally `docs/14-roadmap.md` / `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` Phase 5 next pointer
 
 ## Suggested next Ready task
 - **P5-E3-T1** — Runnable iOS companion + HealthKit one-shot (per brief / roadmap)

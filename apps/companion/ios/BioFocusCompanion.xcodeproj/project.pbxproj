@@ -1,0 +1,269 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F0BCD1869D974D2B9A757539 /* BioFocusCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */; };
+		18E7A9CC022C427E94BFE84C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E2D7A0EB0A0485E995D2577 /* ContentView.swift */; };
+		67EF38BF45784186BA9FCD6D /* IngestClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9744D8C50AD44D4FBEFDBFF7 /* IngestClient.swift */; };
+		BDC438EB85A148209BF56D69 /* HeartRateSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B4D44507344687A3976590 /* HeartRateSample.swift */; };
+		17740C59FE8E4E3E99782CCB /* SamplePost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E18F70078C1438884E94B8D /* SamplePost.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BioFocusCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BioFocusCompanionApp.swift; sourceTree = "<group>"; };
+		6E2D7A0EB0A0485E995D2577 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		50464D89F8F04EA29055267F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioFocusCompanion.entitlements; sourceTree = "<group>"; };
+		9744D8C50AD44D4FBEFDBFF7 /* IngestClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestClient.swift; sourceTree = "<group>"; };
+		61B4D44507344687A3976590 /* HeartRateSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateSample.swift; sourceTree = "<group>"; };
+		0E18F70078C1438884E94B8D /* SamplePost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePost.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CE67D2E9C2BB448AA73565F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8E89A619489C4A2FA38E3BAD = {
+			isa = PBXGroup;
+			children = (
+				AFE3A842F011446AA0A4C14D /* BioFocusCompanion */,
+				ABAD077593414214A87DD340 /* Contract */,
+				5C9F28EF073343F18DAA0ADD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AFE3A842F011446AA0A4C14D /* BioFocusCompanion */ = {
+			isa = PBXGroup;
+			children = (
+				2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */,
+				6E2D7A0EB0A0485E995D2577 /* ContentView.swift */,
+				50464D89F8F04EA29055267F /* Info.plist */,
+				C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */,
+			);
+			path = BioFocusCompanion;
+			sourceTree = "<group>";
+		};
+		ABAD077593414214A87DD340 /* Contract */ = {
+			isa = PBXGroup;
+			children = (
+				9744D8C50AD44D4FBEFDBFF7 /* IngestClient.swift */,
+				61B4D44507344687A3976590 /* HeartRateSample.swift */,
+				0E18F70078C1438884E94B8D /* SamplePost.swift */,
+			);
+			name = Contract;
+			sourceTree = "<group>";
+		};
+		5C9F28EF073343F18DAA0ADD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		374080AC7E3D4AA080724F58 /* BioFocusCompanion */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C8A434E97BA748D8B6BA7EA9 /* Build configuration list for PBXNativeTarget "BioFocusCompanion" */;
+			buildPhases = (
+				41D8A9B1774A4487B412A432 /* Sources */,
+				CE67D2E9C2BB448AA73565F2 /* Frameworks */,
+				A19763F5F50F4212B6F82E04 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BioFocusCompanion;
+			productName = BioFocusCompanion;
+			productReference = 13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A89DA5DDA4A0430C94201959 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					374080AC7E3D4AA080724F58 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+				};
+			};
+			buildConfigurationList = BEB1E6C998884EC784ABCED4 /* Build configuration list for PBXProject "BioFocusCompanion" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8E89A619489C4A2FA38E3BAD;
+			productRefGroup = 5C9F28EF073343F18DAA0ADD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				374080AC7E3D4AA080724F58 /* BioFocusCompanion */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A19763F5F50F4212B6F82E04 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		41D8A9B1774A4487B412A432 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0BCD1869D974D2B9A757539 /* BioFocusCompanionApp.swift in Sources */,
+				18E7A9CC022C427E94BFE84C /* ContentView.swift in Sources */,
+				67EF38BF45784186BA9FCD6D /* IngestClient.swift in Sources */,
+				BDC438EB85A148209BF56D69 /* HeartRateSample.swift in Sources */,
+				17740C59FE8E4E3E99782CCB /* SamplePost.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F4511984B59F48BE90480C28 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		CD97BD57BAB94ED2A95D16BA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		89C7C5F5FF7442A8B1E841F1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BioFocusCompanion/BioFocusCompanion.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BioFocusCompanion/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "BioFocus Companion";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		564C8D247DDE409E8F977082 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BioFocusCompanion/BioFocusCompanion.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BioFocusCompanion/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "BioFocus Companion";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BEB1E6C998884EC784ABCED4 /* Build configuration list for PBXProject "BioFocusCompanion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4511984B59F48BE90480C28 /* Debug */,
+				CD97BD57BAB94ED2A95D16BA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C8A434E97BA748D8B6BA7EA9 /* Build configuration list for PBXNativeTarget "BioFocusCompanion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89C7C5F5FF7442A8B1E841F1 /* Debug */,
+				564C8D247DDE409E8F977082 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A89DA5DDA4A0430C94201959 /* Project object */;
+}
