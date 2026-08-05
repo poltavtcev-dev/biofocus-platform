@@ -27,9 +27,9 @@
 - None blocking.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P6-E1-T1 → Done; Ready **P6-E2-T1**; refresh Kanban / Next
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if Phase 6 open notes incomplete on branch tip vs WIP: `docs/14-roadmap.md` / `PROJECT_CANVAS` / `ARCHITECTURE_STATUS` (Dev branched from `origin/main`; Phase 6 PM WIP may still be on stash `phase/5-wearable-dogfood`)
+- [x] `/docs/SPRINT_ROADMAP.md` — P6-E1-T1 → Done; Ready **P6-E2-T1**; refresh Kanban / Next
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if Phase 6 open notes incomplete on branch tip vs WIP: `docs/14-roadmap.md` / `PROJECT_CANVAS` / `ARCHITECTURE_STATUS` (Dev branched from `origin/main`; Phase 6 PM WIP may still be on stash `phase/5-wearable-dogfood`)
 - [ ] Optional: fold ADR/contracts already on branch into next code PR for `phase/6-life-context`
 
 ## Suggested next Ready task

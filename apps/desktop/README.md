@@ -42,6 +42,16 @@ QA mocks:
 - `?view=dashboard&mockInsights=empty|ready|error`
   (`ready` includes two sample Insights with evidence refs)
 
+## Life Events quick-log (P6-E2-T1)
+
+Menubar **Life events** section logs v1 kinds (`coffee` / `walk` / `lunch` /
+`workout`) via IPC `log_life_event`. Rows persist as ordinary Observations
+(`data_type: "life_event"`) through the host Observation repository — UI never
+opens SQLite. Recent list via `list_recent_life_events` (manual Refresh; no
+busy-loop). Calm, non-evaluative copy only.
+
+QA mock: `?mockLifeEvents=empty|ready|error`
+
 ## Companion pairing (P2-E3-T2 / P5-E2-T1)
 
 The shell **Companion** section loads pairing via IPC `get_pairing_token`:

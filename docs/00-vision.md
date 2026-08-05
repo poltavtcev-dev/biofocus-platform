@@ -43,7 +43,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight)
 Не выбрасываем идеи из vision — **ставим в очередь и смягчаем формулировки**:
 
 1. **Feature backlog** живёт в `/docs/06-feature-catalog.md` § Planned. В спринт попадают только Features с реальными Observation-входами.
-2. **Personal Pattern Discovery** (окна дня / базовые линии) — Phase **8**; нужен ADR (recompute vs Feature history). Не обещать в Phase 5.
+2. **Personal Pattern Discovery** (окна дня / базовые линии) — Phase **8**; нужен ADR (recompute vs Feature history). Не обещать в Phase 6.
 3. **Load / Deep-focus style metrics** — ок как детерминированные Features; **без** clinical / burnout diagnosis tone (Global DoD).
 4. **Source priority:** Wearables (HealthKit) → Life Events + Calendar → IDE/Git/Browser plugins → ambient (music / weather / light).
 5. **Commercial split** (signed builds, updates, optional user-opt-in sync, support) — горизонт Phase **12+**; алгоритмы остаются open-source. Не двигает текущий Core Kanban.
@@ -64,12 +64,11 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight)
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 5** only (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
+Immediate Kanban = **Phase 6** only (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
-| **0–4** | Done — foundation, ingest, pipeline, Menubar, Dashboard, Insights, report LLM |
-| **5** | Wearable dogfood — opt-in LAN + HealthKit companion |
+| **0–5** | Done — foundation, ingest, pipeline, Menubar, Dashboard, Insights, report LLM, wearable dogfood |
 | **6** | Life Events v1 + Calendar → meeting-density style Features |
 | **7** | Trust layer — Feature confidence + Explanation factors + few bio-backed Features |
 | **8** | Pattern Discovery v1 — multi-day / baseline Knowledge (ADR) |
