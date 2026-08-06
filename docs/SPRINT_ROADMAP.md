@@ -24,17 +24,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P6-E3-T1** |
+| **Ready** | **P6-E3-T2** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **P6-E1-T1** · **P6-E2-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **P6-E1-T1** · **P6-E2-T1** · **P6-E3-T1** |
 
-**Epic status:** P6-E1 ✅ · P6-E2 ✅ · P6-E3 ⬜
+**Epic status:** P6-E1 ✅ · P6-E2 ✅ · P6-E3 ⬜ (T1 Done · T2 Ready)
 
 **Phase 6 on `/docs/14-roadmap.md`:** opened 2026-08-05
 
 **Рекомендуемый порядок:**  
-~~P6-E1-T1~~ → ~~P6-E2-T1~~ → **P6-E3-T1** → P6-E3-T2
+~~P6-E1-T1~~ → ~~P6-E2-T1~~ → ~~P6-E3-T1~~ → **P6-E3-T2**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -43,8 +43,10 @@
 
 ### Active assignment
 
-**Ready now:** **P6-E3-T1** — Calendar → Observations (dogfood source) (Dev).  
-Brief: `docs/handoffs/P6-E3-T1-pm-brief.md`.
+**Ready now:** **P6-E3-T2** — MeetingDensity + RecoveryBetweenMeetings Features (Dev).  
+Brief: `docs/handoffs/P6-E3-T2-pm-brief.md`.
+
+**Closed:** P6-E3-T1 (QA Pass with notes, 2026-08-06) — opt-in local ICS → `calendar_event` Observations; privacy (no titles/bodies); idle-safe poll. Evidence: `docs/handoffs/P6-E3-T1-qa-to-pm.md`.
 
 **Closed:** P6-E2-T1 (QA Pass with notes, 2026-08-05) — Desktop Menubar quick-log Life Events via IPC; Epic **P6-E2** ✅. Evidence: `docs/handoffs/P6-E2-T1-qa-to-pm.md`.
 
@@ -92,7 +94,7 @@ Brief: `docs/handoffs/P6-E3-T1-pm-brief.md`.
 
 **Цель:** Calendar-derived Observations feed `MeetingDensity` and `RecoveryBetweenMeetings` in Core.
 
-### P6-E3-T1 — Calendar → Observations (dogfood source) ✅ Ready
+### P6-E3-T1 — Calendar → Observations (dogfood source) ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
@@ -100,8 +102,9 @@ Brief: `docs/handoffs/P6-E3-T1-pm-brief.md`.
 | **Depends on** | P6-E1-T1 (Observation contract discipline); E2 helpful but not required |
 | **AC** | Opt-in local Calendar source produces Calendar/meeting Observations (shape documented); no cloud calendar sync required for dogfood; idle-safe polling or event-driven refresh; privacy: no event titles/bodies leaked to logs beyond what’s needed; tests with fixtures. Handoff with operator smoke notes. |
 | **Out of scope** | Google/Outlook cloud OAuth, MeetingDensity formula (→ **T2**), Life Event UI |
+| **Shipped** | Opt-in `CalendarPlugin` + local ICS (`BIOFOCUS_CALENDAR` / `BIOFOCUS_CALENDAR_ICS`); `calendar_event` Observations (uid/start/end/busy; no title/body); rare poll ≥60s + stop join; fixtures → SQLite; QA Pass with notes 2026-08-06. |
 
-### P6-E3-T2 — MeetingDensity + RecoveryBetweenMeetings Features
+### P6-E3-T2 — MeetingDensity + RecoveryBetweenMeetings Features ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
@@ -198,7 +201,7 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 1. ~~P6-E1-T1 — Life Events Observation kinds + ADR-006~~ **Done** (QA Pass) · Epic **P6-E1** ✅  
 2. ~~P6-E2-T1 — Desktop quick-log Life Events~~ **Done** (QA Pass with notes) · Epic **P6-E2** ✅  
-3. **P6-E3-T1 — Calendar → Observations (dogfood source)** ← **Ready**  
-4. P6-E3-T2 — MeetingDensity + RecoveryBetweenMeetings Features  
+3. ~~P6-E3-T1 — Calendar → Observations (dogfood source)~~ **Done** (QA Pass with notes)  
+4. **P6-E3-T2 — MeetingDensity + RecoveryBetweenMeetings Features** ← **Ready**  
 
 **Git:** `phase/6-life-context` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship.

@@ -26,9 +26,9 @@
 - None blocking.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P6-E3-T1 → Done; Ready → **P6-E3-T2**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: status already partially updated in contracts/dev docs by Dev; optionally refresh `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` on close
+- [x] `/docs/SPRINT_ROADMAP.md` — P6-E3-T1 → Done; Ready → **P6-E3-T2**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` + brief `P6-E3-T2-pm-brief.md`
 
 ## Suggested next Ready task
 - **P6-E3-T2** — MeetingDensity + RecoveryBetweenMeetings Features (from `calendar_event` Observations)
