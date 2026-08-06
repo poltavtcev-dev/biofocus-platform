@@ -110,6 +110,7 @@ fn score_window(observations: &[Observation], window: &bio_spec::TimeWindow) -> 
         value: FeatureValue::Scalar(value.clamp(0.0, 100.0)),
         provenance,
         confidence,
+        factors: Vec::new(),
     })
 }
 

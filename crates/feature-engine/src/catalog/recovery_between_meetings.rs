@@ -105,6 +105,7 @@ impl FeatureNode for RecoveryBetweenMeetingsNode {
                 value: FeatureValue::Scalar(mean),
                 provenance,
                 confidence,
+                factors: Vec::new(),
             });
         }
 

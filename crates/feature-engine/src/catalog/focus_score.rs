@@ -15,9 +15,12 @@
 //! - **Confidence (ADR-007):** expected slots = 3 (typing / stability / HRV);
 //!   `coverage × mean(evidence Observation.confidence)`. Thin windows → lower
 //!   confidence; empty → omit Feature.
+//! - **Explanation factors (P7-E2):** present components emit calm factors
+//!   (`typing` / `stability` / `hrv`) with `share = weight / sum(present weights)`
+//!   (shares sum to 1.0). Empty → omit Feature (no empty factors alone).
 //! - Emits a Feature only when at least one component has data.
 
-use bio_spec::{Feature, FeatureValue, Observation, TimeWindow};
+use bio_spec::{ExplanationFactor, Feature, FeatureValue, Observation, TimeWindow};
 
 use crate::catalog::confidence::compute_feature_confidence;
 use crate::catalog::context_switch_rate;
@@ -42,6 +45,13 @@ const WEIGHT_HRV: f64 = 0.25;
 const EXPECTED_INPUT_SLOTS: usize = 3;
 /// Reference typing rate (keys/min) that maps to typing score 100.
 const TYPING_RATE_REF: f64 = 200.0;
+
+const FACTOR_TYPING: &str = "typing";
+const FACTOR_STABILITY: &str = "stability";
+const FACTOR_HRV: &str = "hrv";
+const LABEL_TYPING: &str = "Typing activity";
+const LABEL_STABILITY: &str = "App stability";
+const LABEL_HRV: &str = "Heart-rate variability";
 
 /// DAG node computing [`FEATURE_ID`]; depends on [`ContextSwitchRateNode`].
 #[derive(Debug, Clone)]
@@ -114,27 +124,43 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
         .filter(|o| o.data_type == DATA_TYPE_CONTEXT_WINDOW)
         .collect();
 
-    let mut weighted: Vec<(f64, f64)> = Vec::new();
+    // (factor_id, label, catalog_weight, component_score)
+    let mut weighted: Vec<(&str, &str, f64, f64)> = Vec::new();
     let mut present_slots = 0usize;
 
     if let Some(mean_rate) = mean_keystroke_rate(&keystrokes) {
         let typing = (mean_rate / TYPING_RATE_REF * 100.0).clamp(0.0, 100.0);
-        weighted.push((WEIGHT_TYPING, typing));
+        weighted.push((FACTOR_TYPING, LABEL_TYPING, WEIGHT_TYPING, typing));
         present_slots += 1;
     }
 
     if let Some(csr) = upstream_csr(ctx, window) {
         let stability = (100.0 - csr * 50.0).clamp(0.0, 100.0);
-        weighted.push((WEIGHT_STABILITY, stability));
+        weighted.push((
+            FACTOR_STABILITY,
+            LABEL_STABILITY,
+            WEIGHT_STABILITY,
+            stability,
+        ));
         present_slots += 1;
     } else if !context.is_empty() {
         // CSR node skipped empty steps; treat present context with 0 switches as full stability.
-        weighted.push((WEIGHT_STABILITY, 100.0));
+        weighted.push((
+            FACTOR_STABILITY,
+            LABEL_STABILITY,
+            WEIGHT_STABILITY,
+            100.0,
+        ));
         present_slots += 1;
     }
 
     if let Some(rmssd) = mean_rmssd_ms(&hrv) {
-        weighted.push((WEIGHT_HRV, hrv_comfort_score(rmssd)));
+        weighted.push((
+            FACTOR_HRV,
+            LABEL_HRV,
+            WEIGHT_HRV,
+            hrv_comfort_score(rmssd),
+        ));
         present_slots += 1;
     }
 
@@ -142,11 +168,24 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
         return None;
     }
 
-    let w_sum: f64 = weighted.iter().map(|(w, _)| *w).sum();
+    let w_sum: f64 = weighted.iter().map(|(_, _, w, _)| *w).sum();
     if w_sum <= 0.0 {
         return None;
     }
-    let value = weighted.iter().map(|(w, s)| w * s).sum::<f64>() / w_sum;
+    let value = weighted
+        .iter()
+        .map(|(_, _, w, s)| w * s)
+        .sum::<f64>()
+        / w_sum;
+
+    let factors: Vec<ExplanationFactor> = weighted
+        .iter()
+        .map(|(id, label, w, _)| ExplanationFactor {
+            id: (*id).to_owned(),
+            label: (*label).to_owned(),
+            share: w / w_sum,
+        })
+        .collect();
 
     let mut provenance = Vec::new();
     let mut evidence: Vec<&Observation> = Vec::new();
@@ -167,6 +206,7 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
         value: FeatureValue::Scalar(value.clamp(0.0, 100.0)),
         provenance,
         confidence,
+        factors,
     })
 }
 
@@ -322,6 +362,99 @@ mod tests {
         assert!(last.provenance.contains(&Uuid::from_u128(4)));
         // Full coverage (3/3) × mean obs confidence 1.0 → 1.0
         assert!((last.confidence.get() - 1.0).abs() < 1e-12);
+        assert_eq!(last.factors.len(), 3);
+        let share_sum: f64 = last.factors.iter().map(|f| f.share).sum();
+        assert!((share_sum - 1.0).abs() < 1e-12);
+        assert_eq!(last.factors[0].id, "typing");
+        assert!((last.factors[0].share - 0.40).abs() < 1e-12);
+        assert_eq!(last.factors[1].id, "stability");
+        assert!((last.factors[1].share - 0.35).abs() < 1e-12);
+        assert_eq!(last.factors[2].id, "hrv");
+        assert!((last.factors[2].share - 0.25).abs() < 1e-12);
+    }
+
+    #[test]
+    fn factors_renormalize_when_hrv_missing() {
+        let thin = vec![
+            obs(
+                1,
+                1000,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                2,
+                1800,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                3,
+                1200,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 180, "window_secs": 60, "rate_per_min": 180.0 }),
+            ),
+        ];
+        let mut engine = FeatureEngine::new();
+        register_focus_v1(&mut engine).expect("reg");
+        let last = engine
+            .run(&thin)
+            .expect("run")
+            .features
+            .into_iter()
+            .rev()
+            .find(|f| f.feature_id == FEATURE_ID)
+            .expect("FocusScore");
+        assert_eq!(last.factors.len(), 2);
+        let share_sum: f64 = last.factors.iter().map(|f| f.share).sum();
+        assert!((share_sum - 1.0).abs() < 1e-12);
+        // typing 0.40 + stability 0.35 = 0.75 → shares 0.40/0.75 and 0.35/0.75
+        assert_eq!(last.factors[0].id, "typing");
+        assert!((last.factors[0].share - 0.40 / 0.75).abs() < 1e-12);
+        assert_eq!(last.factors[1].id, "stability");
+        assert!((last.factors[1].share - 0.35 / 0.75).abs() < 1e-12);
+        assert!(!last.factors.iter().any(|f| f.id == "hrv"));
+    }
+
+    #[test]
+    fn factors_labels_are_calm_non_clinical() {
+        let batch = vec![
+            obs(
+                1,
+                1000,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                2,
+                1800,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                3,
+                1200,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 180, "window_secs": 60, "rate_per_min": 180.0 }),
+            ),
+            obs(4, 1500, DATA_TYPE_HRV, json!({ "rmssd_ms": 45.0 })),
+        ];
+        let mut engine = FeatureEngine::new();
+        register_focus_v1(&mut engine).expect("reg");
+        let last = engine
+            .run(&batch)
+            .expect("run")
+            .features
+            .into_iter()
+            .rev()
+            .find(|f| f.feature_id == FEATURE_ID)
+            .expect("FocusScore");
+        for f in &last.factors {
+            let lower = f.label.to_lowercase();
+            assert!(!lower.contains("burnout"));
+            assert!(!lower.contains("diagnos"));
+            assert!(!lower.contains("disorder"));
+        }
     }
 
     #[test]

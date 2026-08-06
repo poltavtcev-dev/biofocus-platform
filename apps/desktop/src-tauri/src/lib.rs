@@ -33,7 +33,12 @@
 //!       "timeWindow": { "start": 100, "end": 1000 },
 //!       "value": 72.5,
 //!       "provenance": ["…uuid…"],
-//!       "confidence": 1.0
+//!       "confidence": 1.0,
+//!       "factors": [
+//!         { "id": "typing", "label": "Typing activity", "share": 0.4 },
+//!         { "id": "stability", "label": "App stability", "share": 0.35 },
+//!         { "id": "hrv", "label": "Heart-rate variability", "share": 0.25 }
+//!       ]
 //!     }
 //!   ],
 //!   "signals": []
@@ -210,6 +215,25 @@ impl From<&FeatureValue> for FeatureValueDto {
     }
 }
 
+/// One calm contribution factor on the IPC wire (P7-E2).
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct ExplanationFactorDto {
+    id: String,
+    label: String,
+    share: f64,
+}
+
+impl From<&bio_spec::ExplanationFactor> for ExplanationFactorDto {
+    fn from(factor: &bio_spec::ExplanationFactor) -> Self {
+        Self {
+            id: factor.id.clone(),
+            label: factor.label.clone(),
+            share: factor.share,
+        }
+    }
+}
+
 /// One Feature in the IPC snapshot (camelCase; provenance = Observation ids only).
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -220,6 +244,9 @@ struct FeatureDto {
     provenance: Vec<String>,
     /// Derived Feature confidence `[0.0, 1.0]` (ADR-007). Data quality, not clinical.
     confidence: f64,
+    /// Calm “why this value” factors (P7-E2). Omitted when empty (catalog may not emit yet).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    factors: Vec<ExplanationFactorDto>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -264,6 +291,7 @@ impl From<&Feature> for FeatureDto {
                 .map(|id| id.to_string())
                 .collect(),
             confidence: feature.confidence.get(),
+            factors: feature.factors.iter().map(ExplanationFactorDto::from).collect(),
         }
     }
 }
@@ -892,6 +920,7 @@ mod tests {
                 value: FeatureValue::Scalar(72.5),
                 provenance: vec![Uuid::from_u128(1)],
                 confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
             }],
             signals: vec![Signal {
                 id: Uuid::from_u128(9),
@@ -917,6 +946,8 @@ mod tests {
         );
         assert_eq!(f.get("value").and_then(|v| v.as_f64()), Some(72.5));
         assert_eq!(f.get("confidence").and_then(|v| v.as_f64()), Some(1.0));
+        // Empty factors omitted from IPC JSON (skip_serializing_if).
+        assert!(!f.contains_key("factors"));
         let tw = f.get("timeWindow").and_then(|v| v.as_object()).expect("tw");
         assert_eq!(tw.get("start").and_then(|v| v.as_i64()), Some(100));
         assert_eq!(tw.get("end").and_then(|v| v.as_i64()), Some(1000));
@@ -945,6 +976,37 @@ mod tests {
         assert!(!raw.contains("/Users"));
         assert!(!raw.contains(".biofocus"));
         assert!(!raw.contains("rmssd"));
+    }
+
+    #[test]
+    fn feature_snapshot_dto_exposes_factors_when_present() {
+        let window =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let snap = FeatureSnapshot {
+            features: vec![Feature {
+                feature_id: "FocusScore".into(),
+                time_window: window,
+                value: FeatureValue::Scalar(72.5),
+                provenance: vec![Uuid::from_u128(1)],
+                confidence: bio_spec::Confidence::ONE,
+                factors: vec![bio_spec::ExplanationFactor {
+                    id: "typing".into(),
+                    label: "Typing activity".into(),
+                    share: 0.4,
+                }],
+            }],
+            signals: vec![],
+        };
+        let dto = snapshot_to_dto(&snap);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let f = json["features"][0].as_object().expect("feature");
+        let factors = f.get("factors").and_then(|v| v.as_array()).expect("factors");
+        assert_eq!(factors.len(), 1);
+        assert_eq!(factors[0]["id"].as_str(), Some("typing"));
+        assert_eq!(factors[0]["label"].as_str(), Some("Typing activity"));
+        assert_eq!(factors[0]["share"].as_f64(), Some(0.4));
+        assert!(!serde_json::to_string(&dto).expect("s").contains("payload"));
     }
 
     #[test]
@@ -978,6 +1040,7 @@ mod tests {
                 value: FeatureValue::Scalar(2.5),
                 provenance: vec![Uuid::from_u128(2)],
             confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
             }],
             signals: vec![Signal {
                 id: Uuid::from_u128(9),
@@ -1007,6 +1070,7 @@ mod tests {
                     value: FeatureValue::Scalar(2.5),
                     provenance: vec![Uuid::from_u128(2)],
                 confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
                 },
                 Feature {
                     feature_id: "StressIndex".into(),
@@ -1014,6 +1078,7 @@ mod tests {
                     value: FeatureValue::Scalar(80.0),
                     provenance: vec![Uuid::from_u128(3)],
                 confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
                 },
             ],
             signals: vec![Signal {
@@ -1098,6 +1163,7 @@ mod tests {
             value: FeatureValue::Scalar(72.5),
             provenance: vec![Uuid::from_u128(1)],
             confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
         }];
         let dto = assemble_report_dto(&features, &[], &LocalLlmConfig::disabled())
             .await
