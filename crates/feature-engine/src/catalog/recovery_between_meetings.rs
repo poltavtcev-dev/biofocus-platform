@@ -11,6 +11,8 @@
 //!   window. Calm schedule metric — not a clinical recovery score.
 //! - **Provenance:** Observation IDs of the two meetings bounding each
 //!   counted gap (deduped).
+//! - **Confidence (ADR-007):** single family; when emitted,
+//!   `confidence = mean(bounding meeting Observation.confidence)`.
 //! - No intersecting gaps → no Feature for that step.
 //! - Tolerates partial calendars (malformed rows skipped).
 
@@ -20,6 +22,7 @@ use uuid::Uuid;
 use crate::catalog::calendar_meeting::{
     collect_busy_meetings, gap_intersects_window, inter_meeting_gaps, meeting_time_span,
 };
+use crate::catalog::confidence::compute_from_values;
 use crate::catalog::window::{sliding_window_ends, window_ending_at};
 use crate::{ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput};
 
@@ -86,11 +89,22 @@ impl FeatureNode for RecoveryBetweenMeetingsNode {
             }
 
             let mean = gap_minutes.iter().sum::<f64>() / gap_minutes.len() as f64;
+            let conf_values: Vec<f64> = provenance
+                .iter()
+                .filter_map(|id| {
+                    meetings
+                        .iter()
+                        .find(|m| m.observation_id == *id)
+                        .map(|m| m.confidence.get())
+                })
+                .collect();
+            let confidence = compute_from_values(1, 1, &conf_values);
             features.push(Feature {
                 feature_id: FEATURE_ID.to_owned(),
                 time_window: window,
                 value: FeatureValue::Scalar(mean),
                 provenance,
+                confidence,
             });
         }
 

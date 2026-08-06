@@ -7,10 +7,13 @@
 //! - **Switch:** consecutive (time-sorted) `bundle_id` changes inside the window.
 //! - **Value:** `switch_count / 15.0` (switches per nominal window minute).
 //! - **Provenance:** IDs of `context_window` Observations inside the window.
+//! - **Confidence (ADR-007):** single family; when emitted,
+//!   `confidence = mean(context Observation.confidence)`.
 //! - Empty window (no `context_window`) → no Feature for that step.
 
 use bio_spec::{Feature, FeatureValue, Observation};
 
+use crate::catalog::confidence::single_family_confidence;
 use crate::catalog::window::{
     in_window, sliding_window_ends, snapshot_time_span, window_ending_at, WINDOW_SECS,
 };
@@ -75,12 +78,14 @@ impl FeatureNode for ContextSwitchRateNode {
             let switches = count_bundle_switches(&in_win);
             let rate = switches as f64 / (WINDOW_SECS as f64 / 60.0);
             let provenance = in_win.iter().map(|o| o.id).collect();
+            let confidence = single_family_confidence(&in_win);
 
             features.push(Feature {
                 feature_id: FEATURE_ID.to_owned(),
                 time_window: window,
                 value: FeatureValue::Scalar(rate),
                 provenance,
+                confidence,
             });
         }
 

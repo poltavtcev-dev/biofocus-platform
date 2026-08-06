@@ -29,6 +29,24 @@ impl Confidence {
         Ok(Self(value))
     }
 
+    /// Clamps a finite value into `[0.0, 1.0]`; non-finite → `0.0`.
+    ///
+    /// Preferred for derived Feature confidence (ADR-007) where the formula
+    /// already saturates and callers must not fail the DAG on float noise.
+    #[must_use]
+    pub fn saturating_from(value: f64) -> Self {
+        if !value.is_finite() {
+            return Self(0.0);
+        }
+        Self(value.clamp(0.0, 1.0))
+    }
+
+    /// Full confidence (`1.0`).
+    pub const ONE: Self = Self(1.0);
+
+    /// Zero confidence (`0.0`).
+    pub const ZERO: Self = Self(0.0);
+
     /// Returns the inner `f64` in `[0.0, 1.0]`.
     #[must_use]
     pub const fn get(self) -> f64 {

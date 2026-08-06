@@ -164,7 +164,7 @@ impl FeatureEngine {
 mod tests {
     use std::sync::{Arc, Mutex};
 
-    use bio_spec::{Feature, FeatureValue, Observation, TimeWindow, UnixTimestamp};
+    use bio_spec::{Confidence, Feature, FeatureValue, Observation, TimeWindow, UnixTimestamp};
     use serde_json::json;
     use uuid::Uuid;
 
@@ -212,6 +212,7 @@ mod tests {
                 time_window: window,
                 value: FeatureValue::Scalar(1.0),
                 provenance: ctx.observations().iter().map(|o| o.id).collect(),
+            confidence: Confidence::ONE,
             }]))
         }
     }

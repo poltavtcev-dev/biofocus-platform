@@ -9,6 +9,8 @@
 //!   RMSSD ≥ 70 ms (low HRV ⇒ high stress). Same map for optional SDNN.
 //!   `pnn50` (0–100) contributes `100 - pnn50`.
 //! - **Provenance:** Observation IDs of `hrv` inside the window.
+//! - **Confidence (ADR-007):** single family (HRV); when emitted,
+//!   `confidence = mean(hrv Observation.confidence)`. Empty HRV → omit.
 //! - Empty HRV window → no Feature for that step.
 //!
 //! # High_Stress Signal
@@ -22,6 +24,7 @@
 use bio_spec::{Feature, FeatureValue, Observation, Severity, Signal, UnixTimestamp};
 use uuid::Uuid;
 
+use crate::catalog::confidence::single_family_confidence;
 use crate::catalog::window::{
     in_window, sliding_window_ends, snapshot_time_span, window_ending_at, STEP_SECS,
 };
@@ -99,12 +102,14 @@ fn score_window(observations: &[Observation], window: &bio_spec::TimeWindow) -> 
 
     let value = stress_from_hrv(&hrv)?;
     let provenance = hrv.iter().map(|o| o.id).collect();
+    let confidence = single_family_confidence(&hrv);
 
     Some(Feature {
         feature_id: FEATURE_ID.to_owned(),
         time_window: *window,
         value: FeatureValue::Scalar(value.clamp(0.0, 100.0)),
         provenance,
+        confidence,
     })
 }
 
@@ -263,6 +268,41 @@ mod tests {
         };
         assert!((v - 100.0).abs() < 1e-9, "got {v}");
         assert!(last.provenance.contains(&Uuid::from_u128(1)));
+        assert!((last.confidence.get() - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn low_observation_confidence_lowers_stress_feature_confidence() {
+        let batch = vec![
+            Observation::try_new(
+                Uuid::from_u128(1),
+                UnixTimestamp::from_secs(1500),
+                "test.provider",
+                DATA_TYPE_HRV,
+                json!({ "rmssd_ms": 15.0 }),
+                0.5,
+            )
+            .expect("obs"),
+            Observation::try_new(
+                Uuid::from_u128(2),
+                UnixTimestamp::from_secs(1800),
+                "test.provider",
+                DATA_TYPE_HRV,
+                json!({ "rmssd_ms": 15.0 }),
+                0.5,
+            )
+            .expect("obs"),
+        ];
+        let mut engine = FeatureEngine::new();
+        engine.register(StressIndexNode::new()).expect("reg");
+        let out = engine.run(&batch).expect("run");
+        let last = out
+            .features
+            .iter()
+            .rev()
+            .find(|f| f.feature_id == FEATURE_ID)
+            .expect("stress");
+        assert!((last.confidence.get() - 0.5).abs() < 1e-12);
     }
 
     #[test]

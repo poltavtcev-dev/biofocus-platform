@@ -82,7 +82,7 @@ fn latest_scalar(features: &[Feature], feature_id: &str) -> Option<f64> {
 
 #[cfg(test)]
 mod tests {
-    use bio_spec::{Feature, FeatureValue, Severity, Signal, TimeWindow, UnixTimestamp};
+    use bio_spec::{Confidence, Feature, FeatureValue, Severity, Signal, TimeWindow, UnixTimestamp};
     use uuid::Uuid;
 
     use super::*;
@@ -102,6 +102,7 @@ mod tests {
             time_window: window(end),
             value: FeatureValue::Scalar(value),
             provenance: Vec::new(),
+            confidence: Confidence::ONE,
         }
     }
 

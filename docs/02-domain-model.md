@@ -19,8 +19,10 @@
 
 ### 1.3 Feature (Рассчитанные метрики)
 - **Description:** Вычисленная характеристика (фича) за временное окно.
-- **Properties:** `feature_id`, `time_window`, `value` (f64/JSON), `provenance` (массив ID использованных Observations).
+- **Properties:** `feature_id`, `time_window`, `value` (f64/JSON), `provenance` (массив ID использованных Observations), `confidence` (0.0–1.0, ADR-007).
+- **Confidence:** Derived data-quality score for the windowed metric — **not** the same as `Observation.confidence`. v1: `coverage × mean(evidence Observation.confidence)`; empty/uncomputable windows omit the Feature. Not a clinical claim.
 - **Examples:** `FocusScore`, `StressIndex`, `FatigueIndex`, `ContextSwitchRate`.
+- **Persistence (v1):** Features stay in-memory / IPC snapshot; **no** Feature confidence column in SQLite.
 
 ### 1.4 Knowledge & Insight (Инсайты)
 - **Description:** Аналитический вывод о закономерности с подтверждающими уликами (Evidence).

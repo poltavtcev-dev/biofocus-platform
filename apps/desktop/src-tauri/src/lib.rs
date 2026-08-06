@@ -32,7 +32,8 @@
 //!       "featureId": "FocusScore",
 //!       "timeWindow": { "start": 100, "end": 1000 },
 //!       "value": 72.5,
-//!       "provenance": ["…uuid…"]
+//!       "provenance": ["…uuid…"],
+//!       "confidence": 1.0
 //!     }
 //!   ],
 //!   "signals": []
@@ -217,6 +218,8 @@ struct FeatureDto {
     time_window: TimeWindowDto,
     value: FeatureValueDto,
     provenance: Vec<String>,
+    /// Derived Feature confidence `[0.0, 1.0]` (ADR-007). Data quality, not clinical.
+    confidence: f64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -260,6 +263,7 @@ impl From<&Feature> for FeatureDto {
                 .iter()
                 .map(|id| id.to_string())
                 .collect(),
+            confidence: feature.confidence.get(),
         }
     }
 }
@@ -887,6 +891,7 @@ mod tests {
                 time_window: window,
                 value: FeatureValue::Scalar(72.5),
                 provenance: vec![Uuid::from_u128(1)],
+                confidence: bio_spec::Confidence::ONE,
             }],
             signals: vec![Signal {
                 id: Uuid::from_u128(9),
@@ -911,6 +916,7 @@ mod tests {
             Some("FocusScore")
         );
         assert_eq!(f.get("value").and_then(|v| v.as_f64()), Some(72.5));
+        assert_eq!(f.get("confidence").and_then(|v| v.as_f64()), Some(1.0));
         let tw = f.get("timeWindow").and_then(|v| v.as_object()).expect("tw");
         assert_eq!(tw.get("start").and_then(|v| v.as_i64()), Some(100));
         assert_eq!(tw.get("end").and_then(|v| v.as_i64()), Some(1000));
@@ -971,6 +977,7 @@ mod tests {
                 time_window: window,
                 value: FeatureValue::Scalar(2.5),
                 provenance: vec![Uuid::from_u128(2)],
+            confidence: bio_spec::Confidence::ONE,
             }],
             signals: vec![Signal {
                 id: Uuid::from_u128(9),
@@ -999,12 +1006,14 @@ mod tests {
                     time_window: window.clone(),
                     value: FeatureValue::Scalar(2.5),
                     provenance: vec![Uuid::from_u128(2)],
+                confidence: bio_spec::Confidence::ONE,
                 },
                 Feature {
                     feature_id: "StressIndex".into(),
                     time_window: window,
                     value: FeatureValue::Scalar(80.0),
                     provenance: vec![Uuid::from_u128(3)],
+                confidence: bio_spec::Confidence::ONE,
                 },
             ],
             signals: vec![Signal {
@@ -1088,6 +1097,7 @@ mod tests {
             time_window: window,
             value: FeatureValue::Scalar(72.5),
             provenance: vec![Uuid::from_u128(1)],
+            confidence: bio_spec::Confidence::ONE,
         }];
         let dto = assemble_report_dto(&features, &[], &LocalLlmConfig::disabled())
             .await

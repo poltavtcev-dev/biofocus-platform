@@ -167,7 +167,7 @@ fn escape_cell(raw: &str) -> String {
 #[cfg(test)]
 mod tests {
     use bio_spec::{
-        EvidenceRef, Feature, FeatureValue, Insight, TimeWindow, UnixTimestamp,
+        Confidence, EvidenceRef, Feature, FeatureValue, Insight, TimeWindow, UnixTimestamp,
     };
     use uuid::Uuid;
 
@@ -187,6 +187,7 @@ mod tests {
             time_window: window(start, end),
             value: FeatureValue::Scalar(value),
             provenance: Vec::new(),
+            confidence: Confidence::ONE,
         }
     }
 

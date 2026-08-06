@@ -1,9 +1,13 @@
 //! Windowed derived metrics (`Feature`) with observation provenance.
+//!
+//! Feature-level [`Confidence`](crate::Confidence) (ADR-007) is distinct from
+//! [`Observation::confidence`](crate::Observation): it scores trust in the
+//! derived windowed metric (coverage × mean evidence Observation confidence).
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
-use crate::{ObservationId, TimeWindow};
+use crate::{Confidence, ObservationId, TimeWindow};
 
 /// Stable feature name (e.g. `FocusScore`, `StressIndex`).
 pub type FeatureId = String;
@@ -27,4 +31,9 @@ pub struct Feature {
     pub value: FeatureValue,
     /// Observation IDs used as evidence for this metric.
     pub provenance: Provenance,
+    /// Derived trust in this Feature value (`[0.0, 1.0]`, ADR-007).
+    ///
+    /// Data-quality score — not a clinical claim. Empty / uncomputable windows
+    /// omit the Feature rather than emitting `confidence = 0` alone.
+    pub confidence: Confidence,
 }
