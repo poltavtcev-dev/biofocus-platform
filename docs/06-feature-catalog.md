@@ -49,8 +49,8 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `MeetingDensity` | Meeting load in window | Calendar Observations | P6 |
-| `RecoveryBetweenMeetings` | Gap quality between meetings | Calendar | P6 |
+| `MeetingDensity` | Meeting load in window | `calendar_event` Observations (P6-E3-T1) | P6 |
+| `RecoveryBetweenMeetings` | Gap quality between meetings | `calendar_event` Observations | P6 |
 | `RecoveryScore` | Short-term physiological recovery | HRV / sleep / HR | P7 |
 | `EnergyScore` | Subjective energy proxy from bio + activity | HR, activity, sleep | P7 |
 | `DeepWorkScore` | Sustained focus windows | FocusScore, CSR, idle | P7 |

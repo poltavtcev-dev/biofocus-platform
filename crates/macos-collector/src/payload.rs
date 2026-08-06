@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use serde_json::{json, Value as JsonValue};
 
+use crate::calendar_probe::CalendarEvent;
 use crate::probe::FrontmostApp;
 
 /// Provider id for the macOS active-window collector.
@@ -12,11 +13,17 @@ pub const MACOS_CONTEXT_PROVIDER_ID: &str = "com.biofocus.macos.context";
 /// Provider id for the macOS input-aggregate collector.
 pub const MACOS_INPUT_PROVIDER_ID: &str = "com.biofocus.macos.input";
 
+/// Provider id for the local Calendar (ICS) collector.
+pub const MACOS_CALENDAR_PROVIDER_ID: &str = "com.biofocus.macos.calendar";
+
 /// Storage / schema `data_type` for active window context.
 pub const CONTEXT_WINDOW_DATA_TYPE: &str = "context_window";
 
 /// Storage / schema `data_type` for keystroke aggregates.
 pub const KEYSTROKES_DATA_TYPE: &str = "keystrokes";
+
+/// Storage / schema `data_type` for Calendar / meeting events.
+pub const CALENDAR_EVENT_DATA_TYPE: &str = "calendar_event";
 
 /// Builds privacy-safe payload: app identity only (no window title / content).
 #[must_use]
@@ -36,5 +43,17 @@ pub fn keystrokes_payload(count: u64, window: Duration) -> JsonValue {
         "count": count,
         "window_secs": window_secs,
         "rate_per_min": rate_per_min,
+    })
+}
+
+/// Builds privacy-safe calendar payload (schedule metadata only — no title/body).
+#[must_use]
+pub fn calendar_event_payload(event: &CalendarEvent) -> JsonValue {
+    json!({
+        "uid": event.uid,
+        "start": event.start,
+        "end": event.end,
+        "all_day": event.all_day,
+        "busy": event.busy,
     })
 }

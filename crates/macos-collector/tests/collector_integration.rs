@@ -1,17 +1,20 @@
 //! Integration: mock collectors → bounded channel → persist worker → SQLite.
 //!
-//! Covers emit Observation for `context_window` and opt-in `keystrokes`,
-//! plus stop/idle: after `stop_stream` probe work must not keep ticking.
+//! Covers emit Observation for `context_window`, opt-in `keystrokes`, and
+//! synthetic Calendar → `calendar_event`, plus stop/idle: after `stop_stream`
+//! probe work must not keep ticking.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use bio_spec::Observation;
 use ingest::spawn_persist_worker;
 use macos_collector::{
-    ActiveWindowPlugin, FrontmostApp, FrontmostProbe, InputCountProbe, KeystrokeAggregatePlugin,
-    ScriptedInputProbe, CONTEXT_WINDOW_DATA_TYPE, KEYSTROKES_DATA_TYPE,
+    spawn_calendar_loop, ActiveWindowPlugin, CalendarEvent, CalendarPlugin, CalendarProbe,
+    FrontmostApp, FrontmostProbe, IcsFileCalendarProbe, InputCountProbe, KeystrokeAggregatePlugin,
+    ScriptedCalendarProbe, ScriptedInputProbe, CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE,
+    KEYSTROKES_DATA_TYPE,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::observation_channel;
@@ -60,6 +63,31 @@ impl InputCountProbe for CountingInputProbe {
     }
 }
 
+struct CountingCalendarProbe {
+    inner: ScriptedCalendarProbe,
+    polls: AtomicUsize,
+}
+
+impl CountingCalendarProbe {
+    fn new() -> Self {
+        Self {
+            inner: ScriptedCalendarProbe::new(),
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl CalendarProbe for CountingCalendarProbe {
+    fn events_in_range(
+        &self,
+        horizon_start: i64,
+        horizon_end: i64,
+    ) -> macos_collector::CollectorResult<Vec<CalendarEvent>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        self.inner.events_in_range(horizon_start, horizon_end)
+    }
+}
+
 async fn wait_for_data_type(
     db_path: &std::path::Path,
     data_type: &str,
@@ -81,6 +109,13 @@ async fn wait_for_data_type(
         }
         tokio::time::sleep(Duration::from_millis(15)).await;
     }
+}
+
+fn now_unix() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 #[tokio::test]
@@ -145,6 +180,108 @@ async fn keystroke_aggregates_emit_observation_into_channel_and_storage() {
 }
 
 #[tokio::test]
+async fn calendar_synthetic_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let now = now_unix();
+    let probe = Arc::new(ScriptedCalendarProbe::new());
+    probe.push(CalendarEvent {
+        uid: "synth-meet-1".into(),
+        start: now + 60,
+        end: now + 3_660,
+        all_day: false,
+        busy: true,
+    });
+
+    let plugin = CalendarPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn CalendarProbe>,
+        Duration::from_millis(40),
+    )
+    .with_horizon(Duration::from_secs(3_600), Duration::from_secs(7_200));
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, CALENDAR_EVENT_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["uid"], "synth-meet-1");
+    assert_eq!(listed[0].payload["busy"], true);
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("summary").is_none());
+    assert!(listed[0].payload.get("description").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn calendar_ics_fixture_round_trip_to_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let ics_path = dir.path().join("dogfood.ics");
+    let now = now_unix();
+    let start = now + 120;
+    let end = start + 1_800;
+    let start_s = format_ical_utc(start);
+    let end_s = format_ical_utc(end);
+    std::fs::write(
+        &ics_path,
+        format!(
+            "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nUID:ics-dogfood@biofocus\nDTSTART:{start_s}\nDTEND:{end_s}\nSUMMARY:Must Not Leak\nDESCRIPTION:secret body\nEND:VEVENT\nEND:VCALENDAR\n"
+        ),
+    )
+    .expect("write ics");
+
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let plugin = CalendarPlugin::with_probe(
+        Arc::new(IcsFileCalendarProbe::new(ics_path)),
+        Duration::from_millis(40),
+    )
+    .with_horizon(Duration::from_secs(3_600), Duration::from_secs(7_200));
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, CALENDAR_EVENT_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed[0].payload["uid"], "ics-dogfood@biofocus");
+    assert!(listed[0].payload.get("SUMMARY").is_none());
+    assert!(listed[0].payload.get("title").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+fn format_ical_utc(unix: i64) -> String {
+    let days = unix.div_euclid(86_400);
+    let tod = unix.rem_euclid(86_400) as u32;
+    let (y, m, d) = civil_from_days(days);
+    let hh = tod / 3_600;
+    let mm = (tod % 3_600) / 60;
+    let ss = tod % 60;
+    format!("{y:04}{m:02}{d:02}T{hh:02}{mm:02}{ss:02}Z")
+}
+
+fn civil_from_days(days: i64) -> (i32, u32, u32) {
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = mp + if mp < 10 { 3 } else { -9 };
+    let y = y + if m <= 2 { 1 } else { 0 };
+    (y as i32, m as u32, d as u32)
+}
+
+#[tokio::test]
 async fn active_window_stop_halts_periodic_probe_work() {
     let probe = Arc::new(ScriptedFrontmost::default());
     let (tx, _rx) = observation_channel(4).expect("channel");
@@ -160,7 +297,6 @@ async fn active_window_stop_halts_periodic_probe_work() {
     plugin.stop_stream().await.expect("stop");
     let after_stop = probe.calls.load(Ordering::SeqCst);
 
-    // Several poll intervals would have fired if the loop kept running.
     tokio::time::sleep(Duration::from_millis(250)).await;
     assert_eq!(
         probe.calls.load(Ordering::SeqCst),
@@ -190,5 +326,34 @@ async fn keystroke_stop_halts_periodic_probe_work() {
         probe.drains.load(Ordering::SeqCst),
         after_stop,
         "input probe must not keep draining after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn calendar_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingCalendarProbe::new());
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let counter = Arc::new(AtomicUsize::new(0));
+    let handle = spawn_calendar_loop(
+        tx,
+        Arc::clone(&probe) as Arc<dyn CalendarProbe>,
+        Duration::from_millis(50),
+        Duration::from_secs(3_600),
+        Duration::from_secs(3_600),
+        Some(Arc::clone(&counter)),
+    );
+
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+    assert!(counter.load(Ordering::SeqCst) >= 1);
+
+    handle.stop().await;
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "calendar probe must not keep polling after stop (no busy-loop)"
     );
 }

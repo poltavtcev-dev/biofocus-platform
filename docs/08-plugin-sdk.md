@@ -56,3 +56,20 @@ Window title capture remains deferred.
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
 
 Non-macOS / Accessibility denied: probe returns 0 (idle).
+
+## 4. Local Calendar ICS (P6-E3-T1)
+
+| Item | Value |
+| :--- | :--- |
+| Crate | `crates/macos-collector` |
+| Plugin id | `com.biofocus.macos.calendar` |
+| `data_type` | `calendar_event` |
+| Probe | Local `.ics` file (`IcsFileCalendarProbe`) or scripted fixtures |
+| Payload | `uid`, `start`, `end`, `all_day`, `busy` only (see `docs/07-contracts.md`) |
+| Enable | `BIOFOCUS_CALENDAR=1` **and** `BIOFOCUS_CALENDAR_ICS=/path/to/file.ics` (default **off**) |
+| Poll | rare ≥60s; lookaround past 24h / future 48h; emit once per event key |
+| Host wire | Desktop `ingest_host` starts only when env set + ICS path present; same Observation channel → persist |
+
+No cloud calendar OAuth. Missing ICS path → warn and skip start (soft-fail).
+
+Window title capture remains deferred.

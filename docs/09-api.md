@@ -19,8 +19,10 @@ Default bind: **`127.0.0.1:8787`** (`crates/ingest`). LAN-reachable bind is **op
   - `401` missing/wrong token → `{"error":"unauthorized"}`
   - `400` invalid JSON / domain → `{"error":"invalid_json"}` (и аналоги)
   - `400` malformed Life Event Observation (`data_type: "life_event"`) → `{"error":"invalid_life_event"}` (ADR-006; whole batch rejected before enqueue)
+  - `400` malformed Calendar Event Observation (`data_type: "calendar_event"`) → `{"error":"invalid_calendar_event"}` (P6-E3-T1; whole batch rejected before enqueue)
   - `503` backpressure / closed channel (см. mid-batch ниже)
 - **Life Events (P6-E1-T1):** same `Array<Observation>` body; `data_type` must be `"life_event"` with `payload.kind` ∈ `coffee` / `walk` / `lunch` / `workout`. Shape + examples: `docs/07-contracts.md`. Persisted via existing Observation repository (no parallel store).
+- **Calendar events (P6-E3-T1):** same array body; `data_type: "calendar_event"` with `uid` / `start` / `end` (optional `all_day` / `busy`). Prefer the opt-in local ICS collector over manual POST for dogfood. Shape: `docs/07-contracts.md`.
 - **Persist:** duplicate PK при insert → явный `StorageError::DuplicateObservation` (log, **без overwrite**); HTTP `202` означает «принято в очередь», не «уже закоммичено в SQLite».
 - **Status:** Host wire shipped (**P2-E1-T4**): Desktop starts/stops ingest with the app.
 

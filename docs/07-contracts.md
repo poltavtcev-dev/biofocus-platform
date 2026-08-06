@@ -138,6 +138,42 @@ Life Events are **ordinary Observations** — not a parallel DB. Shared discrimi
 
 Validation: `bio_spec::validate_observation_payload` / `validate_life_event_payload`. Ingest rejects malformed Life Events with HTTP `400` + `{"error":"invalid_life_event"}` (batch not enqueued). Unknown payload keys are allowed (forward-compatible). Default remains local-only (no cloud Life Event sync).
 
+### `calendar_event` payload (local Calendar dogfood, P6-E3-T1)
+
+Calendar / meeting facts are **ordinary Observations** — same store as Life Events / collectors. No cloud OAuth (Google/Outlook). Dogfood source: opt-in local `.ics` file.
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | always `"calendar_event"` |
+| `provider_id` | `com.biofocus.macos.calendar` (local ICS plugin) |
+| `payload.uid` | stable local id (ICS `UID`) |
+| `payload.start` / `payload.end` | Unix seconds UTC; `end >= start` |
+| `payload.all_day` | optional bool |
+| `payload.busy` | optional bool (`false` when ICS `TRANSP:TRANSPARENT`) |
+
+**Privacy:** collectors must **not** put event titles, descriptions, locations, or attendees into the Observation payload. Pipeline normalize strips those keys if present. Logs must not print titles/bodies (channel-full logs use Observation `id` only).
+
+```json
+{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abe0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.calendar",
+  "data_type": "calendar_event",
+  "payload": {
+    "uid": "meet-standup@local",
+    "start": 1721990400,
+    "end": 1721994000,
+    "all_day": false,
+    "busy": true
+  },
+  "confidence": 1.0
+}
+```
+
+Enable: `BIOFOCUS_CALENDAR=1` and `BIOFOCUS_CALENDAR_ICS=/path/to/calendar.ics` (default **off**). Rare poll ≥60s; emits each `(uid,start,end)` once within a lookaround horizon (past 24h / future 48h).
+
+Validation: `bio_spec::validate_calendar_event_payload` (via `validate_observation_payload`). Ingest rejects malformed Calendar Events with HTTP `400` + `{"error":"invalid_calendar_event"}`.
+
 ## Companion → ingest (P2-E3-T1)
 
 Same Observation JSON; companion posts a **JSON array** to `POST /v1/ingest`.

@@ -4,6 +4,7 @@
 //! persist worker → Axum serve (default loopback; LAN opt-in via env) →
 //! active window collector (same `tx`).
 //! Opt-in input aggregates when `BIOFOCUS_INPUT_AGGREGATES=1`.
+//! Opt-in local Calendar (ICS) when `BIOFOCUS_CALENDAR=1` + `BIOFOCUS_CALENDAR_ICS`.
 //! Shutdown stops collectors, then accept loop, then joins the worker.
 
 use std::sync::Mutex;
@@ -11,7 +12,8 @@ use std::time::Duration;
 
 use ingest::{serve_with_shutdown, spawn_persist_worker, IngestConfig, IngestState};
 use macos_collector::{
-    input_aggregates_enabled, ActiveWindowPlugin, KeystrokeAggregatePlugin,
+    calendar_enabled, calendar_ics_path_from_env, input_aggregates_enabled, ActiveWindowPlugin,
+    CalendarPlugin, KeystrokeAggregatePlugin,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::{observation_channel, DEFAULT_OBSERVATION_BUFFER};
@@ -27,11 +29,22 @@ pub struct IngestHost {
     worker: Mutex<Option<std::thread::JoinHandle<()>>>,
     collector: Mutex<Option<Arc<ActiveWindowPlugin>>>,
     input_collector: Mutex<Option<Arc<KeystrokeAggregatePlugin>>>,
+    calendar_collector: Mutex<Option<Arc<CalendarPlugin>>>,
 }
 
 impl IngestHost {
     /// Signals graceful HTTP shutdown, waits briefly for the server task, joins worker.
     pub fn shutdown(&self) {
+        if let Ok(mut guard) = self.calendar_collector.lock() {
+            if let Some(plugin) = guard.take() {
+                match tauri::async_runtime::block_on(plugin.stop_stream()) {
+                    Ok(()) => info!("calendar collector stopped"),
+                    Err(plugin_sdk::PluginError::NotRunning) => {}
+                    Err(err) => warn!(error = %err, "calendar collector stop failed"),
+                }
+            }
+        }
+
         if let Ok(mut guard) = self.input_collector.lock() {
             if let Some(plugin) = guard.take() {
                 match tauri::async_runtime::block_on(plugin.stop_stream()) {
@@ -183,7 +196,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
 
     let input_collector = if input_aggregates_enabled() {
         let plugin = Arc::new(KeystrokeAggregatePlugin::system_default());
-        match tauri::async_runtime::block_on(plugin.start_stream(collector_tx)) {
+        match tauri::async_runtime::block_on(plugin.start_stream(collector_tx.clone())) {
             Ok(()) => {
                 info!(
                     plugin = plugin.id(),
@@ -204,12 +217,48 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         None
     };
 
+    let calendar_collector = if calendar_enabled() {
+        match calendar_ics_path_from_env() {
+            Some(path) => {
+                let plugin = Arc::new(CalendarPlugin::from_ics_path(path));
+                match tauri::async_runtime::block_on(plugin.start_stream(collector_tx)) {
+                    Ok(()) => {
+                        info!(
+                            plugin = plugin.id(),
+                            "calendar collector armed (opt-in local ICS; rare poll ≥60s)"
+                        );
+                        Some(plugin)
+                    }
+                    Err(err) => {
+                        warn!(error = %err, "calendar collector failed to start");
+                        None
+                    }
+                }
+            }
+            None => {
+                warn!(
+                    flag = macos_collector::CALENDAR_ENABLE_ENV,
+                    path_env = macos_collector::CALENDAR_ICS_ENV,
+                    "calendar collector enabled but ICS path missing; not started"
+                );
+                None
+            }
+        }
+    } else {
+        info!(
+            flag = macos_collector::CALENDAR_ENABLE_ENV,
+            "calendar collector off (set env=1 + BIOFOCUS_CALENDAR_ICS=/path.ics)"
+        );
+        None
+    };
+
     app.manage(IngestHost {
         shutdown_tx: Mutex::new(Some(shutdown_tx)),
         server_done: Mutex::new(Some(done_rx)),
         worker: Mutex::new(Some(worker)),
         collector: Mutex::new(Some(collector)),
         input_collector: Mutex::new(input_collector),
+        calendar_collector: Mutex::new(calendar_collector),
     });
 }
 

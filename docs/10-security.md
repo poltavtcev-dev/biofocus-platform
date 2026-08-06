@@ -49,5 +49,15 @@ Keystroke collector is **opt-in** (`BIOFOCUS_INPUT_AGGREGATES=1`, default off). 
 
 Grant Accessibility to the BioFocus app (System Settings → Privacy & Security → Accessibility) before enabling the flag if you want live aggregates.
 
+### Local Calendar / ICS (P6-E3-T1)
+Calendar collector is **opt-in** (`BIOFOCUS_CALENDAR=1`, default off) and reads a **local** `.ics` file (`BIOFOCUS_CALENDAR_ICS`). No Google/Outlook OAuth. Payload stores schedule metadata only (`uid`, `start`, `end`, `all_day`, `busy`) — **not** titles, descriptions, locations, or attendees. Logs on channel pressure use Observation `id` only.
+
+| Item | Value |
+| :--- | :--- |
+| Source | Local ICS file path |
+| Poll | Rare (≥60s); emit-once per `(uid,start,end)` |
+| Deny / missing path | Soft-fail: collector not started (warn log); no panic |
+| Disable | Unset env flags and restart Desktop |
+
 ### Optional local LLM reports (P4-E3-T2)
 Local LLM interpret is **opt-in** (`BIOFOCUS_LOCAL_LLM=1`, default off). When disabled, `report-engine` opens no sockets for LLM. When enabled, only `ReportDocument::llm_prompt` is POSTed to a user-configured OpenAI-compatible endpoint (default localhost Ollama). Not invoked on startup — explicit host call only. Prefer `127.0.0.1`; pointing the base URL off-machine is operator-controlled. See `docs/12-development.md`.

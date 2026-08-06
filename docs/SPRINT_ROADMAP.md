@@ -24,17 +24,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P6-E2-T1** |
+| **Ready** | **P6-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **P6-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **P6-E1-T1** · **P6-E2-T1** |
 
-**Epic status:** P6-E1 ✅ · P6-E2 ⬜ · P6-E3 ⬜
+**Epic status:** P6-E1 ✅ · P6-E2 ✅ · P6-E3 ⬜
 
 **Phase 6 on `/docs/14-roadmap.md`:** opened 2026-08-05
 
 **Рекомендуемый порядок:**  
-~~P6-E1-T1~~ → **P6-E2-T1** → P6-E3-T1 → P6-E3-T2
+~~P6-E1-T1~~ → ~~P6-E2-T1~~ → **P6-E3-T1** → P6-E3-T2
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -43,14 +43,16 @@
 
 ### Active assignment
 
-**Ready now:** **P6-E2-T1** — Desktop quick-log Life Events (UX + Dev).  
-Brief: `docs/handoffs/P6-E2-T1-pm-brief.md`.
+**Ready now:** **P6-E3-T1** — Calendar → Observations (dogfood source) (Dev).  
+Brief: `docs/handoffs/P6-E3-T1-pm-brief.md`.
+
+**Closed:** P6-E2-T1 (QA Pass with notes, 2026-08-05) — Desktop Menubar quick-log Life Events via IPC; Epic **P6-E2** ✅. Evidence: `docs/handoffs/P6-E2-T1-qa-to-pm.md`.
 
 **Closed:** P6-E1-T1 (QA Pass, 2026-08-05) — Life Events as Observation kinds + ADR-006; Epic **P6-E1** ✅. Evidence: `docs/handoffs/P6-E1-T1-qa-to-pm.md`.
 
 **Closed (Phase 5):** P5-E3-T2 (2026-08-05) — dogfood runbook + contract docs; Epic **P5-E3** ✅ · Phase 5 Kanban complete. Branch: `phase/5-wearable-dogfood`.
 
-**Ops note:** Phase 5 cluster PR on `phase/5-wearable-dogfood` remains optional parallel ops — does not block Phase 6 if `main` already has ingest + companion contracts. Phase 6 code cluster: fold ADR/contracts + Life Events validation into PR on `phase/6-life-context` when ready.
+**Ops note:** Phase 5 cluster PR on `phase/5-wearable-dogfood` remains optional parallel ops — does not block Phase 6 if `main` already has ingest + companion contracts. Phase 6 code cluster: fold ADR/contracts + Life Events validation + quick-log IPC into PR on `phase/6-life-context` when ready.
 
 ---
 
@@ -70,11 +72,11 @@ Brief: `docs/handoffs/P6-E2-T1-pm-brief.md`.
 
 ---
 
-## Epic P6-E2 — Manual Life Event capture
+## Epic P6-E2 — Manual Life Event capture ✅ Done
 
 **Цель:** Desktop UX to log a Life Event → Core as Observation (IPC only).
 
-### P6-E2-T1 — Desktop quick-log Life Events ✅ Ready
+### P6-E2-T1 — Desktop quick-log Life Events ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | UX + Dev |
@@ -82,6 +84,7 @@ Brief: `docs/handoffs/P6-E2-T1-pm-brief.md`.
 | **Depends on** | P6-E1-T1 |
 | **AC** | User can log a v1 Life Event from Desktop with calm copy; event becomes an Observation via IPC (UI ↛ SQLite); visible via existing status / Dashboard / storage path as appropriate; idle-safe (no busy-loop); smoke steps in handoff. |
 | **Out of scope** | Calendar import, wearable auto-detect of workouts, new Insight rules |
+| **Shipped** | Menubar Life events (Coffee / Walk / Lunch / Workout) + Recent; IPC `log_life_event` / `list_recent_life_events` → `bio_spec` + `ObservationRepository`; no poll for logging; QA Pass with notes 2026-08-05. Epic **P6-E2** closed. |
 
 ---
 
@@ -89,7 +92,7 @@ Brief: `docs/handoffs/P6-E2-T1-pm-brief.md`.
 
 **Цель:** Calendar-derived Observations feed `MeetingDensity` and `RecoveryBetweenMeetings` in Core.
 
-### P6-E3-T1 — Calendar → Observations (dogfood source)
+### P6-E3-T1 — Calendar → Observations (dogfood source) ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
@@ -194,8 +197,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 ## Sprint 11–12 — Queue
 
 1. ~~P6-E1-T1 — Life Events Observation kinds + ADR-006~~ **Done** (QA Pass) · Epic **P6-E1** ✅  
-2. **P6-E2-T1 — Desktop quick-log Life Events** ← **Ready**  
-3. P6-E3-T1 — Calendar → Observations (dogfood source)  
+2. ~~P6-E2-T1 — Desktop quick-log Life Events~~ **Done** (QA Pass with notes) · Epic **P6-E2** ✅  
+3. **P6-E3-T1 — Calendar → Observations (dogfood source)** ← **Ready**  
 4. P6-E3-T2 — MeetingDensity + RecoveryBetweenMeetings Features  
 
 **Git:** `phase/6-life-context` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship.

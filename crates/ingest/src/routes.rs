@@ -183,11 +183,13 @@ async fn post_ingest(
     for observation in &observations {
         if let Err(err) = validate_observation_payload(observation) {
             warn!(error = %err, data_type = %observation.data_type, "ingest rejected Observation payload");
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(error_body("invalid_life_event")),
-            )
-                .into_response();
+            let code = match &err {
+                bio_spec::SpecError::InvalidCalendarEventPayload { .. } => {
+                    "invalid_calendar_event"
+                }
+                _ => "invalid_life_event",
+            };
+            return (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response();
         }
     }
 

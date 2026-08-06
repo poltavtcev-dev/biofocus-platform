@@ -19,4 +19,8 @@ pub enum SpecError {
     /// Life Event Observation payload failed contract validation (ADR-006).
     #[error("invalid life event payload: {reason}")]
     InvalidLifeEventPayload { reason: String },
+
+    /// Calendar Event Observation payload failed contract validation (P6-E3-T1).
+    #[error("invalid calendar event payload: {reason}")]
+    InvalidCalendarEventPayload { reason: String },
 }
