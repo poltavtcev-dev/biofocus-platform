@@ -2,6 +2,10 @@
 
 > **Extending BioFocus** (where to add plugins, pipeline stages, Features, IPC): see root [`CONTRIBUTING.md`](../CONTRIBUTING.md). This file is local setup, commands, and git cadence.
 
+## Workspace location (macOS / iCloud)
+
+Prefer a **local** path outside iCloud Desktop/Documents (e.g. `~/Developer/AI Project/BioFocus`). iCloud “Optimize Mac Storage” can leave `dataless` stubs so `Cargo.toml` looks empty and `cargo` / `git` fail. Do not keep the active git worktree only on Desktop if Desktop syncs to iCloud.
+
 ## Prerequisites
 - Rust stable (edition 2024) — `rustup` / `rust-toolchain.toml`
 - Node.js >= 20.x, pnpm

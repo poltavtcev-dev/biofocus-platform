@@ -2,6 +2,12 @@
 
 Runnable Xcode app that posts one HealthKit heart-rate `Observation` to Desktop ingest — same HTTP contract as Rust `apps/companion`.
 
+## Signing (physical iPhone)
+
+Free **Personal Team** is enough for dogfood. Entitlements must be **HealthKit only** (`com.apple.developer.healthkit`) — do **not** enable Clinical / Verifiable Health Records (`healthkit.access`); Personal Teams cannot provision that.
+
+If Xcode still fails on the profile, set a unique Bundle Identifier, e.g. `com.<yourname>.biofocus.companion`.
+
 ## Open & run
 
 ```bash

@@ -197,7 +197,12 @@ mod macos_tap {
             user_info: *mut c_void,
         ) -> CFMachPortRef;
         fn CGEventTapEnable(tap: CFMachPortRef, enable: bool);
-        fn CGEventMaskBit(event_type: CGEventType) -> CGEventMask;
+    }
+
+    /// Apple `CGEventMaskBit` is a C macro (`1 << type`), not an exported symbol.
+    #[inline]
+    const fn cg_event_mask_bit(event_type: CGEventType) -> CGEventMask {
+        1u64 << event_type
     }
 
     #[link(name = "CoreFoundation", kind = "framework")]
@@ -280,7 +285,7 @@ mod macos_tap {
                 let raw = Arc::into_raw(counter);
                 // SAFETY: CoreGraphics / CoreFoundation FFI for listen-only key-down tap.
                 unsafe {
-                    let mask = CGEventMaskBit(K_CG_EVENT_KEY_DOWN);
+                    let mask = cg_event_mask_bit(K_CG_EVENT_KEY_DOWN);
                     let tap = CGEventTapCreate(
                         K_CG_HID_EVENT_TAP,
                         K_CG_HEAD_INSERT_EVENT_TAP,

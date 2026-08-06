@@ -23,7 +23,7 @@
 - [ ] **Phase 6: Life context (Sprint 11–12)** — **opened 2026-08-05**
   - Life Events as `Observation` kinds (ADR-006) — **P6-E1-T1 Done**.
   - Desktop quick-log — **P6-E2-T1 Done**.
-  - Calendar Observations — Ready **P6-E3-T1** → `MeetingDensity` / `RecoveryBetweenMeetings`.
+  - Calendar Observations — **P6-E3-T1 Done** (local ICS) → Ready **P6-E3-T2** `MeetingDensity` / `RecoveryBetweenMeetings`.
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
@@ -41,6 +41,6 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM ga
 **Phase 3:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` archive · handoffs `P3-*-qa-to-pm.md`  
 **Phase 4:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR when ready)  
 **Phase 5:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P5-*-qa-to-pm.md` · branch `phase/5-wearable-dogfood` (cluster PR when ready)  
-**Phase 6:** active — `docs/SPRINT_ROADMAP.md` · Ready **P6-E3-T1** · branch `phase/6-life-context`  
+**Phase 6:** active — `docs/SPRINT_ROADMAP.md` · Ready **P6-E3-T2** · branch `phase/6-life-context`
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → PR (classic); see `docs/12-development.md`.
