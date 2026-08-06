@@ -6,14 +6,15 @@ name: CI
 # - apps/desktop → desktop (macos); on push to main, any code change also runs desktop (merge gate)
 # - workflow_dispatch → full suite
 #
-# Workflow still starts on every PR/push to main so required checks are not stuck
-# "Expected" when only docs change (aggregate job reports success).
+# TEMP (billing / spending limit exhausted, 2026-08-06): auto triggers OFF.
+# Only manual "Run workflow" — restore `push` + `pull_request` when Actions minutes reset.
+# Until then: local cargo/pnpm = gate; agents may push related clusters straight to main.
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+  # push:
+  #   branches: [main, master]
+  # pull_request:
+  #   branches: [main, master]
   workflow_dispatch:
 
 concurrency:

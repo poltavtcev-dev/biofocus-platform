@@ -4,8 +4,10 @@ alwaysApply: true
 ---
 # Git policy (agents)
 
-**Classic flow:** related tasks share a branch → few meaningful commits → **one PR when the code cluster is ready**.  
-Never push directly to `main`. Prefer **squash merge** so `main` stays readable.
+**Classic flow:** related tasks share a branch → few meaningful commits → **one PR when the code cluster is ready**. 
+Never push directly to `main` (**except TEMP** below). Prefer **squash merge** so `main` stays readable.
+
+**TEMP (Actions billing limit, see `docs/12-development.md` § CI):** auto CI off (`workflow_dispatch` only). After local tests pass, agents **may push related clusters straight to `main`** — no PR. Revert to classic PR flow when Actions minutes return and `ci.yml` triggers are restored.
 
 ## Branch
 

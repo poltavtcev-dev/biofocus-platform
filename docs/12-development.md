@@ -186,23 +186,28 @@ GitHub Actions (no CD): `.github/workflows/ci.yml`
 
 - **rust-core:** `cargo check --workspace --exclude desktop`, `cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p feature-engine -p plugin-sdk -p macos-collector -p companion`
 - **desktop:** `cargo test -p desktop`, `pnpm install` + `pnpm build`, UI↛DB boundary grep
-- **Manual full suite:** Actions → CI → **Run workflow** (`workflow_dispatch`)
-- **Local before PR** (when skipping macOS on a crates-only PR): `cargo test -p desktop` + `pnpm build` on a Mac if you touched IPC / Tauri surface
+- **Manual full suite:** Actions → CI → **Run workflow** (`workflow_dispatch`) — only while auto-CI is off, or anytime for a full check
+- **Local before ship** (required while Actions auto-run is off): `cargo test` on touched crates; if IPC/Tauri/`apps/desktop` touched → `cargo test -p desktop` + `pnpm build`
 
-Triggers: push/PR to `main` or `master`, plus `workflow_dispatch`. Docs / handoffs / `.cursor` alone do **not** start rust or desktop jobs.
+### TEMP — Actions auto-run OFF (billing limit, 2026-08-06)
+
+`push` / `pull_request` triggers are **commented out** in `ci.yml`. Workflow starts only via **Run workflow**.  
+Until minutes reset: **local tests = gate**; agents may **commit + push straight to `main`** (no PR). When limit returns: restore triggers in `ci.yml` and resume classic PR flow below.
 
 ## Git workflow (related work → PR)
 
-**Не пушить напрямую в `main`.** Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
+**Default (when Actions minutes available):** не пушить напрямую в `main`. Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
 
-Классика: **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
+**TEMP override (Actions off):** related code cluster → local verify → commit on `main` (or short-lived branch fast-forwarded) → `git push origin main`. No PR required.
+
+Классика (после возврата лимита): **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
 Не коммит/PR на каждый handoff. **Docs / roadmap / canvas** — отдельно позже или в следующий code PR.
 
 | Уровень | Правило |
 | :--- | :--- |
-| **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. |
+| **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. TEMP: можно работать на `main`. |
 | **Commit** | Когда код-единица готова (batch Task IDs ок). Handoffs на диске — не триггерят PR. |
-| **Push / PR** | Только substantive code vs `main` **и** (кластер готов **или** явный «PR»). Один PR на ветку. Squash preferred. |
+| **Push / PR** | Default: substantive code + (кластер готов \| явный «PR»). **TEMP:** push to `main` after local green. |
 | **Не PR** | handoffs-only, roadmap/canvas-only, второй PR на тот же tip. |
 | **Спринт** | Лучше мало содержательных PR, чем много пустых. |
 

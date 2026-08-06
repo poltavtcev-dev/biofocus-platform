@@ -21,6 +21,6 @@ Handoffs: `docs/handoffs/`.
 
 С Phase 2+: ветка под **код-кластер** (`phase/…`, `epic/…`, `feat/…`).  
 - **Commit** — когда код-единица готова (batch Task ID ок); handoffs на диске, не обязательный коммит/PR на каждый шаг.  
-- **Push + PR → `main`** — только substantive code + (кластер готов **или** явный «PR»); один PR на ветку; squash.  
-- **Не PR** для handoffs / roadmap / canvas alone — docs можно обновить отдельно позже.  
-Прямой push в `main` запрещён. Детали: `docs/12-development.md`, `.cursor/rules/06-git-agent-policy.mdc`.
+- **Push + PR → `main`** — только substantive code + (кластер готов **или** явный «PR»); один PR на ветку; squash. 
+- **Не PR** для handoffs / roadmap / canvas alone — docs можно обновить отдельно позже. 
+Прямой push в `main` запрещён **кроме TEMP** (Actions billing off — см. `docs/12-development.md` § CI): тогда local tests → push в `main` без PR. Детали: `.cursor/rules/06-git-agent-policy.mdc`.
