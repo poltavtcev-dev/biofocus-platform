@@ -1,11 +1,11 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 6: Life context** (Sprint 11–12) — **Opened** 2026-08-05.  
-> Phase 1–5 Done. Goal: **Life Events** as `Observation` kinds + **Calendar** → meeting-density Features — no parallel Life Events DB, no cloud.
+> **Phase 7: Trust layer** (Sprint 13–14) — **Opened** 2026-08-06.  
+> Phase 0–6 Done. Goal: **Feature confidence** + **Explanation factors** + a few bio-backed catalog Features — calm, evidence-first Trust layer. No parallel registries; no clinical claims.
 
-**Phase 6 goal:** Dogfood-ready life context: user can log Life Events (Coffee / Walk / Lunch / Workout, …) as Observations; Calendar-derived Observations feed `MeetingDensity` / `RecoveryBetweenMeetings`. Calm, non-clinical copy. No new SQLite tables without ADR + approve.
+**Phase 7 goal:** Features carry trustworthy confidence (and later factor breakdowns) so Dashboard / Insights can down-weight thin data; extend catalog only where Observation inputs already exist. No new SQLite tables without ADR + approve.
 
-**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 analysis stack · horizon P7–P12+ — `/docs/00-vision.md`. **Do not** pull P7+ Features/plugins into this Kanban until PM opens that phase.
+**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 analysis stack · horizon P8–P12+ — `/docs/00-vision.md`. **Do not** pull P8+ into this Kanban until PM opens that phase.
 
 **Global DoD (каждая задача):**
 - [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight`)
@@ -20,98 +20,96 @@
 
 ---
 
-## Kanban Overview (Phase 6 active)
+## Kanban Overview (Phase 7 active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P6-E3-T2** |
+| **Ready** | **P7-E1-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **P6-E1-T1** · **P6-E2-T1** · **P6-E3-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) |
 
-**Epic status:** P6-E1 ✅ · P6-E2 ✅ · P6-E3 ⬜ (T1 Done · T2 Ready)
+**Epic status:** P7-E1 ⬜ (T1 Ready) · P7-E2 ⬜ · P7-E3 ⬜
 
-**Phase 6 on `/docs/14-roadmap.md`:** opened 2026-08-05
+**Phase 7 on `/docs/14-roadmap.md`:** opened 2026-08-06
 
 **Рекомендуемый порядок:**  
-~~P6-E1-T1~~ → ~~P6-E2-T1~~ → ~~P6-E3-T1~~ → **P6-E3-T2**
+**P7-E1-T1** → P7-E2-T1 → P7-E3-T1
 
-**Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Desktop-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
+**Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
-**Suggested branch:** `phase/6-life-context` (base on latest `main`; Phase 5 cluster PR may land separately on `phase/5-wearable-dogfood`).
+**Suggested branch:** `phase/7-trust-layer` (base on latest `main` after Phase 6 cluster lands, or continue from `phase/6-dogfood-fixes` tip if still open).
 
 ### Active assignment
 
-**Ready now:** **P6-E3-T2** — MeetingDensity + RecoveryBetweenMeetings Features (Dev).  
-Brief: `docs/handoffs/P6-E3-T2-pm-brief.md`.
+**Ready now:** **P7-E1-T1** — Feature confidence contract + ADR + Core/snapshot wire (Dev).  
+Brief: `docs/handoffs/P7-E1-T1-pm-brief.md`.
 
-**Closed:** P6-E3-T1 (QA Pass with notes, 2026-08-06) — opt-in local ICS → `calendar_event` Observations; privacy (no titles/bodies); idle-safe poll. Evidence: `docs/handoffs/P6-E3-T1-qa-to-pm.md`.
+**Closed (Phase 6):** P6-E3-T2 (QA Pass, 2026-08-06) — `MeetingDensity` + `RecoveryBetweenMeetings`; Epic **P6-E3** ✅ · Phase 6 Kanban complete. Evidence: `docs/handoffs/P6-E3-T2-qa-to-pm.md`. Branch tip: `phase/6-dogfood-fixes`.
 
-**Closed:** P6-E2-T1 (QA Pass with notes, 2026-08-05) — Desktop Menubar quick-log Life Events via IPC; Epic **P6-E2** ✅. Evidence: `docs/handoffs/P6-E2-T1-qa-to-pm.md`.
-
-**Closed:** P6-E1-T1 (QA Pass, 2026-08-05) — Life Events as Observation kinds + ADR-006; Epic **P6-E1** ✅. Evidence: `docs/handoffs/P6-E1-T1-qa-to-pm.md`.
-
-**Closed (Phase 5):** P5-E3-T2 (2026-08-05) — dogfood runbook + contract docs; Epic **P5-E3** ✅ · Phase 5 Kanban complete. Branch: `phase/5-wearable-dogfood`.
-
-**Ops note:** Phase 5 cluster PR on `phase/5-wearable-dogfood` remains optional parallel ops — does not block Phase 6 if `main` already has ingest + companion contracts. Phase 6 code cluster: fold ADR/contracts + Life Events validation + quick-log IPC into PR on `phase/6-life-context` when ready.
+**Ops note:** Phase 6 cluster PR on `phase/6-dogfood-fixes` (or life-context tip) when ready to ship — does not block starting P7 design/code on a follow-up branch. Phase 4/5 cluster PRs remain optional parallel ops.
 
 ---
 
-## Epic P6-E1 — Life Events Observation contract ✅ Done
+## Epic P7-E1 — Feature confidence
 
-**Цель:** Life Events (Coffee, Walk, Lunch, Workout, …) as first-class `Observation` kinds — `data_type` + payload — not a parallel DB. ADR + contracts + ingest accept path.
+**Цель:** Feature-level confidence (0–1) derived from input coverage / Observation confidence — not a parallel registry. ADR if domain/IPC shape grows; wire into `Feature` + snapshot consumers.
 
-### P6-E1-T1 — Life Events Observation kinds + ADR-006 ✅ Done
+### P7-E1-T1 — Feature confidence contract + ADR + wire ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/bio-spec` (and/or ingest validation), `docs/07-contracts.md`, `docs/09-api.md`, `docs/decision-log.md`, glossary/catalog notes as needed |
-| **Depends on** | Phase 2 Observation ingest; vision §4 rule 6 |
-| **AC** | (1) Record **ADR-006**: Life Events as Observation kinds (not a parallel table/store); list v1 kinds (at least Coffee / Walk / Lunch / Workout — exact `data_type` / payload shape documented). (2) Contracts (`07-contracts` / `09-api`) document the JSON shape + examples. (3) Ingest (or bio-spec validation) **accepts** valid Life Event Observations and rejects malformed ones with explicit errors (no `unwrap` in production). (4) Round-trip test: ingest → storage read (existing Observation repository) for ≥1 Life Event kind. (5) No new SQLite schema unless ADR + user approve (prefer existing Observation store). (6) Idle-safe. (7) Handoff: `docs/handoffs/P6-E1-T1-dev-to-qa.md`. |
-| **Out of scope** | Desktop quick-log UI (→ **E2-T1**), Calendar sync (→ **E3**), `MeetingDensity` Feature compute, ActivityBalance Feature |
-| **Shipped** | ADR-006; `bio-spec` `validate_*` + v1 kinds `coffee`/`walk`/`lunch`/`workout`; ingest `400 invalid_life_event`; round-trip via `ObservationRepository`; contracts/API/glossary; QA Pass 2026-08-05. Epic **P6-E1** closed. |
+| **Modules** | `crates/bio-spec`, `crates/feature-engine`, `docs/decision-log.md`, `docs/02-domain-model.md`, `docs/07-contracts.md` / `docs/09-api.md` as needed |
+| **Depends on** | Phase 6 Done (real Features + calendar/bio Observations); vision Trust layer |
+| **AC** | (1) Record **ADR-007**: Feature-level confidence (vs Observation.confidence only); v1 formula strategy documented (coverage / mean Observation confidence / missing-input policy — exact rule in ADR + catalog note). (2) Domain + contracts: `Feature` (and snapshot IPC JSON) expose confidence in `[0.0, 1.0]` without breaking Ubiquitous Language; no new SQLite schema unless ADR + user approve. (3) At least Focus/Stress (or catalog_v1 path) **compute** confidence; empty/thin windows → low or omitted per ADR (explicit, tested). (4) Unit tests: full inputs → high confidence; missing HRV/context → lower; idle-safe. (5) Docs: domain model + catalog rule updated. (6) Handoff: `docs/handoffs/P7-E1-T1-dev-to-qa.md`. |
+| **Out of scope** | Explanation factor breakdown (→ **E2-T1**), new bio Features (→ **E3**), Pattern Discovery, Dashboard redesign, Action/automation framework |
 
 ---
 
-## Epic P6-E2 — Manual Life Event capture ✅ Done
+## Epic P7-E2 — Explanation factors
 
-**Цель:** Desktop UX to log a Life Event → Core as Observation (IPC only).
+**Цель:** Calm “why this value” factor breakdown on Features (weights / contributions) — builds on provenance + confidence; no clinical tone.
 
-### P6-E2-T1 — Desktop quick-log Life Events ✅ Done
+### P7-E2-T1 — Explanation factors on Features
 | Field | Value |
 | :--- | :--- |
-| **Role** | UX + Dev |
-| **Modules** | `apps/desktop` (+ IPC / host glue), Core path that creates Observation |
-| **Depends on** | P6-E1-T1 |
-| **AC** | User can log a v1 Life Event from Desktop with calm copy; event becomes an Observation via IPC (UI ↛ SQLite); visible via existing status / Dashboard / storage path as appropriate; idle-safe (no busy-loop); smoke steps in handoff. |
-| **Out of scope** | Calendar import, wearable auto-detect of workouts, new Insight rules |
-| **Shipped** | Menubar Life events (Coffee / Walk / Lunch / Workout) + Recent; IPC `log_life_event` / `list_recent_life_events` → `bio_spec` + `ObservationRepository`; no poll for logging; QA Pass with notes 2026-08-05. Epic **P6-E2** closed. |
+| **Role** | Dev |
+| **Modules** | `crates/feature-engine`, contracts / API docs, optional Dashboard read-only display later |
+| **Depends on** | P7-E1-T1 |
+| **AC** | Documented factor shape; ≥1 catalog Feature emits factors; tests; idle-safe; calm naming. Handoff required. |
+| **Out of scope** | LLM-generated explanations; Pattern Discovery; new SQLite history store |
 
 ---
 
-## Epic P6-E3 — Calendar → Meeting Features
+## Epic P7-E3 — Bio-backed catalog Features
 
-**Цель:** Calendar-derived Observations feed `MeetingDensity` and `RecoveryBetweenMeetings` in Core.
+**Цель:** Ship a small set of catalog Features that already have Observation inputs (e.g. `RecoveryScore` / `DeepWorkScore` / `AttentionStability`) with confidence (and factors if E2 Done).
 
-### P6-E3-T1 — Calendar → Observations (dogfood source) ✅ Done
+### P7-E3-T1 — First bio-backed Trust Features
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | collector / host plugin path, contracts docs |
-| **Depends on** | P6-E1-T1 (Observation contract discipline); E2 helpful but not required |
-| **AC** | Opt-in local Calendar source produces Calendar/meeting Observations (shape documented); no cloud calendar sync required for dogfood; idle-safe polling or event-driven refresh; privacy: no event titles/bodies leaked to logs beyond what’s needed; tests with fixtures. Handoff with operator smoke notes. |
-| **Out of scope** | Google/Outlook cloud OAuth, MeetingDensity formula (→ **T2**), Life Event UI |
-| **Shipped** | Opt-in `CalendarPlugin` + local ICS (`BIOFOCUS_CALENDAR` / `BIOFOCUS_CALENDAR_ICS`); `calendar_event` Observations (uid/start/end/busy; no title/body); rare poll ≥60s + stop join; fixtures → SQLite; QA Pass with notes 2026-08-06. |
+| **Modules** | `crates/feature-engine`, `docs/06-feature-catalog.md` |
+| **Depends on** | P7-E1-T1 (confidence); E2 helpful |
+| **AC** | ≥1 Feature moved from planned backlog → §1 with formula/units/deps/provenance (+ confidence); unit tests with synthetic Observations; register in catalog_v1; calm non-clinical copy. |
+| **Out of scope** | CognitiveLoad (needs richer schedule+notify), SleepDebt without sleep Observations, CircadianOffset (P8) |
 
-### P6-E3-T2 — MeetingDensity + RecoveryBetweenMeetings Features ✅ Ready
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `crates/feature-engine`, `docs/06-feature-catalog.md`, snapshot IPC consumers as needed |
-| **Depends on** | P6-E3-T1 |
-| **AC** | `MeetingDensity` and `RecoveryBetweenMeetings` registered + computed from Calendar Observations; catalog docs (formula / units / deps / provenance); unit tests with synthetic calendar Observations; idle-safe; calm naming (no clinical claims). Handoff: `docs/handoffs/P6-E3-T2-dev-to-qa.md`. |
-| **Out of scope** | Feature-level confidence / explanation factors (→ Phase 7), CognitiveLoad, Pattern Discovery |
+---
+
+## Phase 6 archive (Done)
+
+<details>
+<summary>Phase 6 Kanban & epics (closed 2026-08-06 — E1–E3)</summary>
+
+**Done:** P6-E1 (T1) · P6-E2 (T1) · P6-E3 (T1–T2).  
+Life Events ADR-006 + quick-log → Calendar ICS Observations → `MeetingDensity` / `RecoveryBetweenMeetings`.
+
+Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes` (cluster PR when ready).
+
+**P6-E3-T2 shipped:** `MeetingDensityNode` / `RecoveryBetweenMeetingsNode`; `register_calendar_v1` in `register_catalog_v1`; catalog §1.5 / §1.6; QA Pass 2026-08-06.
+
+</details>
 
 ---
 
@@ -184,24 +182,22 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ---
 
-## Role × Module Matrix (Phase 6)
+## Role × Module Matrix (Phase 7)
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P6-E1-T1 Life Events kinds + ADR | | ● | ○ | | bio-spec / ingest + docs |
-| P6-E2-T1 Desktop quick-log | ○ | ○ | ○ | ● | apps/desktop |
-| P6-E3-T1 Calendar → Observations | | ● | ○ | | collector / host |
-| P6-E3-T2 MeetingDensity Features | | ● | ○ | | feature-engine |
+| P7-E1-T1 Feature confidence + ADR | | ● | ○ | | bio-spec / feature-engine + docs |
+| P7-E2-T1 Explanation factors | | ● | ○ | | feature-engine + contracts |
+| P7-E3-T1 Bio-backed catalog Features | | ● | ○ | | feature-engine + catalog |
 
 ● = owner · ○ = collaborator
 
 ---
 
-## Sprint 11–12 — Queue
+## Sprint 13–14 — Queue
 
-1. ~~P6-E1-T1 — Life Events Observation kinds + ADR-006~~ **Done** (QA Pass) · Epic **P6-E1** ✅  
-2. ~~P6-E2-T1 — Desktop quick-log Life Events~~ **Done** (QA Pass with notes) · Epic **P6-E2** ✅  
-3. ~~P6-E3-T1 — Calendar → Observations (dogfood source)~~ **Done** (QA Pass with notes)  
-4. **P6-E3-T2 — MeetingDensity + RecoveryBetweenMeetings Features** ← **Ready**  
+1. **P7-E1-T1 — Feature confidence contract + ADR + wire** ← **Ready**  
+2. P7-E2-T1 — Explanation factors on Features  
+3. P7-E3-T1 — First bio-backed Trust Features  
 
-**Git:** `phase/6-life-context` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship.
+**Git:** `phase/7-trust-layer` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship. Phase 6 tip: fold T2 + dogfood fixes into cluster PR when shipping.

@@ -43,14 +43,32 @@
 - **Provenance:** keystrokes / HR / context Observation IDs in window.
 - **DAG:** зависит от `FocusScore`; `register_stress_v1` (after `register_focus_v1`) or `register_catalog_v1`.
 
+### 1.5 `MeetingDensity`
+- **Goal:** Доля окна, занятая busy-встречами (спокойная метрика нагрузки расписания; не клинический диагноз).
+- **Window:** 15 минут (sliding window, шаг 1 мин) — как у Focus/Stress.
+- **Inputs:** `calendar_event` Observations (`uid` / `start` / `end`; optional `busy` / `all_day`). Titles не требуются.
+- **Formula Strategy (v1):** Timed events with `busy != false` (missing `busy` ⇒ busy); `all_day == true` skipped. Merge overlapping busy intervals clipped to the window; value = `merged_overlap_secs / 900`, clamped to `[0.0, 1.0]`. Malformed payloads skipped (partial calendars OK).
+- **Output:** Float (0.0 — 1.0), fraction of window booked.
+- **Units:** dimensionless fraction (1.0 = fully booked).
+- **Provenance:** Observation IDs of busy meetings overlapping the window.
+- **DAG:** независимый узел; `feature_engine::register_calendar_v1` / `register_catalog_v1`.
+
+### 1.6 `RecoveryBetweenMeetings`
+- **Goal:** Средний свободный промежуток между consecutive busy-встречами (качество пауз в расписании; не физиологический recovery score).
+- **Window:** 15 минут (sliding window, шаг 1 мин) — как у Focus/Stress.
+- **Inputs:** те же busy `calendar_event` meetings, что и у `MeetingDensity`.
+- **Formula Strategy (v1):** Sort busy meetings by `start`; gap = `(prev.end → next.start)` when positive. Mean gap length in **minutes** for gaps that intersect the Feature window. Back-to-back / overlapping → no gap. No intersecting gaps → Feature for that step is not emitted.
+- **Output:** Float (≥ 0.0), mean gap minutes.
+- **Units:** minutes.
+- **Provenance:** Observation IDs of meetings bounding counted gaps.
+- **DAG:** независимый узел (не зависит от `MeetingDensity`); `register_calendar_v1` / `register_catalog_v1`.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `MeetingDensity` | Meeting load in window | `calendar_event` Observations (P6-E3-T1) | P6 |
-| `RecoveryBetweenMeetings` | Gap quality between meetings | `calendar_event` Observations | P6 |
 | `RecoveryScore` | Short-term physiological recovery | HRV / sleep / HR | P7 |
 | `EnergyScore` | Subjective energy proxy from bio + activity | HR, activity, sleep | P7 |
 | `DeepWorkScore` | Sustained focus windows | FocusScore, CSR, idle | P7 |
