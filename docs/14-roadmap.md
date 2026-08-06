@@ -20,16 +20,18 @@
   - Opt-in **LAN-reachable ingest** + URL advertise — **P5-E1 Done** (T1 ADR-005 · T2 `bind_mode` / `base_url_hints`).
   - Pairing UX exposes LAN base URL for physical phone — **P5-E2 Done** (Companion Base URL + token/QR).
   - Runnable **iOS HealthKit companion** → `Observation` → Desktop ingest + dogfood runbook — **P5-E3 Done**.
-- [ ] **Phase 6: Life context (Sprint 11–12)** — **opened 2026-08-05**
-  - Life Events as `Observation` kinds (ADR-006) — **P6-E1-T1 Done**.
-  - Desktop quick-log — **P6-E2-T1 Done**.
-  - Calendar Observations — **P6-E3-T1 Done** (local ICS) → Ready **P6-E3-T2** `MeetingDensity` / `RecoveryBetweenMeetings`.
+- [x] **Phase 6: Life context (Sprint 11–12)** — closed 2026-08-06 (E1–E3 Done; cluster PR pending)
+  - Life Events as `Observation` kinds (ADR-006) — **P6-E1 Done**.
+  - Desktop quick-log — **P6-E2 Done**.
+  - Calendar Observations + `MeetingDensity` / `RecoveryBetweenMeetings` — **P6-E3 Done**.
+- [ ] **Phase 7: Trust layer (Sprint 13–14)** — **opened 2026-08-06**
+  - Feature confidence (ADR-007) + Core/snapshot wire — Ready **P7-E1-T1**.
+  - Explanation factors → bio-backed catalog Features (E2–E3).
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
 Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM gate only.
 
-- [ ] **Phase 7: Trust layer** — Feature confidence + Explanation factors + few bio-backed catalog Features
 - [ ] **Phase 8: Pattern Discovery v1** — multi-day / baseline Knowledge (ADR: recompute vs Feature history)
 - [ ] **Phase 9: Recommendations** — deterministic action suggestions with Evidence
 - [ ] **Phase 10: Plugin wave-1** — IDE/Git or Browser categories (dogfood-driven)
@@ -41,6 +43,7 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM ga
 **Phase 3:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` archive · handoffs `P3-*-qa-to-pm.md`  
 **Phase 4:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR when ready)  
 **Phase 5:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P5-*-qa-to-pm.md` · branch `phase/5-wearable-dogfood` (cluster PR when ready)  
-**Phase 6:** active — `docs/SPRINT_ROADMAP.md` · Ready **P6-E3-T2** · branch `phase/6-life-context`
+**Phase 6:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P6-*-qa-to-pm.md` · tip `phase/6-dogfood-fixes` (cluster PR when ready)  
+**Phase 7:** active — `docs/SPRINT_ROADMAP.md` · Ready **P7-E1-T1** · branch `phase/7-trust-layer`  
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → PR (classic); see `docs/12-development.md`.

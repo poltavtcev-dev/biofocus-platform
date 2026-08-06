@@ -9,8 +9,9 @@
 - **Phase 3:** **Done** (2026-08-05) — Pipeline & Features; E1–E3 (quality pipeline → Feature DAG → Menubar AlertLevel). Branch cluster: `phase/3-pipeline-features` / follow-ups.
 - **Phase 4:** **Done** (2026-08-05) — Dashboard UI & Local AI Insights; E1–E3 (Feature IPC + Recharts · Knowledge Insights · report-engine + optional local LLM + Dashboard `generate_report`). Branch cluster: `phase/4-dashboard-ai` (PR pending).
 - **Phase 5:** **Done** (2026-08-05) — Wearable dogfood; E1–E3 (opt-in LAN ADR-005 + advertise hints + Companion LAN Base URL / token/QR + runnable iOS HealthKit companion + dogfood runbook). Branch cluster: `phase/5-wearable-dogfood` (PR pending).
-- **Phase 6:** **Active** (2026-08-05) — Life context: Life Events as `Observation` kinds (ADR-006) → Desktop quick-log → Calendar → `MeetingDensity` / `RecoveryBetweenMeetings`. **P6-E1-T1** + **P6-E2-T1** + **P6-E3-T1 Done** (Epics E1–E2 ✅; E3 T1 Done); Ready: **P6-E3-T2**. Branch: `phase/6-life-context`. Git = classic related-work PRs (`docs/12-development.md`).
-- **Horizon P7–P12+:** accepted in `/docs/00-vision.md` (Trust → Pattern Discovery → Recs → plugins → AI polish → packaging). Not Kanban-Ready until PM opens each phase.
+- **Phase 6:** **Done** (2026-08-06) — Life context; E1–E3 (Life Events ADR-006 + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`). Branch tip: `phase/6-dogfood-fixes` (cluster PR when ready).
+- **Phase 7:** **Active** (2026-08-06) — Trust layer: Feature confidence (ADR-007) → Explanation factors → bio-backed catalog Features. Ready: **P7-E1-T1**. Branch: `phase/7-trust-layer`. Git = classic related-work PRs (`docs/12-development.md`).
+- **Horizon P8–P12+:** accepted in `/docs/00-vision.md` (Pattern Discovery → Recs → plugins → AI polish → packaging). Not Kanban-Ready until PM opens each phase.
 
 ## Core Decisions
 - Local First Architecture

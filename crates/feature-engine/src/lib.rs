@@ -1,14 +1,16 @@
-//! Feature calculation engine (FocusScore, StressIndex, FatigueIndex).
+//! Feature calculation engine (FocusScore, StressIndex, FatigueIndex, MeetingDensity).
 //!
 //! Phase 3 (P3-E2 / E3): DAG scheduler + catalog v1 nodes + alert mapping.
 //! Phase 4 (P4-E1-T1): [`FeatureSnapshot`] for dashboard / IPC (cached read).
+//! Phase 6 (P6-E3-T2): Calendar Features from `calendar_event` Observations.
 //!
 //! # Entrypoint
 //!
 //! - [`FeatureEngine::register`] — add a [`FeatureNode`]
 //! - [`catalog::register_focus_v1`] — `ContextSwitchRate` + `FocusScore` (v1)
 //! - [`catalog::register_stress_v1`] — `StressIndex` + `FatigueIndex` (v1; needs Focus)
-//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue together
+//! - [`catalog::register_calendar_v1`] — `MeetingDensity` + `RecoveryBetweenMeetings` (v1)
+//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar together
 //! - [`FeatureEngine::run`] — topo compute → [`EngineOutput`]
 //! - [`FeatureSnapshot::from_engine_output`] — Features + Signals for IPC/dashboard
 //! - [`map_alert_level`] — [`EngineOutput`] → [`AlertLevel`] { Green, Yellow, Red }
@@ -30,10 +32,11 @@ pub use alert::{map_alert_level, AlertLevel, YELLOW_FEATURE_THRESHOLD};
 pub use bio_spec::{Feature, FeatureValue, Observation, Signal};
 
 pub use catalog::{
-    register_catalog_v1, register_focus_v1, register_stress_v1, ContextSwitchRateNode,
-    FatigueIndexNode, FocusScoreNode, StressIndexNode, CONTEXT_SWITCH_RATE_ID, FATIGUE_INDEX_ID,
+    register_calendar_v1, register_catalog_v1, register_focus_v1, register_stress_v1,
+    ContextSwitchRateNode, FatigueIndexNode, FocusScoreNode, MeetingDensityNode,
+    RecoveryBetweenMeetingsNode, StressIndexNode, CONTEXT_SWITCH_RATE_ID, FATIGUE_INDEX_ID,
     FOCUS_SCORE_ID, HIGH_STRESS_MIN_DURATION_SECS, HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD,
-    STEP_SECS, STRESS_INDEX_ID, WINDOW_SECS,
+    MEETING_DENSITY_ID, RECOVERY_BETWEEN_MEETINGS_ID, STEP_SECS, STRESS_INDEX_ID, WINDOW_SECS,
 };
 pub use engine::{EngineOutput, FeatureEngine};
 pub use error::{FeatureEngineError, FeatureEngineResult};

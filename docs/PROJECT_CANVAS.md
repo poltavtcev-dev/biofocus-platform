@@ -38,7 +38,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Shipped:** opt-in LAN bind (ADR-005) + advertise hints + Companion Base URL / token/QR + runnable **iOS HealthKit** companion posts HR `Observation`s to Desktop ingest (Simulator loopback or physical phone on LAN).
 - **Dogfood:** end-to-end operator runbook in `docs/12-development.md` § Wearable dogfood runbook. Companion READMEs mirror the same steps.
 - Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
-- **Phase 6 (active):** Life Events as `Observation` kinds (ADR-006) + Desktop quick-log (**P6-E1/E2 Done**) + Calendar → Observations (**P6-E3-T1 Done**, local ICS) → meeting-density Features (**P6-E3-T2** Ready). Wearable dogfood verified on device: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health). Later: more HealthKit types; plugins (IDE/Git/Browser).
+- **Phase 6 (Done):** Life Events (ADR-006) + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`. Wearable dogfood verified: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health).
+- **Phase 7 (active):** Trust layer — Feature confidence (**P7-E1-T1** Ready) → Explanation factors → bio-backed catalog Features. Later: more HealthKit types; plugins (IDE/Git/Browser).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 
 Dogfood tip: if `base_url_hints` is empty under `BIOFOCUS_INGEST_LAN=1`, set `BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>` before pairing.
@@ -109,13 +110,13 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 6** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
+Immediate Kanban = **Phase 7** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
 
 | Phase | Focus |
 | :--- | :--- |
 | **5** | Wearable dogfood (LAN → HealthKit) — **done** |
-| **6** | Life Events v1 + Calendar — **active** (Ready **P6-E3-T2**) |
-| **7** | Feature confidence + Explanation factors |
+| **6** | Life Events v1 + Calendar Features — **done** |
+| **7** | Feature confidence + Explanation factors — **active** (Ready **P7-E1-T1**) |
 | **8** | Pattern Discovery v1 (ADR for history/recompute) |
 | **9** | Deterministic Recommendations |
 | **10** | Plugin wave-1 (IDE/Git or Browser) |
