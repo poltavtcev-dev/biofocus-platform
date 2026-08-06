@@ -20,6 +20,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# paths-filter lists PR files via GitHub API → needs pull-requests: read
+permissions:
+  contents: read
+  pull-requests: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -145,9 +150,14 @@ jobs:
     steps:
       - name: Aggregate job results
         run: |
+          detect="${{ needs.changes.result }}"
           rust="${{ needs.rust-core.result }}"
           desk="${{ needs.desktop.result }}"
-          echo "rust-core=$rust desktop=$desk"
+          echo "detect=$detect rust-core=$rust desktop=$desk"
+          if [ "$detect" != "success" ]; then
+            echo "::error::CI failed (detect paths=$detect)"
+            exit 1
+          fi
           for r in "$rust" "$desk"; do
             case "$r" in
               success|skipped) ;;
