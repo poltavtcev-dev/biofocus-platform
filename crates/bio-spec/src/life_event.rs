@@ -38,10 +38,14 @@ pub fn is_v1_life_event_kind(kind: &str) -> bool {
 /// Validates ingest-time payload rules for an Observation.
 ///
 /// - `data_type == "life_event"` → [`validate_life_event_payload`]
+/// - `data_type == "calendar_event"` → [`crate::validate_calendar_event_payload`]
 /// - other types → accepted (no extra payload schema at this layer)
 pub fn validate_observation_payload(obs: &Observation) -> SpecResult<()> {
     match obs.data_type.as_str() {
         DATA_TYPE_LIFE_EVENT => validate_life_event_payload(&obs.payload),
+        crate::calendar_event::DATA_TYPE_CALENDAR_EVENT => {
+            crate::calendar_event::validate_calendar_event_payload(&obs.payload)
+        }
         _ => Ok(()),
     }
 }

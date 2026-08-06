@@ -80,6 +80,7 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
 - **Optional local LLM (P4-E3-T2):** **Off by default.** Set `BIOFOCUS_LOCAL_LLM=1` to opt in. Then `report_engine::interpret_report(&doc, &LocalLlmConfig::from_env()).await` POSTs only `ReportDocument::llm_prompt` to an OpenAI-compatible base URL (default `http://127.0.0.1:11434/v1` — local Ollama). Optional: `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL` (default `llama3.2`), `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS` (default `30`). HTTP timeout applies. **Never auto-called on app startup** — hosts must invoke only on explicit user action. Privacy: when disabled, no network. When enabled, the prompt text (offline report facts + interpret-only instructions) leaves the BioFocus process toward the configured base URL only — prefer localhost; a remote URL is the operator’s choice/responsibility. No Feature math in this path; no vendor cloud telemetry by default.
 - **Report UX (P4-E3-T3):** Dashboard `ReportSlot` — explicit «Generate report» → `invoke("generate_report")`. Host assembles offline `build_report` from cached Feature snapshot + evaluate-on-read Insights; optional `interpret_report` only when `LocalLlmConfig::from_env().enabled`. Soft `llmStatus` / `llmError` on timeout or failure. Never called on Dashboard open or 30s Feature/Insights poll. Contract: `docs/09-api.md` § `generate_report`. QA mocks: `?mockReport=…`.
+- **Life Events quick-log (P6-E2-T1):** Menubar Life events — `invoke("log_life_event")` / `invoke("list_recent_life_events")`. Host validates via `bio_spec` and inserts into the existing Observation store (`data_type: "life_event"`). No UI→SQLite; no life-event poll. Contract: `docs/09-api.md`. Browser QA: `?mockLifeEvents=…` (see `apps/desktop/README.md`).
 ```bash
 cargo test -p feature-engine
 cargo test -p knowledge-engine
@@ -111,6 +112,14 @@ Coverage (`crates/pipeline/tests/pipeline_e2e.rs`):
 
 **Input aggregates (P2-E2-T2, opt-in):** `export BIOFOCUS_INPUT_AGGREGATES=1` then restart Desktop. Requires Accessibility. Emits `keystrokes` Observations (`count` / `window_secs` / `rate_per_min`) on the same channel. Default off.
 
+**Local Calendar (P6-E3-T1, opt-in):** export a Calendar (or fixture) to `.ics`, then:
+```bash
+export BIOFOCUS_CALENDAR=1
+export BIOFOCUS_CALENDAR_ICS="$HOME/Desktop/biofocus-dogfood.ics"
+# restart Desktop
+```
+Emits `calendar_event` Observations (`uid` / `start` / `end` / `all_day` / `busy`) via rare poll ≥60s on the same channel → persist. No Google/Outlook OAuth. Titles/bodies are not stored or logged. Default off.
+
 ### Collector test suite (P2-E2-T3)
 
 ```bash
@@ -124,7 +133,7 @@ cargo test -p macos-collector --test collector_integration
 cargo test -p ingest
 ```
 
-Integration coverage (`tests/collector_integration.rs`): `context_window` and `keystrokes` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
+Integration coverage (`tests/collector_integration.rs`): `context_window`, `keystrokes`, and synthetic / ICS `calendar_event` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
 
 ### Companion sample path (P2-E3-T1)
 
@@ -162,10 +171,19 @@ IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; U
 
 GitHub Actions (no CD): `.github/workflows/ci.yml`
 
-- **rust-core** (`ubuntu-latest`): `cargo check --workspace --exclude desktop`, `cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p plugin-sdk -p macos-collector -p companion`
-- **desktop** (`macos-latest`): `cargo test -p desktop`, `pnpm install` + `pnpm build`, UI↛DB boundary grep
+| Job | Runner | When |
+| :--- | :--- | :--- |
+| **Detect paths** | ubuntu | Always (cheap); decides what to run |
+| **rust-core** | ubuntu | `crates/**`, `apps/companion/**`, `Cargo.toml` / `Cargo.lock`, `rust-toolchain.toml`, this workflow |
+| **desktop** | macos (×10 min) | PR: `apps/desktop/**` or workspace meta / this workflow. **Push to `main`:** also when rust paths change (merge gate for crate→desktop breaks) |
+| **CI gate** | ubuntu | Always — success if heavy jobs succeeded or were skipped (docs/handoffs-only → green without burning minutes) |
 
-Triggers: push/PR to `main` or `master`.
+- **rust-core:** `cargo check --workspace --exclude desktop`, `cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p feature-engine -p plugin-sdk -p macos-collector -p companion`
+- **desktop:** `cargo test -p desktop`, `pnpm install` + `pnpm build`, UI↛DB boundary grep
+- **Manual full suite:** Actions → CI → **Run workflow** (`workflow_dispatch`)
+- **Local before PR** (when skipping macOS on a crates-only PR): `cargo test -p desktop` + `pnpm build` on a Mac if you touched IPC / Tauri surface
+
+Triggers: push/PR to `main` or `master`, plus `workflow_dispatch`. Docs / handoffs / `.cursor` alone do **not** start rust or desktop jobs.
 
 ## Git workflow (related work → PR)
 

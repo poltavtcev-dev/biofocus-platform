@@ -1,10 +1,20 @@
 name: CI
 
+# Path policy (save Actions minutes — macOS is billed ×10):
+# - docs / handoffs / .cursor / markdown-only → no rust/desktop jobs
+# - crates / companion / lockfile → rust-core (ubuntu)
+# - apps/desktop → desktop (macos); on push to main, any code change also runs desktop (merge gate)
+# - workflow_dispatch → full suite
+#
+# Workflow still starts on every PR/push to main so required checks are not stuck
+# "Expected" when only docs change (aggregate job reports success).
+
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -14,8 +24,52 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  changes:
+    name: Detect paths
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.set.outputs.rust }}
+      desktop: ${{ steps.set.outputs.desktop }}
+    steps:
+      - name: Checkout
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+
+      - name: Path filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - 'crates/**'
+              - 'apps/companion/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/ci.yml'
+            desktop:
+              - 'apps/desktop/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/ci.yml'
+
+      - name: Set outputs
+        id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+            echo "desktop=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "rust=${{ steps.filter.outputs.rust }}" >> "$GITHUB_OUTPUT"
+          echo "desktop=${{ steps.filter.outputs.desktop }}" >> "$GITHUB_OUTPUT"
+
   rust-core:
     name: Rust core (check + test)
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,6 +89,13 @@ jobs:
 
   desktop:
     name: Desktop (Rust + frontend)
+    needs: changes
+    # PR: only when desktop / workspace meta / this workflow changes.
+    # Push to main/master: also when rust paths change (catch crate→desktop API breaks).
+    # Manual: always (via changes outputs).
+    if: |
+      needs.changes.outputs.desktop == 'true' ||
+      (github.event_name == 'push' && needs.changes.outputs.rust == 'true')
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -74,3 +135,26 @@ jobs:
             exit 1
           fi
           echo "Boundary clean."
+
+  # Single required-check friendly gate: success when heavy jobs succeed or were skipped.
+  ci-gate:
+    name: CI gate
+    needs: [changes, rust-core, desktop]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate job results
+        run: |
+          rust="${{ needs.rust-core.result }}"
+          desk="${{ needs.desktop.result }}"
+          echo "rust-core=$rust desktop=$desk"
+          for r in "$rust" "$desk"; do
+            case "$r" in
+              success|skipped) ;;
+              *)
+                echo "::error::CI failed (rust-core=$rust desktop=$desk)"
+                exit 1
+                ;;
+            esac
+          done
+          echo "CI gate OK"

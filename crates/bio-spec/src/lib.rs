@@ -11,6 +11,7 @@
 
 #![forbid(unsafe_code)]
 
+mod calendar_event;
 mod error;
 mod feature;
 mod insight;
@@ -19,6 +20,9 @@ mod observation;
 mod signal;
 mod time;
 
+pub use calendar_event::{
+    validate_calendar_event_payload, DATA_TYPE_CALENDAR_EVENT,
+};
 pub use error::{SpecError, SpecResult};
 pub use feature::{Feature, FeatureId, FeatureValue, Provenance};
 pub use insight::{EvidenceRef, Insight, InsightId};

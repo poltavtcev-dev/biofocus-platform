@@ -81,6 +81,39 @@ fn life_event_v1_kinds_documented() {
     }
 }
 
+/// Sample Calendar Event Observation JSON from `docs/07-contracts.md` (P6-E3-T1).
+const CONTRACT_CALENDAR_EVENT_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abe0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.calendar",
+  "data_type": "calendar_event",
+  "payload": {
+    "uid": "meet-standup@local",
+    "start": 1721990400,
+    "end": 1721994000,
+    "all_day": false,
+    "busy": true
+  },
+  "confidence": 1.0
+}"#;
+
+#[test]
+fn calendar_event_contract_json_round_trip() {
+    use bio_spec::{validate_calendar_event_payload, DATA_TYPE_CALENDAR_EVENT};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_CALENDAR_EVENT_JSON)
+        .expect("calendar event contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_CALENDAR_EVENT);
+    assert_eq!(parsed.payload["uid"], json!("meet-standup@local"));
+    validate_calendar_event_payload(&parsed.payload).expect("valid calendar event");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
 #[test]
 fn life_event_rejects_malformed_payloads() {
     let cases = [

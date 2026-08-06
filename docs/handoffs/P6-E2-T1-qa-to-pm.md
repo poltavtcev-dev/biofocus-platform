@@ -30,9 +30,9 @@
 - None blocking.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P6-E2-T1 → Done; Ready → **P6-E3-T1** (Calendar → Observations)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs (as needed): `docs/ARCHITECTURE_STATUS.md`, `docs/12-development.md`, `docs/PROJECT_CANVAS.md` — Desktop quick-log shipped
+- [x] `/docs/SPRINT_ROADMAP.md` — P6-E2-T1 → Done; Ready → **P6-E3-T1** (Calendar → Observations)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs (as needed): `docs/ARCHITECTURE_STATUS.md`, `docs/12-development.md`, `docs/PROJECT_CANVAS.md` — Desktop quick-log shipped
 
 ## Suggested next Ready task
 - **P6-E3-T1** — Calendar → Observations (per pm-brief After QA Pass)

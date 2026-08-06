@@ -14,6 +14,7 @@
 //! | `hrv` | `{ "rmssd_ms": f64, "sdnn_ms"?: f64, "pnn50"?: f64 }` | RMSSD from `rmssd_ms` / `rmssd` / `hrv_ms` / `hrv`; if `unit` is `s` → ×1000; optional SDNN / pNN50 |
 //! | `context_window` | `{ "bundle_id": string, "app_name": string }` | aliases `bundleId` / `appName` / `name`; other keys stripped |
 //! | `keystrokes` | `{ "count": u64, "window_secs": u64, "rate_per_min": f64 }` | `window_seconds`→`window_secs`; `rate_per_min` recomputed; content keys stripped |
+//! | `calendar_event` | `{ "uid", "start", "end", "all_day"?, "busy"? }` | titles/bodies/attendees stripped; required uid/start/end |
 //!
 //! Known type with missing / non-finite required fields → **skipped** (dropped from
 //! the batch; counted in [`NormalizedBatch::skipped_count`]).
@@ -37,6 +38,8 @@ pub const DATA_TYPE_HRV: &str = "hrv";
 pub const DATA_TYPE_CONTEXT_WINDOW: &str = "context_window";
 /// Keystroke input aggregates (counts / rates only).
 pub const DATA_TYPE_KEYSTROKES: &str = "keystrokes";
+/// Calendar / meeting events (schedule metadata only).
+pub const DATA_TYPE_CALENDAR_EVENT: &str = "calendar_event";
 
 /// Batch after normalization (`PipelineStage::Normalized`).
 #[derive(Debug, Clone, PartialEq)]
@@ -160,6 +163,13 @@ fn normalize_one(mut obs: Observation) -> NormalizeOutcome {
             }
             None => NormalizeOutcome::Skip,
         },
+        DATA_TYPE_CALENDAR_EVENT => match normalize_calendar_event(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
         // Unknown type: pass-through unchanged.
         _ => NormalizeOutcome::Keep(obs),
     }
@@ -242,6 +252,55 @@ fn normalize_keystrokes(payload: &JsonValue) -> Option<JsonValue> {
     }))
 }
 
+fn normalize_calendar_event(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let uid = first_nonempty_str(obj, &["uid"])?;
+    let start = first_i64(obj, &["start"])?;
+    let end = first_i64(obj, &["end"])?;
+    if end < start {
+        return None;
+    }
+    let mut out = Map::new();
+    out.insert("uid".to_string(), json!(uid));
+    out.insert("start".to_string(), json!(start));
+    out.insert("end".to_string(), json!(end));
+    if let Some(JsonValue::Bool(all_day)) = obj.get("all_day") {
+        out.insert("all_day".to_string(), json!(all_day));
+    }
+    if let Some(JsonValue::Bool(busy)) = obj.get("busy") {
+        out.insert("busy".to_string(), json!(busy));
+    }
+    // Explicitly drop title / body / attendees / location if present.
+    Some(JsonValue::Object(out))
+}
+
+fn first_i64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<i64> {
+    for key in keys {
+        if let Some(v) = obj.get(*key) {
+            if let Some(n) = json_as_i64(v) {
+                return Some(n);
+            }
+        }
+    }
+    None
+}
+
+fn json_as_i64(v: &JsonValue) -> Option<i64> {
+    match v {
+        JsonValue::Number(n) => n.as_i64().or_else(|| {
+            n.as_u64()
+                .and_then(|u| i64::try_from(u).ok())
+                .or_else(|| {
+                    n.as_f64()
+                        .filter(|f| f.is_finite() && f.fract() == 0.0)
+                        .map(|f| f as i64)
+                })
+        }),
+        JsonValue::String(s) => s.trim().parse::<i64>().ok(),
+        _ => None,
+    }
+}
+
 fn first_f64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<f64> {
     for key in keys {
         if let Some(v) = obj.get(*key) {
@@ -316,8 +375,8 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        normalize_deduped, normalize_observations, DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_HEART_RATE,
-        DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES,
+        normalize_deduped, normalize_observations, DATA_TYPE_CALENDAR_EVENT,
+        DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES,
     };
     use crate::dedupe::DedupeState;
     use crate::intake::accept_observations;
@@ -418,6 +477,39 @@ mod tests {
         assert_eq!(p["window_secs"], json!(60));
         assert_eq!(p["rate_per_min"], json!(120.0));
         assert!(p.get("typed_chars").is_none());
+    }
+
+    #[test]
+    fn calendar_event_strips_titles_and_keeps_schedule() {
+        let input = obs(
+            DATA_TYPE_CALENDAR_EVENT,
+            json!({
+                "uid": "meet-1",
+                "start": 100,
+                "end": 200,
+                "all_day": false,
+                "busy": true,
+                "title": "Secret",
+                "description": "leak",
+                "attendees": ["a@b.c"]
+            }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let p = &out.observations()[0].payload;
+        assert_eq!(
+            p,
+            &json!({
+                "uid": "meet-1",
+                "start": 100,
+                "end": 200,
+                "all_day": false,
+                "busy": true
+            })
+        );
+        assert!(p.get("title").is_none());
+        assert!(p.get("description").is_none());
+        assert!(p.get("attendees").is_none());
     }
 
     #[test]
