@@ -28,3 +28,4 @@ alwaysApply: true
 ## Запреты
 - В `build-qa` / `qa-only` / `build-only` / `design-only` — **не** править Kanban Done и execution canvas.
 - `design-only` ≠ обход AC для shippable task: перед Done всё равно нужен QA (отдельный чат).
+- **PR freeze до 2026-09-01:** ни в одном режиме не открывать PR / не мержить в `main` через PR (`06-git-agent-policy.mdc`).

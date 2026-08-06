@@ -27,9 +27,9 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — move P7-E2-T1 to Done; Ready **P7-E3-T1**; Epic P7-E2 ✅ if T1 is the only task
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `ARCHITECTURE_STATUS.md` Trust-layer note (optional); cluster PR note already on `phase/7-trust-layer`
+- [x] `/docs/SPRINT_ROADMAP.md` — move P7-E2-T1 to Done; Ready **P7-E3-T1**; Epic P7-E2 ✅ if T1 is the only task
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `ARCHITECTURE_STATUS.md` Trust-layer note; **PR freeze** — no cluster PR until 2026-09-01 (`phase/7-trust-layer` commits OK)
 
 ## Suggested next Ready task
 - **P7-E3-T1** — First bio-backed Trust Features (per brief After QA Pass)

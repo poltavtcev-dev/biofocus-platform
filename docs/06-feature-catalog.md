@@ -70,13 +70,24 @@
 - **Confidence (ADR-007):** single family; when emitted `confidence = mean(bounding meeting Observation.confidence)`.
 - **DAG:** независимый узел (не зависит от `MeetingDensity`); `register_calendar_v1` / `register_catalog_v1`.
 
+### 1.7 `RecoveryScore`
+- **Goal:** Short-term physiological recovery proxy from recent HRV (and optional heart rate). Calm data-quality metric — **not** a clinical recovery diagnosis; no sleep required for v1.
+- **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus/Stress.
+- **Inputs:** `hrv` Observations (`rmssd_ms` required to emit); optional `heart_rate` (`bpm`). Sleep Observations out of scope for v1.
+- **Formula Strategy (v1):** Weighted (renormalized if HR missing): HRV recovery map RMSSD 0 @ ≤15 ms → 100 @ ≥70 ms (0.70; inverse anchors of `StressIndex` RMSSD map) + HR calmness vs early-15m baseline BPM `100 - clamp((mean_bpm - baseline) / 20 * 100, 0, 100)` (0.30). Output clamped 0–100. HR alone (no usable HRV) → omit Feature.
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless score (higher ≈ more recovered proxy in-window).
+- **Provenance:** Observation IDs of `hrv` / `heart_rate` in the window.
+- **Confidence (ADR-007):** expected slots = 2 (HRV / HR); `confidence = coverage × mean(evidence Observation.confidence)`. Thin (HRV-only) → lower confidence; empty / no HRV → omit.
+- **Explanation factors (P7-E3):** when emitted, factors for present components — `hrv` (“Heart-rate variability”), `heart_rate` (“Heart rate”); `share = catalog_weight / sum(present weights)` (shares sum to 1.0). Calm input composition only.
+- **DAG:** независимый узел; `feature_engine::register_recovery_v1` / `register_catalog_v1`. Distinct from schedule `RecoveryBetweenMeetings`.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `RecoveryScore` | Short-term physiological recovery | HRV / sleep / HR | P7 |
 | `EnergyScore` | Subjective energy proxy from bio + activity | HR, activity, sleep | P7 |
 | `DeepWorkScore` | Sustained focus windows | FocusScore, CSR, idle | P7 |
 | `AttentionStability` | Variance of focus / switches | FocusScore, CSR | P7 |
@@ -90,4 +101,4 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore` first; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; others may omit until wired).

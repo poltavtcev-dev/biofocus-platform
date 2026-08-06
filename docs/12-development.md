@@ -72,13 +72,14 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **DAG skeleton (T1):** `FeatureEngine::register` + `FeatureEngine::run(&[Observation])` → `EngineOutput { features, signals }`. Nodes implement `FeatureNode` (`id` / `depends_on` / `compute`). Kahn topo; errors via `thiserror` (duplicate / unknown dep / cycle / node failed). Empty DAG/snapshot → `Ok` empty.
 - **Focus catalog (T2):** `feature_engine::register_focus_v1(&mut engine)` — `ContextSwitchRate` → `FocusScore` (window 15m / step 1m; see `/docs/06-feature-catalog.md`).
 - **Stress/Fatigue (T3):** `feature_engine::register_stress_v1(&mut engine)` — `StressIndex` + `FatigueIndex` (needs FocusScore already registered); contiguous StressIndex > 75 for > 5m → transient `Signal` `High_Stress` (`Severity::High`).
-- **Calendar Features (P6-E3-T2):** `feature_engine::register_calendar_v1(&mut engine)` — `MeetingDensity` (busy overlap fraction 0–1) + `RecoveryBetweenMeetings` (mean free gap minutes) from `calendar_event` Observations. Full catalog: `feature_engine::register_catalog_v1` = focus + stress + calendar.
+- **Calendar Features (P6-E3-T2):** `feature_engine::register_calendar_v1(&mut engine)` — `MeetingDensity` (busy overlap fraction 0–1) + `RecoveryBetweenMeetings` (mean free gap minutes) from `calendar_event` Observations.
+- **RecoveryScore (P7-E3-T1):** `feature_engine::register_recovery_v1(&mut engine)` — short-term physiological recovery proxy from `hrv` (+ optional `heart_rate`); confidence (ADR-007) + explanation factors. Full catalog: `feature_engine::register_catalog_v1` = focus + stress + calendar + recovery.
 - **Alert level (E3-T1):** `feature_engine::map_alert_level(&EngineOutput) → AlertLevel` — Red if `High_Stress`; Yellow if latest StressIndex or FatigueIndex > 60; else Green (empty → Green).
 - **IPC alert (E3-T2):** Desktop `get_status` includes `alertLevel` (`green`/`yellow`/`red`). Feature Worker hook runs catalog → map → shared `AlertState`. Idle/Ready/Error (`dbStatus`) unchanged. UI reads via IPC only.
 - **Menubar alert UX (E3-T3):** Shell shows calm Steady/Elevated/High indicator (color + copy) from `alertLevel`; tray tooltip includes the label. Poll ~5s. QA: `?mockAlert=green|yellow|red`.
 - **Feature snapshot IPC (P4-E1-T1):** `feature_engine::FeatureSnapshot` from last `EngineOutput`; desktop caches via `SnapshotState` + `invoke("get_feature_snapshot")` (pure read). `get_status` stays lean. Contract: `docs/09-api.md`.
 - **Feature confidence (P7-E1-T1 / ADR-007):** domain `Feature.confidence` ∈ `[0.0, 1.0]` = coverage × mean evidence `Observation.confidence`; catalog nodes compute it; snapshot IPC exposes `confidence`. No Feature SQLite schema.
-- **Explanation factors (P7-E2-T1):** optional `Feature.factors` `{ id, label, share }` — calm input-share breakdown; `FocusScore` emits renormalized shares (sum 1.0); IPC omits key when empty. No ADR (additive optional field); no SQLite schema.
+- **Explanation factors (P7-E2-T1 / P7-E3-T1):** optional `Feature.factors` `{ id, label, share }` — calm input-share breakdown; `FocusScore` and `RecoveryScore` emit renormalized shares (sum 1.0); IPC omits key when empty. No ADR (additive optional field); no SQLite schema.
 - **Dashboard shell (P4-E1-T2):** separate Tauri window `label: dashboard` (`index.html?view=dashboard`); Menubar **Open Dashboard** → `invoke("open_dashboard")` (show/focus; CloseRequested → hide). Calm loading/empty/error via snapshot IPC. QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error` (see `apps/desktop/README.md`).
 - **Recharts Feature series (P4-E1-T3):** Dashboard `ChartSlot` — LineChart for `FocusScore` / `StressIndex` / `FatigueIndex` (+ `ContextSwitchRate` secondary axis when present); calm labels; refresh on open + ~30s. Dep: `recharts` in `apps/desktop`.
 - **knowledge-engine skeleton (P4-E2-T1):** pluggable `InsightRule` + `KnowledgeEngine::evaluate(&[Feature], &[Signal]) → Result<Vec<Insight>>`; types `Insight` / `EvidenceRef` from `bio-spec`; empty/no-match → `Ok([])`.
@@ -199,17 +200,34 @@ Until minutes reset: **local tests = gate**; agents may **commit + push straight
 
 **Default (when Actions minutes available):** не пушить напрямую в `main`. Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
 
+<<<<<<< HEAD
 **TEMP override (Actions off):** related code cluster → local verify → commit on `main` (or short-lived branch fast-forwarded) → `git push origin main`. No PR required.
 
 Классика (после возврата лимита): **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
+=======
+### PR freeze (active until 2026-09-01)
+
+До **2026-09-01 включительно** агенты **не открывают PR** и **не мержат в `main` через PR**.  
+Работаем на feature-ветках; handoffs + локальные коммиты — ок. Классический flow ниже — **после** этой даты (или если пользователь явно снял freeze).
+
+Классика (после freeze): **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
+>>>>>>> 291c699 (P7-E3-T1: RecoveryScore catalog Feature (HRV + optional HR).)
 Не коммит/PR на каждый handoff. **Docs / roadmap / canvas** — отдельно позже или в следующий code PR.
 
 | Уровень | Правило |
 | :--- | :--- |
+<<<<<<< HEAD
 | **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. TEMP: можно работать на `main`. |
 | **Commit** | Когда код-единица готова (batch Task IDs ок). Handoffs на диске — не триггерят PR. |
 | **Push / PR** | Default: substantive code + (кластер готов \| явный «PR»). **TEMP:** push to `main` after local green. |
 | **Не PR** | handoffs-only, roadmap/canvas-only, второй PR на тот же tip. |
+=======
+| **Freeze** | Нет PR / merge в `main` до **2026-09-01** (если не сняли раньше). |
+| **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. |
+| **Commit** | Когда код-единица готова (batch Task IDs ок). Handoffs на диске — не триггерят PR. |
+| **Push / PR** | Только **после freeze** + substantive code vs `main` **и** (кластер готов **или** явный «PR»). Один PR на ветку. Squash preferred. |
+| **Не PR** | до 2026-09-01; handoffs-only; roadmap/canvas-only; второй PR на тот же tip. |
+>>>>>>> 291c699 (P7-E3-T1: RecoveryScore catalog Feature (HRV + optional HR).)
 | **Спринт** | Лучше мало содержательных PR, чем много пустых. |
 
 ```bash
@@ -234,4 +252,4 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 ## Status
 
 **Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 + P5-E2 Done** (LAN bind ADR-005 + advertise hints + Companion LAN UI); Ready **P5-E3-T1** (runnable iOS HealthKit companion). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E3-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
-**Git policy:** few **code** PRs; commit messages describe the change only — no personal device inventories.
+**Git policy:** **PR freeze until 2026-09-01** (no agent PRs); then few **code** PRs; commit messages describe the change only — no personal device inventories.

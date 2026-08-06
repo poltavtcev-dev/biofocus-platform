@@ -14,7 +14,8 @@
 - [ ] Тесты зелёные; `cargo check` / релевантный CI
 - [ ] **Idle footprint:** нет busy-loop; poll/refresh по событию или редкому таймеру
 - [ ] **Нет новой SQLite-схемы** без ADR + approve
-- [ ] **Commit / PR по связанному кластеру** — `docs/12-development.md`
+- [ ] **Commit по связанному кластеру** (локально / feature-ветка) — `docs/12-development.md`  
+- [ ] **PR freeze до 2026-09-01** — не открывать PR / не мержить в `main` через PR (`06-git-agent-policy.mdc`)
 - [ ] Copy спокойный, неоценочный (не «ты выгорел» / clinical claims)
 - [ ] **LAN / companion:** Bearer обязателен; нет cloud telemetry; default = loopback
 
@@ -24,33 +25,35 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P7-E2-T1** |
+| **Ready** | **P7-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **P7-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **P7-E1-T1** · **P7-E2-T1** |
 
-**Epic status:** P7-E1 ✅ · P7-E2 ⬜ (T1 Ready) · P7-E3 ⬜
+**Epic status:** P7-E1 ✅ · P7-E2 ✅ · P7-E3 ⬜ (T1 Ready)
 
 **Phase 7 on `/docs/14-roadmap.md`:** opened 2026-08-06
 
 **Рекомендуемый порядок:**  
-~~P7-E1-T1~~ → **P7-E2-T1** → P7-E3-T1
+~~P7-E1-T1~~ → ~~P7-E2-T1~~ → **P7-E3-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
-**Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
+**Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **PR freeze до 2026-09-01** — commits OK, no PRs (`docs/12-development.md`).  
 **Suggested branch:** `phase/7-trust-layer`.
 
 ### Active assignment
 
-**Ready now:** **P7-E2-T1** — Explanation factors on Features (Dev).  
-Brief: `docs/handoffs/P7-E2-T1-pm-brief.md`.
+**Ready now:** **P7-E3-T1** — First bio-backed Trust Features (Dev).  
+Brief: `docs/handoffs/P7-E3-T1-pm-brief.md`.
 
-**Closed:** P7-E1-T1 (QA Pass, 2026-08-06) — ADR-007 Feature confidence + domain/IPC wire; Epic **P7-E1** ✅. Evidence: `docs/handoffs/P7-E1-T1-qa-to-pm.md`. Branch: `phase/7-trust-layer`.
+**Closed:** P7-E2-T1 (QA Pass, 2026-08-06) — `ExplanationFactor` + `FocusScore` factors on snapshot IPC; Epic **P7-E2** ✅. Evidence: `docs/handoffs/P7-E2-T1-qa-to-pm.md`. Branch: `phase/7-trust-layer`.
 
-**Closed (Phase 6):** P6-E3-T2 (QA Pass, 2026-08-06) — `MeetingDensity` + `RecoveryBetweenMeetings`; Epic **P6-E3** ✅ · Phase 6 Kanban complete. Evidence: `docs/handoffs/P6-E3-T2-qa-to-pm.md`.
+**Closed:** P7-E1-T1 (QA Pass, 2026-08-06) — ADR-007 Feature confidence + domain/IPC wire; Epic **P7-E1** ✅. Evidence: `docs/handoffs/P7-E1-T1-qa-to-pm.md`.
 
-**Ops note:** Fold ADR-007 + confidence code into Phase 7 cluster PR on `phase/7-trust-layer` when Ready to ship (with E2/E3 or coherent subset). Phase 4/5/6 cluster PRs remain optional parallel ops.
+**Closed (Phase 6):** P6-E3-T2 (QA Pass, 2026-08-06) — `MeetingDensity` + `RecoveryBetweenMeetings`; Epic **P6-E3** ✅ · Phase 6 Kanban complete.
+
+**Ops note:** **PR freeze until 2026-09-01** — keep work on `phase/7-trust-layer` (commits OK). Fold confidence + factors + E3 Features into one Phase 7 cluster PR **after** the freeze (or when user lifts it). Phase 4/5/6 cluster PRs deferred the same way.
 
 ---
 
@@ -70,11 +73,11 @@ Brief: `docs/handoffs/P7-E2-T1-pm-brief.md`.
 
 ---
 
-## Epic P7-E2 — Explanation factors
+## Epic P7-E2 — Explanation factors ✅ Done
 
 **Цель:** Calm “why this value” factor breakdown on Features (weights / contributions) — builds on provenance + confidence; no clinical tone.
 
-### P7-E2-T1 — Explanation factors on Features ✅ Ready
+### P7-E2-T1 — Explanation factors on Features ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
@@ -82,6 +85,7 @@ Brief: `docs/handoffs/P7-E2-T1-pm-brief.md`.
 | **Depends on** | P7-E1-T1 |
 | **AC** | (1) Document factor shape (id/label + contribution weight or share; calm non-clinical names) in domain/contracts/catalog — ADR only if IPC/domain boundary grows beyond additive optional field. (2) ≥1 catalog Feature (prefer `FocusScore` or `StressIndex`) **emits** factors alongside value + confidence + provenance. (3) Snapshot IPC exposes factors (or documented omit-until-present policy) without UI→DB. (4) Unit tests: factors sum/policy documented; empty/thin windows idle-safe. (5) Handoff: `docs/handoffs/P7-E2-T1-dev-to-qa.md`. |
 | **Out of scope** | LLM-generated explanations; Pattern Discovery; new SQLite history store; full Dashboard “Why?” redesign (read-only display optional, not required) |
+| **Shipped** | `ExplanationFactor { id, label, share }`; `FocusScore` factors (typing/stability/hrv); snapshot omit-until-present; QA Pass 2026-08-06. Epic **P7-E2** closed. |
 
 ---
 
@@ -89,14 +93,14 @@ Brief: `docs/handoffs/P7-E2-T1-pm-brief.md`.
 
 **Цель:** Ship a small set of catalog Features that already have Observation inputs (e.g. `RecoveryScore` / `DeepWorkScore` / `AttentionStability`) with confidence (and factors if E2 Done).
 
-### P7-E3-T1 — First bio-backed Trust Features
+### P7-E3-T1 — First bio-backed Trust Features ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
 | **Modules** | `crates/feature-engine`, `docs/06-feature-catalog.md` |
-| **Depends on** | P7-E1-T1 (confidence); E2 helpful |
-| **AC** | ≥1 Feature moved from planned backlog → §1 with formula/units/deps/provenance (+ confidence); unit tests with synthetic Observations; register in catalog_v1; calm non-clinical copy. |
-| **Out of scope** | CognitiveLoad (needs richer schedule+notify), SleepDebt without sleep Observations, CircadianOffset (P8) |
+| **Depends on** | P7-E1-T1 (confidence); P7-E2-T1 (factors helpful) |
+| **AC** | (1) Move ≥1 Feature from planned backlog → catalog §1 with formula / window / units / deps / provenance (+ ADR-007 confidence). Prefer **`RecoveryScore`** (HRV/HR) or **`DeepWorkScore`** / **`AttentionStability`** (Focus+CSR) — pick one with real Observation inputs today. (2) Register in `register_catalog_v1` (or focused register helper wired into catalog_v1). (3) Unit tests with synthetic Observations (empty / rich / thin → confidence). (4) Calm non-clinical copy; idle-safe. (5) Optional: emit factors for the new Feature if formula has clear weighted components (reuse E2 shape). (6) Handoff: `docs/handoffs/P7-E3-T1-dev-to-qa.md`. |
+| **Out of scope** | CognitiveLoad (needs richer schedule+notify), SleepDebt without sleep Observations, CircadianOffset (P8), Dashboard redesign, Pattern Discovery |
 
 ---
 
@@ -200,7 +204,7 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 ## Sprint 13–14 — Queue
 
 1. ~~P7-E1-T1 — Feature confidence contract + ADR + wire~~ **Done** (QA Pass) · Epic **P7-E1** ✅  
-2. **P7-E2-T1 — Explanation factors on Features** ← **Ready**  
-3. P7-E3-T1 — First bio-backed Trust Features  
+2. ~~P7-E2-T1 — Explanation factors on Features~~ **Done** (QA Pass) · Epic **P7-E2** ✅  
+3. **P7-E3-T1 — First bio-backed Trust Features** ← **Ready**  
 
-**Git:** `phase/7-trust-layer` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship.
+**Git:** `phase/7-trust-layer` → related commits locally → **one cluster PR after 2026-09-01** (PR freeze; see `06-git-agent-policy.mdc`).

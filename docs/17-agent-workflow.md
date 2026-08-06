@@ -42,10 +42,12 @@
 
 ## Git / PR
 
+**Freeze:** до **2026-09-01 включительно** — **не** `gh pr create`, **не** merge в `main` через PR (локальные коммиты на feature-ветке — ок).
+
 1. Ветка под **код-кластер** (`phase/…`, `epic/…`, `feat/…`) — не `main`.  
 2. Handoffs на диск каждый роль-шаг; коммит/PR на каждый handoff **не нужен**.  
-3. **Push + PR → `main`** только при substantive code и (кластер готов **или** явный «PR»).  
-4. Docs / roadmap / canvas — отдельно позже или вместе со следующим code PR.  
+3. **Push + PR → `main`** только **после 2026-09-01** (или явного снятия freeze) + substantive code + (кластер готов **или** явный «PR»).  
+4. Docs / roadmap / canvas — отдельно позже или вместе со следующим code PR после freeze.  
 5. Merge после зелёного CI; предпочтительно **squash**. Прямой push в `main` — запрещён.
 
 Команды: `docs/12-development.md` · `.cursor/rules/06-git-agent-policy.mdc`.

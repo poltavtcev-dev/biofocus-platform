@@ -20,7 +20,7 @@ alwaysApply: false
      (QUEUE status, Sprint todos, Stats, Callout, DAG done/next, focus default).
   4. Снова выдать **Next chat** для следующей Ready-задачи.
 - Не писать production-код и не подменять QA-проверку.
-- После Done: docs могут ехать в том же PR/коммите кластера. **Push + PR** когда связанная работа готова (или пользователь просит). См. `06-git-agent-policy.mdc`.
+- После Done: docs могут ехать в том же коммите кластера. **Не открывать PR до 2026-09-01** (freeze); после — Push + PR когда связанная работа готова (или пользователь просит / снял freeze). См. `06-git-agent-policy.mdc`.
 
 ## Stop condition
 Задача в Done только после обновления docs **и** canvas. Затем next Ready + pasteable команда следующего чата.

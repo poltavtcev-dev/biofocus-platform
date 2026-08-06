@@ -19,7 +19,7 @@ UI/Menubar/React задачи с ролью UX.
 - IPC-зависимости;
 - что вне scope.
 
-**Запрещено:** Done в roadmap; правки execution canvas.
+**Запрещено:** Done в roadmap; правки execution canvas; открывать PR до 2026-09-01 (см. `06-git-agent-policy.mdc`).
 
 ## Stop condition
 «Передаю QA» + путь к handoff.  

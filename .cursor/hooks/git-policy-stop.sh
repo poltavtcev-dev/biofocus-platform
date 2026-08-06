@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Nudge agents toward classic git: few code PRs for related clusters.
+# PR freeze until 2026-09-01: never ask to open a PR; commit reminder only.
 # Never auto-commits or pushes — only returns followup_message for the agent.
 set -euo pipefail
 
@@ -50,8 +51,22 @@ for gate in docs/handoffs/PR-GATE.md docs/handoffs/SPRINT-GATE.md; do
   fi
 done
 
+# PR freeze until 2026-09-01 (inclusive). See .cursor/rules/06-git-agent-policy.mdc.
+pr_freeze=1
+today="$(date -u +%Y-%m-%d 2>/dev/null || date +%Y-%m-%d)"
+if [[ "$today" > "2026-09-01" ]]; then
+  pr_freeze=0
+fi
+
 msg=""
-if [[ "$gate_active" -eq 1 && "$code_dirty" -eq 1 ]]; then
+if [[ "$pr_freeze" -eq 1 ]]; then
+  if [[ "${dirty_count:-0}" -ge 12 && "$code_dirty" -eq 1 ]]; then
+    msg="Git policy: PR freeze until 2026-09-01 — do not open a PR. ${dirty_count} dirty paths including code: commit locally with Task/Epic IDs if the cluster is ready (user asked for commit). Handoffs/docs alone are fine dirty. See docs/12-development.md / .cursor/rules/06-git-agent-policy.mdc."
+  else
+    echo '{}'
+    exit 0
+  fi
+elif [[ "$gate_active" -eq 1 && "$code_dirty" -eq 1 ]]; then
   msg="Git policy (PR gate): active gate + code changes. If the code cluster is ready and no open PR exists for this branch, commit the cluster and open one PR (prefer squash). Do not open a PR for handoffs/docs only. See docs/12-development.md."
 elif [[ "$gate_active" -eq 1 && "$code_dirty" -eq 0 ]]; then
   # Handoffs/docs-only under a stale or leftover gate — do not ask for a PR.

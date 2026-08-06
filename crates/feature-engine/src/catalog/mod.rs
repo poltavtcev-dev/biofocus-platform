@@ -1,4 +1,4 @@
-//! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3) — deterministic v1 formulas.
+//! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3) — deterministic v1 formulas.
 //!
 //! | Node | Feature id | Task |
 //! | :--- | :--- | :--- |
@@ -8,10 +8,11 @@
 //! | [`FatigueIndexNode`] | `FatigueIndex` | P3-E2-T3 |
 //! | [`MeetingDensityNode`] | `MeetingDensity` | P6-E3-T2 |
 //! | [`RecoveryBetweenMeetingsNode`] | `RecoveryBetweenMeetings` | P6-E3-T2 |
+//! | [`RecoveryScoreNode`] | `RecoveryScore` | P7-E3-T1 |
 //!
 //! Register Focus pair via [`register_focus_v1`]; Stress/Fatigue via
 //! [`register_stress_v1`] (requires FocusScore already registered for Fatigue);
-//! Calendar pair via [`register_calendar_v1`].
+//! Calendar pair via [`register_calendar_v1`]; Recovery via [`register_recovery_v1`].
 
 mod calendar_meeting;
 mod confidence;
@@ -20,6 +21,7 @@ mod fatigue_index;
 mod focus_score;
 mod meeting_density;
 mod recovery_between_meetings;
+mod recovery_score;
 mod stress_index;
 mod window;
 
@@ -35,6 +37,7 @@ pub use meeting_density::{MeetingDensityNode, FEATURE_ID as MEETING_DENSITY_ID};
 pub use recovery_between_meetings::{
     RecoveryBetweenMeetingsNode, FEATURE_ID as RECOVERY_BETWEEN_MEETINGS_ID,
 };
+pub use recovery_score::{RecoveryScoreNode, FEATURE_ID as RECOVERY_SCORE_ID};
 pub use stress_index::{
     StressIndexNode, FEATURE_ID as STRESS_INDEX_ID, HIGH_STRESS_MIN_DURATION_SECS,
     HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD,
@@ -67,10 +70,17 @@ pub fn register_calendar_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<(
     Ok(())
 }
 
-/// Registers the full v1 catalog: Focus pair, Stress/Fatigue, then Calendar pair.
+/// Registers `RecoveryScore` (independent; HRV + optional heart_rate).
+pub fn register_recovery_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(RecoveryScoreNode::new())?;
+    Ok(())
+}
+
+/// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery.
 pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
     register_focus_v1(engine)?;
     register_stress_v1(engine)?;
     register_calendar_v1(engine)?;
+    register_recovery_v1(engine)?;
     Ok(())
 }

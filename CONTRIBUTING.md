@@ -112,6 +112,10 @@ Open an issue or ask maintainers before:
 
 **Do not push directly to `main`.**
 
+**PR freeze (maintainers / agents):** until **2026-09-01** inclusive — do **not** open PRs or merge to `main` via PR. Work on feature branches; local commits OK. Details: [`docs/12-development.md`](docs/12-development.md), [`.cursor/rules/06-git-agent-policy.mdc`](.cursor/rules/06-git-agent-policy.mdc).
+
+After the freeze:
+
 ```bash
 git checkout main && git pull
 git checkout -b feat/short-slug   # or fix/…, docs/…

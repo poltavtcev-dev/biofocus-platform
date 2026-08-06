@@ -12,3 +12,4 @@ alwaysApply: true
 6. **Scope Guard:** Не брать Phase 2+ / Future Scope, пока Phase 1 Foundation не закрыт.
 7. **Status Source:** `/docs/ARCHITECTURE_STATUS.md`, `/docs/decision-log.md`.
 8. **Team Workflow:** Обязателен конвейер Dev|UX → QA → PM из `05-agent-workflow.mdc`. Без handoff задача не Done.
+9. **PR freeze:** До **2026-09-01** включительно не открывать PR и не мержить в `main` через PR (см. `06-git-agent-policy.mdc`).
