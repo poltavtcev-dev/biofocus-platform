@@ -55,7 +55,7 @@ pub(crate) fn scalar_value(feature: &Feature) -> Option<f64> {
 #[cfg(test)]
 mod tests {
     use bio_spec::{
-        EvidenceRef, Feature, FeatureValue, Severity, Signal, TimeWindow, UnixTimestamp,
+        Confidence, EvidenceRef, Feature, FeatureValue, Severity, Signal, TimeWindow, UnixTimestamp,
     };
     use uuid::Uuid;
 
@@ -71,6 +71,7 @@ mod tests {
             time_window: window,
             value: FeatureValue::Scalar(value),
             provenance: vec![],
+            confidence: Confidence::ONE,
         }
     }
 

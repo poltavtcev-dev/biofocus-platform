@@ -12,10 +12,14 @@
 //!   components that have data in the window.
 //! - **Provenance:** Observation IDs of `keystrokes`, `hrv`, and `context_window`
 //!   inside the window (union).
+//! - **Confidence (ADR-007):** expected slots = 3 (typing / stability / HRV);
+//!   `coverage × mean(evidence Observation.confidence)`. Thin windows → lower
+//!   confidence; empty → omit Feature.
 //! - Emits a Feature only when at least one component has data.
 
 use bio_spec::{Feature, FeatureValue, Observation, TimeWindow};
 
+use crate::catalog::confidence::compute_feature_confidence;
 use crate::catalog::context_switch_rate;
 use crate::catalog::window::{
     in_window, sliding_window_ends, snapshot_time_span, window_ending_at,
@@ -34,6 +38,8 @@ const DATA_TYPE_CONTEXT_WINDOW: &str = "context_window";
 const WEIGHT_TYPING: f64 = 0.40;
 const WEIGHT_STABILITY: f64 = 0.35;
 const WEIGHT_HRV: f64 = 0.25;
+/// Catalog input families for ADR-007 coverage (typing / stability / HRV).
+const EXPECTED_INPUT_SLOTS: usize = 3;
 /// Reference typing rate (keys/min) that maps to typing score 100.
 const TYPING_RATE_REF: f64 = 200.0;
 
@@ -109,22 +115,27 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
         .collect();
 
     let mut weighted: Vec<(f64, f64)> = Vec::new();
+    let mut present_slots = 0usize;
 
     if let Some(mean_rate) = mean_keystroke_rate(&keystrokes) {
         let typing = (mean_rate / TYPING_RATE_REF * 100.0).clamp(0.0, 100.0);
         weighted.push((WEIGHT_TYPING, typing));
+        present_slots += 1;
     }
 
     if let Some(csr) = upstream_csr(ctx, window) {
         let stability = (100.0 - csr * 50.0).clamp(0.0, 100.0);
         weighted.push((WEIGHT_STABILITY, stability));
+        present_slots += 1;
     } else if !context.is_empty() {
         // CSR node skipped empty steps; treat present context with 0 switches as full stability.
         weighted.push((WEIGHT_STABILITY, 100.0));
+        present_slots += 1;
     }
 
     if let Some(rmssd) = mean_rmssd_ms(&hrv) {
         weighted.push((WEIGHT_HRV, hrv_comfort_score(rmssd)));
+        present_slots += 1;
     }
 
     if weighted.is_empty() {
@@ -138,19 +149,24 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
     let value = weighted.iter().map(|(w, s)| w * s).sum::<f64>() / w_sum;
 
     let mut provenance = Vec::new();
+    let mut evidence: Vec<&Observation> = Vec::new();
     for obs in keystrokes
         .iter()
         .chain(hrv.iter())
         .chain(context.iter())
     {
         provenance.push(obs.id);
+        evidence.push(*obs);
     }
+
+    let confidence = compute_feature_confidence(EXPECTED_INPUT_SLOTS, present_slots, &evidence);
 
     Some(Feature {
         feature_id: FEATURE_ID.to_owned(),
         time_window: *window,
         value: FeatureValue::Scalar(value.clamp(0.0, 100.0)),
         provenance,
+        confidence,
     })
 }
 
@@ -304,6 +320,106 @@ mod tests {
         assert!(!last.provenance.is_empty());
         assert!(last.provenance.contains(&Uuid::from_u128(3)));
         assert!(last.provenance.contains(&Uuid::from_u128(4)));
+        // Full coverage (3/3) × mean obs confidence 1.0 → 1.0
+        assert!((last.confidence.get() - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn rich_inputs_higher_confidence_than_missing_hrv() {
+        let rich = vec![
+            obs(
+                1,
+                1000,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                2,
+                1800,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                3,
+                1200,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 180, "window_secs": 60, "rate_per_min": 180.0 }),
+            ),
+            obs(4, 1500, DATA_TYPE_HRV, json!({ "rmssd_ms": 45.0 })),
+        ];
+        let thin = vec![
+            obs(
+                11,
+                1000,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                12,
+                1800,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                13,
+                1200,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 180, "window_secs": 60, "rate_per_min": 180.0 }),
+            ),
+        ];
+
+        let mut eng_rich = FeatureEngine::new();
+        register_focus_v1(&mut eng_rich).expect("reg");
+        let mut eng_thin = FeatureEngine::new();
+        register_focus_v1(&mut eng_thin).expect("reg");
+
+        let conf_rich = last_focus_confidence(&eng_rich.run(&rich).expect("run"));
+        let conf_thin = last_focus_confidence(&eng_thin.run(&thin).expect("run"));
+        assert!(
+            conf_rich > conf_thin,
+            "rich {conf_rich} should beat thin (no HRV) {conf_thin}"
+        );
+        assert!((conf_rich - 1.0).abs() < 1e-12);
+        assert!((conf_thin - 2.0 / 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn missing_context_and_hrv_lowers_confidence_further() {
+        // Typing only → 1/3 coverage.
+        let typing_only = vec![obs(
+            1,
+            1200,
+            DATA_TYPE_KEYSTROKES,
+            json!({ "count": 100, "window_secs": 60, "rate_per_min": 100.0 }),
+        ), obs(
+            2,
+            1800,
+            DATA_TYPE_KEYSTROKES,
+            json!({ "count": 100, "window_secs": 60, "rate_per_min": 100.0 }),
+        )];
+
+        let mut engine = FeatureEngine::new();
+        register_focus_v1(&mut engine).expect("reg");
+        let conf = last_focus_confidence(&engine.run(&typing_only).expect("run"));
+        assert!((conf - 1.0 / 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn idle_empty_snapshot_emits_no_features() {
+        let mut engine = FeatureEngine::new();
+        register_focus_v1(&mut engine).expect("reg");
+        let out = engine.run(&[]).expect("run");
+        assert!(out.features.is_empty());
+        assert!(out.signals.is_empty());
+    }
+
+    fn last_focus_confidence(out: &crate::EngineOutput) -> f64 {
+        out.features
+            .iter()
+            .rev()
+            .find(|f| f.feature_id == FEATURE_ID)
+            .map(|f| f.confidence.get())
+            .expect("FocusScore")
     }
 
     #[test]

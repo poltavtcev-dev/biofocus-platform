@@ -14,6 +14,7 @@
 //! Calendar pair via [`register_calendar_v1`].
 
 mod calendar_meeting;
+mod confidence;
 mod context_switch_rate;
 mod fatigue_index;
 mod focus_score;
@@ -21,6 +22,11 @@ mod meeting_density;
 mod recovery_between_meetings;
 mod stress_index;
 mod window;
+
+pub use confidence::{
+    compute_feature_confidence, compute_from_values, mean_observation_confidence,
+    single_family_confidence,
+};
 
 pub use context_switch_rate::{ContextSwitchRateNode, FEATURE_ID as CONTEXT_SWITCH_RATE_ID};
 pub use fatigue_index::{FatigueIndexNode, FEATURE_ID as FATIGUE_INDEX_ID};

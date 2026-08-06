@@ -66,7 +66,7 @@ impl From<&EngineOutput> for FeatureSnapshot {
 
 #[cfg(test)]
 mod tests {
-    use bio_spec::{Feature, FeatureValue, Severity, Signal, TimeWindow, UnixTimestamp};
+    use bio_spec::{Confidence, Feature, FeatureValue, Severity, Signal, TimeWindow, UnixTimestamp};
     use uuid::Uuid;
 
     use super::*;
@@ -80,6 +80,7 @@ mod tests {
             time_window: window,
             value: FeatureValue::Scalar(72.5),
             provenance: vec![Uuid::from_u128(1)],
+            confidence: Confidence::ONE,
         }
     }
 
@@ -119,6 +120,8 @@ mod tests {
         let obj = json.as_object().expect("object");
         assert!(obj.contains_key("feature_id"));
         assert!(obj.contains_key("provenance"));
+        assert!(obj.contains_key("confidence"));
+        assert_eq!(obj.get("confidence").and_then(|v| v.as_f64()), Some(1.0));
         assert!(!obj.contains_key("payload"));
         assert!(!obj.contains_key("hrv"));
     }

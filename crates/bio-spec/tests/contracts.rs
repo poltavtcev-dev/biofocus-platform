@@ -199,6 +199,7 @@ fn signal_feature_insight_serde_smoke() {
         time_window: window,
         value: FeatureValue::Scalar(72.5),
         provenance: vec![Uuid::nil()],
+        confidence: Confidence::ONE,
     };
     let feature_back: Feature =
         serde_json::from_str(&serde_json::to_string(&feature).expect("feature serialize"))

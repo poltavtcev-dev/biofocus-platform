@@ -4,17 +4,19 @@
 //! optional `busy` / `all_day`). Titles are never required. Tolerates partial
 //! calendars: malformed payloads are skipped, not fatal.
 
-use bio_spec::{Observation, TimeWindow};
+use bio_spec::{Confidence, Observation, TimeWindow};
 use uuid::Uuid;
 
 /// Canonical `data_type` for Calendar / meeting Observations.
 pub const DATA_TYPE_CALENDAR_EVENT: &str = "calendar_event";
 
 /// Parsed busy meeting interval from a `calendar_event` Observation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BusyMeeting {
     /// Source Observation id (provenance).
     pub observation_id: Uuid,
+    /// Source Observation confidence (ADR-007).
+    pub confidence: Confidence,
     /// Event start (unix secs).
     pub start: i64,
     /// Event end (unix secs).
@@ -153,6 +155,7 @@ fn parse_busy_meeting(obs: &Observation) -> Option<BusyMeeting> {
     }
     Some(BusyMeeting {
         observation_id: obs.id,
+        confidence: obs.confidence,
         start,
         end,
     })
@@ -208,11 +211,13 @@ mod tests {
     fn merges_overlapping_busy_time() {
         let a = BusyMeeting {
             observation_id: Uuid::from_u128(1),
+            confidence: Confidence::ONE,
             start: 0,
             end: 100,
         };
         let b = BusyMeeting {
             observation_id: Uuid::from_u128(2),
+            confidence: Confidence::ONE,
             start: 50,
             end: 150,
         };

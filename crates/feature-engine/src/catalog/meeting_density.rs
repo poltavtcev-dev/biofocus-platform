@@ -10,6 +10,8 @@
 //! - **Value:** merged busy overlap seconds clipped to the window ÷
 //!   [`WINDOW_SECS`](crate::catalog::WINDOW_SECS) → fraction in `[0.0, 1.0]`.
 //! - **Provenance:** Observation IDs of busy meetings overlapping the window.
+//! - **Confidence (ADR-007):** single family (calendar); when emitted,
+//!   `confidence = mean(meeting Observation.confidence)`.
 //! - No overlapping busy meetings → no Feature for that step.
 //! - Tolerates partial calendars (malformed rows skipped).
 
@@ -18,6 +20,7 @@ use bio_spec::{Feature, FeatureValue};
 use crate::catalog::calendar_meeting::{
     collect_busy_meetings, meeting_time_span, meetings_overlapping_window, merged_overlap_secs,
 };
+use crate::catalog::confidence::compute_from_values;
 use crate::catalog::window::{sliding_window_ends, window_ending_at, WINDOW_SECS};
 use crate::{ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput};
 
@@ -66,12 +69,15 @@ impl FeatureNode for MeetingDensityNode {
             );
             let density = (overlap as f64 / WINDOW_SECS as f64).clamp(0.0, 1.0);
             let provenance = overlapping.iter().map(|m| m.observation_id).collect();
+            let conf_values: Vec<f64> = overlapping.iter().map(|m| m.confidence.get()).collect();
+            let confidence = compute_from_values(1, 1, &conf_values);
 
             features.push(Feature {
                 feature_id: FEATURE_ID.to_owned(),
                 time_window: window,
                 value: FeatureValue::Scalar(density),
                 provenance,
+                confidence,
             });
         }
 

@@ -63,7 +63,8 @@ pub fn generate_insights(
 #[cfg(test)]
 mod tests {
     use bio_spec::{
-        EvidenceRef, Feature, FeatureValue, Insight, Severity, Signal, TimeWindow, UnixTimestamp,
+        Confidence, EvidenceRef, Feature, FeatureValue, Insight, Severity, Signal, TimeWindow,
+        UnixTimestamp,
     };
     use uuid::Uuid;
 
@@ -132,6 +133,7 @@ mod tests {
             time_window: window,
             value: FeatureValue::Scalar(72.5),
             provenance: vec![Uuid::from_u128(1)],
+            confidence: Confidence::ONE,
         }
     }
 

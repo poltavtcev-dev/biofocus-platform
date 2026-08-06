@@ -15,10 +15,13 @@
 //!   **renormalized** over components that have data.
 //! - **Provenance:** Observation IDs of `keystrokes`, `heart_rate`, and
 //!   `context_window` inside the Feature window.
+//! - **Confidence (ADR-007):** expected slots = 3 (Focus / active / HR);
+//!   `coverage × mean(evidence Observation.confidence)`. Empty → omit.
 //! - Emits only when at least one component is available.
 
 use bio_spec::{Feature, FeatureValue, Observation, TimeWindow};
 
+use crate::catalog::confidence::compute_feature_confidence;
 use crate::catalog::focus_score;
 use crate::catalog::window::{
     in_window, sliding_window_ends, snapshot_time_span, window_ending_at, STEP_SECS, WINDOW_SECS,
@@ -37,6 +40,8 @@ const DATA_TYPE_CONTEXT_WINDOW: &str = "context_window";
 const WEIGHT_LOW_FOCUS: f64 = 0.50;
 const WEIGHT_ACTIVE: f64 = 0.30;
 const WEIGHT_HR_SHIFT: f64 = 0.20;
+/// Catalog input families for ADR-007 coverage (Focus / active-load / HR).
+const EXPECTED_INPUT_SLOTS: usize = 3;
 
 /// Reference active minutes for a full workday (8h) → active score 100.
 const ACTIVE_DAY_MINUTES: f64 = 8.0 * 60.0;
@@ -124,19 +129,23 @@ fn score_window(
         .collect();
 
     let mut weighted: Vec<(f64, f64)> = Vec::new();
+    let mut present_slots = 0usize;
 
     if let Some(focus) = upstream_focus(ctx, window) {
         weighted.push((WEIGHT_LOW_FOCUS, (100.0 - focus).clamp(0.0, 100.0)));
+        present_slots += 1;
     }
 
     let active_score = active_load_score(ctx.observations(), snapshot_min, window.end.as_secs());
     if active_score > 0.0 || !keystrokes.is_empty() || !context.is_empty() {
         weighted.push((WEIGHT_ACTIVE, active_score));
+        present_slots += 1;
     }
 
     if let Some(mean_bpm) = mean_bpm(&heart_rate) {
         let drift = ((mean_bpm - baseline_bpm) / HR_SHIFT_REF_BPM * 100.0).clamp(0.0, 100.0);
         weighted.push((WEIGHT_HR_SHIFT, drift));
+        present_slots += 1;
     }
 
     if weighted.is_empty() {
@@ -150,19 +159,40 @@ fn score_window(
     let value = weighted.iter().map(|(w, s)| w * s).sum::<f64>() / w_sum;
 
     let mut provenance = Vec::new();
+    let mut evidence: Vec<&Observation> = Vec::new();
     for obs in keystrokes
         .iter()
         .chain(heart_rate.iter())
         .chain(context.iter())
     {
         provenance.push(obs.id);
+        evidence.push(*obs);
     }
+
+    // Focus slot may contribute without window Observations; still count coverage.
+    // When Focus-only (no local obs), use upstream Feature.confidence as evidence mean.
+    let confidence = if evidence.is_empty() {
+        if let Some(focus_feat) = ctx.features().iter().rev().find(|f| {
+            f.feature_id == focus_score::FEATURE_ID && f.time_window == *window
+        }) {
+            crate::catalog::confidence::compute_from_values(
+                EXPECTED_INPUT_SLOTS,
+                present_slots,
+                &[focus_feat.confidence.get()],
+            )
+        } else {
+            compute_feature_confidence(EXPECTED_INPUT_SLOTS, present_slots, &evidence)
+        }
+    } else {
+        compute_feature_confidence(EXPECTED_INPUT_SLOTS, present_slots, &evidence)
+    };
 
     Some(Feature {
         feature_id: FEATURE_ID.to_owned(),
         time_window: *window,
         value: FeatureValue::Scalar(value.clamp(0.0, 100.0)),
         provenance,
+        confidence,
     })
 }
 
