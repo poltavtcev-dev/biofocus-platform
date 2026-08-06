@@ -136,7 +136,12 @@ Example (non-empty):
       "timeWindow": { "start": 100, "end": 1000 },
       "value": 72.5,
       "provenance": ["0190…"],
-      "confidence": 1.0
+      "confidence": 1.0,
+      "factors": [
+        { "id": "typing", "label": "Typing activity", "share": 0.4 },
+        { "id": "stability", "label": "App stability", "share": 0.35 },
+        { "id": "hrv", "label": "Heart-rate variability", "share": 0.25 }
+      ]
     }
   ],
   "signals": [
@@ -159,6 +164,7 @@ Example (non-empty):
 | `features[].value` | number \| object | Scalar `f64` or structured JSON |
 | `features[].provenance` | string[] | Observation UUIDs used as evidence |
 | `features[].confidence` | number | `[0.0, 1.0]` derived Feature confidence (ADR-007); data quality, not clinical |
+| `features[].factors` | object[]? | Optional calm explanation factors (P7-E2). Omitted when empty / catalog does not emit yet. Each: `id` (stable), `label` (calm), `share` ∈ `[0.0, 1.0]` (renormalized; present shares sum ≈ 1.0). Not LLM prose; not clinical. |
 | `signals[]` | object | Optional Signals from the same engine run |
 | `signals[].type` | string | e.g. `High_Stress` |
 | `signals[].severity` | `"low"` \| `"medium"` \| `"high"` \| `"critical"` | Wire form of `bio_spec::Severity` |

@@ -31,10 +31,14 @@ Feature.confidence = clamp(coverage × mean_obs, 0.0, 1.0)
 
 - **Expected slots** are Feature-specific (e.g. FocusScore = 3: typing / stability / HRV; StressIndex = 1: HRV; ContextSwitchRate / calendar Features = 1).
 - **Missing-input policy:** empty windows that cannot compute a value → **omit** the Feature for that step (unchanged). Partial inputs that still yield a value → **emit with lower confidence** (coverage < 1). Idle / no evidence → empty snapshot (no busy-loop).
-- **No SQLite schema change** for Feature confidence in v1 (in-memory / IPC only). Explanation factor breakdown → P7-E2.
+- **No SQLite schema change** for Feature confidence in v1 (in-memory / IPC only). Explanation factor breakdown → P7-E2 (additive optional `Feature.factors`; **no** separate ADR — see note below).
 
 **Rejected alternatives**
 
 1. UI-only opacity/heuristics without a Core `Feature.confidence` field.
 2. A second Feature registry or parallel confidence table.
 3. Treating Feature confidence as identical to Observation.confidence.
+
+### Note — Explanation factors (P7-E2, no ADR)
+
+Additive optional `Feature.factors: Vec<ExplanationFactor>` `{ id, label, share }` on domain + snapshot IPC. Catalog nodes that emit factors use renormalized shares summing to `1.0` over present components. Empty factors omit the JSON key (`skip_serializing_if`). Calm labels only (inputs/weights — not clinical). **No** SQLite schema; **no** Explainability Engine crate. First emitter: `FocusScore`.

@@ -27,7 +27,7 @@ Zero telemetry by default · AI only on explicit user action · separate permiss
 | Level | Name | Role | Implementation today |
 | :--- | :--- | :--- | :--- |
 | **L1** | Observations | Immutable raw facts (user rarely inspects) | SQLite + ingest + macOS collectors + sample HR |
-| **L2** | Features | Deterministic metrics + provenance + confidence (ADR-007) | `feature-engine` DAG (`FeatureNode`) |
+| **L2** | Features | Deterministic metrics + provenance + confidence (ADR-007) + optional explanation factors (P7-E2) | `feature-engine` DAG (`FeatureNode`) |
 | **L3** | Knowledge | Patterns / Insights from Features (+ Evidence) | `knowledge-engine` `InsightRule` (evaluate-on-read) |
 | **L4** | Recommendations | Deterministic suggested actions with Evidence | Thin optional text on Insight; engine later (Phase 9) |
 | **L5** | Coaching (AI) | NL explanation only — never computes Features | `report-engine` + opt-in local LLM |

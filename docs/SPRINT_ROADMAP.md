@@ -24,39 +24,41 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P7-E1-T1** |
+| **Ready** | **P7-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **P7-E1-T1** |
 
-**Epic status:** P7-E1 ⬜ (T1 Ready) · P7-E2 ⬜ · P7-E3 ⬜
+**Epic status:** P7-E1 ✅ · P7-E2 ⬜ (T1 Ready) · P7-E3 ⬜
 
 **Phase 7 on `/docs/14-roadmap.md`:** opened 2026-08-06
 
 **Рекомендуемый порядок:**  
-**P7-E1-T1** → P7-E2-T1 → P7-E3-T1
+~~P7-E1-T1~~ → **P7-E2-T1** → P7-E3-T1
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **related work → PR** (`docs/12-development.md`).  
-**Suggested branch:** `phase/7-trust-layer` (base on latest `main` after Phase 6 cluster lands, or continue from `phase/6-dogfood-fixes` tip if still open).
+**Suggested branch:** `phase/7-trust-layer`.
 
 ### Active assignment
 
-**Ready now:** **P7-E1-T1** — Feature confidence contract + ADR + Core/snapshot wire (Dev).  
-Brief: `docs/handoffs/P7-E1-T1-pm-brief.md`.
+**Ready now:** **P7-E2-T1** — Explanation factors on Features (Dev).  
+Brief: `docs/handoffs/P7-E2-T1-pm-brief.md`.
 
-**Closed (Phase 6):** P6-E3-T2 (QA Pass, 2026-08-06) — `MeetingDensity` + `RecoveryBetweenMeetings`; Epic **P6-E3** ✅ · Phase 6 Kanban complete. Evidence: `docs/handoffs/P6-E3-T2-qa-to-pm.md`. Branch tip: `phase/6-dogfood-fixes`.
+**Closed:** P7-E1-T1 (QA Pass, 2026-08-06) — ADR-007 Feature confidence + domain/IPC wire; Epic **P7-E1** ✅. Evidence: `docs/handoffs/P7-E1-T1-qa-to-pm.md`. Branch: `phase/7-trust-layer`.
 
-**Ops note:** Phase 6 cluster PR on `phase/6-dogfood-fixes` (or life-context tip) when ready to ship — does not block starting P7 design/code on a follow-up branch. Phase 4/5 cluster PRs remain optional parallel ops.
+**Closed (Phase 6):** P6-E3-T2 (QA Pass, 2026-08-06) — `MeetingDensity` + `RecoveryBetweenMeetings`; Epic **P6-E3** ✅ · Phase 6 Kanban complete. Evidence: `docs/handoffs/P6-E3-T2-qa-to-pm.md`.
+
+**Ops note:** Fold ADR-007 + confidence code into Phase 7 cluster PR on `phase/7-trust-layer` when Ready to ship (with E2/E3 or coherent subset). Phase 4/5/6 cluster PRs remain optional parallel ops.
 
 ---
 
-## Epic P7-E1 — Feature confidence
+## Epic P7-E1 — Feature confidence ✅ Done
 
 **Цель:** Feature-level confidence (0–1) derived from input coverage / Observation confidence — not a parallel registry. ADR if domain/IPC shape grows; wire into `Feature` + snapshot consumers.
 
-### P7-E1-T1 — Feature confidence contract + ADR + wire ✅ Ready
+### P7-E1-T1 — Feature confidence contract + ADR + wire ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
@@ -64,6 +66,7 @@ Brief: `docs/handoffs/P7-E1-T1-pm-brief.md`.
 | **Depends on** | Phase 6 Done (real Features + calendar/bio Observations); vision Trust layer |
 | **AC** | (1) Record **ADR-007**: Feature-level confidence (vs Observation.confidence only); v1 formula strategy documented (coverage / mean Observation confidence / missing-input policy — exact rule in ADR + catalog note). (2) Domain + contracts: `Feature` (and snapshot IPC JSON) expose confidence in `[0.0, 1.0]` without breaking Ubiquitous Language; no new SQLite schema unless ADR + user approve. (3) At least Focus/Stress (or catalog_v1 path) **compute** confidence; empty/thin windows → low or omitted per ADR (explicit, tested). (4) Unit tests: full inputs → high confidence; missing HRV/context → lower; idle-safe. (5) Docs: domain model + catalog rule updated. (6) Handoff: `docs/handoffs/P7-E1-T1-dev-to-qa.md`. |
 | **Out of scope** | Explanation factor breakdown (→ **E2-T1**), new bio Features (→ **E3**), Pattern Discovery, Dashboard redesign, Action/automation framework |
+| **Shipped** | ADR-007 (`coverage × mean_obs`); `Feature.confidence` + snapshot IPC; all `register_catalog_v1` nodes; QA Pass 2026-08-06. Epic **P7-E1** closed. |
 
 ---
 
@@ -71,14 +74,14 @@ Brief: `docs/handoffs/P7-E1-T1-pm-brief.md`.
 
 **Цель:** Calm “why this value” factor breakdown on Features (weights / contributions) — builds on provenance + confidence; no clinical tone.
 
-### P7-E2-T1 — Explanation factors on Features
+### P7-E2-T1 — Explanation factors on Features ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/feature-engine`, contracts / API docs, optional Dashboard read-only display later |
+| **Modules** | `crates/bio-spec` (if shape needs field), `crates/feature-engine`, contracts / API docs (`07` / `09`), catalog notes |
 | **Depends on** | P7-E1-T1 |
-| **AC** | Documented factor shape; ≥1 catalog Feature emits factors; tests; idle-safe; calm naming. Handoff required. |
-| **Out of scope** | LLM-generated explanations; Pattern Discovery; new SQLite history store |
+| **AC** | (1) Document factor shape (id/label + contribution weight or share; calm non-clinical names) in domain/contracts/catalog — ADR only if IPC/domain boundary grows beyond additive optional field. (2) ≥1 catalog Feature (prefer `FocusScore` or `StressIndex`) **emits** factors alongside value + confidence + provenance. (3) Snapshot IPC exposes factors (or documented omit-until-present policy) without UI→DB. (4) Unit tests: factors sum/policy documented; empty/thin windows idle-safe. (5) Handoff: `docs/handoffs/P7-E2-T1-dev-to-qa.md`. |
+| **Out of scope** | LLM-generated explanations; Pattern Discovery; new SQLite history store; full Dashboard “Why?” redesign (read-only display optional, not required) |
 
 ---
 
@@ -196,8 +199,8 @@ Epics: workspace/`bio-spec`/`runtime` → SQLite WAL + `ObservationRepository` �
 
 ## Sprint 13–14 — Queue
 
-1. **P7-E1-T1 — Feature confidence contract + ADR + wire** ← **Ready**  
-2. P7-E2-T1 — Explanation factors on Features  
+1. ~~P7-E1-T1 — Feature confidence contract + ADR + wire~~ **Done** (QA Pass) · Epic **P7-E1** ✅  
+2. **P7-E2-T1 — Explanation factors on Features** ← **Ready**  
 3. P7-E3-T1 — First bio-backed Trust Features  
 
-**Git:** `phase/7-trust-layer` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship. Phase 6 tip: fold T2 + dogfood fixes into cluster PR when shipping.
+**Git:** `phase/7-trust-layer` → related commits → **one cluster PR** when E1–E3 (or coherent subset) is Ready to ship.

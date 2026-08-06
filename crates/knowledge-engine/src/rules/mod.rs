@@ -72,6 +72,7 @@ mod tests {
             value: FeatureValue::Scalar(value),
             provenance: vec![],
             confidence: Confidence::ONE,
+            factors: Vec::new(),
         }
     }
 

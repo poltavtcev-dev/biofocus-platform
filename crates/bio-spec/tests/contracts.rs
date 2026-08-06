@@ -200,11 +200,30 @@ fn signal_feature_insight_serde_smoke() {
         value: FeatureValue::Scalar(72.5),
         provenance: vec![Uuid::nil()],
         confidence: Confidence::ONE,
+        factors: vec![bio_spec::ExplanationFactor {
+            id: "typing".into(),
+            label: "Typing activity".into(),
+            share: 1.0,
+        }],
     };
+    let feature_json = serde_json::to_value(&feature).expect("feature serialize");
+    assert!(feature_json.get("factors").is_some());
     let feature_back: Feature =
-        serde_json::from_str(&serde_json::to_string(&feature).expect("feature serialize"))
-            .expect("feature deserialize");
+        serde_json::from_value(feature_json).expect("feature deserialize");
     assert_eq!(feature_back, feature);
+
+    // Omit-until-present: JSON without factors deserializes to empty vec.
+    let bare = serde_json::json!({
+        "feature_id": "StressIndex",
+        "time_window": { "start": 0, "end": 900 },
+        "value": 10.0,
+        "provenance": [],
+        "confidence": 1.0
+    });
+    let bare_feat: Feature = serde_json::from_value(bare).expect("bare feature");
+    assert!(bare_feat.factors.is_empty());
+    let bare_out = serde_json::to_value(&bare_feat).expect("re-serialize");
+    assert!(bare_out.get("factors").is_none());
 
     let insight = Insight {
         id: Uuid::nil(),

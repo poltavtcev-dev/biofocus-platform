@@ -24,7 +24,7 @@ pub use calendar_event::{
     validate_calendar_event_payload, DATA_TYPE_CALENDAR_EVENT,
 };
 pub use error::{SpecError, SpecResult};
-pub use feature::{Feature, FeatureId, FeatureValue, Provenance};
+pub use feature::{ExplanationFactor, Feature, FeatureId, FeatureValue, Provenance};
 pub use insight::{EvidenceRef, Insight, InsightId};
 pub use life_event::{
     is_v1_life_event_kind, validate_life_event_payload, validate_observation_payload,

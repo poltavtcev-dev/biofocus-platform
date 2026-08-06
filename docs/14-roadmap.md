@@ -25,8 +25,8 @@
   - Desktop quick-log — **P6-E2 Done**.
   - Calendar Observations + `MeetingDensity` / `RecoveryBetweenMeetings` — **P6-E3 Done**.
 - [ ] **Phase 7: Trust layer (Sprint 13–14)** — **opened 2026-08-06**
-  - Feature confidence (ADR-007) + Core/snapshot wire — Ready **P7-E1-T1**.
-  - Explanation factors → bio-backed catalog Features (E2–E3).
+  - Feature confidence (ADR-007) + Core/snapshot wire — **P7-E1 Done**.
+  - Explanation factors — Ready **P7-E2-T1** → bio-backed catalog Features (E3).
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
@@ -44,6 +44,6 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM ga
 **Phase 4:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR when ready)  
 **Phase 5:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P5-*-qa-to-pm.md` · branch `phase/5-wearable-dogfood` (cluster PR when ready)  
 **Phase 6:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P6-*-qa-to-pm.md` · tip `phase/6-dogfood-fixes` (cluster PR when ready)  
-**Phase 7:** active — `docs/SPRINT_ROADMAP.md` · Ready **P7-E1-T1** · branch `phase/7-trust-layer`  
+**Phase 7:** active — `docs/SPRINT_ROADMAP.md` · P7-E1 Done · Ready **P7-E2-T1** · branch `phase/7-trust-layer`  
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → PR (classic); see `docs/12-development.md`.

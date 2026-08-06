@@ -39,7 +39,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Dogfood:** end-to-end operator runbook in `docs/12-development.md` § Wearable dogfood runbook. Companion READMEs mirror the same steps.
 - Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
 - **Phase 6 (Done):** Life Events (ADR-006) + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`. Wearable dogfood verified: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health).
-- **Phase 7 (active):** Trust layer — Feature confidence (**P7-E1-T1** Ready) → Explanation factors → bio-backed catalog Features. Later: more HealthKit types; plugins (IDE/Git/Browser).
+- **Phase 7 (active):** Trust layer — Feature confidence (**ADR-007 / P7-E1 Done**) → Explanation factors (**P7-E2-T1** Ready) → bio-backed catalog Features. Later: more HealthKit types; plugins (IDE/Git/Browser).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 
 Dogfood tip: if `base_url_hints` is empty under `BIOFOCUS_INGEST_LAN=1`, set `BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>` before pairing.
@@ -116,7 +116,7 @@ Immediate Kanban = **Phase 7** only. Open later via PM (`/docs/14-roadmap.md`, `
 | :--- | :--- |
 | **5** | Wearable dogfood (LAN → HealthKit) — **done** |
 | **6** | Life Events v1 + Calendar Features — **done** |
-| **7** | Feature confidence + Explanation factors — **active** (Ready **P7-E1-T1**) |
+| **7** | Feature confidence + Explanation factors — **active** (P7-E1 Done · Ready **P7-E2-T1**) |
 | **8** | Pattern Discovery v1 (ADR for history/recompute) |
 | **9** | Deterministic Recommendations |
 | **10** | Plugin wave-1 (IDE/Git or Browser) |

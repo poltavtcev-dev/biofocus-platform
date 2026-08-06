@@ -86,6 +86,7 @@ impl FeatureNode for ContextSwitchRateNode {
                 value: FeatureValue::Scalar(rate),
                 provenance,
                 confidence,
+                factors: Vec::new(),
             });
         }
 

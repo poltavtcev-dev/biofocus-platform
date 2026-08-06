@@ -78,6 +78,7 @@ impl FeatureNode for MeetingDensityNode {
                 value: FeatureValue::Scalar(density),
                 provenance,
                 confidence,
+                factors: Vec::new(),
             });
         }
 

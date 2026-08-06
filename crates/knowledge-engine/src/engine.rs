@@ -134,6 +134,7 @@ mod tests {
             value: FeatureValue::Scalar(72.5),
             provenance: vec![Uuid::from_u128(1)],
             confidence: Confidence::ONE,
+            factors: Vec::new(),
         }
     }
 

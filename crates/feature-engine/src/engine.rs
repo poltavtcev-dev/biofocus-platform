@@ -213,6 +213,7 @@ mod tests {
                 value: FeatureValue::Scalar(1.0),
                 provenance: ctx.observations().iter().map(|o| o.id).collect(),
             confidence: Confidence::ONE,
+            factors: Vec::new(),
             }]))
         }
     }

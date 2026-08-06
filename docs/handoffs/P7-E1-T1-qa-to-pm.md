@@ -26,9 +26,9 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P7-E1-T1 → Done; Ready **P7-E2-T1** (Explanation factors)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS.md` note Feature confidence shipped (ADR-007); fold into next code PR with `phase/7-trust-layer`
+- [x] `/docs/SPRINT_ROADMAP.md` — P7-E1-T1 → Done; Ready **P7-E2-T1** (Explanation factors)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS.md` / `14-roadmap.md` note Feature confidence shipped (ADR-007); fold into next code PR with `phase/7-trust-layer`
 
 ## Suggested next Ready task
 - **P7-E2-T1** — Explanation factors (per PM brief / sprint roadmap)

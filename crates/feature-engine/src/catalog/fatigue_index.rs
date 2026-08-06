@@ -193,6 +193,7 @@ fn score_window(
         value: FeatureValue::Scalar(value.clamp(0.0, 100.0)),
         provenance,
         confidence,
+        factors: Vec::new(),
     })
 }
 

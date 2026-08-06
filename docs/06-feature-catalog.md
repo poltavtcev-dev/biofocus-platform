@@ -22,6 +22,7 @@
 - **Output:** Float (0.0 — 100.0).
 - **Provenance:** union Observation IDs keystrokes / hrv / context в окне.
 - **Confidence (ADR-007):** expected slots = 3 (typing / stability / HRV); `confidence = coverage × mean(evidence Observation.confidence)`. Thin windows (missing HRV/context) → lower confidence; empty → omit Feature.
+- **Explanation factors (P7-E2):** when emitted, factors for present components — `typing` (“Typing activity”), `stability` (“App stability”), `hrv` (“Heart-rate variability”); `share = catalog_weight / sum(present weights)` (shares sum to 1.0). Calm input composition only — not clinical. Empty window → omit Feature (no empty-factors-only emit).
 - **DAG:** зависит от `ContextSwitchRate`; `register_focus_v1`.
 
 ### 1.3 `StressIndex`
@@ -89,4 +90,4 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** → P7-E2.
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore` first; others may omit until wired).
