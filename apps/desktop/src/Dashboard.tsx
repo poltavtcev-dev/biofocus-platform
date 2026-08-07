@@ -28,6 +28,7 @@ import {
 import {
   fetchInsights,
   formatEvidenceRef,
+  formatInsightCategory,
   loadingInsightsView,
   type InsightsView,
 } from "./insights";
@@ -200,21 +201,27 @@ function InsightsSlot({ view }: { view: InsightsView }) {
       <p className="chart-slot-title">Insights</p>
       {showList ? (
         <ul className="insight-rows">
-          {view.insights.map((insight) => (
-            <li key={insight.id} className="insight-row">
-              <p className="insight-title">{insight.title}</p>
-              <p className="insight-description">{insight.description}</p>
-              {insight.evidenceList.length > 0 && (
-                <p className="insight-evidence">
-                  Evidence:{" "}
-                  {insight.evidenceList.map(formatEvidenceRef).join(" · ")}
-                </p>
-              )}
-              {insight.actionRecommendation && (
-                <p className="insight-action">{insight.actionRecommendation}</p>
-              )}
-            </li>
-          ))}
+          {view.insights.map((insight) => {
+            const categoryLabel = formatInsightCategory(insight.category);
+            return (
+              <li key={insight.id} className="insight-row">
+                {categoryLabel && (
+                  <p className="insight-category">{categoryLabel}</p>
+                )}
+                <p className="insight-title">{insight.title}</p>
+                <p className="insight-description">{insight.description}</p>
+                {insight.evidenceList.length > 0 && (
+                  <p className="insight-evidence">
+                    Evidence:{" "}
+                    {insight.evidenceList.map(formatEvidenceRef).join(" · ")}
+                  </p>
+                )}
+                {insight.actionRecommendation && (
+                  <p className="insight-action">{insight.actionRecommendation}</p>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <>

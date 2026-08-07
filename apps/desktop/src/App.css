@@ -307,6 +307,14 @@ body {
   padding-bottom: 0;
 }
 
+.insight-category {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bf-meta);
+}
+
 .insight-title {
   margin: 0;
   font-size: 0.9rem;

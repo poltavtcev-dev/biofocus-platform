@@ -39,9 +39,9 @@ None blocking.
 - Dashboard / Insights UX polish remains **P8-E3-T1** (Core `get_insights` path already evaluates the new rule).
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P8-E2-T1 → Done; Ready **P8-E3-T1**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `docs/12-development.md` (Pattern Discovery baseline note); `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` Phase 8 progress
+- [x] `/docs/SPRINT_ROADMAP.md` — P8-E2-T1 → Done; Ready **P8-E3-T1**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `docs/12-development.md` (Pattern Discovery baseline note); `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` Phase 8 progress
 
 ## Suggested next Ready task
 - **P8-E3-T1** — Insights IPC / UX for patterns (surface baseline Insights calmly in Dashboard)

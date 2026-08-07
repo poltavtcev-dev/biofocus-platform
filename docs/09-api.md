@@ -171,15 +171,15 @@ Example (non-empty):
 
 Core API (crate): `feature_engine::FeatureSnapshot::from_engine_output` — Features + Signals without Observation payloads.
 
-### `get_insights` (P4-E2-T3)
+### `get_insights` (P4-E2-T3 / P8-E2 / P8-E3)
 
 - **Invoke:** `invoke("get_insights")`
 - **Purpose:** Recent Insights for the Dashboard list (calm copy + evidence refs).
-- **Source:** Evaluate-on-read over the same in-memory Feature snapshot cache as [`get_feature_snapshot`](#get_feature_snapshot-p4-e1-t1). Host registers `knowledge_engine::register_insights_v1` once at startup, then `KnowledgeEngine::evaluate(&features, &signals)`.
-- **Empty:** `{ "insights": [] }` when idle / no matching rules / evaluate soft-fail / engine not managed. An empty/`new()` engine without registration also yields `[]`.
-- **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM text. No SQLite on the command path.
+- **Source:** Evaluate-on-read over the same in-memory Feature snapshot cache as [`get_feature_snapshot`](#get_feature_snapshot-p4-e1-t1). Host registers `knowledge_engine::register_insights_v1` once at startup, then `KnowledgeEngine::evaluate_with_pattern(&features, &signals, &pattern)` (pattern inputs may include a bounded recompute-on-read baseline series).
+- **Empty:** `{ "insights": [] }` when idle / no matching rules / thin baseline history / evaluate soft-fail / engine not managed. An empty/`new()` engine without registration also yields `[]`. Dashboard shows a calm empty state (no error noise).
+- **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM text. No SQLite on the command path (UI ↛ DB).
 
-**Pattern Discovery v1 (ADR-008 — contracts sketch; implement → P8-E2):** Baseline / multi-day rules stay on this IPC. Core may recompute a **bounded** Feature series from local Observations for comparison (recompute-on-read); optional in-process memo only — **no** Feature-history SQLite table and **no** UI→DB. Thin history or low confidence → omit the Insight. Copy remains calm personal observation (not clinical). Example rule shape: `focus_vs_recent_baseline_v1` (current `FocusScore` vs mean of ≤7 prior comparable windows).
+**Pattern Discovery v1 (ADR-008):** Baseline / multi-day rules stay on this IPC. Core may recompute a **bounded** Feature series from local Observations for comparison (recompute-on-read); optional in-process memo only — **no** Feature-history SQLite table and **no** UI→DB. Thin history or low confidence → omit the Insight. Copy remains calm personal observation (not clinical). Shipped rule: `focus_vs_recent_baseline_v1` (current `FocusScore` vs mean of ≤7 prior UTC afternoon windows; category `pattern`). Dashboard lists Insights as returned and shows a calm category affordance (`Pattern` / `Focus` / `Stress`).
 
 Example (non-empty):
 
@@ -207,7 +207,7 @@ Example (non-empty):
 | `insights[].id` | string | Insight UUID |
 | `insights[].title` | string | Calm, non-clinical title |
 | `insights[].description` | string | Short explanatory copy |
-| `insights[].category` | string | e.g. `stress`, `focus` |
+| `insights[].category` | string | e.g. `pattern`, `stress`, `focus` |
 | `insights[].evidenceList[]` | object | `kind`: `"feature"` \| `"signal"`; `id`: Feature id or Signal UUID |
 | `insights[].actionRecommendation` | string? | Optional gentle suggestion |
 
@@ -216,7 +216,9 @@ Host contract:
 ```rust
 let mut engine = KnowledgeEngine::new();
 register_insights_v1(&mut engine)?;
-let insights = engine.evaluate(&features, &signals)?;
+// Snapshot-only rules: evaluate(&features, &signals)
+// Pattern Discovery: evaluate_with_pattern(&features, &signals, &pattern)
+let insights = engine.evaluate_with_pattern(&features, &signals, &pattern)?;
 ```
 
 ### report-engine (crate API, P4-E3-T1 / T2)

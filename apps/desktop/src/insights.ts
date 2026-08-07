@@ -87,7 +87,39 @@ export function formatEvidenceRef(ref: EvidenceRefDto): string {
   return `${ref.kind} ${ref.id}`;
 }
 
-/** QA: `?mockInsights=empty|ready|error` forces Insights state without Core. */
+/**
+ * Calm category label for list rows (Core `category` as returned).
+ * No clinical framing — personal pattern / focus / stress only.
+ */
+export function formatInsightCategory(category: string): string {
+  const key = category.trim().toLowerCase();
+  if (key === "pattern") {
+    return "Pattern";
+  }
+  if (key === "focus") {
+    return "Focus";
+  }
+  if (key === "stress") {
+    return "Stress";
+  }
+  if (!key) {
+    return "";
+  }
+  return category.trim();
+}
+
+/** Sample baseline / pattern Insight (mirrors `focus_vs_recent_baseline_v1` copy). */
+const MOCK_PATTERN_INSIGHT: InsightDto = {
+  id: "01900000-0000-7000-8000-000000000003",
+  title: "Focus relative to your recent average",
+  description: "Focus looks higher than your recent afternoon average.",
+  category: "pattern",
+  evidenceList: [{ kind: "feature", id: "FocusScore" }],
+  actionRecommendation:
+    "Noticing a stronger focus stretch than recent afternoons — keep the setup that is working if it still feels right.",
+};
+
+/** QA: `?mockInsights=empty|ready|pattern|error` forces Insights state without Core. */
 export function mockInsightsFromLocation(
   search: string = typeof window !== "undefined" ? window.location.search : "",
 ): InsightsView | null {
@@ -98,8 +130,12 @@ export function mockInsightsFromLocation(
   if (raw === "error") {
     return insightsView("error", "mock");
   }
+  if (raw === "pattern") {
+    return insightsView("ready", "mock", [MOCK_PATTERN_INSIGHT]);
+  }
   if (raw === "ready") {
     return insightsView("ready", "mock", [
+      MOCK_PATTERN_INSIGHT,
       {
         id: "01900000-0000-7000-8000-000000000001",
         title: "Sustained stress pattern",

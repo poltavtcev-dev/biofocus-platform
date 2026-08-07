@@ -34,13 +34,22 @@ via **Open Dashboard** (`invoke("open_dashboard")`). Snapshot via
 Recharts series for `FocusScore`, `StressIndex`, `FatigueIndex`, and
 `ContextSwitchRate` when present (calm labels; scores 0–100; CSR on secondary
 axis). Insights list via `get_insights` (evaluate-on-read over the same Feature
-cache; calm empty state when none). Soft refresh ~30s.
+cache; Pattern Discovery baseline rules included when history supports them;
+calm empty state when none / thin history). Soft refresh ~30s. Rows show a
+calm category label (`Pattern` / `Focus` / `Stress`) from Core `category` —
+title and description are rendered as returned (no clinical UI chrome).
 
 QA mocks:
 - `?view=dashboard&mockSnapshot=empty|ready|error`
   (`ready` includes a multi-window series for chart smoke)
-- `?view=dashboard&mockInsights=empty|ready|error`
-  (`ready` includes two sample Insights with evidence refs)
+- `?view=dashboard&mockInsights=empty|ready|pattern|error`
+  (`ready` includes pattern + stress + focus sample Insights;
+  `pattern` is a single `focus_vs_recent_baseline_v1`-shaped Insight)
+
+Dogfood (live pattern Insight): run the desktop app with multi-day afternoon
+FocusScore evidence (UTC 13:00–17:00 windows, confidence ≥ 0.4, |Δ| ≥ 10 vs
+baseline mean). Thin history → empty Insights list (no error). UI never opens
+SQLite — only `invoke("get_insights")`.
 
 ## Life Events quick-log (P6-E2-T1)
 

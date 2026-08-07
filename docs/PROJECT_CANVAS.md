@@ -40,7 +40,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
 - **Phase 6 (Done):** Life Events (ADR-006) + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`. Wearable dogfood verified: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health).
 - **Phase 7 (Done):** Trust layer — ADR-007 confidence → Explanation factors → `RecoveryScore`.
-- **Phase 8 (active):** Pattern Discovery v1 — ADR-008 **recompute-on-read** (P8-E1 Done) → baseline Knowledge (**P8-E2-T1** Ready) → Insights surface. Later: more HealthKit types; plugins (IDE/Git/Browser).
+- **Phase 8 (active):** Pattern Discovery v1 — ADR-008 **recompute-on-read** (P8-E1) → `focus_vs_recent_baseline_v1` (P8-E2 Done) → Insights surface (**P8-E3-T1** Ready). Later: more HealthKit types; plugins (IDE/Git/Browser).
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 
@@ -119,7 +119,7 @@ Immediate Kanban = **Phase 8** only. Open later via PM (`/docs/14-roadmap.md`, `
 | **5** | Wearable dogfood (LAN → HealthKit) — **done** |
 | **6** | Life Events v1 + Calendar Features — **done** |
 | **7** | Feature confidence + Explanation factors + RecoveryScore — **done** |
-| **8** | Pattern Discovery v1 (ADR-008 recompute-on-read) — **active** (Ready **P8-E2-T1**) |
+| **8** | Pattern Discovery v1 (ADR-008 + baseline Insight) — **active** (Ready **P8-E3-T1**) |
 | **9** | Deterministic Recommendations |
 | **10** | Plugin wave-1 (IDE/Git or Browser) |
 | **11** | AI coaching polish (prompts / providers UX) |
