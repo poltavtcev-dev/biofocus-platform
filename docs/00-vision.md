@@ -64,12 +64,11 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight)
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 7** only (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
+Immediate Kanban = **Phase 8** only (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
-| **0–6** | Done — foundation → ingest → pipeline → Dashboard/Insights → wearable dogfood → Life Events + Calendar Features |
-| **7** | Trust layer — Feature confidence + Explanation factors + few bio-backed Features |
+| **0–7** | Done — foundation → ingest → pipeline → Dashboard/Insights → wearable dogfood → Life Events + Calendar → Trust layer (confidence / factors / RecoveryScore) |
 | **8** | Pattern Discovery v1 — multi-day / baseline Knowledge (ADR) |
 | **9** | Deterministic Recommendations engine |
 | **10** | Plugin wave-1 (IDE/Git or Browser categories — dogfood-driven) |

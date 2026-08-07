@@ -28,3 +28,4 @@
 ### 1.4 Knowledge & Insight (Инсайты)
 - **Description:** Аналитический вывод о закономерности с подтверждающими уликами (Evidence).
 - **Properties:** `id`, `title`, `description`, `category`, `evidence_list` (Array of Feature/Signal IDs), `action_recommendation`.
+- **Pattern Discovery (ADR-008):** Multi-day / baseline Insights use **recompute-on-read** Feature series from local Observations — not a persisted Feature history store. Optional in-process memo only. Calm personal observations, not clinical claims. Implement rules in `knowledge-engine` (→ P8-E2).

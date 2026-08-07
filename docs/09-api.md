@@ -179,6 +179,8 @@ Core API (crate): `feature_engine::FeatureSnapshot::from_engine_output` — Feat
 - **Empty:** `{ "insights": [] }` when idle / no matching rules / evaluate soft-fail / engine not managed. An empty/`new()` engine without registration also yields `[]`.
 - **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM text. No SQLite on the command path.
 
+**Pattern Discovery v1 (ADR-008 — contracts sketch; implement → P8-E2):** Baseline / multi-day rules stay on this IPC. Core may recompute a **bounded** Feature series from local Observations for comparison (recompute-on-read); optional in-process memo only — **no** Feature-history SQLite table and **no** UI→DB. Thin history or low confidence → omit the Insight. Copy remains calm personal observation (not clinical). Example rule shape: `focus_vs_recent_baseline_v1` (current `FocusScore` vs mean of ≤7 prior comparable windows).
+
 Example (non-empty):
 
 ```json

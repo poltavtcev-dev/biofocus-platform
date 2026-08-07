@@ -26,3 +26,10 @@ CREATE TABLE IF NOT EXISTS observations (
 );
 CREATE INDEX IF NOT EXISTS idx_obs_ts ON observations(timestamp);
 CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp);
+```
+
+### Pattern Discovery / Feature history (ADR-008)
+
+- **v1:** Observations remain the only durable history. Features and baselines are **not** persisted as SQLite rows.
+- **No migration** for Feature history / baseline tables under ADR-008.
+- Future optional daily rollup table requires a **new ADR + user approve** — not part of Pattern Discovery v1.

@@ -39,7 +39,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Dogfood:** end-to-end operator runbook in `docs/12-development.md` § Wearable dogfood runbook. Companion READMEs mirror the same steps.
 - Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
 - **Phase 6 (Done):** Life Events (ADR-006) + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`. Wearable dogfood verified: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health).
-- **Phase 7 (active):** Trust layer — Feature confidence (**ADR-007 / P7-E1 Done**) → Explanation factors (**P7-E2 Done**) → bio-backed catalog Features (**P7-E3-T1** Ready). Later: more HealthKit types; plugins (IDE/Git/Browser).
+- **Phase 7 (Done):** Trust layer — ADR-007 confidence → Explanation factors → `RecoveryScore`.
+- **Phase 8 (active):** Pattern Discovery v1 — ADR-008 history/recompute (**P8-E1-T1** Ready) → baseline Knowledge → Insights surface. Later: more HealthKit types; plugins (IDE/Git/Browser).
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 
@@ -111,14 +112,15 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 7** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
+Immediate Kanban = **Phase 8** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
 
 | Phase | Focus |
 | :--- | :--- |
 | **5** | Wearable dogfood (LAN → HealthKit) — **done** |
 | **6** | Life Events v1 + Calendar Features — **done** |
-| **7** | Feature confidence + Explanation factors — **active** (P7-E1/E2 Done · Ready **P7-E3-T1**) |
-| **8** | Pattern Discovery v1 (ADR for history/recompute) |
+| **7** | Feature confidence + Explanation factors + RecoveryScore — **done** |
+| **8** | Pattern Discovery v1 (ADR history/recompute) — **active** (Ready **P8-E1-T1**) |
+| **9** | Deterministic Recommendations |
 | **9** | Deterministic Recommendations |
 | **10** | Plugin wave-1 (IDE/Git or Browser) |
 | **11** | AI coaching polish (prompts / providers UX) |

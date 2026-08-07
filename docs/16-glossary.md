@@ -5,6 +5,6 @@
 - **Calendar Event:** Локальный календарный/meeting факт как `Observation` с `data_type: "calendar_event"` (uid/start/end/busy; без title/body) — dogfood через opt-in ICS (`BIOFOCUS_CALENDAR`), без cloud OAuth (P6-E3-T1).
 - **Signal:** Зафиксированная в реальном времени аномалия или переход состояния (например, всплеск пульса).
 - **Feature:** Рассчитанный за временной интервал метрический показатель (например, FocusScore), с `confidence` качества данных окна (ADR-007) и опциональными `factors` (P7-E2 — спокойный разбор вкладов входов) — не клиническая оценка.
-- **Insight:** Готовый аналитический вывод с фактами-доказательствами (Evidence).
+- **Insight:** Готовый аналитический вывод с фактами-доказательствами (Evidence). Pattern Discovery v1 (ADR-008): baseline / multi-day Insights via recompute-on-read Feature series from Observations — not a persisted Feature history store; calm personal observation, not clinical diagnosis.
 - **Provider / Plugin:** Источник данных (модуль), отправляющий `Observation`.
 - **Core Daemon:** Фоновый процесс на Rust, обрабатывающий пайплайн данных.

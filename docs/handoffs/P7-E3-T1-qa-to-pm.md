@@ -28,10 +28,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — mark **P7-E3-T1** Done; close Epic **P7-E3** and **Phase 7** Kanban if no further P7 tasks
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs as needed: `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS.md` (Phase 7 → Done); next Ready = Phase 8 opener
-- [ ] Note: Dev already updated `06-feature-catalog.md`, `12-development.md`, `09-api.md` — fold into next cluster commit (PR freeze active)
+- [x] `/docs/SPRINT_ROADMAP.md` — mark **P7-E3-T1** Done; close Epic **P7-E3** and **Phase 7** Kanban if no further P7 tasks
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs as needed: `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS.md` / `14-roadmap` / `00-vision` (Phase 7 → Done); next Ready = **P8-E1-T1**
+- [x] Note: Dev already updated catalog/API/dev docs — fold into next cluster commit (**PR freeze** — no PR until 2026-09-01)
 
 ## Suggested next Ready task
 - Open **Phase 8** first Ready task per roadmap / PM gate (after Phase 7 close).

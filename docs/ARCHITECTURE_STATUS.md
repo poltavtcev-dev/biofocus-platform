@@ -6,12 +6,13 @@
 ## Implementation snapshot
 - **Phase 1:** Done (E1–E4, 2026-08-04).
 - **Phase 2:** **Done on `main`** via [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2) (2026-08-04) — E0–E3 (ingest, collector, companion/pairing, `dbError` hygiene).
-- **Phase 3:** **Done** (2026-08-05) — Pipeline & Features; E1–E3 (quality pipeline → Feature DAG → Menubar AlertLevel). Branch cluster: `phase/3-pipeline-features` / follow-ups.
-- **Phase 4:** **Done** (2026-08-05) — Dashboard UI & Local AI Insights; E1–E3 (Feature IPC + Recharts · Knowledge Insights · report-engine + optional local LLM + Dashboard `generate_report`). Branch cluster: `phase/4-dashboard-ai` (PR pending).
-- **Phase 5:** **Done** (2026-08-05) — Wearable dogfood; E1–E3 (opt-in LAN ADR-005 + advertise hints + Companion LAN Base URL / token/QR + runnable iOS HealthKit companion + dogfood runbook). Branch cluster: `phase/5-wearable-dogfood` (PR pending).
-- **Phase 6:** **Done** (2026-08-06) — Life context; E1–E3 (Life Events ADR-006 + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`). Branch tip: `phase/6-dogfood-fixes` (cluster PR when ready).
-- **Phase 7:** **Active** (2026-08-06) — Trust layer: Feature confidence (**ADR-007 / P7-E1 ✅**) → Explanation factors (**P7-E2 ✅**, FocusScore factors) → bio-backed catalog Features (**P7-E3-T1** Ready). Branch: `phase/7-trust-layer`. **PR freeze until 2026-09-01** — local commits OK, no PRs (`docs/12-development.md`).
-- **Horizon P8–P12+:** accepted in `/docs/00-vision.md` (Pattern Discovery → Recs → plugins → AI polish → packaging). Not Kanban-Ready until PM opens each phase.
+- **Phase 3:** **Done** (2026-08-05) — Pipeline & Features; E1–E3.
+- **Phase 4:** **Done** (2026-08-05) — Dashboard UI & Local AI Insights; E1–E3. Branch: `phase/4-dashboard-ai` (PR after freeze).
+- **Phase 5:** **Done** (2026-08-05) — Wearable dogfood; E1–E3. Branch: `phase/5-wearable-dogfood` (PR after freeze).
+- **Phase 6:** **Done** (2026-08-06) — Life context; E1–E3. Tip: `phase/6-dogfood-fixes` (PR after freeze).
+- **Phase 7:** **Done** (2026-08-06) — Trust layer; E1–E3 (ADR-007 confidence → Explanation factors → `RecoveryScore`). Branch: `phase/7-trust-layer` (PR after freeze).
+- **Phase 8:** **Active** (2026-08-06) — Pattern Discovery v1: ADR-008 history/recompute → baseline Knowledge → Insights surface. Ready: **P8-E1-T1**. Branch: `phase/8-pattern-discovery`. **PR freeze until 2026-09-01**.
+- **Horizon P9–P12+:** Recommendations → plugins → AI polish → packaging. Not Kanban-Ready until PM opens each phase.
 
 ## Core Decisions
 - Local First Architecture
