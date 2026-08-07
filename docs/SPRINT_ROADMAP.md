@@ -25,17 +25,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P8-E1-T1** |
+| **Ready** | **P8-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **P8-E1-T1** |
 
-**Epic status:** P8-E1 ⬜ (T1 Ready) · P8-E2 ⬜ · P8-E3 ⬜
+**Epic status:** P8-E1 ✅ · P8-E2 ⬜ (T1 Ready) · P8-E3 ⬜
 
 **Phase 8 on `/docs/14-roadmap.md`:** opened 2026-08-06
 
 **Рекомендуемый порядок:**  
-**P8-E1-T1** → P8-E2-T1 → P8-E3-T1
+~~P8-E1-T1~~ → **P8-E2-T1** → P8-E3-T1
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -44,20 +44,22 @@
 
 ### Active assignment
 
-**Ready now:** **P8-E1-T1** — ADR-008 Pattern Discovery history / recompute (Dev).  
-Brief: `docs/handoffs/P8-E1-T1-pm-brief.md`.
+**Ready now:** **P8-E2-T1** — Pattern Discovery v1 Insight path (Dev).  
+Brief: `docs/handoffs/P8-E2-T1-pm-brief.md`.
+
+**Closed:** P8-E1-T1 (QA Pass, 2026-08-07) — ADR-008 **recompute-on-read**; no Feature-history schema; Epic **P8-E1** ✅. Evidence: `docs/handoffs/P8-E1-T1-qa-to-pm.md`. No schema approve wait.
 
 **Closed (Phase 7):** P7-E3-T1 (QA Pass, 2026-08-06) — `RecoveryScore` + confidence + factors; Epic **P7-E3** ✅ · Phase 7 Kanban complete. Evidence: `docs/handoffs/P7-E3-T1-qa-to-pm.md`. Branch: `phase/7-trust-layer`.
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 7 Trust cluster stays on `phase/7-trust-layer` (local commits OK). Open Phase 8 work on disk; one cluster PR **after** freeze (or when user lifts it).
+**Ops note:** **PR freeze until 2026-09-01** — Phase 8 docs/code on `phase/8-pattern-discovery` (or tip); local commits OK; one cluster PR **after** freeze (or when user lifts it).
 
 ---
 
-## Epic P8-E1 — Pattern Discovery ADR & storage contract
+## Epic P8-E1 — Pattern Discovery ADR & storage contract ✅
 
 **Цель:** Decide how multi-day baselines / Feature history work — ADR before schema or background recompute.
 
-### P8-E1-T1 — ADR-008: recompute vs Feature history ✅ Ready
+### P8-E1-T1 — ADR-008: recompute vs Feature history ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
@@ -65,21 +67,22 @@ Brief: `docs/handoffs/P8-E1-T1-pm-brief.md`.
 | **Depends on** | Phase 7 Done (trusted Features + confidence) |
 | **AC** | (1) Record **ADR-008**: Pattern Discovery v1 approach — evaluate-on-read recompute over Observations/Features **vs** persisted Feature/baseline history (or hybrid); rejected alternatives; idle/privacy constraints. (2) If schema needed: propose tables/columns in ADR + docs — **do not apply migration** until user approve. (3) Document how Knowledge Insights would consume the chosen approach (contracts sketch OK). (4) Calm non-clinical framing. (5) Handoff: `docs/handoffs/P8-E1-T1-dev-to-qa.md`. |
 | **Out of scope** | Implementing history tables / recompute worker (→ **E2** after approve); Recommendations engine (P9); ML training |
+| **Shipped** | ADR-008 = **recompute-on-read** (+ optional in-process memo); no Feature/baseline history table; Knowledge sketch `focus_vs_recent_baseline_v1`. QA Pass 2026-08-07. |
 
 ---
 
 ## Epic P8-E2 — Baseline / multi-day Knowledge path
 
-**Цель:** First evaluate-on-read or history-backed baseline Insights using ADR-008 decision.
+**Цель:** First evaluate-on-read baseline Insights using ADR-008 (**recompute-on-read**; no new SQLite schema).
 
-### P8-E2-T1 — Pattern Discovery v1 Insight path
+### P8-E2-T1 — Pattern Discovery v1 Insight path ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/knowledge-engine`, contracts / API as needed |
-| **Depends on** | P8-E1-T1 (+ user approve if schema) |
-| **AC** | ≥1 Insight rule or evaluator that uses multi-window / baseline comparison with Evidence; tests; idle-safe; calm copy. Handoff required. |
-| **Out of scope** | LLM pattern generation; CircadianOffset Feature; Recommendations |
+| **Modules** | `crates/knowledge-engine`, contracts / API as needed; Observation load / Feature recompute helpers as required by ADR-008 |
+| **Depends on** | P8-E1-T1 Done (no schema approve — ADR chose recompute-on-read) |
+| **AC** | ≥1 Insight rule or evaluator that uses multi-window / baseline comparison with Evidence (prefer `focus_vs_recent_baseline_v1` per ADR-008); tests; idle-safe; calm copy. Handoff required. |
+| **Out of scope** | LLM pattern generation; CircadianOffset Feature; Recommendations; Feature-history SQLite table |
 
 ---
 
@@ -207,8 +210,8 @@ Evidence: `docs/handoffs/P2-*-qa-to-pm.md` · [PR #2](https://github.com/poltavt
 
 ## Sprint 15–16 — Queue
 
-1. **P8-E1-T1 — ADR-008 Pattern Discovery history / recompute** ← **Ready**  
-2. P8-E2-T1 — Pattern Discovery v1 Insight path  
+1. ~~P8-E1-T1 — ADR-008 Pattern Discovery history / recompute~~ ✅ Done  
+2. **P8-E2-T1 — Pattern Discovery v1 Insight path** ← **Ready**  
 3. P8-E3-T1 — Insights IPC / UX for patterns  
 
 **Git:** `phase/8-pattern-discovery` (or `phase/7-trust-layer` tip) → local commits → **one cluster PR after 2026-09-01**.

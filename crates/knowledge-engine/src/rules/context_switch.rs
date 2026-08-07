@@ -31,6 +31,7 @@ impl InsightRule for ContextSwitchElevatedRule {
         &self,
         features: &[Feature],
         _signals: &[Signal],
+        _pattern: &crate::PatternInputs,
     ) -> KnowledgeEngineResult<Vec<Insight>> {
         let Some(csr) = latest_feature(features, CONTEXT_SWITCH_RATE_ID) else {
             return Ok(Vec::new());

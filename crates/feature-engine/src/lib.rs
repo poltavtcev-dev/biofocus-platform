@@ -4,6 +4,7 @@
 //! Phase 4 (P4-E1-T1): [`FeatureSnapshot`] for dashboard / IPC (cached read).
 //! Phase 6 (P6-E3-T2): Calendar Features from `calendar_event` Observations.
 //! Phase 7 (P7-E3-T1): `RecoveryScore` from HRV + optional heart_rate.
+//! Phase 8 (P8-E2-T1): [`baseline`] recompute-on-read FocusScore afternoon series (ADR-008).
 //!
 //! # Entrypoint
 //!
@@ -13,6 +14,7 @@
 //! - [`catalog::register_calendar_v1`] — `MeetingDensity` + `RecoveryBetweenMeetings` (v1)
 //! - [`catalog::register_recovery_v1`] — `RecoveryScore` (v1; HRV + optional HR)
 //! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar + Recovery
+//! - [`baseline::recompute_focus_afternoon_baseline`] — bounded prior-day Focus means
 //! - [`FeatureEngine::run`] — topo compute → [`EngineOutput`]
 //! - [`FeatureSnapshot::from_engine_output`] — Features + Signals for IPC/dashboard
 //! - [`map_alert_level`] — [`EngineOutput`] → [`AlertLevel`] { Green, Yellow, Red }
@@ -23,6 +25,7 @@
 #![forbid(unsafe_code)]
 
 pub mod alert;
+pub mod baseline;
 pub mod catalog;
 pub mod snapshot;
 
@@ -31,6 +34,11 @@ mod error;
 mod node;
 
 pub use alert::{map_alert_level, AlertLevel, YELLOW_FEATURE_THRESHOLD};
+pub use baseline::{
+    baseline_lookback_start, recompute_focus_afternoon_baseline, utc_day_start,
+    AFTERNOON_END_HOUR_UTC, AFTERNOON_START_HOUR_UTC, BASELINE_CONFIDENCE_GATE,
+    BASELINE_MAX_WINDOWS, BASELINE_MIN_WINDOWS,
+};
 pub use bio_spec::{Feature, FeatureValue, Observation, Signal};
 
 pub use catalog::{

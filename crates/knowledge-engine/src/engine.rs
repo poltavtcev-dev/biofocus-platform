@@ -3,6 +3,7 @@
 use bio_spec::{Feature, Insight, Signal};
 
 use crate::error::{KnowledgeEngineError, KnowledgeEngineResult};
+use crate::pattern::PatternInputs;
 use crate::rule::InsightRule;
 
 /// Deterministic Insight generator over Feature / Signal inputs.
@@ -37,15 +38,27 @@ impl KnowledgeEngine {
         Ok(())
     }
 
-    /// Run all rules; concatenate Insights. Empty inputs / no matches → `Ok([])`.
+    /// Run all rules with empty pattern inputs (snapshot-only path).
     pub fn evaluate(
         &self,
         features: &[Feature],
         signals: &[Signal],
     ) -> KnowledgeEngineResult<Vec<Insight>> {
+        self.evaluate_with_pattern(features, signals, &PatternInputs::empty())
+    }
+
+    /// Run all rules; concatenate Insights. Empty inputs / no matches → `Ok([])`.
+    ///
+    /// `pattern` carries optional recompute-on-read baseline series (ADR-008).
+    pub fn evaluate_with_pattern(
+        &self,
+        features: &[Feature],
+        signals: &[Signal],
+        pattern: &PatternInputs,
+    ) -> KnowledgeEngineResult<Vec<Insight>> {
         let mut insights = Vec::new();
         for rule in &self.rules {
-            let batch = rule.evaluate(features, signals)?;
+            let batch = rule.evaluate(features, signals, pattern)?;
             insights.extend(batch);
         }
         Ok(insights)
@@ -83,6 +96,7 @@ mod tests {
             &self,
             features: &[Feature],
             signals: &[Signal],
+            _pattern: &PatternInputs,
         ) -> KnowledgeEngineResult<Vec<Insight>> {
             let mut evidence = Vec::new();
             if let Some(f) = features.first() {
@@ -116,6 +130,7 @@ mod tests {
             &self,
             _features: &[Feature],
             _signals: &[Signal],
+            _pattern: &PatternInputs,
         ) -> KnowledgeEngineResult<Vec<Insight>> {
             Err(KnowledgeEngineError::RuleFailed {
                 rule: self.id().into(),

@@ -1,26 +1,32 @@
-//! Product Insight rules (P4-E2-T2) — deterministic, no LLM / SQLite.
+//! Product Insight rules (P4-E2-T2 + P8-E2-T1) — deterministic, no LLM / SQLite.
 //!
 //! | Rule id | Trigger | Evidence |
 //! | :--- | :--- | :--- |
 //! | [`RULE_HIGH_STRESS_PERIOD`] | Signal `High_Stress` | Signal id(s); optional `StressIndex` |
 //! | [`RULE_CONTEXT_SWITCH_ELEVATED`] | latest `ContextSwitchRate` ≥ threshold | `ContextSwitchRate`; optional `FocusScore` |
+//! | [`RULE_FOCUS_VS_RECENT_BASELINE`] | live FocusScore vs afternoon baseline | `FocusScore` |
 //!
 //! Host registration:
 //! ```ignore
 //! let mut engine = KnowledgeEngine::new();
 //! register_insights_v1(&mut engine)?;
-//! let insights = engine.evaluate(&features, &signals)?;
+//! let insights = engine.evaluate_with_pattern(&features, &signals, &pattern)?;
 //! ```
 //!
 //! Default [`crate::KnowledgeEngine::new`] stays empty — call [`register_insights_v1`]
 //! (or register rules individually) before expecting product Insights.
 
 mod context_switch;
+mod focus_baseline;
 mod high_stress;
 
 pub use context_switch::{
     ContextSwitchElevatedRule, CONTEXT_SWITCH_ELEVATED_THRESHOLD, CONTEXT_SWITCH_RATE_ID,
     FOCUS_SCORE_ID, RULE_CONTEXT_SWITCH_ELEVATED,
+};
+pub use focus_baseline::{
+    FocusVsRecentBaselineRule, FOCUS_BASELINE_CONFIDENCE_GATE, FOCUS_BASELINE_DELTA,
+    FOCUS_BASELINE_MAX_WINDOWS, FOCUS_BASELINE_MIN_WINDOWS, RULE_FOCUS_VS_RECENT_BASELINE,
 };
 pub use high_stress::{
     HighStressPeriodRule, HIGH_STRESS_SIGNAL_TYPE, RULE_HIGH_STRESS_PERIOD, STRESS_INDEX_ID,
@@ -30,10 +36,12 @@ use bio_spec::{Feature, FeatureValue};
 
 use crate::{KnowledgeEngine, KnowledgeEngineResult};
 
-/// Registers v1 product Insight rules (≥2): High_Stress period + elevated ContextSwitch.
+/// Registers v1 product Insight rules: High_Stress, elevated ContextSwitch,
+/// Focus vs recent afternoon baseline (ADR-008).
 pub fn register_insights_v1(engine: &mut KnowledgeEngine) -> KnowledgeEngineResult<()> {
     engine.register(HighStressPeriodRule)?;
     engine.register(ContextSwitchElevatedRule)?;
+    engine.register(FocusVsRecentBaselineRule)?;
     Ok(())
 }
 
@@ -60,7 +68,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::KnowledgeEngine;
+    use crate::{KnowledgeEngine, PatternInputs};
 
     fn feature(id: &str, end: i64, value: f64) -> Feature {
         let start = end.saturating_sub(900);
@@ -87,10 +95,10 @@ mod tests {
     }
 
     #[test]
-    fn register_insights_v1_adds_two_rules() {
+    fn register_insights_v1_adds_three_rules() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
-        assert_eq!(engine.rule_count(), 2);
+        assert_eq!(engine.rule_count(), 3);
     }
 
     #[test]
@@ -168,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn both_rules_can_fire_together() {
+    fn both_snapshot_rules_can_fire_together() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
         let csr = feature(CONTEXT_SWITCH_RATE_ID, 1800, 2.0);
@@ -180,13 +188,38 @@ mod tests {
     }
 
     #[test]
+    fn baseline_rule_fires_with_pattern_series() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("register");
+        let current = feature(FOCUS_SCORE_ID, 10_000, 85.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 60.0),
+            feature(FOCUS_SCORE_ID, 2_000, 58.0),
+            feature(FOCUS_SCORE_ID, 3_000, 62.0),
+        ]);
+        let out = engine
+            .evaluate_with_pattern(std::slice::from_ref(&current), &[], &pattern)
+            .expect("evaluate");
+        let insight = out
+            .iter()
+            .find(|i| i.category == "pattern")
+            .expect("pattern insight");
+        assert!(insight.description.contains("higher"));
+    }
+
+    #[test]
     fn copy_avoids_clinical_words() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
         let csr = feature(CONTEXT_SWITCH_RATE_ID, 1800, 2.0);
         let signal = high_stress_signal(1);
+        let focus = feature(FOCUS_SCORE_ID, 10_000, 90.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 50.0),
+            feature(FOCUS_SCORE_ID, 2_000, 52.0),
+        ]);
         let out = engine
-            .evaluate(std::slice::from_ref(&csr), std::slice::from_ref(&signal))
+            .evaluate_with_pattern(&[csr, focus], std::slice::from_ref(&signal), &pattern)
             .expect("evaluate");
         let banned = ["diagnos", "disorder", "patholog", "unhealthy", "dangerous", "medical"];
         for insight in &out {

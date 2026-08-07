@@ -45,12 +45,15 @@
 //! }
 //! ```
 //!
-//! ## `get_insights` (P4-E2-T3)
+//! ## `get_insights` (P4-E2-T3 / P8-E2-T1)
 //!
 //! Evaluates product Insight rules against the latest cached Feature snapshot
 //! (same in-memory path as `get_feature_snapshot`). Host registers
-//! `knowledge_engine::register_insights_v1` once at startup. Idle / no match /
-//! evaluate soft-fail → `{ "insights": [] }`. No SQLite, no LLM.
+//! `knowledge_engine::register_insights_v1` once at startup. Pattern Discovery
+//! baseline rules (ADR-008) may recompute a bounded FocusScore series from local
+//! Observations on read (Core only — UI ↛ SQLite); optional in-process memo.
+//! Idle / thin history / no match / soft-fail → omit pattern Insight / `{ "insights": [] }`.
+//! No Feature-history table, no always-on worker, no LLM.
 //!
 //! Example (camelCase JSON):
 //! ```json
@@ -130,12 +133,14 @@ mod alert_state;
 mod feature_host;
 mod ingest_host;
 mod life_event_ipc;
+mod pattern_host;
 
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use bio_spec::{EvidenceRef, Insight};
 use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal};
-use knowledge_engine::{register_insights_v1, KnowledgeEngine};
+use knowledge_engine::{register_insights_v1, KnowledgeEngine, PatternInputs};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use report_engine::{
@@ -149,6 +154,7 @@ use thiserror::Error;
 use tracing::warn;
 
 use crate::alert_state::{AlertState, SnapshotState};
+use crate::pattern_host::{load_focus_baseline_series, BaselineMemoState};
 
 /// Process-lifetime Knowledge Engine with v1 product rules (P4-E2-T3).
 struct InsightsEngineState {
@@ -386,8 +392,32 @@ fn insights_to_dto(insights: &[Insight]) -> InsightsDto {
     }
 }
 
-fn evaluate_insights_list(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> Vec<Insight> {
-    match engine.evaluate(&snapshot.features, &snapshot.signals) {
+fn unix_now_secs() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+fn pattern_inputs_for_insights(app: &AppHandle, snapshot: &FeatureSnapshot) -> PatternInputs {
+    let reference_ts = snapshot
+        .features
+        .iter()
+        .filter(|f| f.feature_id == "FocusScore")
+        .map(|f| f.time_window.end.as_secs())
+        .max()
+        .unwrap_or_else(unix_now_secs);
+    let memo = app.try_state::<BaselineMemoState>();
+    let series = load_focus_baseline_series(memo.as_deref(), reference_ts);
+    PatternInputs::with_baseline_series(series)
+}
+
+fn evaluate_insights_list(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    pattern: &PatternInputs,
+) -> Vec<Insight> {
+    match engine.evaluate_with_pattern(&snapshot.features, &snapshot.signals, pattern) {
         Ok(insights) => insights,
         Err(err) => {
             warn!(error = %err, "insights: evaluate failed; returning empty list");
@@ -396,8 +426,12 @@ fn evaluate_insights_list(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) 
     }
 }
 
-fn evaluate_insights(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> InsightsDto {
-    insights_to_dto(&evaluate_insights_list(engine, snapshot))
+fn evaluate_insights(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    pattern: &PatternInputs,
+) -> InsightsDto {
+    insights_to_dto(&evaluate_insights_list(engine, snapshot, pattern))
 }
 
 /// IPC payload for [`generate_report`] (P4-E3-T3).
@@ -641,7 +675,8 @@ fn get_feature_snapshot(app: AppHandle) -> FeatureSnapshotDto {
 
 /// Insights from v1 product rules over the cached Feature snapshot (P4-E2-T3).
 ///
-/// Evaluate-on-read — no separate Insights cache / SQLite. Soft-fails to `[]`.
+/// Evaluate-on-read — pattern baseline may recompute from Observations (ADR-008).
+/// Soft-fails to `[]`. UI never opens SQLite.
 #[tauri::command]
 fn get_insights(app: AppHandle) -> InsightsDto {
     let snapshot = current_feature_snapshot(&app);
@@ -650,7 +685,8 @@ fn get_insights(app: AppHandle) -> InsightsDto {
             insights: Vec::new(),
         };
     };
-    evaluate_insights(&state.engine, &snapshot)
+    let pattern = pattern_inputs_for_insights(&app, &snapshot);
+    evaluate_insights(&state.engine, &snapshot, &pattern)
 }
 
 /// Offline report (+ optional local LLM) for Dashboard — **explicit invoke only**
@@ -658,8 +694,9 @@ fn get_insights(app: AppHandle) -> InsightsDto {
 #[tauri::command]
 async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
     let snapshot = current_feature_snapshot(&app);
+    let pattern = pattern_inputs_for_insights(&app, &snapshot);
     let insights = match app.try_state::<InsightsEngineState>() {
-        Some(state) => evaluate_insights_list(&state.engine, &snapshot),
+        Some(state) => evaluate_insights_list(&state.engine, &snapshot, &pattern),
         None => Vec::new(),
     };
     let config = LocalLlmConfig::from_env();
@@ -764,6 +801,7 @@ pub fn run() -> DesktopResult<()> {
             ingest_host::start_ingest_host(app.handle());
             feature_host::start_feature_host(app.handle());
             app.manage(InsightsEngineState::new());
+            app.manage(BaselineMemoState::new());
 
             Ok(())
         })
@@ -1013,7 +1051,7 @@ mod tests {
     fn empty_snapshot_insights_dto_is_idle() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
-        let dto = evaluate_insights(&engine, &FeatureSnapshot::empty());
+        let dto = evaluate_insights(&engine, &FeatureSnapshot::empty(), &PatternInputs::empty());
         assert!(dto.insights.is_empty());
         let json = serde_json::to_value(&dto).expect("serialize");
         let obj = json.as_object().expect("object");
@@ -1050,7 +1088,7 @@ mod tests {
                 severity: Severity::High,
             }],
         };
-        let dto = evaluate_insights(&engine, &snap);
+        let dto = evaluate_insights(&engine, &snap, &PatternInputs::empty());
         assert!(dto.insights.is_empty());
     }
 
@@ -1089,7 +1127,7 @@ mod tests {
                 severity: Severity::High,
             }],
         };
-        let dto = evaluate_insights(&engine, &snap);
+        let dto = evaluate_insights(&engine, &snap, &PatternInputs::empty());
         assert!(
             dto.insights.len() >= 2,
             "expected stress + context insights, got {}",
