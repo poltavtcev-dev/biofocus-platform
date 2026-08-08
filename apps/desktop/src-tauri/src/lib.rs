@@ -71,6 +71,32 @@
 //! }
 //! ```
 //!
+//! ## `get_recommendations` (P9-E3-T1 / ADR-009)
+//!
+//! Evaluate-on-read Recommendations **after** Insights on the same Feature
+//! snapshot (+ pattern baseline inputs). Host registers
+//! `register_recommendations_v1` alongside Insights at startup. Soft-fail /
+//! idle / no match → `{ "recommendations": [] }`. No Recommendation SQLite,
+//! no busy-loop, no LLM inventing actions. UI ↛ SQLite.
+//!
+//! Example (camelCase JSON):
+//! ```json
+//! {
+//!   "recommendations": [
+//!     {
+//!       "id": "…uuid…",
+//!       "title": "A gentler pace may help",
+//!       "suggestion": "If it fits your schedule…",
+//!       "category": "pace",
+//!       "evidenceList": [
+//!         { "kind": "feature", "id": "FocusScore" },
+//!         { "kind": "insight", "id": "…uuid…" }
+//!       ]
+//!     }
+//!   ]
+//! }
+//! ```
+//!
 //! ## `generate_report` (P4-E3-T3)
 //!
 //! Explicit user action only — never call on app / Dashboard open. Builds an
@@ -138,9 +164,11 @@ mod pattern_host;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bio_spec::{EvidenceRef, Insight};
+use bio_spec::{EvidenceRef, Insight, Recommendation};
 use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal};
-use knowledge_engine::{register_insights_v1, KnowledgeEngine, PatternInputs};
+use knowledge_engine::{
+    register_insights_v1, register_recommendations_v1, KnowledgeEngine, PatternInputs,
+};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use report_engine::{
@@ -156,19 +184,25 @@ use tracing::warn;
 use crate::alert_state::{AlertState, SnapshotState};
 use crate::pattern_host::{load_focus_baseline_series, BaselineMemoState};
 
-/// Process-lifetime Knowledge Engine with v1 product rules (P4-E2-T3).
+/// Process-lifetime Knowledge Engine with v1 Insight + Recommendation rules.
 struct InsightsEngineState {
     engine: KnowledgeEngine,
 }
 
 impl InsightsEngineState {
-    /// Registers [`register_insights_v1`]; soft-fails to an empty engine.
+    /// Registers Insights + Recommendations v1; soft-fails per registry.
     fn new() -> Self {
         let mut engine = KnowledgeEngine::new();
         if let Err(err) = register_insights_v1(&mut engine) {
             warn!(
                 error = %err,
                 "insights: register_insights_v1 failed; get_insights returns []"
+            );
+        }
+        if let Err(err) = register_recommendations_v1(&mut engine) {
+            warn!(
+                error = %err,
+                "recommendations: register_recommendations_v1 failed; get_recommendations returns []"
             );
         }
         Self { engine }
@@ -438,6 +472,76 @@ fn evaluate_insights(
     insights_to_dto(&evaluate_insights_list(engine, snapshot, pattern))
 }
 
+/// One Recommendation in the IPC list (camelCase; evidence ids only).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct RecommendationDto {
+    id: String,
+    title: String,
+    suggestion: String,
+    category: String,
+    evidence_list: Vec<EvidenceRefDto>,
+}
+
+impl From<&Recommendation> for RecommendationDto {
+    fn from(recommendation: &Recommendation) -> Self {
+        Self {
+            id: recommendation.id.to_string(),
+            title: recommendation.title.clone(),
+            suggestion: recommendation.suggestion.clone(),
+            category: recommendation.category.clone(),
+            evidence_list: recommendation
+                .evidence_list
+                .iter()
+                .map(EvidenceRefDto::from)
+                .collect(),
+        }
+    }
+}
+
+/// IPC payload for [`get_recommendations`].
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct RecommendationsDto {
+    recommendations: Vec<RecommendationDto>,
+}
+
+fn recommendations_to_dto(recommendations: &[Recommendation]) -> RecommendationsDto {
+    RecommendationsDto {
+        recommendations: recommendations
+            .iter()
+            .map(RecommendationDto::from)
+            .collect(),
+    }
+}
+
+fn evaluate_recommendations_list(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    insights: &[Insight],
+) -> Vec<Recommendation> {
+    match engine.evaluate_recommendations(&snapshot.features, &snapshot.signals, insights) {
+        Ok(recommendations) => recommendations,
+        Err(err) => {
+            warn!(
+                error = %err,
+                "recommendations: evaluate failed; returning empty list"
+            );
+            Vec::new()
+        }
+    }
+}
+
+fn evaluate_recommendations_dto(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    insights: &[Insight],
+) -> RecommendationsDto {
+    recommendations_to_dto(&evaluate_recommendations_list(
+        engine, snapshot, insights,
+    ))
+}
+
 /// IPC payload for [`generate_report`] (P4-E3-T3).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -693,6 +797,23 @@ fn get_insights(app: AppHandle) -> InsightsDto {
     evaluate_insights(&state.engine, &snapshot, &pattern)
 }
 
+/// Recommendations from v1 rules after Insights (P9-E3-T1 / ADR-009).
+///
+/// Evaluate-on-read on the same Feature snapshot + pattern inputs as Insights.
+/// Soft-fails to `[]`. UI never opens SQLite; no Recommendation persistence.
+#[tauri::command]
+fn get_recommendations(app: AppHandle) -> RecommendationsDto {
+    let snapshot = current_feature_snapshot(&app);
+    let Some(state) = app.try_state::<InsightsEngineState>() else {
+        return RecommendationsDto {
+            recommendations: Vec::new(),
+        };
+    };
+    let pattern = pattern_inputs_for_insights(&app, &snapshot);
+    let insights = evaluate_insights_list(&state.engine, &snapshot, &pattern);
+    evaluate_recommendations_dto(&state.engine, &snapshot, &insights)
+}
+
 /// Offline report (+ optional local LLM) for Dashboard — **explicit invoke only**
 /// (P4-E3-T3). Never auto-called on app / Dashboard open.
 #[tauri::command]
@@ -813,6 +934,7 @@ pub fn run() -> DesktopResult<()> {
             get_status,
             get_feature_snapshot,
             get_insights,
+            get_recommendations,
             generate_report,
             open_dashboard,
             core_ping,
@@ -1168,6 +1290,76 @@ mod tests {
         assert!(!raw.contains("/Users"));
         assert!(!raw.contains(".biofocus"));
         assert!(!raw.contains("rmssd"));
+    }
+
+    #[test]
+    fn registered_engine_emits_pace_recommendation_with_insight_evidence() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("insights");
+        register_recommendations_v1(&mut engine).expect("recommendations");
+
+        let focus = |end: i64, value: f64| {
+            let start = end.saturating_sub(900);
+            let window =
+                TimeWindow::try_new(UnixTimestamp::from_secs(start), UnixTimestamp::from_secs(end))
+                    .expect("window");
+            Feature {
+                feature_id: "FocusScore".into(),
+                time_window: window,
+                value: FeatureValue::Scalar(value),
+                provenance: vec![],
+                confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
+            }
+        };
+
+        let snap = FeatureSnapshot {
+            features: vec![focus(10_000, 40.0)],
+            signals: vec![],
+        };
+        let pattern = PatternInputs::with_baseline_series(vec![
+            focus(1_000, 70.0),
+            focus(2_000, 72.0),
+            focus(3_000, 68.0),
+        ]);
+        let insights = evaluate_insights_list(&engine, &snap, &pattern);
+        let pattern_insight = insights
+            .iter()
+            .find(|i| i.category == "pattern")
+            .expect("pattern insight");
+        assert!(pattern_insight.description.contains("lower"));
+
+        let dto = evaluate_recommendations_dto(&engine, &snap, &insights);
+        assert_eq!(dto.recommendations.len(), 1);
+        assert_eq!(dto.recommendations[0].category, "pace");
+
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let list = json
+            .get("recommendations")
+            .and_then(|v| v.as_array())
+            .expect("recommendations");
+        let obj = list[0].as_object().expect("rec obj");
+        assert!(obj.contains_key("title"));
+        assert!(obj.contains_key("suggestion"));
+        let evidence = obj
+            .get("evidenceList")
+            .and_then(|v| v.as_array())
+            .expect("evidenceList");
+        let kinds: Vec<&str> = evidence
+            .iter()
+            .filter_map(|e| e.get("kind").and_then(|k| k.as_str()))
+            .collect();
+        assert!(kinds.contains(&"feature"));
+        assert!(kinds.contains(&"insight"));
+        let pattern_id = pattern_insight.id.to_string();
+        assert!(
+            evidence.iter().any(|e| {
+                e.get("kind").and_then(|k| k.as_str()) == Some("insight")
+                    && e.get("id").and_then(|i| i.as_str()) == Some(pattern_id.as_str())
+            }),
+            "evidence should cite pattern Insight id"
+        );
+        assert!(!serde_json::to_string(&dto).expect("s").contains("payload"));
     }
 
     #[tokio::test]

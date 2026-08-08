@@ -35,9 +35,12 @@ Recharts series for `FocusScore`, `StressIndex`, `FatigueIndex`, and
 `ContextSwitchRate` when present (calm labels; scores 0–100; CSR on secondary
 axis). Insights list via `get_insights` (evaluate-on-read over the same Feature
 cache; Pattern Discovery baseline rules included when history supports them;
-calm empty state when none / thin history). Soft refresh ~30s. Rows show a
-calm category label (`Pattern` / `Focus` / `Stress`) from Core `category` —
-title and description are rendered as returned (no clinical UI chrome).
+calm empty state when none / thin history). Suggestions (Recommendations)
+via `get_recommendations` — evaluate-on-read after Insights on the same
+snapshot (ADR-009); calm empty state when none. Soft refresh ~30s. Insight
+rows show a calm category label (`Pattern` / `Focus` / `Stress`); suggestion
+rows use Core title/suggestion as returned (optional personal hints — not
+medical advice; no clinical UI chrome).
 
 QA mocks:
 - `?view=dashboard&mockSnapshot=empty|ready|error`
@@ -45,11 +48,14 @@ QA mocks:
 - `?view=dashboard&mockInsights=empty|ready|pattern|error`
   (`ready` includes pattern + stress + focus sample Insights;
   `pattern` is a single `focus_vs_recent_baseline_v1`-shaped Insight)
+- `?view=dashboard&mockRecommendations=empty|ready|pace|error`
+  (`ready` / `pace` = sample `focus_dip_pace_hint_v1`-shaped Recommendation)
 
-Dogfood (live pattern Insight): run the desktop app with multi-day afternoon
-FocusScore evidence (UTC 13:00–17:00 windows, confidence ≥ 0.4, |Δ| ≥ 10 vs
-baseline mean). Thin history → empty Insights list (no error). UI never opens
-SQLite — only `invoke("get_insights")`.
+Dogfood (live pattern Insight + pace suggestion): run the desktop app with
+multi-day afternoon FocusScore evidence (UTC 13:00–17:00 windows, confidence
+≥ 0.4) where **current Focus is lower** than baseline by |Δ| ≥ 10. Thin
+history → empty Insights / Suggestions (no error). UI never opens SQLite —
+only `invoke("get_insights")` / `invoke("get_recommendations")`.
 
 ## Life Events quick-log (P6-E2-T1)
 

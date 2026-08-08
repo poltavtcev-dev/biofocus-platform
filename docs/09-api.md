@@ -221,13 +221,14 @@ register_insights_v1(&mut engine)?;
 let insights = engine.evaluate_with_pattern(&features, &signals, &pattern)?;
 ```
 
-### `get_recommendations` (P9-E3 — contract sketch; ADR-009)
+### `get_recommendations` (P9-E3-T1 / ADR-009)
 
-- **Invoke (planned):** `invoke("get_recommendations")`
+- **Invoke:** `invoke("get_recommendations")`
 - **Purpose:** Calm Evidence-backed Recommendations for Dashboard / Insights-adjacent surface (L4).
-- **Source:** Evaluate-on-read in `knowledge-engine` after Insights: `RecommendationRule`s consume Features, Signals, and just-evaluated Insights. Empty / no-match / low confidence → `{ "recommendations": [] }`.
+- **Source:** Evaluate-on-read in `knowledge-engine` after Insights on the same in-memory Feature snapshot (+ pattern baseline inputs as `get_insights`). Host registers `register_insights_v1` + `register_recommendations_v1` at startup. Empty / no-match / low confidence / soft-fail → `{ "recommendations": [] }`.
 - **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM-invented actions. No SQLite on the command path (UI ↛ DB). No Recommendation persistence (ADR-009).
-- **v1 sketch rule (→ P9-E2):** `focus_dip_pace_hint_v1` — when pattern Insight `focus_vs_recent_baseline_v1` indicates Focus lower than recent average (and FocusScore confidence gate passes), emit a pace/pause hint with Evidence `Feature FocusScore` + `Insight <id>`.
+- **Shipped rule:** `focus_dip_pace_hint_v1` — when pattern Insight `focus_vs_recent_baseline_v1` indicates Focus lower than recent average (and FocusScore confidence gate passes), emit a pace/pause hint with Evidence `Feature FocusScore` + `Insight <id>`.
+- **Dashboard:** Suggestions section (Insights-adjacent); title/suggestion as Core returns. QA mocks: `?mockRecommendations=empty|ready|pace|error` (see `apps/desktop/README.md`).
 
 Example (non-empty, illustrative):
 

@@ -76,13 +76,16 @@ export function loadingInsightsView(): InsightsView {
   };
 }
 
-/** Short evidence label for list rows (Feature / Signal id only). */
+/** Short evidence label for list rows (Feature / Signal / Insight id). */
 export function formatEvidenceRef(ref: EvidenceRefDto): string {
   if (ref.kind === "feature") {
     return `Feature ${ref.id}`;
   }
   if (ref.kind === "signal") {
     return `Signal ${ref.id}`;
+  }
+  if (ref.kind === "insight") {
+    return `Insight ${ref.id}`;
   }
   return `${ref.kind} ${ref.id}`;
 }

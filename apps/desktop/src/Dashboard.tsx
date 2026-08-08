@@ -33,6 +33,12 @@ import {
   type InsightsView,
 } from "./insights";
 import {
+  fetchRecommendations,
+  formatRecommendationCategory,
+  loadingRecommendationsView,
+  type RecommendationsView,
+} from "./recommendations";
+import {
   generateReport,
   idleReportView,
   llmStatusDetail,
@@ -237,6 +243,51 @@ function InsightsSlot({ view }: { view: InsightsView }) {
   );
 }
 
+function RecommendationsSlot({ view }: { view: RecommendationsView }) {
+  const showList = view.kind === "ready" && view.recommendations.length > 0;
+
+  return (
+    <section
+      className="recommendations-slot"
+      aria-label="Suggestions"
+      aria-live="polite"
+    >
+      <p className="chart-slot-title">Suggestions</p>
+      {showList ? (
+        <ul className="insight-rows">
+          {view.recommendations.map((item) => {
+            const categoryLabel = formatRecommendationCategory(item.category);
+            return (
+              <li key={item.id} className="insight-row">
+                {categoryLabel && (
+                  <p className="insight-category">{categoryLabel}</p>
+                )}
+                <p className="insight-title">{item.title}</p>
+                <p className="insight-description">{item.suggestion}</p>
+                {item.evidenceList.length > 0 && (
+                  <p className="insight-evidence">
+                    Evidence:{" "}
+                    {item.evidenceList.map(formatEvidenceRef).join(" · ")}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <>
+          <p className="status-meta">
+            {view.kind === "loading" ? view.detail : view.label}
+          </p>
+          {view.kind !== "loading" && (
+            <p className="status-meta">{view.detail}</p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 function ReportSlot({
   view,
   busy,
@@ -297,6 +348,8 @@ export function Dashboard() {
   const [insightsView, setInsightsView] = useState<InsightsView>(() =>
     loadingInsightsView(),
   );
+  const [recommendationsView, setRecommendationsView] =
+    useState<RecommendationsView>(() => loadingRecommendationsView());
   const [reportView, setReportView] = useState<ReportView>(
     () => mockReportFromLocation() ?? idleReportView(),
   );
@@ -311,17 +364,20 @@ export function Dashboard() {
         setBusy(true);
         setView(loadingView());
         setInsightsView(loadingInsightsView());
+        setRecommendationsView(loadingRecommendationsView());
       }
-      // Snapshot / Insights only — never auto-invoke generate_report / LLM.
-      const [next, nextInsights] = await Promise.all([
+      // Snapshot / Insights / Recommendations only — never auto-invoke report / LLM.
+      const [next, nextInsights, nextRecommendations] = await Promise.all([
         fetchFeatureSnapshot(),
         fetchInsights(),
+        fetchRecommendations(),
       ]);
       if (cancelled) {
         return;
       }
       setView(next);
       setInsightsView(nextInsights);
+      setRecommendationsView(nextRecommendations);
       if (isFirst) {
         setBusy(false);
       }
@@ -342,13 +398,17 @@ export function Dashboard() {
     setBusy(true);
     setView(loadingView());
     setInsightsView(loadingInsightsView());
-    void Promise.all([fetchFeatureSnapshot(), fetchInsights()]).then(
-      ([next, nextInsights]) => {
-        setView(next);
-        setInsightsView(nextInsights);
-        setBusy(false);
-      },
-    );
+    setRecommendationsView(loadingRecommendationsView());
+    void Promise.all([
+      fetchFeatureSnapshot(),
+      fetchInsights(),
+      fetchRecommendations(),
+    ]).then(([next, nextInsights, nextRecommendations]) => {
+      setView(next);
+      setInsightsView(nextInsights);
+      setRecommendationsView(nextRecommendations);
+      setBusy(false);
+    });
   };
 
   const onGenerateReport = () => {
@@ -426,6 +486,8 @@ export function Dashboard() {
       )}
 
       <InsightsSlot view={insightsView} />
+
+      <RecommendationsSlot view={recommendationsView} />
 
       <ReportSlot
         view={reportView}

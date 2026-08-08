@@ -26,17 +26,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P9-E2-T1** |
+| **Ready** | **P9-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **P9-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **P9-E1-T1** · **P9-E2-T1** |
 
-**Epic status:** P9-E1 ✅ · P9-E2 ⬜ (T1 Ready) · P9-E3 ⬜
+**Epic status:** P9-E1 ✅ · P9-E2 ✅ · P9-E3 ⬜ (T1 Ready)
 
-**Phase 9 on `/docs/14-roadmap.md`:** opened 2026-08-08 · ADR-009 recorded
+**Phase 9 on `/docs/14-roadmap.md`:** opened 2026-08-08 · ADR-009 + engine path shipped
 
 **Рекомендуемый порядок:**  
-~~P9-E1-T1~~ → **P9-E2-T1** → P9-E3-T1
+~~P9-E1-T1~~ → ~~P9-E2-T1~~ → **P9-E3-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -45,12 +45,12 @@
 
 ### Active assignment
 
-**Ready now:** **P9-E2-T1** — Recommendations v1 engine path (Dev).  
-Brief: `docs/handoffs/P9-E2-T1-pm-brief.md`.
+**Ready now:** **P9-E3-T1** — Recommendations IPC / UX (Dev + UX).  
+Brief: `docs/handoffs/P9-E3-T1-pm-brief.md`.
 
-**Closed:** P9-E1-T1 (QA Pass, 2026-08-08) — ADR-009 first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); no Recommendation SQLite; Epic **P9-E1** ✅. Evidence: `docs/handoffs/P9-E1-T1-qa-to-pm.md`. Branch: `phase/9-recommendations`. **No schema approve wait.**
+**Closed:** P9-E2-T1 (QA Pass, 2026-08-08) — `Recommendation` + `EvidenceRef::Insight` + `focus_dip_pace_hint_v1` + `evaluate_recommendations`; Epic **P9-E2** ✅. Evidence: `docs/handoffs/P9-E2-T1-qa-to-pm.md`. Branch: `phase/9-recommendations`.
 
-**Closed (Phase 8):** P8-E3-T1 (QA Pass, 2026-08-08) — pattern Insights via Dashboard `get_insights`; Epic **P8-E3** ✅ · Phase 8 complete. Evidence: `docs/handoffs/P8-E3-T1-qa-to-pm.md`.
+**Closed:** P9-E1-T1 (QA Pass, 2026-08-08) — ADR-009; Epic **P9-E1** ✅. Evidence: `docs/handoffs/P9-E1-T1-qa-to-pm.md`.
 
 **Ops note:** **PR freeze until 2026-09-01** — Phase 9 cluster on `phase/9-recommendations`; local commits OK; one cluster PR **after** freeze (or when user lifts it).
 
@@ -70,18 +70,17 @@ Brief: `docs/handoffs/P9-E2-T1-pm-brief.md`.
 
 ---
 
-## Epic P9-E2 — Deterministic Recommendation path
+## Epic P9-E2 — Deterministic Recommendation path ✅
 
 **Цель:** First evaluate-on-read Recommendation(s) with Evidence using ADR-009 decision.
 
-### P9-E2-T1 — Recommendations v1 engine path ✅ Ready
+### P9-E2-T1 — Recommendations v1 engine path ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/bio-spec`, `crates/knowledge-engine`; contracts as needed |
-| **Depends on** | P9-E1-T1 (Done — no schema approve) |
-| **AC** | (1) `bio-spec::Recommendation` + `EvidenceRef::Insight` (or equivalent) per ADR-009. (2) `RecommendationRule` + registry/evaluate-after-Insights in `knowledge-engine`. (3) ≥1 rule **`focus_dip_pace_hint_v1`**: pattern Focus-below-baseline Insight + FocusScore confidence gate → calm pace/pause Recommendation with Evidence Feature + Insight. (4) Thin/no-match/low confidence → `Ok([])`; idle-safe; local-only; no SQLite. (5) Unit tests: emit + Evidence; omit paths; calm non-clinical copy. (6) Handoff: `docs/handoffs/P9-E2-T1-dev-to-qa.md`. |
-| **Out of scope** | IPC / Dashboard surface (→ **P9-E3**); LLM-authored recommendations; Recommendation persistence; Plugin wave-1 |
+| **Modules** | `crates/bio-spec`, `crates/knowledge-engine` |
+| **Shipped** | `Recommendation` + `EvidenceRef::Insight`; `RecommendationRule` + `register_recommendations_v1` + `focus_dip_pace_hint_v1` (Focus-below-baseline pattern + FocusScore confidence ≥ 0.4); `evaluate_recommendations` / `evaluate_insights_and_recommendations`. QA Pass 2026-08-08. |
+| **Evidence** | `docs/handoffs/P9-E2-T1-qa-to-pm.md` |
 
 ---
 
@@ -89,13 +88,13 @@ Brief: `docs/handoffs/P9-E2-T1-pm-brief.md`.
 
 **Цель:** Expose Recommendations via Core IPC + calm Dashboard (or Insights-adjacent) presentation — UI ↛ DB.
 
-### P9-E3-T1 — Recommendations IPC / UX
+### P9-E3-T1 — Recommendations IPC / UX ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev (+ UX if UI copy) |
 | **Modules** | desktop + API (`09-api`); host wiring per ADR-009 |
-| **Depends on** | P9-E2-T1 |
-| **AC** | Recommendations visible via documented IPC path (new command or evolved Insights DTO — per ADR); calm copy; smoke notes in handoff; mock/dev path if needed for UI without full history. |
+| **Depends on** | P9-E2-T1 (Done) |
+| **AC** | (1) Dedicated IPC `get_recommendations` (per ADR-009 / `09-api`) — host registers `register_recommendations_v1`, evaluate-on-read after Insights; empty → calm `[]`. (2) Dashboard calm surface (Insights-adjacent OK) showing title/suggestion/category/Evidence; no clinical chrome. (3) Mock/dev path for UI without rich history (e.g. `?mockRecommendations=…`). (4) Smoke notes in handoff; UI ↛ SQLite. (5) Handoff: `docs/handoffs/P9-E3-T1-dev-to-qa.md`. |
 | **Out of scope** | New “Coach” product window redesign; push notifications; cloud sync; AI interpret layer changes (P11) |
 
 ---
@@ -228,7 +227,7 @@ Evidence: `docs/handoffs/P2-*-qa-to-pm.md` · [PR #2](https://github.com/poltavt
 ## Sprint 17–18 — Queue
 
 1. ~~P9-E1-T1 — ADR-009 Recommendations domain / engine shape~~ ✅ Done  
-2. **P9-E2-T1 — Recommendations v1 engine path** ← **Ready**  
-3. P9-E3-T1 — Recommendations IPC / UX  
+2. ~~P9-E2-T1 — Recommendations v1 engine path~~ ✅ Done  
+3. **P9-E3-T1 — Recommendations IPC / UX** ← **Ready**  
 
 **Git:** `phase/9-recommendations` → local commits → **one cluster PR after 2026-09-01**.

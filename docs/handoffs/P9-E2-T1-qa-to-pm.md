@@ -31,10 +31,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P9-E2-T1 Done; Ready **P9-E3-T1**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `docs/12-development.md` already notes engine path; `ARCHITECTURE_STATUS` / canvas L4 progress
-- [ ] Brief for next: `docs/handoffs/P9-E3-T1-pm-brief.md`
+- [x] `/docs/SPRINT_ROADMAP.md` — P9-E2-T1 Done; Ready **P9-E3-T1**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `docs/12-development.md` already notes engine path; `ARCHITECTURE_STATUS` / canvas L4 progress
+- [x] Brief for next: `docs/handoffs/P9-E3-T1-pm-brief.md`
 
 ## Suggested next Ready task
 - **P9-E3-T1** — Recommendations IPC / UX (`get_recommendations`, host `register_recommendations_v1`, Dashboard calm surface, mocks).

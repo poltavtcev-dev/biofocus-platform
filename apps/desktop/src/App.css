@@ -277,7 +277,8 @@ body {
   font-size: 0.8rem;
 }
 
-.insights-slot {
+.insights-slot,
+.recommendations-slot {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;

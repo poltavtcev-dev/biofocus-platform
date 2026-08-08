@@ -29,7 +29,7 @@ Zero telemetry by default · AI only on explicit user action · separate permiss
 | **L1** | Observations | Immutable raw facts (user rarely inspects) | SQLite + ingest + macOS collectors + sample HR |
 | **L2** | Features | Deterministic metrics + provenance + confidence (ADR-007) + optional explanation factors (P7-E2) | `feature-engine` DAG (`FeatureNode`) |
 | **L3** | Knowledge | Patterns / Insights from Features (+ Evidence) | `knowledge-engine` `InsightRule` (evaluate-on-read) |
-| **L4** | Recommendations | Deterministic suggested actions with Evidence | ADR-009: first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); thin `Insight.actionRecommendation` remains optional hint only → engine **P9-E2** → surface **P9-E3** |
+| **L4** | Recommendations | Deterministic suggested actions with Evidence | ADR-009 + engine (`focus_dip_pace_hint_v1`); thin `Insight.actionRecommendation` remains optional hint only → surface **P9-E3** (`get_recommendations`) |
 | **L5** | Coaching (AI) | NL explanation only — never computes Features / Recommendations | `report-engine` + opt-in local LLM |
 
 ```text
@@ -70,7 +70,7 @@ Immediate Kanban = **Phase 9** (`/docs/SPRINT_ROADMAP.md`). Below is the accepte
 | :--- | :--- |
 | **0–7** | Done — foundation → ingest → pipeline → Dashboard/Insights → wearable dogfood → Life Events + Calendar → Trust layer (confidence / factors / RecoveryScore) |
 | **8** | Done — Pattern Discovery v1 (ADR-008 recompute-on-read → baseline Insight → Dashboard surface) |
-| **9** | Deterministic Recommendations — **open** (ADR-009 Done → engine **P9-E2** → IPC/UX); Ready **P9-E2-T1** |
+| **9** | Deterministic Recommendations — **open** (ADR-009 + engine Done → IPC/UX); Ready **P9-E3-T1** |
 | **10** | Plugin wave-1 (IDE/Git or Browser categories — dogfood-driven) |
 | **11** | AI coaching polish — prompt packs / provider UX (still interpret-only) |
 | **12+** | Ambient sources + commercial packaging |

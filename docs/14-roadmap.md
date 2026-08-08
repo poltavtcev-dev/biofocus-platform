@@ -35,8 +35,8 @@
 
 - [ ] **Phase 9: Recommendations** (Sprint 17–18) — opened 2026-08-08 (PM gate)
   - ADR-009 Recommendations domain / engine shape — **P9-E1 Done** (2026-08-08)
-  - Deterministic recommendation path — **P9-E2 Ready**
-  - Recommendations IPC / UX — P9-E3
+  - Deterministic recommendation path (`focus_dip_pace_hint_v1`) — **P9-E2 Done** (2026-08-08)
+  - Recommendations IPC / UX — **P9-E3 Ready**
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
@@ -54,7 +54,7 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM ga
 **Phase 6:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P6-*-qa-to-pm.md` · tip `phase/6-dogfood-fixes` (PR after freeze)  
 **Phase 7:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P7-*-qa-to-pm.md` · branch `phase/7-trust-layer` (PR after freeze)  
 **Phase 8:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P8-*-qa-to-pm.md` · branch `phase/8-pattern-discovery` (PR after freeze)  
-**Phase 9:** Open — P9-E1 Done (ADR-009) · Ready **P9-E2-T1** · `docs/SPRINT_ROADMAP.md` · brief `docs/handoffs/P9-E2-T1-pm-brief.md` · branch `phase/9-recommendations`  
-**Next Kanban:** P9-E2-T1 → P9-E3-T1 · **PR freeze until 2026-09-01**  
+**Phase 9:** Open — P9-E1–E2 Done · Ready **P9-E3-T1** · `docs/SPRINT_ROADMAP.md` · brief `docs/handoffs/P9-E3-T1-pm-brief.md` · branch `phase/9-recommendations`  
+**Next Kanban:** P9-E3-T1 (closes Phase 9) · **PR freeze until 2026-09-01**  
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.
