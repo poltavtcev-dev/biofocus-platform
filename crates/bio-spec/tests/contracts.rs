@@ -5,8 +5,8 @@ use uuid::Uuid;
 
 use bio_spec::{
     validate_life_event_payload, validate_observation_payload, Confidence, EvidenceRef, Feature,
-    FeatureValue, Insight, Observation, Severity, Signal, SpecError, TimeWindow, UnixTimestamp,
-    DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, V1_LIFE_EVENT_KINDS,
+    FeatureValue, Insight, Observation, Recommendation, Severity, Signal, SpecError, TimeWindow,
+    UnixTimestamp, DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, V1_LIFE_EVENT_KINDS,
 };
 
 /// Sample Observation JSON from `docs/07-contracts.md`.
@@ -233,6 +233,7 @@ fn signal_feature_insight_serde_smoke() {
         evidence_list: vec![
             EvidenceRef::Feature("FocusScore".into()),
             EvidenceRef::Signal(Uuid::nil()),
+            EvidenceRef::Insight(Uuid::from_u128(7)),
         ],
         action_recommendation: Some("Take a short break.".into()),
     };
@@ -240,4 +241,20 @@ fn signal_feature_insight_serde_smoke() {
         serde_json::from_str(&serde_json::to_string(&insight).expect("insight serialize"))
             .expect("insight deserialize");
     assert_eq!(insight_back, insight);
+
+    let recommendation = Recommendation {
+        id: Uuid::from_u128(3),
+        title: "A gentler pace may help".into(),
+        suggestion: "If it fits your schedule, a short pause may help.".into(),
+        category: "pace".into(),
+        evidence_list: vec![
+            EvidenceRef::Feature("FocusScore".into()),
+            EvidenceRef::Insight(Uuid::from_u128(7)),
+        ],
+    };
+    let recommendation_back: Recommendation = serde_json::from_str(
+        &serde_json::to_string(&recommendation).expect("recommendation serialize"),
+    )
+    .expect("recommendation deserialize");
+    assert_eq!(recommendation_back, recommendation);
 }

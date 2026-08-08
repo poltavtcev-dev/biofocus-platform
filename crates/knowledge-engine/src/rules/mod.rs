@@ -1,23 +1,27 @@
-//! Product Insight rules (P4-E2-T2 + P8-E2-T1) — deterministic, no LLM / SQLite.
+//! Product Insight + Recommendation rules — deterministic, no LLM / SQLite.
 //!
 //! | Rule id | Trigger | Evidence |
 //! | :--- | :--- | :--- |
 //! | [`RULE_HIGH_STRESS_PERIOD`] | Signal `High_Stress` | Signal id(s); optional `StressIndex` |
 //! | [`RULE_CONTEXT_SWITCH_ELEVATED`] | latest `ContextSwitchRate` ≥ threshold | `ContextSwitchRate`; optional `FocusScore` |
 //! | [`RULE_FOCUS_VS_RECENT_BASELINE`] | live FocusScore vs afternoon baseline | `FocusScore` |
+//! | [`RULE_FOCUS_DIP_PACE_HINT`] | Focus-below-baseline pattern Insight | `FocusScore` + Insight id |
 //!
 //! Host registration:
 //! ```ignore
 //! let mut engine = KnowledgeEngine::new();
 //! register_insights_v1(&mut engine)?;
-//! let insights = engine.evaluate_with_pattern(&features, &signals, &pattern)?;
+//! register_recommendations_v1(&mut engine)?;
+//! let (insights, recommendations) =
+//!     engine.evaluate_insights_and_recommendations(&features, &signals, &pattern)?;
 //! ```
 //!
-//! Default [`crate::KnowledgeEngine::new`] stays empty — call [`register_insights_v1`]
-//! (or register rules individually) before expecting product Insights.
+//! Default [`crate::KnowledgeEngine::new`] stays empty — call the register helpers
+//! (or register rules individually) before expecting product Insights / Recommendations.
 
 mod context_switch;
 mod focus_baseline;
+mod focus_dip_pace;
 mod high_stress;
 
 pub use context_switch::{
@@ -28,6 +32,7 @@ pub use focus_baseline::{
     FocusVsRecentBaselineRule, FOCUS_BASELINE_CONFIDENCE_GATE, FOCUS_BASELINE_DELTA,
     FOCUS_BASELINE_MAX_WINDOWS, FOCUS_BASELINE_MIN_WINDOWS, RULE_FOCUS_VS_RECENT_BASELINE,
 };
+pub use focus_dip_pace::{FocusDipPaceHintRule, RULE_FOCUS_DIP_PACE_HINT};
 pub use high_stress::{
     HighStressPeriodRule, HIGH_STRESS_SIGNAL_TYPE, RULE_HIGH_STRESS_PERIOD, STRESS_INDEX_ID,
 };
@@ -42,6 +47,12 @@ pub fn register_insights_v1(engine: &mut KnowledgeEngine) -> KnowledgeEngineResu
     engine.register(HighStressPeriodRule)?;
     engine.register(ContextSwitchElevatedRule)?;
     engine.register(FocusVsRecentBaselineRule)?;
+    Ok(())
+}
+
+/// Registers v1 product Recommendation rules (ADR-009 / P9-E2-T1).
+pub fn register_recommendations_v1(engine: &mut KnowledgeEngine) -> KnowledgeEngineResult<()> {
+    engine.register_recommendation(FocusDipPaceHintRule)?;
     Ok(())
 }
 
@@ -237,5 +248,52 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn focus_dip_recommendation_fires_after_lower_baseline_insight() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("insights");
+        register_recommendations_v1(&mut engine).expect("recommendations");
+        // Current Focus well below afternoon baseline → pattern Insight + pace Recommendation.
+        let current = feature(FOCUS_SCORE_ID, 10_000, 40.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 70.0),
+            feature(FOCUS_SCORE_ID, 2_000, 72.0),
+            feature(FOCUS_SCORE_ID, 3_000, 68.0),
+        ]);
+        let (insights, recommendations) = engine
+            .evaluate_insights_and_recommendations(std::slice::from_ref(&current), &[], &pattern)
+            .expect("evaluate");
+        let pattern_insight = insights
+            .iter()
+            .find(|i| i.category == "pattern")
+            .expect("pattern insight");
+        assert!(pattern_insight.description.contains("lower"));
+        assert_eq!(recommendations.len(), 1);
+        assert!(recommendations[0]
+            .evidence_list
+            .contains(&EvidenceRef::Feature(FOCUS_SCORE_ID.into())));
+        assert!(recommendations[0]
+            .evidence_list
+            .contains(&EvidenceRef::Insight(pattern_insight.id)));
+    }
+
+    #[test]
+    fn recommendations_empty_without_registration() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("insights");
+        let current = feature(FOCUS_SCORE_ID, 10_000, 40.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 70.0),
+            feature(FOCUS_SCORE_ID, 2_000, 72.0),
+        ]);
+        let insights = engine
+            .evaluate_with_pattern(std::slice::from_ref(&current), &[], &pattern)
+            .expect("insights");
+        let recommendations = engine
+            .evaluate_recommendations(std::slice::from_ref(&current), &[], &insights)
+            .expect("recommendations");
+        assert!(recommendations.is_empty());
     }
 }

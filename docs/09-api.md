@@ -209,7 +209,7 @@ Example (non-empty):
 | `insights[].description` | string | Short explanatory copy |
 | `insights[].category` | string | e.g. `pattern`, `stress`, `focus` |
 | `insights[].evidenceList[]` | object | `kind`: `"feature"` \| `"signal"`; `id`: Feature id or Signal UUID |
-| `insights[].actionRecommendation` | string? | Optional gentle suggestion |
+| `insights[].actionRecommendation` | string? | Optional gentle suggestion (thin hint — **not** L4; see ADR-009 / `get_recommendations`) |
 
 Host contract:
 
@@ -220,6 +220,42 @@ register_insights_v1(&mut engine)?;
 // Pattern Discovery: evaluate_with_pattern(&features, &signals, &pattern)
 let insights = engine.evaluate_with_pattern(&features, &signals, &pattern)?;
 ```
+
+### `get_recommendations` (P9-E3 — contract sketch; ADR-009)
+
+- **Invoke (planned):** `invoke("get_recommendations")`
+- **Purpose:** Calm Evidence-backed Recommendations for Dashboard / Insights-adjacent surface (L4).
+- **Source:** Evaluate-on-read in `knowledge-engine` after Insights: `RecommendationRule`s consume Features, Signals, and just-evaluated Insights. Empty / no-match / low confidence → `{ "recommendations": [] }`.
+- **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM-invented actions. No SQLite on the command path (UI ↛ DB). No Recommendation persistence (ADR-009).
+- **v1 sketch rule (→ P9-E2):** `focus_dip_pace_hint_v1` — when pattern Insight `focus_vs_recent_baseline_v1` indicates Focus lower than recent average (and FocusScore confidence gate passes), emit a pace/pause hint with Evidence `Feature FocusScore` + `Insight <id>`.
+
+Example (non-empty, illustrative):
+
+```json
+{
+  "recommendations": [
+    {
+      "id": "0190…",
+      "title": "A gentler pace may help",
+      "suggestion": "If it fits your schedule, a short pause or slightly slower pace may help when focus looks lower than your recent average.",
+      "category": "pace",
+      "evidenceList": [
+        { "kind": "feature", "id": "FocusScore" },
+        { "kind": "insight", "id": "0190…" }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `recommendations[]` | object | Zero or more Recommendations from v1 rules |
+| `recommendations[].id` | string | Recommendation UUID |
+| `recommendations[].title` | string | Calm, non-clinical title |
+| `recommendations[].suggestion` | string | Optional personal action hint (not medical advice) |
+| `recommendations[].category` | string | e.g. `pace`, `focus` |
+| `recommendations[].evidenceList[]` | object | `kind`: `"feature"` \| `"signal"` \| `"insight"`; `id` accordingly |
 
 ### report-engine (crate API, P4-E3-T1 / T2)
 

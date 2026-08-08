@@ -1,34 +1,43 @@
-//! Knowledge Engine: Features + Signals → Insights with Evidence.
+//! Knowledge Engine: Features + Signals → Insights; then Recommendations (ADR-009).
 
-use bio_spec::{Feature, Insight, Signal};
+use bio_spec::{Feature, Insight, Recommendation, Signal};
 
 use crate::error::{KnowledgeEngineError, KnowledgeEngineResult};
 use crate::pattern::PatternInputs;
+use crate::recommendation_rule::RecommendationRule;
 use crate::rule::InsightRule;
 
-/// Deterministic Insight generator over Feature / Signal inputs.
+/// Deterministic Insight + Recommendation generator over Feature / Signal inputs.
 ///
 /// Default engine has **no product rules** (empty `Ok` is valid). Register rules
-/// via [`Self::register`] or [`crate::register_insights_v1`].
+/// via [`Self::register`] / [`crate::register_insights_v1`] and
+/// [`Self::register_recommendation`] / [`crate::register_recommendations_v1`].
 #[derive(Default)]
 pub struct KnowledgeEngine {
     rules: Vec<Box<dyn InsightRule>>,
+    recommendation_rules: Vec<Box<dyn RecommendationRule>>,
 }
 
 impl KnowledgeEngine {
-    /// Empty engine (no rules → always empty Insight list).
+    /// Empty engine (no rules → always empty Insight / Recommendation lists).
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Number of registered rules.
+    /// Number of registered Insight rules.
     #[must_use]
     pub fn rule_count(&self) -> usize {
         self.rules.len()
     }
 
-    /// Register a rule. Duplicate [`InsightRule::id`] → error.
+    /// Number of registered Recommendation rules.
+    #[must_use]
+    pub fn recommendation_rule_count(&self) -> usize {
+        self.recommendation_rules.len()
+    }
+
+    /// Register an Insight rule. Duplicate [`InsightRule::id`] → error.
     pub fn register(&mut self, rule: impl InsightRule + 'static) -> KnowledgeEngineResult<()> {
         let id = rule.id().to_owned();
         if self.rules.iter().any(|r| r.id() == id) {
@@ -38,7 +47,20 @@ impl KnowledgeEngine {
         Ok(())
     }
 
-    /// Run all rules with empty pattern inputs (snapshot-only path).
+    /// Register a Recommendation rule. Duplicate [`RecommendationRule::id`] → error.
+    pub fn register_recommendation(
+        &mut self,
+        rule: impl RecommendationRule + 'static,
+    ) -> KnowledgeEngineResult<()> {
+        let id = rule.id().to_owned();
+        if self.recommendation_rules.iter().any(|r| r.id() == id) {
+            return Err(KnowledgeEngineError::DuplicateRule { id });
+        }
+        self.recommendation_rules.push(Box::new(rule));
+        Ok(())
+    }
+
+    /// Run all Insight rules with empty pattern inputs (snapshot-only path).
     pub fn evaluate(
         &self,
         features: &[Feature],
@@ -47,7 +69,7 @@ impl KnowledgeEngine {
         self.evaluate_with_pattern(features, signals, &PatternInputs::empty())
     }
 
-    /// Run all rules; concatenate Insights. Empty inputs / no matches → `Ok([])`.
+    /// Run all Insight rules; concatenate Insights. Empty inputs / no matches → `Ok([])`.
     ///
     /// `pattern` carries optional recompute-on-read baseline series (ADR-008).
     pub fn evaluate_with_pattern(
@@ -62,6 +84,36 @@ impl KnowledgeEngine {
             insights.extend(batch);
         }
         Ok(insights)
+    }
+
+    /// Run Recommendation rules **after** Insights (ADR-009 evaluate-on-read).
+    ///
+    /// Call with Insights from [`Self::evaluate`] / [`Self::evaluate_with_pattern`].
+    /// Empty inputs / no matches → `Ok([])`. No SQLite / busy-loop.
+    pub fn evaluate_recommendations(
+        &self,
+        features: &[Feature],
+        signals: &[Signal],
+        insights: &[Insight],
+    ) -> KnowledgeEngineResult<Vec<Recommendation>> {
+        let mut recommendations = Vec::new();
+        for rule in &self.recommendation_rules {
+            let batch = rule.evaluate(features, signals, insights)?;
+            recommendations.extend(batch);
+        }
+        Ok(recommendations)
+    }
+
+    /// Insights then Recommendations in one call (host convenience).
+    pub fn evaluate_insights_and_recommendations(
+        &self,
+        features: &[Feature],
+        signals: &[Signal],
+        pattern: &PatternInputs,
+    ) -> KnowledgeEngineResult<(Vec<Insight>, Vec<Recommendation>)> {
+        let insights = self.evaluate_with_pattern(features, signals, pattern)?;
+        let recommendations = self.evaluate_recommendations(features, signals, &insights)?;
+        Ok((insights, recommendations))
     }
 }
 

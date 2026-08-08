@@ -22,18 +22,18 @@ Zero telemetry by default · AI only on explicit user action · separate permiss
 
 ## 3. Analysis stack (5 levels)
 
-Сохраняем Ubiquitous Language: `Observation` → `Signal` → `Feature` → `Insight` (+ future Recommendation). UI (в т.ч. Dashboard window) — presentation; Core не называется «Dashboard».
+Сохраняем Ubiquitous Language: `Observation` → `Signal` → `Feature` → `Insight` → `Recommendation`. UI (в т.ч. Dashboard window) — presentation; Core не называется «Dashboard».
 
 | Level | Name | Role | Implementation today |
 | :--- | :--- | :--- | :--- |
 | **L1** | Observations | Immutable raw facts (user rarely inspects) | SQLite + ingest + macOS collectors + sample HR |
 | **L2** | Features | Deterministic metrics + provenance + confidence (ADR-007) + optional explanation factors (P7-E2) | `feature-engine` DAG (`FeatureNode`) |
 | **L3** | Knowledge | Patterns / Insights from Features (+ Evidence) | `knowledge-engine` `InsightRule` (evaluate-on-read) |
-| **L4** | Recommendations | Deterministic suggested actions with Evidence | Thin optional text on Insight; engine later (Phase 9) |
-| **L5** | Coaching (AI) | NL explanation only — never computes Features | `report-engine` + opt-in local LLM |
+| **L4** | Recommendations | Deterministic suggested actions with Evidence | ADR-009: first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); thin `Insight.actionRecommendation` remains optional hint only → engine **P9-E2** → surface **P9-E3** |
+| **L5** | Coaching (AI) | NL explanation only — never computes Features / Recommendations | `report-engine` + opt-in local LLM |
 
 ```text
-Observation → Pipeline → Signal / Feature → Knowledge (Insight)
+Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recommendation
                                               ↓
                                     Report / Prompt → optional LLM
 ```
@@ -64,13 +64,13 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight)
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 8** only (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
+Immediate Kanban = **Phase 9** (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
 | **0–7** | Done — foundation → ingest → pipeline → Dashboard/Insights → wearable dogfood → Life Events + Calendar → Trust layer (confidence / factors / RecoveryScore) |
-| **8** | Pattern Discovery v1 — multi-day / baseline Knowledge (ADR) |
-| **9** | Deterministic Recommendations engine |
+| **8** | Done — Pattern Discovery v1 (ADR-008 recompute-on-read → baseline Insight → Dashboard surface) |
+| **9** | Deterministic Recommendations — **open** (ADR-009 Done → engine **P9-E2** → IPC/UX); Ready **P9-E2-T1** |
 | **10** | Plugin wave-1 (IDE/Git or Browser categories — dogfood-driven) |
 | **11** | AI coaching polish — prompt packs / provider UX (still interpret-only) |
 | **12+** | Ambient sources + commercial packaging |

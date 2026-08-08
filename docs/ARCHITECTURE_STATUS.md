@@ -11,8 +11,9 @@
 - **Phase 5:** **Done** (2026-08-05) — Wearable dogfood; E1–E3. Branch: `phase/5-wearable-dogfood` (PR after freeze).
 - **Phase 6:** **Done** (2026-08-06) — Life context; E1–E3. Tip: `phase/6-dogfood-fixes` (PR after freeze).
 - **Phase 7:** **Done** (2026-08-06) — Trust layer; E1–E3 (ADR-007 confidence → Explanation factors → `RecoveryScore`). Branch: `phase/7-trust-layer` (PR after freeze).
-- **Phase 8:** **Active** (2026-08-06) — Pattern Discovery v1: ADR-008 **recompute-on-read** (P8-E1) → `focus_vs_recent_baseline_v1` (P8-E2 Done 2026-08-07) → Insights surface. Ready: **P8-E3-T1**. Branch: `phase/8-pattern-discovery`. **PR freeze until 2026-09-01**.
-- **Horizon P9–P12+:** Recommendations → plugins → AI polish → packaging. Not Kanban-Ready until PM opens each phase.
+- **Phase 8:** **Done** (2026-08-08) — Pattern Discovery v1; E1–E3 (ADR-008 recompute-on-read → `focus_vs_recent_baseline_v1` → Dashboard Insights surface). Branch: `phase/8-pattern-discovery` (PR after freeze).
+- **Phase 9:** **Open** (2026-08-08) — Deterministic Recommendations; P9-E1 Done (ADR-009); Ready **P9-E2-T1** (engine path). Branch: `phase/9-recommendations` (PR after freeze).
+- **Horizon P10–P12+:** Plugin wave-1 → AI coaching polish → ambient + packaging. Not Kanban-Ready until PM opens each phase.
 
 ## Core Decisions
 - Local First Architecture

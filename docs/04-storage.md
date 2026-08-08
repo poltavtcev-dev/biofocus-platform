@@ -33,3 +33,9 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 - **v1:** Observations remain the only durable history. Features and baselines are **not** persisted as SQLite rows.
 - **No migration** for Feature history / baseline tables under ADR-008.
 - Future optional daily rollup table requires a **new ADR + user approve** — not part of Pattern Discovery v1.
+
+### Recommendations (ADR-009)
+
+- **v1:** Recommendations are evaluate-on-read (in-memory / IPC) — **no** `recommendations` table and **no** recommendation-history columns.
+- **No migration** under ADR-009.
+- Future optional dismiss / feedback history requires a **new ADR + user approve** — out of Phase 9 v1.

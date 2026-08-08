@@ -28,7 +28,7 @@
 | 1 | Observations | ingest / collectors / SQLite |
 | 2 | Features | `feature-engine` |
 | 3 | Knowledge (Insights) | `knowledge-engine` |
-| 4 | Recommendations | thin Insight text → Phase 9 engine |
+| 4 | Recommendations | ADR-009 Done: first-class `Recommendation` + rules in `knowledge-engine`; engine → **P9-E2 Ready** |
 | 5 | Coaching (AI interpret) | `report-engine` + opt-in LLM |
 
 UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer name.
@@ -40,7 +40,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
 - **Phase 6 (Done):** Life Events (ADR-006) + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`. Wearable dogfood verified: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health).
 - **Phase 7 (Done):** Trust layer — ADR-007 confidence → Explanation factors → `RecoveryScore`.
-- **Phase 8 (active):** Pattern Discovery v1 — ADR-008 **recompute-on-read** (P8-E1) → `focus_vs_recent_baseline_v1` (P8-E2 Done) → Insights surface (**P8-E3-T1** Ready). Later: more HealthKit types; plugins (IDE/Git/Browser).
+- **Phase 8 (Done 2026-08-08):** Pattern Discovery v1 — ADR-008 **recompute-on-read** → `focus_vs_recent_baseline_v1` → calm Dashboard Insights surface.
+- **Phase 9 (Open 2026-08-08):** Deterministic Recommendations — ADR-009 Done; Ready **P9-E2-T1** (engine). Later: more HealthKit types; plugins (IDE/Git/Browser).
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
 
@@ -112,15 +113,15 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 8** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
+Immediate Kanban = **Phase 9** (`/docs/SPRINT_ROADMAP.md`). Ready **P9-E2-T1**.
 
 | Phase | Focus |
 | :--- | :--- |
 | **5** | Wearable dogfood (LAN → HealthKit) — **done** |
 | **6** | Life Events v1 + Calendar Features — **done** |
 | **7** | Feature confidence + Explanation factors + RecoveryScore — **done** |
-| **8** | Pattern Discovery v1 (ADR-008 + baseline Insight) — **active** (Ready **P8-E3-T1**) |
-| **9** | Deterministic Recommendations |
+| **8** | Pattern Discovery v1 (ADR-008 + baseline + Dashboard) — **done** |
+| **9** | Deterministic Recommendations — **open** (ADR-009 Done · P9-E2 Ready) |
 | **10** | Plugin wave-1 (IDE/Git or Browser) |
 | **11** | AI coaching polish (prompts / providers UX) |
 | **12+** | Ambient sources + commercial packaging |

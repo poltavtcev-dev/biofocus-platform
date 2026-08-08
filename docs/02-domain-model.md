@@ -27,5 +27,13 @@
 
 ### 1.4 Knowledge & Insight (Инсайты)
 - **Description:** Аналитический вывод о закономерности с подтверждающими уликами (Evidence).
-- **Properties:** `id`, `title`, `description`, `category`, `evidence_list` (Array of Feature/Signal IDs), `action_recommendation`.
+- **Properties:** `id`, `title`, `description`, `category`, `evidence_list` (Array of Feature/Signal IDs), `action_recommendation` (optional thin hint — not L4).
 - **Pattern Discovery (ADR-008):** Multi-day / baseline Insights use **recompute-on-read** Feature series from local Observations — not a persisted Feature history store. Optional in-process memo only. Calm personal observations, not clinical claims. Implement rules in `knowledge-engine` (→ P8-E2).
+
+### 1.5 Recommendation (L4 suggested actions)
+- **Description:** Calm, optional suggested action with its own Evidence — personal hint, not medical advice (ADR-009).
+- **Properties (v1 contract):** `id`, `title`, `suggestion`, `category`, `evidence_list` (Feature / Signal / Insight ids via extended `EvidenceRef`).
+- **Engine:** `RecommendationRule` hosted in `knowledge-engine` (alongside `InsightRule`); evaluate-on-read after Insights; empty/no-match → `[]`.
+- **Persistence (v1):** In-memory / IPC only — **no** Recommendation SQLite table. Observations remain the durable store.
+- **Boundary:** LLM must not compute Recommendations (L5 interpret-only). Thin `Insight.actionRecommendation` may coexist but is not the L4 product contract.
+- **Implement:** types + rule path → P9-E2; IPC / Dashboard surface → P9-E3.

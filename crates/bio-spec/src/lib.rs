@@ -5,6 +5,7 @@
 //! - [`Signal`] — transient change / anomaly
 //! - [`Feature`] — windowed metric with provenance
 //! - [`Insight`] — analytical conclusion with evidence
+//! - [`Recommendation`] — calm suggested action with evidence (L4 / ADR-009)
 //!
 //! Identifiers intended for new Observations use **UUIDv7**.
 //! Timestamps are **Unix seconds UTC** (`i64`).
@@ -17,6 +18,7 @@ mod feature;
 mod insight;
 mod life_event;
 mod observation;
+mod recommendation;
 mod signal;
 mod time;
 
@@ -32,6 +34,7 @@ pub use life_event::{
     LIFE_EVENT_KIND_WORKOUT, V1_LIFE_EVENT_KINDS,
 };
 pub use observation::{Confidence, DataType, Observation, ObservationId, ProviderId};
+pub use recommendation::{Recommendation, RecommendationId};
 pub use signal::{Severity, Signal, SignalId, SignalType};
 pub use time::{TimeWindow, UnixTimestamp};
 

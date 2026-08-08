@@ -10,6 +10,7 @@
 | ADR-006 | 2026-08-05 | Life Events as Observation kinds (`data_type: "life_event"`, `payload.kind`); no parallel Life Events table/store; default local-only | Vision rule 6 + Phase 6 dogfood: Coffee / Walk / Lunch / Workout must feed ActivityBalance / schedule Features without a second persistence model. Reuse existing Observation SQLite store + ingest. v1 kinds: `coffee`, `walk`, `lunch`, `workout`. Payload: required `kind`; optional `note` (string), `duration_secs` (≥ 0). Validation in `bio-spec`; ingest rejects malformed Life Events with `400 invalid_life_event`. | Parallel `life_events` SQLite table; separate event bus; cloud sync of Life Events; one `data_type` per kind without shared schema |
 | ADR-007 | 2026-08-06 | Feature-level `confidence` ∈ `[0.0, 1.0]` on domain `Feature` (+ snapshot IPC); computed by catalog nodes; **no** new SQLite schema / second Feature registry | Observation.confidence trusts a single fact; Feature values still looked equally trustworthy on thin windows. Trust layer needs a derived quality score so Insights/UI can down-weight incomplete evidence. Confidence is **data quality**, not a clinical claim. | UI-only heuristics without Core field; parallel Feature confidence store/registry; persisting Feature rows in SQLite for v1 |
 | ADR-008 | 2026-08-07 | Pattern Discovery v1 = **recompute-on-read** multi-window Features from local Observations (+ optional in-process memo); evolve `knowledge-engine`; **no** Feature/baseline history SQLite table in v1 | North star needs multi-day / baseline Knowledge without a second persistence model or busy background jobs. Observations remain source of truth; Features stay derived (ADR-007). Evaluate-on-read matches existing `KnowledgeEngine::evaluate` + Insights IPC. Local-only; idle-safe. | Persisted Feature/baseline history store for v1; always-on recompute worker / busy-loop; cloud sync of patterns; ML model training; parallel “Correlation Engine” crate |
+| ADR-009 | 2026-08-08 | Recommendations v1 = first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); keep thin `Insight.actionRecommendation` as optional hint only; **no** Recommendation SQLite store; **no** parallel Coach Engine crate | Vision L4 needs Evidence-backed suggested actions, not only a string on Insight. Evolve existing Knowledge path (ADR-008); local-only; idle-safe; LLM stays L5 interpret-only. | LLM as source of truth for actions; clinical/prescription framing; parallel Coach Engine without Evidence; cloud sync of recommendations; persist Recommendation history in v1; replace Insights with Recommendations |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -97,3 +98,72 @@ IPC: still `get_insights` → evaluate-on-read; UI ↛ SQLite
 3. Cloud sync of patterns / biometrics.
 4. ML model training for pattern discovery.
 5. Parallel “Correlation Engine” crate / second registry — evolve `knowledge-engine` + existing Feature path instead.
+
+### ADR-009 detail — Recommendations domain / engine shape (v1)
+
+**Chosen approach:** First-class domain `Recommendation` (Evidence-backed) evaluated by pluggable `RecommendationRule`s hosted in **`knowledge-engine`** (same crate as `InsightRule`). **Evaluate-on-read** only — no Recommendation persistence in v1. Thin optional `Insight.actionRecommendation` remains for Insights UX / reports but is **not** the L4 contract.
+
+| Layer | Role in Recommendations v1 |
+| :--- | :--- |
+| `Observation` (SQLite) | Immutable local facts — only durable history (unchanged) |
+| `Feature` / `Signal` | Derived inputs; confidence gates (ADR-007) still apply |
+| `Insight` (`knowledge-engine`) | L3 Knowledge — patterns / conclusions with Evidence; may include optional thin `actionRecommendation` string |
+| `Recommendation` (`knowledge-engine` + `bio-spec`) | L4 — calm, optional suggested action with its **own** Evidence (Feature / Signal / Insight ids) |
+
+**Why not “thin text only”:** Vision L4 requires deterministic suggestions **with Evidence**. A single optional string on `Insight` cannot carry independent provenance, emit without a matching Insight title, or be listed/filtered as a first-class surface. Phase 9 elevates L4 without discarding existing thin hints.
+
+**v1 mechanics**
+
+1. **Types (→ P9-E2):** `bio-spec::Recommendation` — at minimum `{ id, title, suggestion, category, evidence_list }`. Calm non-clinical copy in `suggestion` (and title). Extend `EvidenceRef` with an `Insight(InsightId)` variant (or equivalent) so Recommendations can cite Knowledge as Evidence alongside Feature/Signal.
+2. **Engine host:** `RecommendationRule` trait + registry inside `knowledge-engine` (mirror `InsightRule`). Host evaluates Insights first (existing path), then Recommendation rules with inputs: current Features, Signals, and the just-evaluated Insights. Empty / no-match → `Ok([])`.
+3. **Evaluate-on-read:** No always-on recommendation worker; no busy-loop. Compute on IPC / Core request (same idle posture as Insights + ADR-008). Optional process-local memo of last evaluation is allowed — **not** SQLite.
+4. **Idle / privacy:** Local-only; no cloud sync of recommendations or biometrics. Thin / low-confidence inputs → omit Recommendation.
+5. **LLM boundary:** L5 (`report-engine` / opt-in LLM) may **rephrase** an already-computed Recommendation for display only — must **not** invent actions, Evidence, or scores. Deterministic Core remains source of truth for L4.
+6. **Calm framing:** Optional personal hints (“If it fits your schedule…”), never medical advice, prescriptions, or diagnosis.
+
+**Schema (v1)**
+
+- **No new SQLite tables/columns** for Recommendations or recommendation history.
+- **Do not apply** any migration for this ADR.
+- Deferred (future ADR + user approve only): optional user feedback / dismiss history — out of Phase 9 v1 until then.
+
+**IPC / surface (contracts — implement in P9-E3)**
+
+- Prefer a dedicated evaluate-on-read path (e.g. `get_recommendations`) returning `Recommendation[]`, UI ↛ SQLite.
+- Evolving Insights DTO alone is insufficient once L4 is first-class; thin `actionRecommendation` may still appear on Insights for backward compatibility.
+- Mock/dev fixtures allowed for Dashboard without rich history (same pattern as Insights).
+
+**E2 consumption sketch (implement in P9-E2)**
+
+Example rule id: `focus_dip_pace_hint_v1`
+
+```text
+inputs:
+  insights = evaluate-on-read Knowledge Insights (existing path)
+  pattern  = Insight rule_id / category "pattern" for focus vs recent baseline
+             (e.g. focus_vs_recent_baseline_v1) when Focus looks lower than baseline
+  features = live FocusScore (confidence ≥ gate, ADR-007)
+emit when:
+  matching pattern Insight is present
+  and FocusScore confidence ≥ gate
+  and (optional) |current - baseline| already satisfied by that Insight
+Recommendation (calm):
+  title: "A gentler pace may help"
+  suggestion: "If it fits your schedule, a short pause or slightly slower pace
+               may help when focus looks lower than your recent average."
+  category: "pace" | "focus"
+  evidence_list: [ Feature FocusScore, Insight <pattern insight id> ]
+IPC: get_recommendations → evaluate-on-read; UI ↛ SQLite
+```
+
+Legacy: existing Insight rules may keep a short `actionRecommendation` string; L4 product surface and tests target `Recommendation`, not that string alone.
+
+**Rejected alternatives**
+
+1. **LLM as source of truth for actions** — breaks determinism / Evidence; LLM stays L5 interpret-only.
+2. **Clinical / prescription framing** — out of product Non-Goals; calm optional hints only.
+3. **Parallel “Coach Engine” crate** that bypasses Evidence / Knowledge — prefer evolve `knowledge-engine` + `bio-spec` (same stance as ADR-008 vs Correlation Engine).
+4. **Cloud sync of recommendations** — local-first; no default remote store.
+5. **Persist Recommendation history in v1** — premature schema; Observations remain durable SoT.
+6. **Evolve only `Insight.actionRecommendation` (no first-class type)** — insufficient for Evidence-backed L4 listing / gates.
+7. **Replace Insights with Recommendations** — L3 Knowledge and L4 actions stay distinct layers.

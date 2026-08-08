@@ -155,6 +155,7 @@ fn format_evidence(list: &[EvidenceRef]) -> String {
         .map(|e| match e {
             EvidenceRef::Feature(id) => format!("feature:{id}"),
             EvidenceRef::Signal(id) => format!("signal:{id}"),
+            EvidenceRef::Insight(id) => format!("insight:{id}"),
         })
         .collect::<Vec<_>>()
         .join(", ")

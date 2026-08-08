@@ -1,16 +1,16 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 8: Pattern Discovery v1** (Sprint 15–16) — **Opened** 2026-08-06.  
-> Phase 0–7 Done. Goal: multi-day / baseline **Knowledge** (personal patterns) — ADR for recompute vs Feature history first; calm Insights with Evidence. No clinical claims. No new SQLite schema without ADR + approve.
+> **Phase 9: Deterministic Recommendations** (Sprint 17–18) — **Opened** 2026-08-08.  
+> Phase 0–8 Done. Goal: **L4 Recommendations** — deterministic suggested actions with Evidence (not LLM coaching, not clinical advice). ADR first; evolve from thin `Insight.actionRecommendation` only after decision.
 
-**Phase 8 goal:** User-visible personal patterns over days (e.g. “Focus tends to be higher after recovery windows”) via Knowledge layer — not a new ML crate. Decide persistence/recompute in ADR-008 before shipping history tables or recompute jobs.
+**Phase 9 goal:** User sees calm, evidence-backed action suggestions derived from Features / Insights — Personal Pattern Discovery stays the north star; Recommendations are optional next-step hints, not diagnoses or automation.
 
-**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · horizon P9–P12+ — `/docs/00-vision.md`. **Do not** pull P9+ into this Kanban until PM opens that phase.
+**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · horizon P10–P12+ — `/docs/00-vision.md`. **Do not** pull P10+ into this Kanban until PM opens that phase.
 
 **Global DoD (каждая задача):**
-- [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight`)
+- [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight` / Phase-9 `Recommendation` per ADR)
 - [ ] Нет `unwrap()` / `expect()` в production
-- [ ] UI ↛ SQLite (только IPC); Features/Insights считаются в Core
+- [ ] UI ↛ SQLite (только IPC); Features/Insights/Recommendations считаются в Core
 - [ ] Тесты зелёные; `cargo check` / релевантный CI
 - [ ] **Idle footprint:** нет busy-loop; poll/refresh по событию или редкому таймеру
 - [ ] **Нет новой SQLite-схемы** без ADR + approve
@@ -18,89 +18,103 @@
 - [ ] **PR freeze до 2026-09-01** — не открывать PR / не мержить в `main` через PR (`06-git-agent-policy.mdc`)
 - [ ] Copy спокойный, неоценочный (не «ты выгорел» / clinical claims)
 - [ ] **LAN / companion:** Bearer обязателен; нет cloud telemetry; default = loopback
+- [ ] **LLM не считает** Recommendations / Features / Evidence (interpret-only stays L5)
 
 ---
 
-## Kanban Overview (Phase 8 active)
+## Kanban Overview (Phase 9 active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P8-E3-T1** |
+| **Ready** | **P9-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **P8-E1-T1** · **P8-E2-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **P9-E1-T1** |
 
-**Epic status:** P8-E1 ✅ · P8-E2 ✅ · P8-E3 ⬜ (T1 Ready)
+**Epic status:** P9-E1 ✅ · P9-E2 ⬜ (T1 Ready) · P9-E3 ⬜
 
-**Phase 8 on `/docs/14-roadmap.md`:** opened 2026-08-06
+**Phase 9 on `/docs/14-roadmap.md`:** opened 2026-08-08 · ADR-009 recorded
 
 **Рекомендуемый порядок:**  
-~~P8-E1-T1~~ → ~~P8-E2-T1~~ → **P8-E3-T1**
+~~P9-E1-T1~~ → **P9-E2-T1** → P9-E3-T1
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
 **Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **PR freeze до 2026-09-01** — commits OK, no PRs (`docs/12-development.md`).  
-**Suggested branch:** `phase/8-pattern-discovery` (or continue `phase/7-trust-layer` tip until freeze ends / user asks for branch cut).
+**Suggested branch:** `phase/9-recommendations`.
 
 ### Active assignment
 
-**Ready now:** **P8-E3-T1** — Insights IPC / UX for patterns (Dev + UX).  
-Brief: `docs/handoffs/P8-E3-T1-pm-brief.md`.
+**Ready now:** **P9-E2-T1** — Recommendations v1 engine path (Dev).  
+Brief: `docs/handoffs/P9-E2-T1-pm-brief.md`.
 
-**Closed:** P8-E2-T1 (QA Pass with notes, 2026-08-07) — `focus_vs_recent_baseline_v1` + `pattern_host` memo; Epic **P8-E2** ✅. Evidence: `docs/handoffs/P8-E2-T1-qa-to-pm.md`.
+**Closed:** P9-E1-T1 (QA Pass, 2026-08-08) — ADR-009 first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); no Recommendation SQLite; Epic **P9-E1** ✅. Evidence: `docs/handoffs/P9-E1-T1-qa-to-pm.md`. Branch: `phase/9-recommendations`. **No schema approve wait.**
 
-**Closed:** P8-E1-T1 (QA Pass, 2026-08-07) — ADR-008 **recompute-on-read**; no Feature-history schema; Epic **P8-E1** ✅. Evidence: `docs/handoffs/P8-E1-T1-qa-to-pm.md`.
+**Closed (Phase 8):** P8-E3-T1 (QA Pass, 2026-08-08) — pattern Insights via Dashboard `get_insights`; Epic **P8-E3** ✅ · Phase 8 complete. Evidence: `docs/handoffs/P8-E3-T1-qa-to-pm.md`.
 
-**Closed (Phase 7):** P7-E3-T1 (QA Pass, 2026-08-06) — `RecoveryScore` + confidence + factors; Epic **P7-E3** ✅ · Phase 7 Kanban complete. Evidence: `docs/handoffs/P7-E3-T1-qa-to-pm.md`. Branch: `phase/7-trust-layer`.
-
-**Ops note:** **PR freeze until 2026-09-01** — Phase 8 on `phase/8-pattern-discovery`; local commits OK; one cluster PR **after** freeze (or when user lifts it).
+**Ops note:** **PR freeze until 2026-09-01** — Phase 9 cluster on `phase/9-recommendations`; local commits OK; one cluster PR **after** freeze (or when user lifts it).
 
 ---
 
-## Epic P8-E1 — Pattern Discovery ADR & storage contract ✅
+## Epic P9-E1 — Recommendations ADR & domain contract ✅
 
-**Цель:** Decide how multi-day baselines / Feature history work — ADR before schema or background recompute.
+**Цель:** Decide how L4 Recommendations relate to existing `Insight.actionRecommendation`, Evidence, and engines — ADR before new types/crates/schema.
 
-### P8-E1-T1 — ADR-008: recompute vs Feature history ✅ Done
+### P9-E1-T1 — ADR-009: Recommendations domain / engine shape ✅ Done
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `docs/decision-log.md`, `docs/04-storage.md` / `02-domain-model` / `05-pipeline` notes as needed; **no** schema migration without user approve after ADR |
-| **Depends on** | Phase 7 Done (trusted Features + confidence) |
-| **AC** | (1) Record **ADR-008**: Pattern Discovery v1 approach — evaluate-on-read recompute over Observations/Features **vs** persisted Feature/baseline history (or hybrid); rejected alternatives; idle/privacy constraints. (2) If schema needed: propose tables/columns in ADR + docs — **do not apply migration** until user approve. (3) Document how Knowledge Insights would consume the chosen approach (contracts sketch OK). (4) Calm non-clinical framing. (5) Handoff: `docs/handoffs/P8-E1-T1-dev-to-qa.md`. |
-| **Out of scope** | Implementing history tables / recompute worker (→ **E2** after approve); Recommendations engine (P9); ML training |
-| **Shipped** | ADR-008 = **recompute-on-read** (+ optional in-process memo); no Feature/baseline history table; Knowledge sketch `focus_vs_recent_baseline_v1`. QA Pass 2026-08-07. |
+| **Modules** | `docs/decision-log.md`; domain / glossary / API notes |
+| **Shipped** | ADR-009 = first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); thin `actionRecommendation` stays optional hint; no Recommendation SQLite; E2 sketch `focus_dip_pace_hint_v1`. QA Pass 2026-08-08. |
+| **Evidence** | `docs/handoffs/P9-E1-T1-qa-to-pm.md` |
 
 ---
 
-## Epic P8-E2 — Baseline / multi-day Knowledge path ✅
+## Epic P9-E2 — Deterministic Recommendation path
 
-**Цель:** First evaluate-on-read baseline Insights using ADR-008 (**recompute-on-read**; no new SQLite schema).
+**Цель:** First evaluate-on-read Recommendation(s) with Evidence using ADR-009 decision.
 
-### P8-E2-T1 — Pattern Discovery v1 Insight path ✅ Done
+### P9-E2-T1 — Recommendations v1 engine path ✅ Ready
 | Field | Value |
 | :--- | :--- |
 | **Role** | Dev |
-| **Modules** | `crates/knowledge-engine`, contracts / API as needed; Observation load / Feature recompute helpers as required by ADR-008 |
-| **Depends on** | P8-E1-T1 Done (no schema approve — ADR chose recompute-on-read) |
-| **AC** | ≥1 Insight rule or evaluator that uses multi-window / baseline comparison with Evidence (prefer `focus_vs_recent_baseline_v1` per ADR-008); tests; idle-safe; calm copy. Handoff required. |
-| **Out of scope** | LLM pattern generation; CircadianOffset Feature; Recommendations; Feature-history SQLite table |
-| **Shipped** | `focus_vs_recent_baseline_v1` + `feature_engine::baseline` + desktop `pattern_host` memo; Core `get_insights` evaluates. QA Pass with notes 2026-08-07 (UTC afternoon bucket v1). |
+| **Modules** | `crates/bio-spec`, `crates/knowledge-engine`; contracts as needed |
+| **Depends on** | P9-E1-T1 (Done — no schema approve) |
+| **AC** | (1) `bio-spec::Recommendation` + `EvidenceRef::Insight` (or equivalent) per ADR-009. (2) `RecommendationRule` + registry/evaluate-after-Insights in `knowledge-engine`. (3) ≥1 rule **`focus_dip_pace_hint_v1`**: pattern Focus-below-baseline Insight + FocusScore confidence gate → calm pace/pause Recommendation with Evidence Feature + Insight. (4) Thin/no-match/low confidence → `Ok([])`; idle-safe; local-only; no SQLite. (5) Unit tests: emit + Evidence; omit paths; calm non-clinical copy. (6) Handoff: `docs/handoffs/P9-E2-T1-dev-to-qa.md`. |
+| **Out of scope** | IPC / Dashboard surface (→ **P9-E3**); LLM-authored recommendations; Recommendation persistence; Plugin wave-1 |
 
 ---
 
-## Epic P8-E3 — Surface patterns (IPC / Dashboard read)
+## Epic P9-E3 — Surface Recommendations (IPC / Dashboard)
 
-**Цель:** Expose Pattern Discovery Insights via existing Insights IPC (and optional calm Dashboard copy) without UI→DB.
+**Цель:** Expose Recommendations via Core IPC + calm Dashboard (or Insights-adjacent) presentation — UI ↛ DB.
 
-### P8-E3-T1 — Insights IPC / UX for patterns ✅ Ready
+### P9-E3-T1 — Recommendations IPC / UX
 | Field | Value |
 | :--- | :--- |
-| **Role** | Dev (+ UX) |
-| **Modules** | desktop Insights path / `09-api` |
-| **Depends on** | P8-E2-T1 Done |
-| **AC** | Patterns visible via existing Insights IPC path; calm copy; smoke notes in handoff. |
-| **Out of scope** | New “Pattern Discovery” product window redesign; cloud sync |
+| **Role** | Dev (+ UX if UI copy) |
+| **Modules** | desktop + API (`09-api`); host wiring per ADR-009 |
+| **Depends on** | P9-E2-T1 |
+| **AC** | Recommendations visible via documented IPC path (new command or evolved Insights DTO — per ADR); calm copy; smoke notes in handoff; mock/dev path if needed for UI without full history. |
+| **Out of scope** | New “Coach” product window redesign; push notifications; cloud sync; AI interpret layer changes (P11) |
+
+---
+
+## Phase 8 archive (Done)
+
+<details>
+<summary>Phase 8 Kanban & epics (closed 2026-08-08 — E1–E3)</summary>
+
+**Done:** P8-E1 (T1) · P8-E2 (T1) · P8-E3 (T1).  
+ADR-008 recompute-on-read → `focus_vs_recent_baseline_v1` → Dashboard Insights surface.
+
+Evidence: `docs/handoffs/P8-*-qa-to-pm.md` · branch `phase/8-pattern-discovery` (cluster PR after freeze).
+
+**P8-E1 shipped:** ADR-008 = recompute-on-read; no Feature-history table; Knowledge sketch. QA Pass 2026-08-07.  
+**P8-E2 shipped:** baseline rule + `feature_engine::baseline` + `pattern_host` memo; Core `get_insights`. QA Pass with notes 2026-08-07.  
+**P8-E3 shipped:** calm Dashboard list + `mockInsights=pattern`; category labels. QA Pass 2026-08-08.
+
+</details>
 
 ---
 
@@ -199,22 +213,22 @@ Evidence: `docs/handoffs/P2-*-qa-to-pm.md` · [PR #2](https://github.com/poltavt
 
 ---
 
-## Role × Module Matrix (Phase 8)
+## Role × Module Matrix (Phase 9)
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P8-E1-T1 ADR-008 history/recompute | | ● | ○ | | docs + decision-log |
-| P8-E2-T1 Pattern Insight path | | ● | ○ | | knowledge-engine |
-| P8-E3-T1 Insights IPC / UX | | ● | ○ | ○ | desktop + API |
+| P9-E1-T1 ADR-009 Recommendations shape | | ● | ○ | | docs + decision-log |
+| P9-E2-T1 Recommendation engine path | | ● | ○ | | knowledge-engine / per ADR |
+| P9-E3-T1 Recommendations IPC / UX | | ● | ○ | ○ | desktop + API |
 
 ● = owner · ○ = collaborator
 
 ---
 
-## Sprint 15–16 — Queue
+## Sprint 17–18 — Queue
 
-1. ~~P8-E1-T1 — ADR-008 Pattern Discovery history / recompute~~ ✅ Done  
-2. ~~P8-E2-T1 — Pattern Discovery v1 Insight path~~ ✅ Done  
-3. **P8-E3-T1 — Insights IPC / UX for patterns** ← **Ready**  
+1. ~~P9-E1-T1 — ADR-009 Recommendations domain / engine shape~~ ✅ Done  
+2. **P9-E2-T1 — Recommendations v1 engine path** ← **Ready**  
+3. P9-E3-T1 — Recommendations IPC / UX  
 
-**Git:** `phase/8-pattern-discovery` → local commits → **one cluster PR after 2026-09-01**.
+**Git:** `phase/9-recommendations` → local commits → **one cluster PR after 2026-09-01**.

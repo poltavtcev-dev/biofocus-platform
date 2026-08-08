@@ -330,7 +330,7 @@ fn snapshot_to_dto(snapshot: &FeatureSnapshot) -> FeatureSnapshotDto {
     }
 }
 
-/// Evidence ref on the IPC wire (`feature` | `signal` + id string).
+/// Evidence ref on the IPC wire (`feature` | `signal` | `insight` + id string).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct EvidenceRefDto {
@@ -347,6 +347,10 @@ impl From<&EvidenceRef> for EvidenceRefDto {
             },
             EvidenceRef::Signal(id) => Self {
                 kind: "signal".into(),
+                id: id.to_string(),
+            },
+            EvidenceRef::Insight(id) => Self {
+                kind: "insight".into(),
                 id: id.to_string(),
             },
         }

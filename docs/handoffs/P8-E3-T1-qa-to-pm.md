@@ -35,10 +35,10 @@ cd apps/desktop && pnpm exec tsc --noEmit  # ok
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P8-E3-T1 → Done; close Epic **P8-E3** and **Phase 8** Kanban if no further P8 tasks
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs: `docs/14-roadmap.md` (Phase 8 closed), `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS.md` as needed
-- [ ] **Do not** open a PR (PR freeze until 2026-09-01)
+- [x] `/docs/SPRINT_ROADMAP.md` — P8-E3-T1 → Done; close Epic **P8-E3** and **Phase 8** Kanban if no further P8 tasks
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `docs/14-roadmap.md` (Phase 8 closed), `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS.md` as needed
+- [x] **Do not** open a PR (PR freeze until 2026-09-01)
 
 ## Suggested next Ready task
 - Open **Phase 9: Recommendations** via PM gate only (horizon — not auto-Ready). No further P8 tasks on the board.
