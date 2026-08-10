@@ -73,3 +73,20 @@ Non-macOS / Accessibility denied: probe returns 0 (idle).
 No cloud calendar OAuth. Missing ICS path → warn and skip start (soft-fail).
 
 Window title capture remains deferred.
+
+## 5. Browser categories (P10 wave-1 — ADR-010 / P10-E2-T1)
+
+| Item | Value |
+| :--- | :--- |
+| Status | **Shipped** (collector); Feature `DistractionScore` → **P10-E3** |
+| Crate | `crates/macos-collector` |
+| Plugin id | `com.biofocus.macos.browser` |
+| `data_type` | `browser_category` |
+| Probe | Frontmost known-browser → `unknown` + bundle id (no URL/title); injectable `ScriptedBrowserProbe` in tests |
+| Payload | Coarse `category` (+ optional `browser_bundle_id`) only — **no** full URLs / page titles / content (see `docs/07-contracts.md`) |
+| Enable | `BIOFOCUS_BROWSER_CATEGORIES=1` (default **off**) |
+| Poll | On category change or rare ≥5s; no busy-loop |
+| Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
+| E3 Feature | `DistractionScore` (catalog) |
+
+IDE/Git collectors are **deferred** (not wave-1 v1). No plugin marketplace crate. Personal self-tracking only — not employee surveillance.

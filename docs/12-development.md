@@ -90,6 +90,8 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Recommendations shape (P9-E1-T1 / ADR-009):** First-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read after Insights); Evidence may cite Feature / Signal / Insight; **no** Recommendation SQLite store; thin `Insight.actionRecommendation` stays optional hint only. Engine → P9-E2; IPC `get_recommendations` → P9-E3. Contract sketch: `docs/09-api.md`.
 - **Recommendations v1 engine (P9-E2-T1):** `bio-spec::{Recommendation, EvidenceRef::Insight}`; `register_recommendations_v1` + `focus_dip_pace_hint_v1` (Focus-below-baseline pattern Insight + FocusScore confidence ≥ 0.4 → calm pace hint); `KnowledgeEngine::evaluate_recommendations` / `evaluate_insights_and_recommendations`. IPC/UX → P9-E3.
 - **Recommendations IPC / UX (P9-E3-T1):** Desktop `invoke("get_recommendations")` — host registers Recommendations alongside Insights; evaluate-on-read after Insights on Feature snapshot + pattern inputs. Dashboard **Suggestions** section (Insights-adjacent); calm empty state. QA mocks: `?mockRecommendations=empty|ready|pace|error`. UI ↛ SQLite. Contract: `docs/09-api.md`.
+- **Plugin wave-1 (P10-E1-T1 / ADR-010):** Chosen source = **Browser categories** (`data_type: "browser_category"`; coarse labels only; opt-in `BIOFOCUS_BROWSER_CATEGORIES`; default off). Persist via existing `observations` store — **no** migration / plugin registry table. IDE/Git deferred. Collector → **P10-E2**; `DistractionScore` → **P10-E3**. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md`.
+- **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
 - **Optional local LLM (P4-E3-T2):** **Off by default.** Set `BIOFOCUS_LOCAL_LLM=1` to opt in. Then `report_engine::interpret_report(&doc, &LocalLlmConfig::from_env()).await` POSTs only `ReportDocument::llm_prompt` to an OpenAI-compatible base URL (default `http://127.0.0.1:11434/v1` — local Ollama). Optional: `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL` (default `llama3.2`), `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS` (default `30`). HTTP timeout applies. **Never auto-called on app startup** — hosts must invoke only on explicit user action. Privacy: when disabled, no network. When enabled, the prompt text (offline report facts + interpret-only instructions) leaves the BioFocus process toward the configured base URL only — prefer localhost; a remote URL is the operator’s choice/responsibility. No Feature math in this path; no vendor cloud telemetry by default.
 - **Report UX (P4-E3-T3):** Dashboard `ReportSlot` — explicit «Generate report» → `invoke("generate_report")`. Host assembles offline `build_report` from cached Feature snapshot + evaluate-on-read Insights; optional `interpret_report` only when `LocalLlmConfig::from_env().enabled`. Soft `llmStatus` / `llmError` on timeout or failure. Never called on Dashboard open or 30s Feature/Insights poll. Contract: `docs/09-api.md` § `generate_report`. QA mocks: `?mockReport=…`.
@@ -133,6 +135,13 @@ export BIOFOCUS_CALENDAR_ICS="$HOME/Desktop/biofocus-dogfood.ics"
 ```
 Emits `calendar_event` Observations (`uid` / `start` / `end` / `all_day` / `busy`) via rare poll ≥60s on the same channel → persist. No Google/Outlook OAuth. Titles/bodies are not stored or logged. Default off.
 
+**Browser categories (P10-E2-T1, opt-in):**
+```bash
+export BIOFOCUS_BROWSER_CATEGORIES=1
+# restart Desktop
+```
+Emits `browser_category` Observations (`category` + optional `browser_bundle_id`) on change / poll ≥5s → same channel → persist. **Never** stores URLs or page titles. OS probe v1 emits `unknown` for known browsers (no URL mapping). Default off.
+
 ### Collector test suite (P2-E2-T3)
 
 ```bash
@@ -146,7 +155,7 @@ cargo test -p macos-collector --test collector_integration
 cargo test -p ingest
 ```
 
-Integration coverage (`tests/collector_integration.rs`): `context_window`, `keystrokes`, and synthetic / ICS `calendar_event` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
+Integration coverage (`tests/collector_integration.rs`): `context_window`, `keystrokes`, synthetic / ICS `calendar_event`, and mock `browser_category` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
 
 ### Companion sample path (P2-E3-T1)
 

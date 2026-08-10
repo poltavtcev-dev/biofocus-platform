@@ -94,8 +94,8 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `CognitiveLoad` | Combined demand proxy | MeetingDensity, CSR, notifications | P7–P8 |
 | `SleepDebt` | Sleep shortfall vs baseline | Sleep Observations | P7 |
 | `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 |
-| `NotificationPressure` | Interruption intensity | notification Observations | P10 |
-| `DistractionScore` | Context fragmentation | CSR, browser categories | P10 |
+| `NotificationPressure` | Interruption intensity | notification Observations | P10 (deferred — not ADR-010 wave-1) |
+| `DistractionScore` | Context fragmentation (calm; not clinical) | `browser_category` Observations (+ optional CSR) — **ADR-010 wave-1 → P10-E3** | P10 |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `ActivityBalance` | Movement vs sedentary | steps / workout Life Events | P6–P7 |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |

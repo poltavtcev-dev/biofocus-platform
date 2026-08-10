@@ -38,4 +38,10 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 
 - **v1:** Recommendations are evaluate-on-read (in-memory / IPC) — **no** `recommendations` table and **no** recommendation-history columns.
 - **No migration** under ADR-009.
+
+### Plugin wave-1 / browser categories (ADR-010)
+
+- **v1:** Browser category facts are ordinary rows in `observations` (`data_type = 'browser_category'`). **No** plugin registry table, browsing-history table, or category columns beyond payload JSON.
+- **No migration** under ADR-010.
+- Future optional host allowlist / config store requires a **new ADR + user approve** — not part of wave-1 v1.
 - Future optional dismiss / feedback history requires a **new ADR + user approve** — out of Phase 9 v1.

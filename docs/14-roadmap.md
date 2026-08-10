@@ -33,16 +33,20 @@
   - Baseline Knowledge Insights (`focus_vs_recent_baseline_v1`) — **P8-E2 Done** (2026-08-07).
   - Insights IPC / UX surface — **P8-E3 Done** (2026-08-08).
 
-- [ ] **Phase 9: Recommendations** (Sprint 17–18) — opened 2026-08-08 (PM gate)
-  - ADR-009 Recommendations domain / engine shape — **P9-E1 Done** (2026-08-08)
-  - Deterministic recommendation path (`focus_dip_pace_hint_v1`) — **P9-E2 Done** (2026-08-08)
-  - Recommendations IPC / UX — **P9-E3 Ready**
+- [x] **Phase 9: Recommendations** (Sprint 17–18) — closed 2026-08-08 (E1–E3 Done; cluster PR after freeze)
+  - ADR-009 Recommendations domain / engine shape — **P9-E1 Done** (2026-08-08).
+  - Deterministic recommendation path (`focus_dip_pace_hint_v1`) — **P9-E2 Done** (2026-08-08).
+  - Recommendations IPC / UX (`get_recommendations` + Suggestions) — **P9-E3 Done** (2026-08-08).
+
+- [ ] **Phase 10: Plugin wave-1** (Sprint 19–20) — opened 2026-08-10 (ADR-010 **Browser categories**)
+  - ADR-010 wave-1 source + Observation contract — **P10-E1 Done** (2026-08-10).
+  - Browser categories collector plugin — **P10-E2 Ready** (T1).
+  - `DistractionScore` catalog Feature — **P10-E3** (queued after E2).
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
-Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM gate only.
+Product philosophy + sequencing: `/docs/00-vision.md`. Open later phases via PM gate only.
 
-- [ ] **Phase 10: Plugin wave-1** — IDE/Git or Browser categories (dogfood-driven)
 - [ ] **Phase 11: AI coaching polish** — prompt packs / provider UX (interpret-only)
 - [ ] **Phase 12+: Ambient + commercial packaging** — music/weather/light; signed builds / updates; optional user sync
 
@@ -54,7 +58,7 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM ga
 **Phase 6:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P6-*-qa-to-pm.md` · tip `phase/6-dogfood-fixes` (PR after freeze)  
 **Phase 7:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P7-*-qa-to-pm.md` · branch `phase/7-trust-layer` (PR after freeze)  
 **Phase 8:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P8-*-qa-to-pm.md` · branch `phase/8-pattern-discovery` (PR after freeze)  
-**Phase 9:** Open — P9-E1–E2 Done · Ready **P9-E3-T1** · `docs/SPRINT_ROADMAP.md` · brief `docs/handoffs/P9-E3-T1-pm-brief.md` · branch `phase/9-recommendations`  
-**Next Kanban:** P9-E3-T1 (closes Phase 9) · **PR freeze until 2026-09-01**  
+**Phase 9:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P9-*-qa-to-pm.md` · branch `phase/9-recommendations` (PR after freeze)  
+**Phase 10:** Opened 2026-08-10 — ADR-010 Done (Browser) · Ready **P10-E2-T1** · branch `phase/10-plugin-wave-1` · **PR freeze until 2026-09-01**  
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

@@ -174,6 +174,39 @@ Enable: `BIOFOCUS_CALENDAR=1` and `BIOFOCUS_CALENDAR_ICS=/path/to/calendar.ics` 
 
 Validation: `bio_spec::validate_calendar_event_payload` (via `validate_observation_payload`). Ingest rejects malformed Calendar Events with HTTP `400` + `{"error":"invalid_calendar_event"}`.
 
+### `browser_category` payload (Plugin wave-1 — ADR-010 / P10-E2-T1)
+
+Browser context facts are **ordinary Observations** in the existing store. Wave-1 source = **Browser categories** (IDE/Git deferred).
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | always `"browser_category"` |
+| `provider_id` | `com.biofocus.macos.browser` |
+| `payload.category` | required coarse label: `work` \| `communication` \| `entertainment` \| `reference` \| `shopping` \| `unknown` |
+| `payload.browser_bundle_id` | optional frontmost browser bundle id |
+
+**Privacy:** collectors must **not** put full URLs, query strings, page titles, form content, keystrokes, or screenshots into the Observation payload. In-process category mapping stays out of SQLite fields. Personal self-tracking only — not workplace monitoring.
+
+```json
+{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.browser",
+  "data_type": "browser_category",
+  "payload": {
+    "category": "work",
+    "browser_bundle_id": "com.apple.Safari"
+  },
+  "confidence": 0.9
+}
+```
+
+Enable: `BIOFOCUS_BROWSER_CATEGORIES=1` (default **off**). Emit on category change or rare poll ≥5s; no busy-loop.
+
+Validation: `bio_spec::validate_browser_category_payload` (via `validate_observation_payload`). Ingest rejects malformed Browser Categories with HTTP `400` + `{"error":"invalid_browser_category"}`.
+
+**OS probe (v1):** when frontmost is a known browser bundle, emits `category: "unknown"` + `browser_bundle_id` (no URL capture). Richer category mapping without persisting URLs may arrive later; scripted/mock probes supply closed-set labels in tests.
+
 ## Companion → ingest (P2-E3-T1)
 
 Same Observation JSON; companion posts a **JSON array** to `POST /v1/ingest`.

@@ -114,6 +114,35 @@ fn calendar_event_contract_json_round_trip() {
     assert_eq!(again, parsed);
 }
 
+const CONTRACT_BROWSER_CATEGORY_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.browser",
+  "data_type": "browser_category",
+  "payload": {
+    "category": "work",
+    "browser_bundle_id": "com.apple.Safari"
+  },
+  "confidence": 0.9
+}"#;
+
+#[test]
+fn browser_category_contract_json_round_trip() {
+    use bio_spec::{validate_browser_category_payload, DATA_TYPE_BROWSER_CATEGORY};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_BROWSER_CATEGORY_JSON)
+        .expect("browser category contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_BROWSER_CATEGORY);
+    assert_eq!(parsed.payload["category"], json!("work"));
+    validate_browser_category_payload(&parsed.payload).expect("valid browser category");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
 #[test]
 fn life_event_rejects_malformed_payloads() {
     let cases = [

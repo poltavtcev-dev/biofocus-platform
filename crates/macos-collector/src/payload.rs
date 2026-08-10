@@ -16,6 +16,9 @@ pub const MACOS_INPUT_PROVIDER_ID: &str = "com.biofocus.macos.input";
 /// Provider id for the local Calendar (ICS) collector.
 pub const MACOS_CALENDAR_PROVIDER_ID: &str = "com.biofocus.macos.calendar";
 
+/// Provider id for the Browser categories collector (ADR-010).
+pub const MACOS_BROWSER_PROVIDER_ID: &str = "com.biofocus.macos.browser";
+
 /// Storage / schema `data_type` for active window context.
 pub const CONTEXT_WINDOW_DATA_TYPE: &str = "context_window";
 
@@ -24,6 +27,9 @@ pub const KEYSTROKES_DATA_TYPE: &str = "keystrokes";
 
 /// Storage / schema `data_type` for Calendar / meeting events.
 pub const CALENDAR_EVENT_DATA_TYPE: &str = "calendar_event";
+
+/// Storage / schema `data_type` for Browser category context.
+pub const BROWSER_CATEGORY_DATA_TYPE: &str = "browser_category";
 
 /// Builds privacy-safe payload: app identity only (no window title / content).
 #[must_use]
@@ -56,4 +62,18 @@ pub fn calendar_event_payload(event: &CalendarEvent) -> JsonValue {
         "all_day": event.all_day,
         "busy": event.busy,
     })
+}
+
+/// Builds privacy-safe browser category payload (coarse labels only — no URL/title).
+#[must_use]
+pub fn browser_category_payload(sample: &crate::browser_probe::BrowserCategorySample) -> JsonValue {
+    match &sample.browser_bundle_id {
+        Some(bundle) if !bundle.is_empty() => json!({
+            "category": sample.category,
+            "browser_bundle_id": bundle,
+        }),
+        _ => json!({
+            "category": sample.category,
+        }),
+    }
 }

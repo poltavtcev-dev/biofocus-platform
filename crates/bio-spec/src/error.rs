@@ -23,4 +23,8 @@ pub enum SpecError {
     /// Calendar Event Observation payload failed contract validation (P6-E3-T1).
     #[error("invalid calendar event payload: {reason}")]
     InvalidCalendarEventPayload { reason: String },
+
+    /// Browser category Observation payload failed contract validation (ADR-010).
+    #[error("invalid browser category payload: {reason}")]
+    InvalidBrowserCategoryPayload { reason: String },
 }

@@ -11,6 +11,7 @@
 | ADR-007 | 2026-08-06 | Feature-level `confidence` ∈ `[0.0, 1.0]` on domain `Feature` (+ snapshot IPC); computed by catalog nodes; **no** new SQLite schema / second Feature registry | Observation.confidence trusts a single fact; Feature values still looked equally trustworthy on thin windows. Trust layer needs a derived quality score so Insights/UI can down-weight incomplete evidence. Confidence is **data quality**, not a clinical claim. | UI-only heuristics without Core field; parallel Feature confidence store/registry; persisting Feature rows in SQLite for v1 |
 | ADR-008 | 2026-08-07 | Pattern Discovery v1 = **recompute-on-read** multi-window Features from local Observations (+ optional in-process memo); evolve `knowledge-engine`; **no** Feature/baseline history SQLite table in v1 | North star needs multi-day / baseline Knowledge without a second persistence model or busy background jobs. Observations remain source of truth; Features stay derived (ADR-007). Evaluate-on-read matches existing `KnowledgeEngine::evaluate` + Insights IPC. Local-only; idle-safe. | Persisted Feature/baseline history store for v1; always-on recompute worker / busy-loop; cloud sync of patterns; ML model training; parallel “Correlation Engine” crate |
 | ADR-009 | 2026-08-08 | Recommendations v1 = first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); keep thin `Insight.actionRecommendation` as optional hint only; **no** Recommendation SQLite store; **no** parallel Coach Engine crate | Vision L4 needs Evidence-backed suggested actions, not only a string on Insight. Evolve existing Knowledge path (ADR-008); local-only; idle-safe; LLM stays L5 interpret-only. | LLM as source of truth for actions; clinical/prescription framing; parallel Coach Engine without Evidence; cloud sync of recommendations; persist Recommendation history in v1; replace Insights with Recommendations |
+| ADR-010 | 2026-08-10 | Plugin wave-1 source = **Browser categories** (not IDE/Git in v1); `data_type: "browser_category"` coarse labels only → existing `observations` store; opt-in env default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `DistractionScore` | Vision source priority after Calendar is IDE/Git/**Browser**; catalog already names `DistractionScore` (browser categories). Complements `context_window` / CSR (browser is one app — categories reveal in-browser fragmentation). Privacy-first: no full URLs / titles / keystroke content; personal self-tracking only. | Both IDE+Browser in same wave; always-on capture; cloud history sync; plugin marketplace crate; parallel plugin SQLite registry; ambient music/weather in P10; IDE/Git as wave-1 v1 (deferred) |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -167,3 +168,114 @@ Legacy: existing Insight rules may keep a short `actionRecommendation` string; L
 5. **Persist Recommendation history in v1** — premature schema; Observations remain durable SoT.
 6. **Evolve only `Insight.actionRecommendation` (no first-class type)** — insufficient for Evidence-backed L4 listing / gates.
 7. **Replace Insights with Recommendations** — L3 Knowledge and L4 actions stay distinct layers.
+
+### ADR-010 detail — Plugin wave-1 source + Observation contract (v1)
+
+**Chosen wave-1 source:** **Browser categories** (personal, opt-in). IDE/Git is deferred to a later sprint / second wave — not Phase 10 v1.
+
+| Layer | Role in Plugin wave-1 v1 |
+| :--- | :--- |
+| Capability Plugin (`plugin-sdk`) | New `BioFocusPlugin` declares Capability for `browser_category`; `start_stream` / `stop_stream` only |
+| Observation (SQLite) | Immutable facts in existing `observations` table — **no** new plugin registry / parallel store (ADR-006 stance) |
+| Feature (`feature-engine`) | E3: `DistractionScore` consumes `browser_category` (+ may combine with CSR) — ADR-007 confidence; calm non-clinical |
+| LLM | L5 interpret-only — must **not** define plugin payloads, categories, or Features |
+
+**Why Browser (not IDE/Git) for wave-1**
+
+1. **Catalog readiness:** `docs/06-feature-catalog.md` § Planned already lists `DistractionScore` with browser categories as likely inputs — clear E3 path without inventing a new Feature name mid-ADR.
+2. **Complements existing dogfood:** `context_window` + `ContextSwitchRate` treat Safari/Chrome/etc. as **one** app. Coarse browser categories add in-browser fragmentation signals CSR cannot see.
+3. **Capability Model fit:** New Capability + `data_type` on the same shared Observation channel as macOS context / input / calendar — extend `plugin-sdk` + `macos-collector` (or thin adapter), not a marketplace crate.
+4. **IDE/Git deferral rationale:** IDE apps already appear in `context_window` / CSR; Git history needs careful path / remote privacy scoping. Ship Browser first; revisit IDE/Git after DistractionScore dogfood.
+
+**Observation contract sketch (implement in P10-E2)**
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | `"browser_category"` |
+| `provider_id` | `com.biofocus.macos.browser` (host collector and/or local extension adapter — exact probe in E2) |
+| Opt-in | `BIOFOCUS_BROWSER_CATEGORIES=1` (default **off**); host starts plugin only when set |
+| Poll / idle | Emit **on category change** (or rare poll ≥5s); **no** busy-loop; `stop_stream` must join background work |
+| Confidence | Provider-set ∈ `[0.0, 1.0]` (unknown mapping → lower confidence OK) |
+
+**Privacy-safe payload (v1)** — coarse labels only:
+
+```json
+{
+  "id": "…",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.browser",
+  "data_type": "browser_category",
+  "payload": {
+    "category": "work",
+    "browser_bundle_id": "com.apple.Safari"
+  },
+  "confidence": 0.9
+}
+```
+
+| Payload field | Rule |
+| :--- | :--- |
+| `category` | **Required.** Closed v1 set: `work` \| `communication` \| `entertainment` \| `reference` \| `shopping` \| `unknown` (E2 may refine labels in contracts; keep coarse) |
+| `browser_bundle_id` | Optional frontmost browser app id (same privacy bar as `context_window.bundle_id`) |
+
+**Explicitly forbidden in v1 Observations / logs**
+
+- Full URLs, query strings, or hostnames that identify a specific site beyond category mapping internals (mapping tables stay in-process; **not** persisted as Observation fields)
+- Page titles, form content, keystroke / content capture, screenshots, clipboard
+- Employee-surveillance framing (product is **personal self-tracking** only — vision Non-Goal)
+- Always-on capture without opt-in env
+
+**Schema (v1)**
+
+- Prefer existing `observations` store only (ADR-006 stance).
+- **No new SQLite tables/columns** for plugins, browser history, or category registries.
+- **Do not apply** any migration for this ADR.
+- Deferred (future ADR + user approve only): optional host allowlist config table — out of Phase 10 v1 until then.
+
+**Capability Plugin Model**
+
+```text
+BioFocusPlugin
+  id: com.biofocus.macos.browser
+  capabilities: [{ name: "browser_categories", data_types: ["browser_category"] }]
+  start_stream(tx) → emit Observation on change (opt-in)
+  stop_stream() → join; freeze emissions
+Desktop ingest_host → same bounded Observation channel → spawn_persist_worker → SQLite
+UI ↛ SQLite (unchanged)
+```
+
+**E2 / E3 sketch**
+
+```text
+E2 (P10-E2-T1):
+  plugin (macos-collector or thin adapter) + mock probe
+  → ObservationSender → persist
+  contracts in 07-contracts / 08-plugin-sdk finalized
+  idle-safe tests; default off
+
+E3 (P10-E3-T1) — DistractionScore:
+  inputs: browser_category Observations (+ optional ContextSwitchRate)
+  window: 15m / step 1m (align Focus/CSR)
+  formula sketch: higher share of entertainment/shopping / rapid category churn
+                  → higher DistractionScore (0–100); work/reference lower
+  confidence: ADR-007 (coverage × mean obs confidence); thin → omit or lower
+  framing: calm personal context fragmentation — not clinical ADHD / “you are distracted”
+  LLM must not invent score or categories
+```
+
+**Docs policy for this ADR**
+
+- Planned / ADR notes land now in `docs/08-plugin-sdk.md`, `docs/07-contracts.md`, `docs/16-glossary.md`, `docs/04-storage.md`, `docs/06-feature-catalog.md` (DistractionScore → wave-1).
+- Full payload validation + probe tables finalized in **P10-E2** (same pattern as calendar dogfood).
+
+**Rejected alternatives**
+
+1. **Both IDE+Browser in the same wave** — doubles collector + Feature surface; ship one dogfood loop first.
+2. **Always-on capture** (no opt-in) — breaks privacy-first / Global DoD plugins rule.
+3. **Cloud browsing / history sync** — local-first; no default remote store.
+4. **Plugin marketplace / parallel marketplace crate** — extend `plugin-sdk` + `macos-collector` (or thin adapter) unless a future ADR justifies otherwise.
+5. **Parallel plugin SQLite registry** without need — Capabilities stay in-process; Observations remain durable SoT.
+6. **Ambient music / weather / light in P10** — Phase 12+ per vision ladder.
+7. **IDE/Git as wave-1 v1** — deferred (see rationale); may reuse `context_window` more heavily later.
+8. **Full URL / title logging “for accuracy”** — rejected; coarse categories only.
+9. **NotificationPressure in this ADR** — out of Phase 10 unless a later task folds a thin path; not chosen here.

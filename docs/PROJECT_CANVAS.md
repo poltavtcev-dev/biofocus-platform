@@ -28,7 +28,7 @@
 | 1 | Observations | ingest / collectors / SQLite |
 | 2 | Features | `feature-engine` |
 | 3 | Knowledge (Insights) | `knowledge-engine` |
-| 4 | Recommendations | ADR-009 + `focus_dip_pace_hint_v1` shipped; surface → **P9-E3 Ready** |
+| 4 | Recommendations | ADR-009 + `focus_dip_pace_hint_v1` + `get_recommendations` / Suggestions (Phase 9 Done) |
 | 5 | Coaching (AI interpret) | `report-engine` + opt-in LLM |
 
 UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer name.
@@ -41,9 +41,10 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 6 (Done):** Life Events (ADR-006) + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`. Wearable dogfood verified: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health).
 - **Phase 7 (Done):** Trust layer — ADR-007 confidence → Explanation factors → `RecoveryScore`.
 - **Phase 8 (Done 2026-08-08):** Pattern Discovery v1 — ADR-008 **recompute-on-read** → `focus_vs_recent_baseline_v1` → calm Dashboard Insights surface.
-- **Phase 9 (Open 2026-08-08):** Deterministic Recommendations — ADR-009 + engine Done; Ready **P9-E3-T1** (IPC/UX). Later: more HealthKit types; plugins (IDE/Git/Browser).
+- **Phase 9 (Done 2026-08-08):** Deterministic Recommendations — ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Dashboard Suggestions.
+- **Phase 10 (Opened 2026-08-10):** Plugin wave-1 — ADR-010 **Browser categories** ✅ → collector (Ready **P10-E2-T1**) → `DistractionScore`. Branch: `phase/10-plugin-wave-1`.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
-- Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
+- Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
 Dogfood tip: if `base_url_hints` is empty under `BIOFOCUS_INGEST_LAN=1`, set `BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>` before pairing.
 
@@ -113,7 +114,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 9** (`/docs/SPRINT_ROADMAP.md`). Ready **P9-E3-T1**.
+Immediate Kanban = **Phase 10** (Ready **P10-E2-T1**). Sources: `/docs/14-roadmap.md`, `/docs/00-vision.md` §7, `/docs/SPRINT_ROADMAP.md`.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -121,8 +122,8 @@ Immediate Kanban = **Phase 9** (`/docs/SPRINT_ROADMAP.md`). Ready **P9-E3-T1**.
 | **6** | Life Events v1 + Calendar Features — **done** |
 | **7** | Feature confidence + Explanation factors + RecoveryScore — **done** |
 | **8** | Pattern Discovery v1 (ADR-008 + baseline + Dashboard) — **done** |
-| **9** | Deterministic Recommendations — **open** (E1–E2 Done · P9-E3 Ready) |
-| **10** | Plugin wave-1 (IDE/Git or Browser) |
+| **9** | Deterministic Recommendations — **done** |
+| **10** | Plugin wave-1 (Browser categories / ADR-010) — **active** (P10-E2 Ready) |
 | **11** | AI coaching polish (prompts / providers UX) |
 | **12+** | Ambient sources + commercial packaging |
 

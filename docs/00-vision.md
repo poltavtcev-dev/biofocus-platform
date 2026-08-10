@@ -29,7 +29,7 @@ Zero telemetry by default · AI only on explicit user action · separate permiss
 | **L1** | Observations | Immutable raw facts (user rarely inspects) | SQLite + ingest + macOS collectors + sample HR |
 | **L2** | Features | Deterministic metrics + provenance + confidence (ADR-007) + optional explanation factors (P7-E2) | `feature-engine` DAG (`FeatureNode`) |
 | **L3** | Knowledge | Patterns / Insights from Features (+ Evidence) | `knowledge-engine` `InsightRule` (evaluate-on-read) |
-| **L4** | Recommendations | Deterministic suggested actions with Evidence | ADR-009 + engine (`focus_dip_pace_hint_v1`); thin `Insight.actionRecommendation` remains optional hint only → surface **P9-E3** (`get_recommendations`) |
+| **L4** | Recommendations | Deterministic suggested actions with Evidence | ADR-009 + `focus_dip_pace_hint_v1` + IPC `get_recommendations` / Dashboard Suggestions (Phase 9 Done); thin `Insight.actionRecommendation` remains optional hint only |
 | **L5** | Coaching (AI) | NL explanation only — never computes Features / Recommendations | `report-engine` + opt-in local LLM |
 
 ```text
@@ -64,14 +64,14 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 9** (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
+Immediate Kanban = **Phase 10** (Ready **P10-E2-T1** after ADR-010). Below is the accepted ladder — open later phases via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
 | **0–7** | Done — foundation → ingest → pipeline → Dashboard/Insights → wearable dogfood → Life Events + Calendar → Trust layer (confidence / factors / RecoveryScore) |
 | **8** | Done — Pattern Discovery v1 (ADR-008 recompute-on-read → baseline Insight → Dashboard surface) |
-| **9** | Deterministic Recommendations — **open** (ADR-009 + engine Done → IPC/UX); Ready **P9-E3-T1** |
-| **10** | Plugin wave-1 (IDE/Git or Browser categories — dogfood-driven) |
+| **9** | Done — Deterministic Recommendations (ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Suggestions) |
+| **10** | Plugin wave-1 — **Browser categories** (ADR-010) → collector → `DistractionScore` — **active** |
 | **11** | AI coaching polish — prompt packs / provider UX (still interpret-only) |
 | **12+** | Ambient sources + commercial packaging |
 

@@ -59,5 +59,15 @@ Calendar collector is **opt-in** (`BIOFOCUS_CALENDAR=1`, default off) and reads 
 | Deny / missing path | Soft-fail: collector not started (warn log); no panic |
 | Disable | Unset env flags and restart Desktop |
 
+### Browser categories (P10-E2-T1 / ADR-010)
+Browser category collector is **opt-in** (`BIOFOCUS_BROWSER_CATEGORIES=1`, default off). Payload stores a **coarse** `category` label (+ optional `browser_bundle_id`) only — **never** full URLs, page titles, form content, or keystrokes. Personal self-tracking only — not workplace monitoring. Logs on channel pressure use Observation `id` only.
+
+| Item | Value |
+| :--- | :--- |
+| Source | Frontmost known-browser detection (v1 OS probe emits `unknown` without URL mapping); mocks supply closed-set labels in tests |
+| Poll | ≥5s; emit on category identity change |
+| Deny / unavailable | Soft-fail idle (`None`); no panic |
+| Disable | Unset env flag and restart Desktop |
+
 ### Optional local LLM reports (P4-E3-T2)
 Local LLM interpret is **opt-in** (`BIOFOCUS_LOCAL_LLM=1`, default off). When disabled, `report-engine` opens no sockets for LLM. When enabled, only `ReportDocument::llm_prompt` is POSTed to a user-configured OpenAI-compatible endpoint (default localhost Ollama). Not invoked on startup — explicit host call only. Prefer `127.0.0.1`; pointing the base URL off-machine is operator-controlled. See `docs/12-development.md`.

@@ -29,10 +29,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P9-E3-T1 Done; close Epic **P9-E3** and **Phase 9** if no further P9 tasks
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` / `00-vision` L4 “shipped” note as needed
-- [ ] Next horizon: Phase 10 (plugins) only via separate PM gate / brief — **not** auto-Ready; **no PR** during freeze
+- [x] `/docs/SPRINT_ROADMAP.md` — P9-E3-T1 Done; close Epic **P9-E3** and **Phase 9** if no further P9 tasks
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` / `00-vision` L4 “shipped” note as needed
+- [x] Next horizon: Phase 10 (plugins) only via separate PM gate / brief — **not** auto-Ready; **no PR** during freeze
 
 ## Suggested next Ready task
 - None on Phase 9 board. Horizon: **Phase 10** plugin wave-1 — open via PM gate only.

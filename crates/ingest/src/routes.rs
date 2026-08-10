@@ -187,6 +187,9 @@ async fn post_ingest(
                 bio_spec::SpecError::InvalidCalendarEventPayload { .. } => {
                     "invalid_calendar_event"
                 }
+                bio_spec::SpecError::InvalidBrowserCategoryPayload { .. } => {
+                    "invalid_browser_category"
+                }
                 _ => "invalid_life_event",
             };
             return (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response();

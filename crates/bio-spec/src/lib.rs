@@ -12,6 +12,7 @@
 
 #![forbid(unsafe_code)]
 
+mod browser_category;
 mod calendar_event;
 mod error;
 mod feature;
@@ -22,6 +23,12 @@ mod recommendation;
 mod signal;
 mod time;
 
+pub use browser_category::{
+    is_v1_browser_category, validate_browser_category_payload, BROWSER_CATEGORY_COMMUNICATION,
+    BROWSER_CATEGORY_ENTERTAINMENT, BROWSER_CATEGORY_REFERENCE, BROWSER_CATEGORY_SHOPPING,
+    BROWSER_CATEGORY_UNKNOWN, BROWSER_CATEGORY_WORK, DATA_TYPE_BROWSER_CATEGORY,
+    V1_BROWSER_CATEGORIES,
+};
 pub use calendar_event::{
     validate_calendar_event_payload, DATA_TYPE_CALENDAR_EVENT,
 };
