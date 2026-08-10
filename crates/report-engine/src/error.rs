@@ -14,6 +14,14 @@ pub enum ReportEngineError {
         /// Failure detail.
         message: String,
     },
+    /// Requested prompt pack id/version is not in the in-process registry.
+    #[error("unknown prompt pack: {id}@{version}")]
+    UnknownPromptPack {
+        /// Pack id (e.g. `biofocus.default`).
+        id: String,
+        /// Pack version string (e.g. `1`).
+        version: String,
+    },
     /// Local LLM path is opt-in and currently disabled (no network attempted).
     #[error("local LLM is disabled (set {env}=1 to opt in)", env = crate::llm::LOCAL_LLM_ENV)]
     LocalLlmDisabled,

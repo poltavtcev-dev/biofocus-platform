@@ -64,15 +64,15 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 10** (Ready **P10-E3-T1**). Below is the accepted ladder — open later phases via PM gate, not all at once.
+Immediate Kanban = **Phase 11** (Ready **P11-E2-T1**). Below is the accepted ladder — open later phases via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
 | **0–7** | Done — foundation → ingest → pipeline → Dashboard/Insights → wearable dogfood → Life Events + Calendar → Trust layer (confidence / factors / RecoveryScore) |
 | **8** | Done — Pattern Discovery v1 (ADR-008 recompute-on-read → baseline Insight → Dashboard surface) |
 | **9** | Done — Deterministic Recommendations (ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Suggestions) |
-| **10** | Plugin wave-1 — **Browser categories** (ADR-010) → collector → `DistractionScore` — **active** |
-| **11** | AI coaching polish — prompt packs / provider UX (still interpret-only) |
+| **10** | Done — Plugin wave-1 (ADR-010 Browser categories → collector → `DistractionScore`) |
+| **11** | AI coaching polish — ADR-011 ✅ → prompt packs → provider UX (still interpret-only) — **active · Ready P11-E2-T1** |
 | **12+** | Ambient sources + commercial packaging |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

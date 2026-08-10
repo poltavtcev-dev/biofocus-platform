@@ -71,3 +71,6 @@ Browser category collector is **opt-in** (`BIOFOCUS_BROWSER_CATEGORIES=1`, defau
 
 ### Optional local LLM reports (P4-E3-T2)
 Local LLM interpret is **opt-in** (`BIOFOCUS_LOCAL_LLM=1`, default off). When disabled, `report-engine` opens no sockets for LLM. When enabled, only `ReportDocument::llm_prompt` is POSTed to a user-configured OpenAI-compatible endpoint (default localhost Ollama). Not invoked on startup — explicit host call only. Prefer `127.0.0.1`; pointing the base URL off-machine is operator-controlled. See `docs/12-development.md`.
+
+### Prompt packs + coaching polish (ADR-011 / P11-E2)
+Prompt packs are **in-process** templates over already-computed Evidence — they do not open SQLite or network. Default pack `biofocus.default` @ `1` (`build_report_with_pack`) only formats Features / Insights / Recommendations; `llm_prompt` forbids inventing scores / Evidence / Recommendations. Provider UX (P11-E3) may surface calm local-LLM status/config reflecting host env; default stays **off**; no auto-invoke on Dashboard open; no chat-history persistence in v1; no secrets in UI logs. LLM stays interpret-only. Cloud LLM marketplace is out of Phase 11.

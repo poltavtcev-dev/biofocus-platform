@@ -581,6 +581,9 @@ fn calm_llm_error(err: &ReportEngineError) -> String {
             "Local AI is optional and currently off.".into()
         }
         ReportEngineError::BuildFailed { .. } => "Could not build the report.".into(),
+        ReportEngineError::UnknownPromptPack { .. } => {
+            "That report pack is not available.".into()
+        },
     }
 }
 

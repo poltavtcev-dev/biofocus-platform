@@ -12,6 +12,7 @@
 | ADR-008 | 2026-08-07 | Pattern Discovery v1 = **recompute-on-read** multi-window Features from local Observations (+ optional in-process memo); evolve `knowledge-engine`; **no** Feature/baseline history SQLite table in v1 | North star needs multi-day / baseline Knowledge without a second persistence model or busy background jobs. Observations remain source of truth; Features stay derived (ADR-007). Evaluate-on-read matches existing `KnowledgeEngine::evaluate` + Insights IPC. Local-only; idle-safe. | Persisted Feature/baseline history store for v1; always-on recompute worker / busy-loop; cloud sync of patterns; ML model training; parallel “Correlation Engine” crate |
 | ADR-009 | 2026-08-08 | Recommendations v1 = first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); keep thin `Insight.actionRecommendation` as optional hint only; **no** Recommendation SQLite store; **no** parallel Coach Engine crate | Vision L4 needs Evidence-backed suggested actions, not only a string on Insight. Evolve existing Knowledge path (ADR-008); local-only; idle-safe; LLM stays L5 interpret-only. | LLM as source of truth for actions; clinical/prescription framing; parallel Coach Engine without Evidence; cloud sync of recommendations; persist Recommendation history in v1; replace Insights with Recommendations |
 | ADR-010 | 2026-08-10 | Plugin wave-1 source = **Browser categories** (not IDE/Git in v1); `data_type: "browser_category"` coarse labels only → existing `observations` store; opt-in env default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `DistractionScore` | Vision source priority after Calendar is IDE/Git/**Browser**; catalog already names `DistractionScore` (browser categories). Complements `context_window` / CSR (browser is one app — categories reveal in-browser fragmentation). Privacy-first: no full URLs / titles / keystroke content; personal self-tracking only. | Both IDE+Browser in same wave; always-on capture; cloud history sync; plugin marketplace crate; parallel plugin SQLite registry; ambient music/weather in P10; IDE/Git as wave-1 v1 (deferred) |
+| ADR-011 | 2026-08-10 | L5 coaching polish v1 = **named/versioned prompt packs** in `report-engine` (templates over already-computed Features / Insights / Recommendations) + **calm Dashboard provider UX** for opt-in local LLM status/config; interpret-only; in-process packs + existing env/IPC; **no** chat-history SQLite; **no** parallel Coach Engine | Vision L5 is NL explanation only. Phase 4 shipped `build_report` / `interpret_report` / `generate_report` (env-only). Phase 11 dogfood needs selectable packs + calmer provider surface without making LLM a Feature/Recommendation engine. Local-first; idle; explicit user action; no auto-invoke on Dashboard open. | Cloud LLM by default; LLM as SoT for Features/Recommendations; auto-invoke on Dashboard open; parallel Coach Engine that bypasses Evidence; clinical/prescription coaching tone; persist chat history SQLite without need; shipping packs without ADR |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -279,3 +280,75 @@ E3 (P10-E3-T1) — DistractionScore:
 7. **IDE/Git as wave-1 v1** — deferred (see rationale); may reuse `context_window` more heavily later.
 8. **Full URL / title logging “for accuracy”** — rejected; coarse categories only.
 9. **NotificationPressure in this ADR** — out of Phase 10 unless a later task folds a thin path; not chosen here.
+
+### ADR-011 detail — AI coaching polish: prompt packs + provider UX (v1)
+
+**Chosen approach:** Evolve Phase 4 L5 (`report-engine` + opt-in local LLM + Dashboard `generate_report`) with (1) **named/versioned prompt packs** — in-process templates that wrap already-computed Features / Insights / Recommendations into offline `markdown` + `llm_prompt`; (2) **calm Dashboard provider UX** — status/config surface for the existing opt-in local LLM path. LLM remains **interpret-only** (Vision L5): may rephrase deterministic Evidence for display; must **not** invent scores, Features, Insights, Recommendations, or Evidence.
+
+| Layer | Role in Phase 11 v1 |
+| :--- | :--- |
+| `Feature` / `Insight` / `Recommendation` | Deterministic Core outputs (L2–L4) — **source of truth**; unchanged by packs / LLM |
+| Prompt pack (`report-engine`) | Named + versioned template: selects tone/sections/instructions over those inputs → `ReportDocument`-shaped offline output |
+| Local LLM (`interpret_report`) | Opt-in rephrase of pack `llm_prompt` only; no Feature math; no new Evidence |
+| Provider UX (Dashboard) | Calm status (disabled / ready / error) + pack-aware Report flow behind **explicit** user action |
+| Persistence | **No** new SQLite for packs or chat history in v1 — packs in-process; LLM knobs stay env / host config (Phase 4 stance) |
+
+**Why packs (not a single hard-coded prompt forever)**
+
+1. Dogfood needs named variants (default calm coaching, shorter summary, …) without forking `report-engine`.
+2. Versioning lets E2 ship `id` + `version` so Dashboard / tests pin a pack without silent prompt drift.
+3. Packs still consume **already-computed** Evidence — they do not replace `feature-engine` / `knowledge-engine`.
+
+**Why provider UX (not env archaeology forever)**
+
+1. Phase 4 enablement is env-only (`BIOFOCUS_LOCAL_LLM=…`); power users need a calm in-app read of status without turning LLM on by default.
+2. Status must stay honest: disabled → no sockets; ready → host config present; error/timeout → soft-fail without losing markdown (`llmStatus` pattern).
+3. Config surface may **reflect** existing env/host knobs; inventing a second cloud-provider marketplace is out of scope.
+
+**v1 mechanics (contracts — implement in P11-E2 / P11-E3)**
+
+1. **Prompt packs (→ P11-E2):** Public API in `report-engine`, e.g. `build_report_with_pack(pack_id, version, features, insights, recommendations) → Result<ReportDocument>` (exact names left to E2). At least one default pack (`biofocus.default` / `1`) remains calm / non-clinical and forbids inventing metrics or actions in the `llm_prompt` instructions.
+2. **No Feature math in pack builder:** Packs format and instruct; scalars/objects come from Core inputs only. Empty / partial Evidence → soft empty sections, `Ok`, no panic.
+3. **Provider UX (→ P11-E3):** Dashboard shows calm local-LLM status via IPC (UI ↛ SQLite). Report / coaching flow selects a pack (or default) and calls existing `generate_report` / interpret path on **explicit** user action only — never on Dashboard open, soft poll, or background timer.
+4. **Idle / local-first:** Default LLM **off**; no auto-send of biometrics or prompts on app start. Prefer `127.0.0.1` Ollama-compatible endpoint (Phase 4). No cloud LLM marketplace in v1.
+5. **LLM boundary (reaffirmed):** Must not invent scores, Evidence, Features, Insights, or Recommendations. Deterministic Core remains SoT for L2–L4; L5 is NL explanation only.
+6. **Calm framing:** Coaching copy is optional personal interpretation — never medical advice, prescriptions, diagnosis, or employee-surveillance tone.
+
+**Schema (v1)**
+
+- **No new SQLite tables/columns** for prompt packs, pack registries, chat transcripts, or coaching history.
+- Prefer **in-process** pack catalog + existing env / IPC (Phase 4 stance).
+- **Do not apply** any migration for this ADR.
+- Deferred (future ADR + user approve only): user-editable on-disk pack overrides; optional dismiss/feedback history — out of Phase 11 v1 until then.
+
+**E2 / E3 sketch**
+
+```text
+E2 (P11-E2-T1) — report-engine packs:
+  in-process registry: { id, version, build(features, insights, recommendations) }
+  → offline markdown + llm_prompt (interpret-only instructions)
+  default pack calm / non-clinical; unit tests: select pack, empty/partial Evidence
+  no network from pack builder; no Desktop UI required; no SQLite
+
+E3 (P11-E3-T1) — Dashboard provider UX:
+  IPC status: disabled | ready | error (reflect BIOFOCUS_LOCAL_LLM / host config)
+  pack-aware Generate report → existing generate_report / interpret path
+  explicit user action only; soft-fail LLM → markdown still returned
+  calm copy; no secrets in UI logs; UI ↛ SQLite
+```
+
+**Docs policy for this ADR**
+
+- Planned / ADR notes land now in `docs/09-api.md`, `docs/10-security.md`, `docs/16-glossary.md`.
+- Full pack API signatures + provider IPC DTO finalized in **P11-E2** / **P11-E3**.
+
+**Rejected alternatives**
+
+1. **Cloud LLM by default** — breaks local-first / privacy default; opt-in local endpoint stays the v1 path.
+2. **LLM as source of truth for Features / Recommendations** — breaks determinism / Evidence; L5 interpret-only only.
+3. **Auto-invoke on Dashboard open** (or soft poll) — idle / no surprise network; explicit user action only (Phase 4 `generate_report` rule).
+4. **Parallel “Coach Engine” crate** that bypasses Evidence / Knowledge — prefer evolve `report-engine` + existing Report IPC (same stance as ADR-009 vs Coach Engine for L4).
+5. **Clinical / prescription coaching tone** — out of product Non-Goals; calm optional interpretation only.
+6. **Persist chat history in SQLite without need** — premature schema; no coaching transcript store in v1.
+7. **Shipping prompt packs / provider UX without ADR** — Phase 11 boundary must be recorded before E2/E3 code.
+8. **In-app cloud provider marketplace** — out of Phase 11; ambient / commercial packaging is Phase 12+.

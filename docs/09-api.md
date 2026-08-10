@@ -281,6 +281,40 @@ let interpreted = interpret_report(&doc, &config).await?; // Err(LocalLlmDisable
 
 Env: `BIOFOCUS_LOCAL_LLM=1`, optional `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL`, `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS`. Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite. Builder path has no HTTP; LLM path is explicit + disabled by default.
 
+### Prompt packs (P11-E2-T1 / ADR-011)
+
+Named/versioned **in-process** templates in `report-engine`. No SQLite; no network from the pack builder.
+
+```rust
+use report_engine::{
+    build_report_with_pack, default_prompt_pack, list_prompt_packs,
+    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION, ReportDocument,
+};
+
+let pack = default_prompt_pack(); // biofocus.default @ 1
+assert_eq!(pack.id, DEFAULT_PROMPT_PACK_ID);
+assert_eq!(pack.version, DEFAULT_PROMPT_PACK_VERSION);
+
+let doc: ReportDocument = build_report_with_pack(
+    pack.id,
+    pack.version,
+    &features,
+    &insights,
+    &recommendations,
+)?;
+// Unknown id/version → Err(UnknownPromptPack). Empty inputs → Ok(calm minimal).
+let _ = list_prompt_packs(); // in-process registry (v1: default only)
+```
+
+| API | Notes |
+| :--- | :--- |
+| `build_report_with_pack(id, version, features, insights, recommendations)` | Offline `markdown` + `llm_prompt`. Default pack includes Features / Insights / Recommendations sections (soft empty when missing). No Feature / Recommendation math. |
+| `DEFAULT_PROMPT_PACK_ID` / `VERSION` | `biofocus.default` / `1` — calm, non-clinical; `llm_prompt` forbids inventing metrics, Evidence, Insights, Recommendations, or actions. |
+| `list_prompt_packs` / `default_prompt_pack` | In-process registry helpers. |
+| `ReportEngineError::UnknownPromptPack` | Typed miss for id/version. |
+
+Phase 4 `build_report(features, insights)` remains for existing host until **P11-E3** wires pack-aware Report flow. Provider UX (Dashboard status / pack picker) → **P11-E3**.
+
 ### `generate_report` (P4-E3-T3)
 
 - **Invoke:** `invoke("generate_report")` — **explicit user action only** (Dashboard «Generate report»). Never on app / Dashboard open or soft poll.
