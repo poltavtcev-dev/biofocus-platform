@@ -1,11 +1,11 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 12: Ambient + commercial packaging** (Sprint 23–24) — **Opened** 2026-08-10.  
-> Phase 0–11 Done. Goal: Now Playing ambient Observations → `AmbientMediaShare` + packaging runbook — Local-First, opt-in — locked by ADR-012.
+> **Phase 13: Plugin wave-2 (Git activity)** (Sprint 25–26) — **Opened** 2026-08-10.  
+> Phase 0–12 Done. Goal: ADR-013 → Git activity Observations → `GitActivityRate` — Local-First, opt-in. IDE deferred (no additive privacy-safe signal beyond `context_window`).
 
-**Phase 12 goal:** Dogfood **Now Playing** ambient (`now_playing` Observations) via Capability Plugin Model, then `AmbientMediaShare` Feature + commercial packaging runbook (signed builds / notarization / update stance) — algorithms remain open-source; sync off by default.
+**Phase 13 goal:** Dogfood **plugin wave-2** — **Git activity aggregates** (ADR-013) via Capability Plugin Model, then catalog Feature **`GitActivityRate`**. IDE, weather/light, and App Store packaging product remain deferred.
 
-**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · horizon P12+ — `/docs/00-vision.md`.
+**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · Phase 13 finishes plugin ladder after Browser — `/docs/00-vision.md`.
 
 **Global DoD (каждая задача):**
 - [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight` / `Recommendation`)
@@ -25,21 +25,21 @@
 
 ---
 
-## Kanban Overview (Phase 12 active)
+## Kanban Overview (Phase 13 active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P12-E3-T1** |
+| **Ready** | **P13-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **P12-E1-T1** · **P12-E2-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **Phase 12** (E1–E3) · **PM-GATE-POST-P12** · **P13-E1-T1** |
 
-**Epic status:** P12-E1 ✅ · P12-E2 ✅ · P12-E3 ⬜ (T1 Ready)
+**Epic status:** P13-E1 ✅ · P13-E2 ⬜ (T1 Ready) · P13-E3 ⬜
 
-**Phase 12 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-012 + Now Playing plugin shipped · Ready AmbientMediaShare
+**Phase 13 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-013 Git locked · Ready Git activity plugin
 
 **Рекомендуемый порядок:**  
-~~P12-E1-T1~~ → ~~P12-E2-T1~~ → **P12-E3-T1**
+~~P13-E1-T1~~ → **P13-E2-T1** → P13-E3-T1
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -47,66 +47,79 @@
 
 ### Active assignment
 
-**Ready now:** **P12-E3-T1** — `AmbientMediaShare` + packaging runbook. Brief: `docs/handoffs/P12-E3-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P13-E2-T1** — Git activity plugin (`com.biofocus.macos.git` / `git_activity` / `BIOFOCUS_GIT_ACTIVITY`). Brief: `docs/handoffs/P13-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Closed:** P12-E2-T1 (QA Pass with notes, 2026-08-10) — `NowPlayingPlugin` / `BIOFOCUS_NOW_PLAYING` / `validate_now_playing_payload`; Epic **P12-E2** ✅. Evidence: `docs/handoffs/P12-E2-T1-qa-to-pm.md`. Note: production OS probe soft-fails (`None`) by design; scripted probe covers emit→persist.
+**Closed:** P13-E1-T1 (QA Pass, 2026-08-10) — ADR-013: wave-2 = **Git activity aggregates** (not IDE); E3 Feature = **`GitActivityRate`**; no schema. Epic **P13-E1** ✅. Evidence: `docs/handoffs/P13-E1-T1-qa-to-pm.md`.
 
-**Closed:** P12-E1-T1 (QA Pass, 2026-08-10) — ADR-012: primary Now Playing ambient; secondary packaging runbook. Epic **P12-E1** ✅. Evidence: `docs/handoffs/P12-E1-T1-qa-to-pm.md`.
+**Closed gate:** PM-GATE-POST-P12 (2026-08-10) — chose plugin wave-2 over weather/light and App Store packaging. Evidence: `docs/handoffs/PM-GATE-POST-P12-pm-brief.md`.
 
-**Closed previous:** Phase 11 (E1–E3 Done, 2026-08-10) — ADR-011 → packs → provider UX. Evidence: `docs/handoffs/P11-*-qa-to-pm.md`. Branch: `phase/11-ai-coaching-polish`.
+**Closed previous:** Phase 12 (E1–E3 Done, 2026-08-10) — ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook. Branch: `phase/12-ambient-packaging` (cluster PR after freeze).
 
-**Next after Pass:** close Epic **P12-E3** + **Phase 12** Kanban (then next horizon via separate PM gate).
+**Next after Pass:** Ready **P13-E3-T1** (`GitActivityRate`).
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 12 cluster on `phase/12-ambient-packaging`; local commits OK; one cluster PR **after** freeze (or when user lifts it). Public surface: `NowPlayingPlugin`, `BIOFOCUS_NOW_PLAYING`, `validate_now_playing_payload`, ingest `invalid_now_playing`.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 13 cluster on `phase/13-plugin-wave-2`; local commits OK; one cluster PR **after** freeze. Locked names: `git_activity`, `com.biofocus.macos.git`, `BIOFOCUS_GIT_ACTIVITY`, `GitActivityRate`.
 
 ---
 
-## Phase 12 — Epics & Tasks (Sprint 23–24)
+## Phase 13 — Epics & Tasks (Sprint 25–26)
+
+### Epic P13-E1 — ADR-013 Plugin wave-2 scope
+**Goal:** Decide IDE vs Git (exactly one v1 primary) + Observation contract + E2/E3 sketch without breaking Local-First / Capability Model / privacy bar from ADR-010.
+
+| ID | Task | Role | Modules | AC (summary) | Depends |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **P13-E1-T1** | ADR-013: IDE/Git wave-2 boundaries | Dev | docs + decision-log | ADR-013 recorded | Phase 12 Done · PM-GATE-POST-P12 |
+
+**P13-E1 shipped:** ADR-013 = wave-2 primary **Git activity aggregates** (`git_activity`); IDE deferred (no additive privacy-safe signal beyond `context_window`); E2 plugin → E3 **`GitActivityRate`**; existing `observations` only; no migration. QA Pass 2026-08-10.
+
+**Out of scope (E1):** implementing collector / Feature / Git path indexing; weather/light; App Store product; NotificationPressure unless ADR notes deferral; PR during freeze.
+
+---
+
+### Epic P13-E2 — Git activity collector plugin
+**Goal:** Ship opt-in Git activity `BioFocusPlugin` → Observation channel → persist (ADR-013).
+
+| ID | Task | Role | Modules | AC (summary) | Depends |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **P13-E2-T1** | Git activity plugin | Dev | macos-collector / plugin-sdk + host | See `P13-E2-T1-pm-brief.md` | P13-E1-T1 |
+
+**Out of scope (E2):** `GitActivityRate` / Feature DAG (→ **P13-E3**); IDE collector; new SQLite schema / path allowlist table; PR during freeze.
+
+---
+
+### Epic P13-E3 — GitActivityRate catalog Feature
+**Goal:** Catalog Feature **`GitActivityRate`** from `git_activity` Observations + pipeline normalize (ADR-013).
+
+| ID | Task | Role | Modules | AC (summary) | Depends |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **P13-E3-T1** | `GitActivityRate` catalog Feature | Dev | feature-engine + pipeline + docs | Shaped by ADR-013 | P13-E2-T1 |
+
+**Out of scope (E3):** Dashboard redesign; Insights/Recommendations for GitActivityRate unless separately scoped; workplace surveillance framing; PR during freeze.
+
+---
+
+## Phase 12 archive (Done)
+
+<details>
+<summary>Phase 12 Kanban & epics (closed 2026-08-10 — E1–E3)</summary>
+
+**Done:** P12-E1 (T1) · P12-E2 (T1) · P12-E3 (T1).  
+ADR-012 Now Playing ambient → `NowPlayingPlugin` → `AmbientMediaShare` + packaging runbook.
+
+Evidence: `docs/handoffs/P12-*-qa-to-pm.md` · branch `phase/12-ambient-packaging` (cluster PR after freeze).
 
 ### Epic P12-E1 — ADR-012 Phase 12 scope
-**Goal:** Decide how ambient sources and commercial packaging enter v1 without breaking Local-First / Capability Model / open Core math.
-
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| **P12-E1-T1** | ADR-012: ambient + packaging boundaries | Dev | docs + decision-log | ADR-012 recorded | Phase 11 Done |
-
 **P12-E1 shipped:** ADR-012 = primary **Now Playing / music** ambient (`now_playing`); secondary packaging as signed-build / notarization / update **runbook**; E2 plugin → E3 `AmbientMediaShare` + runbook; existing `observations` only; no migration. QA Pass 2026-08-10.
 
-**Out of scope (E1):** implementing ambient collector / Feature / installer pipeline (→ E2/E3); IDE/Git wave; cloud LLM marketplace; PR during freeze.
-
----
-
 ### Epic P12-E2 — Now Playing ambient plugin
-**Goal:** Ship opt-in Now Playing `BioFocusPlugin` → Observation channel → persist (ADR-012).
-
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| **P12-E2-T1** | Now Playing ambient plugin | Dev | macos-collector / plugin-sdk + host | See below | P12-E1-T1 |
-
 **P12-E2 shipped:** `NowPlayingPlugin` (`com.biofocus.macos.now_playing`); opt-in `BIOFOCUS_NOW_PLAYING`; `validate_now_playing_payload`; ingest `invalid_now_playing`; idle-safe + stop joins; production OS probe soft-fails (`None`) by design — scripted probe covers emit→persist. QA Pass with notes 2026-08-10.
 
-**Out of scope (E2):** `AmbientMediaShare` / Feature DAG (→ **P12-E3**); packaging installer binary; weather/light; IDE/Git; new SQLite schema; PR during freeze.
-
----
-
 ### Epic P12-E3 — AmbientMediaShare + packaging runbook
-**Goal:** Catalog Feature `AmbientMediaShare` from `now_playing` Observations + commercial packaging companion runbook (ADR-012).
+**P12-E3 shipped:** Catalog §1.9 `AmbientMediaShare` via `register_ambient_v1`; share 0–100 from `now_playing`; **omit** empty / only-`none` / only-`unknown`; ADR-007 confidence + kind factors; pipeline strips forbidden content keys; `docs/18-packaging-runbook.md` (signed `.app`/`.dmg`, notarization, update stance; sync off by default; AGPLv3 Core open). QA Pass with notes 2026-08-10.
 
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| **P12-E3-T1** | `AmbientMediaShare` + packaging runbook | Dev | feature-engine + pipeline + docs | See below | P12-E2-T1 |
+**Out of scope (Phase 12):** weather/light; App Store product; sync product; live MediaRemote content mapping; IDE/Git wave; workplace surveillance framing; PR during freeze.
 
-**P12-E3-T1 AC:**
-1. Move **`AmbientMediaShare`** from `docs/06-feature-catalog.md` § Planned → §1 with: goal, window/step (15m / 1m align Focus/CSR), units, inputs, formula strategy (v1), provenance, ADR-007 confidence, DAG registration note. Calm framing only (“media present during this window” — **not** “you listen too much” / clinical).
-2. Inputs: `now_playing` Observations (`media_kind` + `is_playing`); formula sketch per ADR-012 — share of window with `is_playing && media_kind ∈ {music, podcast, other}` → 0–100; `none`/`unknown`-only thin windows → **omit** or lower confidence (pick one; document + test).
-3. Pipeline: ensure `now_playing` is a known normalized type; strip forbidden content keys (titles/artists/lyrics/playlists/etc.) if present.
-4. Register in `feature_engine::register_catalog_v1` (or helper wired into it); Feature appears on existing snapshot / Feature Worker path when inputs present — **no** mandatory new Dashboard UI.
-5. Packaging companion (same task): docs runbook for signed macOS build + notarization + update-channel stance; optional sync remains **off-by-default stance only** (no sync product). AGPLv3 Core stays open; commercial ≠ closed Feature math.
-6. Unit tests: rich playing media → emit; empty / none-unknown-only → omit or low confidence per policy; confidence per ADR-007.
-7. Optional: `ExplanationFactor`s if weighted components are clear (P7-E2 shape).
-8. Handoff: `docs/handoffs/P12-E3-T1-dev-to-qa.md`.
-
-**Out of scope (E3):** weather/light; App Store product; sync product; live MediaRemote content mapping; workplace surveillance framing; PR during freeze.
+</details>
 
 ---
 
@@ -264,24 +277,24 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 
 ---
 
-## Role × Module Matrix (Phase 12)
+## Role × Module Matrix (Phase 13)
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P12-E1-T1 ADR-012 ambient + packaging scope | | ● | ○ | | docs + decision-log |
-| P12-E2-T1 Now Playing ambient plugin | | ● | ○ | | macos-collector / plugin-sdk + host |
-| P12-E3-T1 AmbientMediaShare + packaging runbook | | ● | ○ | | feature-engine + pipeline + docs |
+| P13-E1-T1 ADR-013 Git wave-2 scope | | ● | ○ | | docs + decision-log |
+| P13-E2-T1 Git activity plugin | | ● | ○ | | macos-collector / plugin-sdk + host |
+| P13-E3-T1 GitActivityRate catalog Feature | | ● | ○ | | feature-engine + pipeline + docs |
 
 ● = owner · ○ = collaborator
 
 ---
 
-## Sprint 23–24 — Queue
+## Sprint 25–26 — Queue
 
-1. ~~P12-E1-T1 — ADR-012 Phase 12 scope (ambient + commercial packaging)~~ ✅ Done  
-2. ~~P12-E2-T1 — Now Playing ambient plugin~~ ✅ Done  
-3. **P12-E3-T1** — `AmbientMediaShare` + packaging runbook ← **Ready**
+1. ~~P13-E1-T1 — ADR-013 Plugin wave-2 (Git)~~ ✅ Done  
+2. **P13-E2-T1** — Git activity plugin ← **Ready**  
+3. P13-E3-T1 — `GitActivityRate` catalog Feature  
 
-**Git:** `phase/12-ambient-packaging` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P12-E3-T1-pm-brief.md`.  
-**Next after Phase 12:** PM gate → next horizon (`docs/14-roadmap.md` / vision).
+**Git:** `phase/13-plugin-wave-2` → local commits → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P13-E2-T1-pm-brief.md`.  
+**Deferred (not Phase 13):** IDE collector · weather/light ambient · App Store packaging product · NotificationPressure.

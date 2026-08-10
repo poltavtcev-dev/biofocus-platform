@@ -16,6 +16,7 @@ mod browser_category;
 mod calendar_event;
 mod error;
 mod feature;
+mod git_activity;
 mod insight;
 mod life_event;
 mod now_playing;
@@ -35,6 +36,11 @@ pub use calendar_event::{
 };
 pub use error::{SpecError, SpecResult};
 pub use feature::{ExplanationFactor, Feature, FeatureId, FeatureValue, Provenance};
+pub use git_activity::{
+    is_v1_activity_kind, validate_git_activity_payload, ACTIVITY_KIND_CHECKOUT,
+    ACTIVITY_KIND_COMMIT, ACTIVITY_KIND_IDLE, ACTIVITY_KIND_OTHER, ACTIVITY_KIND_SYNC,
+    ACTIVITY_KIND_UNKNOWN, DATA_TYPE_GIT_ACTIVITY, V1_ACTIVITY_KINDS,
+};
 pub use insight::{EvidenceRef, Insight, InsightId};
 pub use life_event::{
     is_v1_life_event_kind, validate_life_event_payload, validate_observation_payload,

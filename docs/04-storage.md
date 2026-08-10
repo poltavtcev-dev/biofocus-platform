@@ -50,3 +50,9 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 - **v1:** Now Playing ambient facts are ordinary rows in `observations` (`data_type = 'now_playing'`). **No** ambient media table, sync mirror, or packaging registry.
 - **No migration** under ADR-012. Optional sync store / outbox requires a **new ADR + user approve** — out of Phase 12 v1.
 - Commercial packaging in Phase 12 is runbook/process only — does not add SQLite schema.
+
+### Plugin wave-2 / Git activity (ADR-013)
+
+- **v1:** Git activity facts are ordinary rows in `observations` (`data_type = 'git_activity'`). **No** plugin registry table, remotes table, or repo-path allowlist columns.
+- **No migration** under ADR-013.
+- Future optional watched-roots allowlist / config store requires a **new ADR + user approve** — not part of wave-2 v1.

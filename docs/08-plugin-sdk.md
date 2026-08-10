@@ -91,6 +91,8 @@ Window title capture remains deferred.
 
 IDE/Git collectors are **deferred** (not wave-1 v1). No plugin marketplace crate. Personal self-tracking only — not employee surveillance.
 
+> **Update (ADR-013):** Plugin wave-2 chooses **Git activity** (`git_activity`) — see §7. IDE remains deferred.
+
 ## 6. Now Playing ambient (Phase 12 wave-1 — ADR-012 / P12-E2-T1)
 
 | Item | Value |
@@ -107,3 +109,22 @@ IDE/Git collectors are **deferred** (not wave-1 v1). No plugin marketplace crate
 | E3 Feature | `AmbientMediaShare` (catalog — `register_ambient_v1` / `register_catalog_v1`) |
 
 Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packaging signed-build runbook: [`docs/18-packaging-runbook.md`](18-packaging-runbook.md) — secondary Phase 12 track (docs/process); AGPLv3 Core stays open.
+
+## 7. Git activity (Phase 13 wave-2 — ADR-013 / P13-E2 shipped)
+
+| Item | Value |
+| :--- | :--- |
+| Status | **Shipped** (collector P13-E2; Feature `GitActivityRate` → **P13-E3**) |
+| Crate | `crates/macos-collector` |
+| Plugin id | `com.biofocus.macos.git` |
+| `data_type` | `git_activity` |
+| Probe | `SystemGitActivityProbe` soft-fails idle (no path-allowlist in v1); `ScriptedGitActivityProbe` for tests |
+| Payload | Coarse `activity_kind` (+ optional `event_count`) — **no** paths / remotes / diffs / branch names / commit messages (see `docs/07-contracts.md`) |
+| Enable | `BIOFOCUS_GIT_ACTIVITY=1` (default **off**) |
+| Poll | On activity change or rare ≥5s; no busy-loop; `stop_stream` joins |
+| Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
+| Validation | `bio_spec::validate_git_activity_payload`; ingest `invalid_git_activity` |
+| E3 Feature | `GitActivityRate` (catalog) |
+
+IDE collectors remain **deferred** (no additive privacy-safe session kind beyond `context_window` in v1 — ADR-013). Weather / light ambient and App Store packaging product remain deferred. No plugin marketplace crate. Personal self-tracking only — not employee / workplace git surveillance.
+

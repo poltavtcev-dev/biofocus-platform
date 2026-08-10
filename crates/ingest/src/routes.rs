@@ -191,6 +191,7 @@ async fn post_ingest(
                     "invalid_browser_category"
                 }
                 bio_spec::SpecError::InvalidNowPlayingPayload { .. } => "invalid_now_playing",
+                bio_spec::SpecError::InvalidGitActivityPayload { .. } => "invalid_git_activity",
                 _ => "invalid_life_event",
             };
             return (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response();

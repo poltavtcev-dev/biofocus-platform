@@ -130,6 +130,7 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SleepDebt` | Sleep shortfall vs baseline | Sleep Observations | P7 |
 | `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 |
 | `NotificationPressure` | Interruption intensity | notification Observations | P10 (deferred — not ADR-010 wave-1) |
+| `GitActivityRate` | Personal VCS cadence in-window (coarse git events) | `git_activity` Observations (ADR-013) | P13-E3 |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `ActivityBalance` | Movement vs sedentary | steps / workout Life Events | P6–P7 |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |

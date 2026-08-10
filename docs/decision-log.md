@@ -14,6 +14,7 @@
 | ADR-010 | 2026-08-10 | Plugin wave-1 source = **Browser categories** (not IDE/Git in v1); `data_type: "browser_category"` coarse labels only → existing `observations` store; opt-in env default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `DistractionScore` | Vision source priority after Calendar is IDE/Git/**Browser**; catalog already names `DistractionScore` (browser categories). Complements `context_window` / CSR (browser is one app — categories reveal in-browser fragmentation). Privacy-first: no full URLs / titles / keystroke content; personal self-tracking only. | Both IDE+Browser in same wave; always-on capture; cloud history sync; plugin marketplace crate; parallel plugin SQLite registry; ambient music/weather in P10; IDE/Git as wave-1 v1 (deferred) |
 | ADR-011 | 2026-08-10 | L5 coaching polish v1 = **named/versioned prompt packs** in `report-engine` (templates over already-computed Features / Insights / Recommendations) + **calm Dashboard provider UX** for opt-in local LLM status/config; interpret-only; in-process packs + existing env/IPC; **no** chat-history SQLite; **no** parallel Coach Engine | Vision L5 is NL explanation only. Phase 4 shipped `build_report` / `interpret_report` / `generate_report` (env-only). Phase 11 dogfood needs selectable packs + calmer provider surface without making LLM a Feature/Recommendation engine. Local-first; idle; explicit user action; no auto-invoke on Dashboard open. | Cloud LLM by default; LLM as SoT for Features/Recommendations; auto-invoke on Dashboard open; parallel Coach Engine that bypasses Evidence; clinical/prescription coaching tone; persist chat history SQLite without need; shipping packs without ADR |
 | ADR-012 | 2026-08-10 | Phase 12 v1 **primary** = ambient **Now Playing / music** Observation wave-1 (one source); **secondary** = commercial packaging as signed-build / notarization / update **runbook + process** (no default cloud sync). E2 = plugin; E3 = `AmbientMediaShare` Feature + packaging runbook. Existing `observations` store; AGPLv3 Core stays open | Vision ladder after plugins is ambient (music/weather/light) + commercial packaging ≠ secret math. macOS Now Playing dogfoods without mic / precise geo; weather/light deferred. Packaging stays open Core + distribution process | All three ambient sources in one wave; always-on ambient capture; cloud sync by default; secret/proprietary Feature formulas; ambient Features without Observations; packaging that forces UI→DB or cloud LLM; IDE/Git re-prioritized into P12; PR during freeze |
+| ADR-013 | 2026-08-10 | Plugin wave-2 v1 primary = **Git activity aggregates** (not IDE in the same wave); `data_type: "git_activity"` coarse `activity_kind` (+ optional `event_count`) → existing `observations` store; opt-in `BIOFOCUS_GIT_ACTIVITY` default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `GitActivityRate` | ADR-010 deferred IDE/Git after Browser. IDE apps already visible in `context_window` / CSR; privacy-safe IDE session kinds without paths/titles are weak on macOS collector alone. Git ops are invisible to context — additive signal via counts/cadence only (no paths / remotes / diffs). Personal self-tracking; finish plugin ladder before weather/light or App Store product | IDE+Git same wave; IDE as wave-2 when no additive privacy-safe signal; always-on capture; cloud git history sync; plugin marketplace crate; parallel plugin SQLite registry; weather/light or App Store as P13 primary; NotificationPressure as this wave’s Feature; redefining `DistractionScore`; PR during freeze |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -491,3 +492,124 @@ E3 (P12-E3-T1) — AmbientMediaShare + packaging runbook:
 8. **Opening a PR during freeze** (before 2026-09-01) — local branch commits only; cluster PR after freeze.
 9. **Weather or light as wave-1 v1** — deferred (feasibility / privacy); may follow after AmbientMediaShare dogfood.
 10. **Mic / lyrics / playlist capture “for richer context”** — rejected; coarse media_kind + is_playing only.
+
+### ADR-013 detail — Plugin wave-2 scope: Git activity + Observation contract (v1)
+
+**Chosen wave-2 source:** **Git activity aggregates** (personal, opt-in). IDE is **not** wave-2 v1 (deferred again with rationale below). Exactly **one** primary source this wave.
+
+| Layer | Role in Plugin wave-2 v1 |
+| :--- | :--- |
+| Capability Plugin (`plugin-sdk`) | New `BioFocusPlugin` declares Capability for `git_activity`; `start_stream` / `stop_stream` only |
+| Observation (SQLite) | Immutable facts in existing `observations` table — **no** parallel git / plugin registry store (ADR-006 / ADR-010 / ADR-012 stance) |
+| Feature (`feature-engine`) | E3: **`GitActivityRate`** consumes `git_activity` — ADR-007 confidence; calm non-clinical; **does not** redefine Browser `DistractionScore` |
+| LLM | L5 interpret-only — must **not** invent payloads, activity kinds, or Feature formulas |
+
+**Why Git (not IDE) for wave-2**
+
+1. **ADR-010 deferral still holds for IDE presence:** IDE apps already appear in `context_window` / CSR. Presence alone is not additive.
+2. **Privacy-safe IDE “session kind” is weak dogfood on macOS collector alone:** Coarse editing/debug/idle without file contents usually leans on Accessibility **window titles** (often leak paths) or IDE extensions. Soft-fail → mostly `unknown` — little signal beyond bundle_id.
+3. **Git is additive:** Version-control ops are **invisible** to `context_window`. Cadence / coarse event kinds are a new Observation family.
+4. **Privacy scoping is nameable:** Persist only closed-set `activity_kind` (+ optional small `event_count` aggregate). **No** repo paths, remotes, branch names, diffs, commit messages, SHAs, or authors.
+5. **Capability Model fit:** Same shared Observation channel as Browser / Now Playing — extend `plugin-sdk` + `macos-collector` (or thin adapter), not a marketplace crate.
+6. **PM lean applied:** Prefer IDE only if additive privacy-safe signal exists; ADR finds that bar unmet for v1 → choose Git.
+
+**Observation contract sketch (implement in P13-E2)**
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | `"git_activity"` |
+| `provider_id` | `com.biofocus.macos.git` (host collector and/or thin adapter — exact probe in E2) |
+| Opt-in | `BIOFOCUS_GIT_ACTIVITY=1` (default **off**); host starts plugin only when set |
+| Poll / idle | Emit **on activity change** (or rare poll ≥5s when probing); **no** busy-loop; `stop_stream` must join background work |
+| Confidence | Provider-set ∈ `[0.0, 1.0]` (unknown / soft-fail → lower confidence OK) |
+
+**Privacy-safe payload (v1)** — coarse labels / aggregates only:
+
+```json
+{
+  "id": "…",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.git",
+  "data_type": "git_activity",
+  "payload": {
+    "activity_kind": "commit",
+    "event_count": 1
+  },
+  "confidence": 0.9
+}
+```
+
+| Payload field | Rule |
+| :--- | :--- |
+| `activity_kind` | **Required.** Closed v1 set: `commit` \| `checkout` \| `sync` \| `other` \| `idle` \| `unknown` (E2 may refine labels in contracts; keep coarse). `sync` = fetch/pull/push **events as kinds only** — never remotes/URLs. `idle` = opt-in probe saw no recent activity. |
+| `event_count` | Optional positive integer (≥ 1) for batched aggregates since last emit; default treat as `1` when absent. **Not** a path list. |
+
+**Explicitly forbidden in v1 Observations / logs**
+
+- Source file paths, buffer / keystroke content, IDE window titles that embed paths
+- Full repo remotes / clone URLs, branch **names**, commit SHAs / messages, diffs / patches, author emails, file-change lists
+- Workplace / manager dashboards or employee-surveillance framing (product is **personal self-tracking** only)
+- Always-on capture without opt-in env
+- Cloud git history sync
+
+**Schema (v1)**
+
+- Prefer existing `observations` store only (ADR-006 / ADR-010 / ADR-012 stance).
+- **No new SQLite tables/columns** for plugins, git remotes, or repo registries.
+- **Do not apply** any migration for this ADR.
+- Deferred (future ADR + user approve only): optional user-scoped allowlist of watched roots — out of Phase 13 v1 until then (E2 must soft-fail without a persisted path allowlist table).
+
+**Capability Plugin Model**
+
+```text
+BioFocusPlugin
+  id: com.biofocus.macos.git
+  capabilities: [{ name: "git_activity", data_types: ["git_activity"] }]
+  start_stream(tx) → emit Observation on change (opt-in)
+  stop_stream() → join; freeze emissions
+Desktop ingest_host → same bounded Observation channel → spawn_persist_worker → SQLite
+UI ↛ SQLite (unchanged)
+```
+
+**E2 / E3 sketch (names locked)**
+
+```text
+E2 (P13-E2-T1) — Git activity plugin:
+  plugin (macos-collector or thin adapter) + mock/scripted probe
+  → ObservationSender → persist
+  contracts in 07-contracts / 08-plugin-sdk finalized
+  idle-safe tests; BIOFOCUS_GIT_ACTIVITY default off
+  no Feature math
+
+E3 (P13-E3-T1) — GitActivityRate:
+  inputs: git_activity Observations (activity_kind + optional event_count)
+  window: 15m / step 1m (align Focus/CSR / DistractionScore)
+  formula sketch: rate of non-idle closed-set events in window
+                  (sum event_count for commit|checkout|sync|other)
+                  → scalar ≥ 0 (events per window or per minute — finalize in E3);
+                  idle/unknown-only thin windows → omit or lower confidence
+  confidence: ADR-007; thin → omit or lower
+  framing: calm personal “version-control cadence in this window”
+           — not productivity policing / “you commit too little” / workplace monitoring
+  LLM must not invent score or activity kinds
+  Distinct from DistractionScore — does **not** merge or redefine Browser math
+```
+
+**Docs policy for this ADR**
+
+- Planned / ADR notes land now in `docs/08-plugin-sdk.md`, `docs/07-contracts.md`, `docs/10-security.md`, `docs/12-development.md`, `docs/16-glossary.md`, `docs/06-feature-catalog.md`, `docs/04-storage.md`.
+- Full payload validation + probe tables + Feature formula finalized in **P13-E2** / **P13-E3**.
+
+**Rejected alternatives**
+
+1. **IDE + Git in the same wave** — doubles collector + Feature surface; ship one dogfood loop (ADR-010 lesson).
+2. **IDE as wave-2 v1 without additive privacy-safe signal** — rejected; presence already in `context_window` / CSR; title-based session kinds fail the privacy bar.
+3. **Always-on capture** (no opt-in) — breaks privacy-first / Global DoD plugins rule.
+4. **Cloud git history sync** — local-first; no default remote store / account system.
+5. **Plugin marketplace / parallel marketplace crate** — extend `plugin-sdk` + `macos-collector` (or thin adapter) unless a future ADR justifies otherwise.
+6. **Parallel plugin SQLite registry** without need — Capabilities stay in-process; Observations remain durable SoT.
+7. **Weather / light ambient or App Store packaging product as Phase 13 primary** — deferred (PM-GATE-POST-P12 chose plugin wave-2).
+8. **NotificationPressure as this wave’s Feature** — remains deferred; not justified as the wave-2 catalog target.
+9. **Redefining Browser `DistractionScore` math** for Git — rejected; lock a distinct Feature (`GitActivityRate`).
+10. **Opening a PR during freeze** (before 2026-09-01) — local branch commits only; cluster PR after freeze.
+11. **Persisting repo paths / remotes / diffs “for richer context”** — rejected; coarse activity_kind + optional event_count only.

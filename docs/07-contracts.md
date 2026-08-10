@@ -240,6 +240,39 @@ Validation: `bio_spec::validate_now_playing_payload` (via `validate_observation_
 
 **OS probe (v1):** `SystemNowPlayingProbe` soft-fails to no emission when OS mapping is unavailable (no content-bearing MediaRemote / AppleScript in v1). Scripted/mock probes supply closed-set labels in tests.
 
+### `git_activity` payload (Phase 13 plugin wave-2 — ADR-013 / P13-E2 shipped)
+
+Git activity facts are **ordinary Observations** in the existing store. Wave-2 source = **Git activity aggregates** (IDE deferred — ADR-013).
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | always `"git_activity"` |
+| `provider_id` | `com.biofocus.macos.git` |
+| `payload.activity_kind` | required coarse label: `commit` \| `checkout` \| `sync` \| `other` \| `idle` \| `unknown` |
+| `payload.event_count` | optional positive integer (≥ 1) for batched aggregates; treat as `1` when absent |
+
+**Privacy:** collectors must **not** put repo paths, remotes / clone URLs, branch names, commit SHAs / messages, diffs, authors, or file-change lists into the Observation payload. Personal self-tracking only — not workplace git monitoring. Pipeline normalize **strips** those extras if present.
+
+```json
+{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.git",
+  "data_type": "git_activity",
+  "payload": {
+    "activity_kind": "commit",
+    "event_count": 1
+  },
+  "confidence": 0.9
+}
+```
+
+Enable: `BIOFOCUS_GIT_ACTIVITY=1` (default **off**). Emit on activity change or rare poll ≥5s; no busy-loop.
+
+Validation: `bio_spec::validate_git_activity_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_git_activity`.
+
+**OS probe (v1):** `SystemGitActivityProbe` soft-fails to no emission when mapping / watched-roots allowlist is unavailable (no persisted path-allowlist table in v1 — ADR-013). Scripted/mock probes supply closed-set labels in tests.
+
 ## Companion → ingest (P2-E3-T1)
 
 Same Observation JSON; companion posts a **JSON array** to `POST /v1/ingest`.

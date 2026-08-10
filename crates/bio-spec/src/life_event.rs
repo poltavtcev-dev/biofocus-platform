@@ -41,6 +41,7 @@ pub fn is_v1_life_event_kind(kind: &str) -> bool {
 /// - `data_type == "calendar_event"` → [`crate::validate_calendar_event_payload`]
 /// - `data_type == "browser_category"` → [`crate::validate_browser_category_payload`]
 /// - `data_type == "now_playing"` → [`crate::validate_now_playing_payload`]
+/// - `data_type == "git_activity"` → [`crate::validate_git_activity_payload`]
 /// - other types → accepted (no extra payload schema at this layer)
 pub fn validate_observation_payload(obs: &Observation) -> SpecResult<()> {
     match obs.data_type.as_str() {
@@ -53,6 +54,9 @@ pub fn validate_observation_payload(obs: &Observation) -> SpecResult<()> {
         }
         crate::now_playing::DATA_TYPE_NOW_PLAYING => {
             crate::now_playing::validate_now_playing_payload(&obs.payload)
+        }
+        crate::git_activity::DATA_TYPE_GIT_ACTIVITY => {
+            crate::git_activity::validate_git_activity_payload(&obs.payload)
         }
         _ => Ok(()),
     }

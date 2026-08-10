@@ -17,6 +17,7 @@
 //! | `calendar_event` | `{ "uid", "start", "end", "all_day"?, "busy"? }` | titles/bodies/attendees stripped; required uid/start/end |
 //! | `browser_category` | `{ "category": string, "browser_bundle_id"?: string }` | closed-set category; `url` / `title` / `href` / content extras stripped (ADR-010) |
 //! | `now_playing` | `{ "media_kind": string, "is_playing": bool }` | closed-set kind; `title` / `artist` / `album` / `lyrics` / playlist ids stripped (ADR-012) |
+//! | `git_activity` | `{ "activity_kind": string, "event_count"?: u64 }` | closed-set kind; paths / remotes / branch / SHA / message / diff / author stripped (ADR-013) |
 //!
 //! Known type with missing / non-finite required fields → **skipped** (dropped from
 //! the batch; counted in [`NormalizedBatch::skipped_count`]).
@@ -26,7 +27,7 @@
 //! **Pass-through** — Observation kept unchanged (forward-compatible). Not counted
 //! as skipped.
 
-use bio_spec::{is_v1_media_kind, Observation};
+use bio_spec::{is_v1_activity_kind, is_v1_media_kind, Observation};
 use serde_json::{json, Map, Value as JsonValue};
 
 use crate::dedupe::DedupedBatch;
@@ -46,6 +47,8 @@ pub const DATA_TYPE_CALENDAR_EVENT: &str = "calendar_event";
 pub const DATA_TYPE_BROWSER_CATEGORY: &str = "browser_category";
 /// Now Playing ambient media (ADR-012 / P12-E2).
 pub const DATA_TYPE_NOW_PLAYING: &str = "now_playing";
+/// Git activity aggregates (ADR-013 / P13-E2).
+pub const DATA_TYPE_GIT_ACTIVITY: &str = "git_activity";
 
 const V1_BROWSER_CATEGORIES: &[&str] = &[
     "work",
@@ -199,6 +202,13 @@ fn normalize_one(mut obs: Observation) -> NormalizeOutcome {
             }
             None => NormalizeOutcome::Skip,
         },
+        DATA_TYPE_GIT_ACTIVITY => match normalize_git_activity(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
         // Unknown type: pass-through unchanged.
         _ => NormalizeOutcome::Keep(obs),
     }
@@ -335,6 +345,25 @@ fn normalize_now_playing(payload: &JsonValue) -> Option<JsonValue> {
     Some(JsonValue::Object(out))
 }
 
+fn normalize_git_activity(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let activity_kind = first_nonempty_str(obj, &["activity_kind", "activityKind"])?;
+    if !is_v1_activity_kind(activity_kind) {
+        return None;
+    }
+    let mut out = Map::new();
+    out.insert("activity_kind".to_string(), json!(activity_kind));
+    if let Some(count) = first_u64(obj, &["event_count", "eventCount"]) {
+        if count >= 1 {
+            out.insert("event_count".to_string(), json!(count));
+        } else {
+            return None;
+        }
+    }
+    // Explicitly drop path / remote / branch / sha / message / diff / author / etc.
+    Some(JsonValue::Object(out))
+}
+
 fn first_i64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<i64> {
     for key in keys {
         if let Some(v) = obj.get(*key) {
@@ -437,8 +466,8 @@ mod tests {
 
     use super::{
         normalize_deduped, normalize_observations, DATA_TYPE_BROWSER_CATEGORY,
-        DATA_TYPE_CALENDAR_EVENT, DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV,
-        DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING,
+        DATA_TYPE_CALENDAR_EVENT, DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_GIT_ACTIVITY,
+        DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING,
     };
     use crate::dedupe::DedupeState;
     use crate::intake::accept_observations;
@@ -642,6 +671,54 @@ mod tests {
         let input = obs(
             DATA_TYPE_NOW_PLAYING,
             json!({ "media_kind": "audiobook", "is_playing": true }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 0);
+        assert_eq!(out.skipped_count(), 1);
+    }
+
+    #[test]
+    fn git_activity_strips_paths_remotes_and_keeps_coarse_fields() {
+        let input = obs(
+            DATA_TYPE_GIT_ACTIVITY,
+            json!({
+                "activity_kind": "commit",
+                "event_count": 2,
+                "repo_path": "/Users/me/secret-repo",
+                "remote": "git@github.com:org/secret.git",
+                "branch": "feature/leak",
+                "sha": "deadbeef",
+                "message": "do not persist",
+                "diff": "--- a/file",
+                "author": "leak@example.com",
+                "files": ["src/a.rs"]
+            }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let p = &out.observations()[0].payload;
+        assert_eq!(
+            p,
+            &json!({
+                "activity_kind": "commit",
+                "event_count": 2
+            })
+        );
+        assert!(p.get("repo_path").is_none());
+        assert!(p.get("remote").is_none());
+        assert!(p.get("branch").is_none());
+        assert!(p.get("sha").is_none());
+        assert!(p.get("message").is_none());
+        assert!(p.get("diff").is_none());
+        assert!(p.get("author").is_none());
+        assert!(p.get("files").is_none());
+    }
+
+    #[test]
+    fn git_activity_rejects_invalid_kind() {
+        let input = obs(
+            DATA_TYPE_GIT_ACTIVITY,
+            json!({ "activity_kind": "rebase", "event_count": 1 }),
         );
         let out = normalize_observations(&[input]).expect("ok");
         assert_eq!(out.len(), 0);

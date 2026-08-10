@@ -173,6 +173,36 @@ fn now_playing_contract_json_round_trip() {
     assert_eq!(again, parsed);
 }
 
+const CONTRACT_GIT_ACTIVITY_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.git",
+  "data_type": "git_activity",
+  "payload": {
+    "activity_kind": "commit",
+    "event_count": 1
+  },
+  "confidence": 0.9
+}"#;
+
+#[test]
+fn git_activity_contract_json_round_trip() {
+    use bio_spec::{validate_git_activity_payload, DATA_TYPE_GIT_ACTIVITY};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_GIT_ACTIVITY_JSON)
+        .expect("git_activity contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_GIT_ACTIVITY);
+    assert_eq!(parsed.payload["activity_kind"], json!("commit"));
+    assert_eq!(parsed.payload["event_count"], json!(1));
+    validate_git_activity_payload(&parsed.payload).expect("valid git_activity");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
 #[test]
 fn life_event_rejects_malformed_payloads() {
     let cases = [

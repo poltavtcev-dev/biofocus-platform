@@ -22,6 +22,9 @@ pub const MACOS_BROWSER_PROVIDER_ID: &str = "com.biofocus.macos.browser";
 /// Provider id for the Now Playing ambient collector (ADR-012).
 pub const MACOS_NOW_PLAYING_PROVIDER_ID: &str = "com.biofocus.macos.now_playing";
 
+/// Provider id for the Git activity collector (ADR-013).
+pub const MACOS_GIT_PROVIDER_ID: &str = "com.biofocus.macos.git";
+
 /// Storage / schema `data_type` for active window context.
 pub const CONTEXT_WINDOW_DATA_TYPE: &str = "context_window";
 
@@ -36,6 +39,9 @@ pub const BROWSER_CATEGORY_DATA_TYPE: &str = "browser_category";
 
 /// Storage / schema `data_type` for Now Playing ambient context.
 pub const NOW_PLAYING_DATA_TYPE: &str = "now_playing";
+
+/// Storage / schema `data_type` for Git activity context.
+pub const GIT_ACTIVITY_DATA_TYPE: &str = "git_activity";
 
 /// Builds privacy-safe payload: app identity only (no window title / content).
 #[must_use]
@@ -91,4 +97,18 @@ pub fn now_playing_payload(sample: &crate::now_playing_probe::NowPlayingSample) 
         "media_kind": sample.media_kind,
         "is_playing": sample.is_playing,
     })
+}
+
+/// Builds privacy-safe Git activity payload (coarse kind + optional count — no paths).
+#[must_use]
+pub fn git_activity_payload(sample: &crate::git_activity_probe::GitActivitySample) -> JsonValue {
+    match sample.event_count {
+        Some(n) if n >= 1 => json!({
+            "activity_kind": sample.activity_kind,
+            "event_count": n,
+        }),
+        _ => json!({
+            "activity_kind": sample.activity_kind,
+        }),
+    }
 }

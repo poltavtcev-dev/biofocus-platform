@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 12** (Ready **P12-E3-T1**). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **Phase 13** (Ready **P13-E2-T1**). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -73,6 +73,7 @@ Immediate Kanban = **Phase 12** (Ready **P12-E3-T1**). Below is the accepted lad
 | **9** | Done — Deterministic Recommendations (ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Suggestions) |
 | **10** | Done — Plugin wave-1 (ADR-010 Browser categories → collector → `DistractionScore`) |
 | **11** | Done — AI coaching polish (ADR-011 → packs → provider UX; interpret-only) |
-| **12** | Ambient + commercial packaging — ADR-012 ✅ → Now Playing plugin ✅ → Ready `AmbientMediaShare` + packaging runbook |
+| **12** | Done — Ambient + commercial packaging (ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook) |
+| **13** | Plugin wave-2 — ADR-013 ✅ Git activity → Ready plugin → `GitActivityRate`; IDE / weather/light / App Store deferred |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

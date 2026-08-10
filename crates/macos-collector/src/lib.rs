@@ -1,5 +1,5 @@
 //! macOS context collectors — active window + opt-in input aggregates + Calendar
-//! + opt-in Browser categories + opt-in Now Playing ambient.
+//! + opt-in Browser categories + opt-in Now Playing ambient + opt-in Git activity.
 //!
 //! Active window: metadata only (`bundle_id`, `app_name`).
 //! Input aggregates: key-down **counts/rates** only — never characters / key codes
@@ -10,6 +10,8 @@
 //! `BIOFOCUS_BROWSER_CATEGORIES=1`.
 //! Now Playing: coarse `media_kind` + `is_playing` only (no titles / lyrics). Opt-in via
 //! `BIOFOCUS_NOW_PLAYING=1`.
+//! Git activity: coarse `activity_kind` + optional `event_count` only (no paths /
+//! remotes / diffs). Opt-in via `BIOFOCUS_GIT_ACTIVITY=1`.
 
 #![cfg_attr(not(target_os = "macos"), forbid(unsafe_code))]
 // objc2 / CoreGraphics bindings require `unsafe` only inside macOS probe modules.
@@ -21,6 +23,9 @@ mod calendar_plugin;
 mod calendar_probe;
 mod calendar_stream;
 mod error;
+mod git_activity_plugin;
+mod git_activity_probe;
+mod git_activity_stream;
 mod ics;
 mod input_plugin;
 mod input_probe;
@@ -53,6 +58,16 @@ pub use calendar_stream::{
     DEFAULT_HORIZON_PAST,
 };
 pub use error::{CollectorError, CollectorResult};
+pub use git_activity_plugin::{
+    git_activity_enabled, GitActivityPlugin, DEFAULT_GIT_ACTIVITY_POLL_INTERVAL,
+    GIT_ACTIVITY_ENABLE_ENV,
+};
+pub use git_activity_probe::{
+    GitActivityProbe, GitActivitySample, ScriptedGitActivityProbe, SystemGitActivityProbe,
+};
+pub use git_activity_stream::{
+    observation_from_git_activity, spawn_git_activity_loop, GitActivityHandle,
+};
 pub use ics::{parse_ics_events, parse_ics_file};
 pub use input_plugin::{
     input_aggregates_enabled, KeystrokeAggregatePlugin, DEFAULT_AGGREGATE_WINDOW, ENABLE_ENV,
@@ -73,11 +88,12 @@ pub use now_playing_stream::{
     observation_from_now_playing, spawn_now_playing_loop, NowPlayingHandle,
 };
 pub use payload::{
-    browser_category_payload, calendar_event_payload, context_window_payload, keystrokes_payload,
-    now_playing_payload, BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE,
-    CONTEXT_WINDOW_DATA_TYPE, KEYSTROKES_DATA_TYPE, MACOS_BROWSER_PROVIDER_ID,
-    MACOS_CALENDAR_PROVIDER_ID, MACOS_CONTEXT_PROVIDER_ID, MACOS_INPUT_PROVIDER_ID,
-    MACOS_NOW_PLAYING_PROVIDER_ID, NOW_PLAYING_DATA_TYPE,
+    browser_category_payload, calendar_event_payload, context_window_payload, git_activity_payload,
+    keystrokes_payload, now_playing_payload, BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE,
+    CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE, KEYSTROKES_DATA_TYPE,
+    MACOS_BROWSER_PROVIDER_ID, MACOS_CALENDAR_PROVIDER_ID, MACOS_CONTEXT_PROVIDER_ID,
+    MACOS_GIT_PROVIDER_ID, MACOS_INPUT_PROVIDER_ID, MACOS_NOW_PLAYING_PROVIDER_ID,
+    NOW_PLAYING_DATA_TYPE,
 };
 pub use plugin::{ActiveWindowPlugin, DEFAULT_POLL_INTERVAL};
 pub use probe::{FrontmostApp, FrontmostProbe, SystemFrontmostProbe};

@@ -2,8 +2,8 @@
 //!
 //! Covers emit Observation for `context_window`, opt-in `keystrokes`,
 //! synthetic Calendar → `calendar_event`, opt-in Browser → `browser_category`,
-//! and opt-in Now Playing → `now_playing`, plus stop/idle: after `stop_stream`
-//! probe work must not keep ticking.
+//! opt-in Now Playing → `now_playing`, and opt-in Git activity → `git_activity`,
+//! plus stop/idle: after `stop_stream` probe work must not keep ticking.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -14,10 +14,12 @@ use ingest::spawn_persist_worker;
 use macos_collector::{
     spawn_calendar_loop, ActiveWindowPlugin, BrowserCategoryPlugin, BrowserCategoryProbe,
     BrowserCategorySample, CalendarEvent, CalendarPlugin, CalendarProbe, FrontmostApp,
-    FrontmostProbe, IcsFileCalendarProbe, InputCountProbe, KeystrokeAggregatePlugin,
-    NowPlayingPlugin, NowPlayingProbe, NowPlayingSample, ScriptedBrowserProbe,
-    ScriptedCalendarProbe, ScriptedInputProbe, ScriptedNowPlayingProbe, BROWSER_CATEGORY_DATA_TYPE,
-    CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, KEYSTROKES_DATA_TYPE, NOW_PLAYING_DATA_TYPE,
+    FrontmostProbe, GitActivityPlugin, GitActivityProbe, GitActivitySample, IcsFileCalendarProbe,
+    InputCountProbe, KeystrokeAggregatePlugin, NowPlayingPlugin, NowPlayingProbe,
+    NowPlayingSample, ScriptedBrowserProbe, ScriptedCalendarProbe, ScriptedGitActivityProbe,
+    ScriptedInputProbe, ScriptedNowPlayingProbe, BROWSER_CATEGORY_DATA_TYPE,
+    CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE,
+    KEYSTROKES_DATA_TYPE, NOW_PLAYING_DATA_TYPE,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::observation_channel;
@@ -128,6 +130,27 @@ impl CountingNowPlayingProbe {
 
 impl NowPlayingProbe for CountingNowPlayingProbe {
     fn current(&self) -> macos_collector::CollectorResult<Option<NowPlayingSample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
+    }
+}
+
+struct CountingGitActivityProbe {
+    sample: GitActivitySample,
+    polls: AtomicUsize,
+}
+
+impl CountingGitActivityProbe {
+    fn new(sample: GitActivitySample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl GitActivityProbe for CountingGitActivityProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<GitActivitySample>> {
         self.polls.fetch_add(1, Ordering::SeqCst);
         Ok(Some(self.sample.clone()))
     }
@@ -526,5 +549,71 @@ async fn now_playing_stop_halts_periodic_probe_work() {
         probe.polls.load(Ordering::SeqCst),
         after_stop,
         "now_playing probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn git_activity_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedGitActivityProbe::new());
+    probe.push(Some(GitActivitySample {
+        activity_kind: "commit".into(),
+        event_count: Some(2),
+    }));
+
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, GIT_ACTIVITY_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["activity_kind"], "commit");
+    assert_eq!(listed[0].payload["event_count"], 2);
+    assert!(listed[0].payload.get("repo_path").is_none());
+    assert!(listed[0].payload.get("remote").is_none());
+    assert!(listed[0].payload.get("branch").is_none());
+    assert!(listed[0].payload.get("sha").is_none());
+    assert!(listed[0].payload.get("message").is_none());
+    assert!(listed[0].payload.get("diff").is_none());
+    assert!(listed[0].payload.get("author").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn git_activity_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingGitActivityProbe::new(GitActivitySample {
+        activity_kind: "sync".into(),
+        event_count: Some(1),
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "git_activity probe must not keep polling after stop_stream (no busy-loop)"
     );
 }

@@ -31,4 +31,8 @@ pub enum SpecError {
     /// Now Playing Observation payload failed contract validation (ADR-012).
     #[error("invalid now playing payload: {reason}")]
     InvalidNowPlayingPayload { reason: String },
+
+    /// Git activity Observation payload failed contract validation (ADR-013).
+    #[error("invalid git activity payload: {reason}")]
+    InvalidGitActivityPayload { reason: String },
 }
