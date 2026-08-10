@@ -117,6 +117,22 @@
 - **Explanation factors:** when ≥1 active-playing sample — per-kind shares among playing samples: `music` (“Music playing”), `podcast` (“Podcast playing”), `other` (“Other media playing”); shares sum to 1.0. Paused-only closed-set → value 0, empty factors.
 - **DAG:** независимый узел; `feature_engine::register_ambient_v1` / `register_catalog_v1`.
 
+### 1.10 `GitActivityRate`
+- **Goal:** Calm personal **version-control cadence** in-window from coarse git activity. Self-tracking only — “VCS cadence in this window” — **not** “you commit too little”, **not** workplace / manager monitoring, and **not** a clinical claim. **Distinct from** `DistractionScore` (does not merge or redefine Browser math).
+- **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR / DistractionScore / AmbientMediaShare.
+- **Inputs (required):** `git_activity` Observations (`activity_kind` + optional `event_count`) with ≥1 **countable** kind in the window: `commit` / `checkout` / `sync` / `other`.
+- **Formula Strategy (v1):** Sum of event counts over the window:
+  - For each countable Observation, take `event_count` if present and ≥ 1; otherwise treat as **1**.
+  - Ignore `idle` / `unknown` for the sum (they do not inflate the rate).
+  - Value = sum → **events per 15-minute window** (scalar ≥ 0).
+- **Omit policy:** empty window, no `git_activity`, or **only-`idle` / only-`unknown`** (no countable kinds) → **omit** Feature (soft-fail OS probe often emits nothing / unknown — Feature waits for countable kinds; works on scripted / HTTP-ingest fixtures).
+- **Output:** Float (≥ 0.0).
+- **Units:** coarse git events per 15-minute window.
+- **Provenance:** Observation IDs of **countable** `git_activity` rows in the window.
+- **Confidence (ADR-007):** single family (`git_activity`); when emitted `confidence = mean(evidence Observation.confidence)` over countable rows.
+- **Explanation factors:** when ≥1 countable event — per-kind shares of summed counts: `commit` (“Commits”), `checkout` (“Checkouts”), `sync` (“Sync events”), `other` (“Other VCS events”); shares sum to 1.0.
+- **DAG:** независимый узел; `feature_engine::register_git_v1` / `register_catalog_v1`.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
@@ -130,10 +146,9 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SleepDebt` | Sleep shortfall vs baseline | Sleep Observations | P7 |
 | `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 |
 | `NotificationPressure` | Interruption intensity | notification Observations | P10 (deferred — not ADR-010 wave-1) |
-| `GitActivityRate` | Personal VCS cadence in-window (coarse git events) | `git_activity` Observations (ADR-013) | P13-E3 |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `ActivityBalance` | Movement vs sedentary | steps / workout Life Events | P6–P7 |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; others may omit until wired).

@@ -16,7 +16,7 @@
 - **Phase 10:** **Done** (2026-08-10) — Plugin wave-1; E1–E3 (ADR-010 Browser → `BrowserCategoryPlugin` → `DistractionScore`). Branch: `phase/10-plugin-wave-1` (PR after freeze).
 - **Phase 11:** **Done** (2026-08-10) — AI coaching polish; E1–E3 (ADR-011 → `build_report_with_pack` / `biofocus.default` → `get_local_llm_status` + pack-aware Report UX). Branch: `phase/11-ai-coaching-polish` (PR after freeze).
 - **Phase 12:** **Done** (2026-08-10) — Ambient + commercial packaging; ADR-012 → Now Playing (`BIOFOCUS_NOW_PLAYING`) → `AmbientMediaShare` (`register_ambient_v1`) + `docs/18-packaging-runbook.md`. Branch: `phase/12-ambient-packaging` (PR after freeze).
-- **Phase 13:** **Opened** (2026-08-10) — Plugin wave-2 = **Git activity** (ADR-013 ✅; IDE deferred); Ready **P13-E2-T1** (`git_activity` / `BIOFOCUS_GIT_ACTIVITY` → later `GitActivityRate`). Branch: `phase/13-plugin-wave-2` (PR after freeze). Weather/light + App Store packaging product deferred.
+- **Phase 13:** **Opened** (2026-08-10) — Plugin wave-2 = **Git activity**; ADR-013 ✅ · Git plugin ✅ (`BIOFOCUS_GIT_ACTIVITY`; OS probe soft-fails without path-allowlist ADR); Ready **P13-E3-T1** (`GitActivityRate`). Branch: `phase/13-plugin-wave-2` (PR after freeze). IDE / weather/light / App Store packaging deferred.
 
 ## Core Decisions
 - Local First Architecture

@@ -29,17 +29,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P13-E2-T1** |
+| **Ready** | **P13-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **Phase 12** (E1–E3) · **PM-GATE-POST-P12** · **P13-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **Phase 12** (E1–E3) · **PM-GATE-POST-P12** · **P13-E1-T1** · **P13-E2-T1** |
 
-**Epic status:** P13-E1 ✅ · P13-E2 ⬜ (T1 Ready) · P13-E3 ⬜
+**Epic status:** P13-E1 ✅ · P13-E2 ✅ · P13-E3 ⬜ (T1 Ready)
 
-**Phase 13 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-013 Git locked · Ready Git activity plugin
+**Phase 13 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-013 + Git plugin shipped · Ready `GitActivityRate`
 
 **Рекомендуемый порядок:**  
-~~P13-E1-T1~~ → **P13-E2-T1** → P13-E3-T1
+~~P13-E1-T1~~ → ~~P13-E2-T1~~ → **P13-E3-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -47,17 +47,17 @@
 
 ### Active assignment
 
-**Ready now:** **P13-E2-T1** — Git activity plugin (`com.biofocus.macos.git` / `git_activity` / `BIOFOCUS_GIT_ACTIVITY`). Brief: `docs/handoffs/P13-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P13-E3-T1** — Catalog Feature `GitActivityRate`. Brief: `docs/handoffs/P13-E3-T1-pm-brief.md`. Role: **Dev**.
 
-**Closed:** P13-E1-T1 (QA Pass, 2026-08-10) — ADR-013: wave-2 = **Git activity aggregates** (not IDE); E3 Feature = **`GitActivityRate`**; no schema. Epic **P13-E1** ✅. Evidence: `docs/handoffs/P13-E1-T1-qa-to-pm.md`.
+**Closed:** P13-E2-T1 (QA Pass, 2026-08-10) — `GitActivityPlugin` / `BIOFOCUS_GIT_ACTIVITY` / `validate_git_activity_payload`; production OS probe soft-fails idle without path-allowlist ADR (by design); scripted probe covers emit→persist. Epic **P13-E2** ✅. Evidence: `docs/handoffs/P13-E2-T1-qa-to-pm.md`.
+
+**Closed:** P13-E1-T1 (QA Pass, 2026-08-10) — ADR-013: wave-2 = **Git activity aggregates**; E3 Feature = **`GitActivityRate`**; no schema. Epic **P13-E1** ✅. Evidence: `docs/handoffs/P13-E1-T1-qa-to-pm.md`.
 
 **Closed gate:** PM-GATE-POST-P12 (2026-08-10) — chose plugin wave-2 over weather/light and App Store packaging. Evidence: `docs/handoffs/PM-GATE-POST-P12-pm-brief.md`.
 
-**Closed previous:** Phase 12 (E1–E3 Done, 2026-08-10) — ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook. Branch: `phase/12-ambient-packaging` (cluster PR after freeze).
+**Next after Pass:** close Epic **P13-E3** + **Phase 13** Kanban (then next horizon via separate PM gate).
 
-**Next after Pass:** Ready **P13-E3-T1** (`GitActivityRate`).
-
-**Ops note:** **PR freeze until 2026-09-01** — Phase 13 cluster on `phase/13-plugin-wave-2`; local commits OK; one cluster PR **after** freeze. Locked names: `git_activity`, `com.biofocus.macos.git`, `BIOFOCUS_GIT_ACTIVITY`, `GitActivityRate`.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 13 cluster on `phase/13-plugin-wave-2`; local commits OK; one cluster PR **after** freeze. Public surface: `GitActivityPlugin`, `BIOFOCUS_GIT_ACTIVITY`, `validate_git_activity_payload`, ingest/normalize `git_activity`.
 
 ---
 
@@ -83,6 +83,8 @@
 | :--- | :--- | :---: | :--- | :--- | :--- |
 | **P13-E2-T1** | Git activity plugin | Dev | macos-collector / plugin-sdk + host | See `P13-E2-T1-pm-brief.md` | P13-E1-T1 |
 
+**P13-E2 shipped:** `GitActivityPlugin` (`com.biofocus.macos.git`); opt-in `BIOFOCUS_GIT_ACTIVITY`; `validate_git_activity_payload`; pipeline normalize strips forbidden keys; idle-safe + stop joins; production OS probe soft-fails idle without path-allowlist ADR (by design) — scripted probe covers emit→persist. QA Pass 2026-08-10.
+
 **Out of scope (E2):** `GitActivityRate` / Feature DAG (→ **P13-E3**); IDE collector; new SQLite schema / path allowlist table; PR during freeze.
 
 ---
@@ -92,9 +94,9 @@
 
 | ID | Task | Role | Modules | AC (summary) | Depends |
 | :--- | :--- | :---: | :--- | :--- | :--- |
-| **P13-E3-T1** | `GitActivityRate` catalog Feature | Dev | feature-engine + pipeline + docs | Shaped by ADR-013 | P13-E2-T1 |
+| **P13-E3-T1** | `GitActivityRate` catalog Feature | Dev | feature-engine + pipeline + docs | See `P13-E3-T1-pm-brief.md` | P13-E2-T1 |
 
-**Out of scope (E3):** Dashboard redesign; Insights/Recommendations for GitActivityRate unless separately scoped; workplace surveillance framing; PR during freeze.
+**Out of scope (E3):** Dashboard redesign; Insights/Recommendations for GitActivityRate unless separately scoped; workplace surveillance framing; path-allowlist ADR; PR during freeze.
 
 ---
 
@@ -292,9 +294,9 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 ## Sprint 25–26 — Queue
 
 1. ~~P13-E1-T1 — ADR-013 Plugin wave-2 (Git)~~ ✅ Done  
-2. **P13-E2-T1** — Git activity plugin ← **Ready**  
-3. P13-E3-T1 — `GitActivityRate` catalog Feature  
+2. ~~P13-E2-T1 — Git activity plugin~~ ✅ Done  
+3. **P13-E3-T1** — `GitActivityRate` catalog Feature ← **Ready**
 
 **Git:** `phase/13-plugin-wave-2` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P13-E2-T1-pm-brief.md`.  
-**Deferred (not Phase 13):** IDE collector · weather/light ambient · App Store packaging product · NotificationPressure.
+**Brief:** `docs/handoffs/P13-E3-T1-pm-brief.md`.  
+**Deferred (not Phase 13):** IDE collector · weather/light ambient · App Store packaging product · NotificationPressure · path-allowlist table.

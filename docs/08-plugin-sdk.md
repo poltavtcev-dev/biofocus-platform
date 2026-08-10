@@ -114,7 +114,7 @@ Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packa
 
 | Item | Value |
 | :--- | :--- |
-| Status | **Shipped** (collector P13-E2; Feature `GitActivityRate` → **P13-E3**) |
+| Status | **Shipped** (collector P13-E2; Feature `GitActivityRate` P13-E3) |
 | Crate | `crates/macos-collector` |
 | Plugin id | `com.biofocus.macos.git` |
 | `data_type` | `git_activity` |
@@ -124,7 +124,7 @@ Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packa
 | Poll | On activity change or rare ≥5s; no busy-loop; `stop_stream` joins |
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
 | Validation | `bio_spec::validate_git_activity_payload`; ingest `invalid_git_activity` |
-| E3 Feature | `GitActivityRate` (catalog) |
+| E3 Feature | `GitActivityRate` (catalog §1.10; `register_git_v1` / `register_catalog_v1`) |
 
 IDE collectors remain **deferred** (no additive privacy-safe session kind beyond `context_window` in v1 — ADR-013). Weather / light ambient and App Store packaging product remain deferred. No plugin marketplace crate. Personal self-tracking only — not employee / workplace git surveillance.
 
