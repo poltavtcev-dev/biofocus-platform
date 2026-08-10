@@ -158,7 +158,7 @@ Example (non-empty):
 
 | Field | Type | Notes |
 | :--- | :--- | :--- |
-| `features[]` | object | Windowed Features (`FocusScore`, `StressIndex`, `FatigueIndex`, `ContextSwitchRate`, `RecoveryScore`, …) |
+| `features[]` | object | Windowed Features (`FocusScore`, `StressIndex`, `FatigueIndex`, `ContextSwitchRate`, `RecoveryScore`, `DistractionScore`, …) |
 | `features[].featureId` | string | Stable Feature name |
 | `features[].timeWindow` | `{ start, end }` | Unix seconds UTC |
 | `features[].value` | number \| object | Scalar `f64` or structured JSON |

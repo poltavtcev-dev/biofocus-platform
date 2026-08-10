@@ -40,8 +40,8 @@
 
 - [ ] **Phase 10: Plugin wave-1** (Sprint 19–20) — opened 2026-08-10 (ADR-010 **Browser categories**)
   - ADR-010 wave-1 source + Observation contract — **P10-E1 Done** (2026-08-10).
-  - Browser categories collector plugin — **P10-E2 Ready** (T1).
-  - `DistractionScore` catalog Feature — **P10-E3** (queued after E2).
+  - Browser categories collector plugin — **P10-E2 Done** (2026-08-10).
+  - `DistractionScore` catalog Feature — **P10-E3 Ready** (T1).
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
@@ -59,6 +59,6 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open later phases via PM 
 **Phase 7:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P7-*-qa-to-pm.md` · branch `phase/7-trust-layer` (PR after freeze)  
 **Phase 8:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P8-*-qa-to-pm.md` · branch `phase/8-pattern-discovery` (PR after freeze)  
 **Phase 9:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P9-*-qa-to-pm.md` · branch `phase/9-recommendations` (PR after freeze)  
-**Phase 10:** Opened 2026-08-10 — ADR-010 Done (Browser) · Ready **P10-E2-T1** · branch `phase/10-plugin-wave-1` · **PR freeze until 2026-09-01**  
+**Phase 10:** Opened 2026-08-10 — ADR-010 + collector Done · Ready **P10-E3-T1** (`DistractionScore`) · branch `phase/10-plugin-wave-1` · **PR freeze until 2026-09-01**  
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

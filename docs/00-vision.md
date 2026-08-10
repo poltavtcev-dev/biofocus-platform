@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 10** (Ready **P10-E2-T1** after ADR-010). Below is the accepted ladder — open later phases via PM gate, not all at once.
+Immediate Kanban = **Phase 10** (Ready **P10-E3-T1**). Below is the accepted ladder — open later phases via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |

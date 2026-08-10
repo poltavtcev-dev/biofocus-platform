@@ -27,17 +27,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P10-E2-T1** |
+| **Ready** | **P10-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **P10-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **P10-E1-T1** · **P10-E2-T1** |
 
-**Epic status:** P10-E1 ✅ · P10-E2 ⬜ (T1 Ready) · P10-E3 ⬜
+**Epic status:** P10-E1 ✅ · P10-E2 ✅ · P10-E3 ⬜ (T1 Ready)
 
-**Phase 10 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-010 recorded (Browser categories)
+**Phase 10 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-010 + Browser collector shipped
 
 **Рекомендуемый порядок:**  
-~~P10-E1-T1~~ → **P10-E2-T1** → P10-E3-T1
+~~P10-E1-T1~~ → ~~P10-E2-T1~~ → **P10-E3-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -45,13 +45,15 @@
 
 ### Active assignment
 
-**Ready now:** **P10-E2-T1** — Browser categories collector plugin (`browser_category`). Brief: `docs/handoffs/P10-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P10-E3-T1** — Catalog Feature `DistractionScore`. Brief: `docs/handoffs/P10-E3-T1-pm-brief.md`. Role: **Dev**.
 
-**Closed:** P10-E1-T1 (QA Pass, 2026-08-10) — ADR-010 Browser categories + Observation contract; Epic **P10-E1** ✅. Evidence: `docs/handoffs/P10-E1-T1-qa-to-pm.md`. No schema approve required.
+**Closed:** P10-E2-T1 (QA Pass, 2026-08-10) — `BrowserCategoryPlugin` + opt-in `BIOFOCUS_BROWSER_CATEGORIES`; Epic **P10-E2** ✅. Evidence: `docs/handoffs/P10-E2-T1-qa-to-pm.md`.
 
-**Next after Pass:** P10-E3-T1 (`DistractionScore` catalog Feature).
+**Closed:** P10-E1-T1 (QA Pass, 2026-08-10) — ADR-010 Browser categories; Epic **P10-E1** ✅. Evidence: `docs/handoffs/P10-E1-T1-qa-to-pm.md`.
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 10 cluster on `phase/10-plugin-wave-1`; local commits OK; one cluster PR **after** freeze (or when user lifts it).
+**Next after Pass:** close Epic **P10-E3** + **Phase 10** Kanban (then Phase 11 via separate PM gate).
+
+**Ops note:** **PR freeze until 2026-09-01** — Phase 10 cluster on `phase/10-plugin-wave-1`; local commits OK; one cluster PR **after** freeze (or when user lifts it). Dogfood note: live OS probe often emits `category: "unknown"` until richer non-persisting mapping exists — Feature must tolerate thin/`unknown` windows.
 
 ---
 
@@ -73,16 +75,9 @@
 
 | ID | Task | Role | Modules | Depends | AC (summary) | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P10-E2-T1** | Implement Browser categories plugin (ADR-010) | Dev | plugin-sdk + macos-collector (or adapter) + desktop host wire | P10-E1-T1 | See AC below | **Ready** |
+| **P10-E2-T1** | Implement Browser categories plugin (ADR-010) | Dev | plugin-sdk + macos-collector (or adapter) + desktop host wire | P10-E1-T1 | Plugin + opt-in + tests | **Done** (2026-08-10) |
 
-**AC — P10-E2-T1:**
-1. `BioFocusPlugin` id `com.biofocus.macos.browser`; Capability for `browser_category`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1` (default **off**).
-2. Emits Observations per ADR-010 / `docs/07-contracts.md`: coarse `category` (+ optional `browser_bundle_id`); **no** full URLs / page titles / content in payload or logs.
-3. Injectable probe (mock in tests); real macOS probe may be stub/soft-fail if OS API unavailable — must still compile and idle safely; emit on change or rare ≥5s poll; `stop_stream` joins work (no busy-loop).
-4. Same bounded Observation channel → persist worker (existing path).
-5. Docs finalized (not “planned only”): `07-contracts`, `08-plugin-sdk`, `10-security`, `12-development`.
-6. Unit and/or integration tests with mock probe; after `stop_stream`, emissions freeze.
-7. Handoff: `docs/handoffs/P10-E2-T1-dev-to-qa.md`.
+**P10-E2 shipped:** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`); `BIOFOCUS_BROWSER_CATEGORIES=1`; emit→persist; idle-safe; docs 07/08/10/12. QA Pass 2026-08-10.
 
 ---
 
@@ -91,13 +86,16 @@
 
 | ID | Task | Role | Modules | Depends | AC (summary) | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P10-E3-T1** | Catalog Feature `DistractionScore` | Dev | feature-engine + pipeline normalize + catalog docs | P10-E2-T1 | Formula + ADR-007 confidence in `06-feature-catalog`; DAG register; tests; calm copy; no new SQLite; handoff | Queued |
+| **P10-E3-T1** | Catalog Feature `DistractionScore` | Dev | feature-engine + pipeline normalize + catalog docs | P10-E2-T1 | See AC below | **Ready** |
 
-**AC — P10-E3-T1 (preview; refine after E2):**
-1. Catalog entry documented (name, window/step, inputs incl. `browser_category` ± CSR, provenance, confidence).
-2. `feature-engine` node registered; pipeline normalizes `browser_category` if needed.
-3. Synthetic unit tests; Feature on existing snapshot path when inputs present (no mandatory new Dashboard chrome unless AC extended).
-4. Handoff: `docs/handoffs/P10-E3-T1-dev-to-qa.md`.
+**AC — P10-E3-T1:**
+1. Move **`DistractionScore`** from `docs/06-feature-catalog.md` § Planned → §1 with formula / window / step / units / inputs / provenance + ADR-007 confidence. Inputs: `browser_category` Observations; optional combine with `ContextSwitchRate` if it improves the calm fragmentation signal (document either way).
+2. Pipeline: normalize `browser_category` (aliases / strip forbidden keys `url`/`title`/`href`/content if present) when needed — collector already clean, but Core must not trust UI/ingest extras.
+3. Register node in `register_catalog_v1` (or helper wired into it); Feature appears on existing snapshot path when inputs present.
+4. Empty / only-`unknown` / thin windows → omit Feature or emit with clearly lower confidence (document policy); no busy-loop; no new SQLite.
+5. Unit tests: synthetic rich categories → emit; empty/`unknown`-only → omit or low confidence per policy; calm non-clinical framing (not ADHD / “you are distracted” diagnosis).
+6. Optional: `ExplanationFactor`s if weighted components are clear (reuse P7-E2 shape).
+7. Handoff: `docs/handoffs/P10-E3-T1-dev-to-qa.md`.
 
 **Out of Phase 10:** NotificationPressure (unless ADR folds a thin path); ambient music/weather/light (P12+); AI coaching polish (P11); second wave-1 source (defer to later sprint); PR before 2026-09-01.
 
@@ -233,8 +231,8 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 ## Sprint 19–20 — Queue
 
 1. ~~P10-E1-T1 — ADR-010 Plugin wave-1 source + Observation contract~~ ✅ Done  
-2. **P10-E2-T1** — Browser categories collector plugin ← **Ready**  
-3. P10-E3-T1 — `DistractionScore` catalog Feature (queued)
+2. ~~P10-E2-T1 — Browser categories collector plugin~~ ✅ Done  
+3. **P10-E3-T1** — `DistractionScore` catalog Feature ← **Ready**
 
 **Git:** `phase/10-plugin-wave-1` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P10-E2-T1-pm-brief.md`.
+**Brief:** `docs/handoffs/P10-E3-T1-pm-brief.md`.

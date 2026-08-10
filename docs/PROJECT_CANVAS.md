@@ -42,7 +42,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 7 (Done):** Trust layer — ADR-007 confidence → Explanation factors → `RecoveryScore`.
 - **Phase 8 (Done 2026-08-08):** Pattern Discovery v1 — ADR-008 **recompute-on-read** → `focus_vs_recent_baseline_v1` → calm Dashboard Insights surface.
 - **Phase 9 (Done 2026-08-08):** Deterministic Recommendations — ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Dashboard Suggestions.
-- **Phase 10 (Opened 2026-08-10):** Plugin wave-1 — ADR-010 **Browser categories** ✅ → collector (Ready **P10-E2-T1**) → `DistractionScore`. Branch: `phase/10-plugin-wave-1`.
+- **Phase 10 (Opened 2026-08-10):** Plugin wave-1 — ADR-010 Browser ✅ → collector ✅ → Ready **P10-E3-T1** (`DistractionScore`). Branch: `phase/10-plugin-wave-1`.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -114,7 +114,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 10** (Ready **P10-E2-T1**). Sources: `/docs/14-roadmap.md`, `/docs/00-vision.md` §7, `/docs/SPRINT_ROADMAP.md`.
+Immediate Kanban = **Phase 10** (Ready **P10-E3-T1**). Sources: `/docs/14-roadmap.md`, `/docs/00-vision.md` §7, `/docs/SPRINT_ROADMAP.md`.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -123,7 +123,7 @@ Immediate Kanban = **Phase 10** (Ready **P10-E2-T1**). Sources: `/docs/14-roadma
 | **7** | Feature confidence + Explanation factors + RecoveryScore — **done** |
 | **8** | Pattern Discovery v1 (ADR-008 + baseline + Dashboard) — **done** |
 | **9** | Deterministic Recommendations — **done** |
-| **10** | Plugin wave-1 (Browser categories / ADR-010) — **active** (P10-E2 Ready) |
+| **10** | Plugin wave-1 (Browser → DistractionScore) — **active** (P10-E3 Ready) |
 | **11** | AI coaching polish (prompts / providers UX) |
 | **12+** | Ambient sources + commercial packaging |
 

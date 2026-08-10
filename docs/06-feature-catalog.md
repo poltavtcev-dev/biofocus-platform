@@ -82,6 +82,24 @@
 - **Explanation factors (P7-E3):** when emitted, factors for present components — `hrv` (“Heart-rate variability”), `heart_rate` (“Heart rate”); `share = catalog_weight / sum(present weights)` (shares sum to 1.0). Calm input composition only.
 - **DAG:** независимый узел; `feature_engine::register_recovery_v1` / `register_catalog_v1`. Distinct from schedule `RecoveryBetweenMeetings`.
 
+### 1.8 `DistractionScore`
+- **Goal:** Calm proxy for **context fragmentation** from in-browser category mix (and optional app switching). Personal observation of category churn / mix — **not** a clinical ADHD diagnosis and **not** a “you are distracted” judgment.
+- **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus/CSR.
+- **Inputs (required):** `browser_category` Observations with ≥1 **non-`unknown`** coarse label in the window (`work` / `communication` / `entertainment` / `reference` / `shopping`).
+- **Inputs (optional):** upstream `ContextSwitchRate` for the same window — documented as improving the signal when app switching co-occurs with browser fragmentation (CSR alone is insufficient for in-browser mix).
+- **Formula Strategy (v1):** Weighted (renormalized if CSR absent):
+  - **Category mix (0.55):** equal mean of label weights — `work` 10, `reference` 20, `communication` 45, `shopping` 75, `entertainment` 90 (`unknown` excluded from mix).
+  - **Category churn (0.25):** consecutive label changes (incl. `unknown`) → `min(100, switches × 25)`.
+  - **CSR (0.20, optional):** `min(100, ContextSwitchRate × 50)`.
+  - Output clamped 0–100. Higher ≈ more fragmented browser/context mix in-window.
+- **Omit policy:** empty window, no `browser_category`, or **only-`unknown`** thin windows → **omit** Feature (OS probe without URL mapping often emits `unknown` — Feature waits for closed-set labels / richer mapping).
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless score.
+- **Provenance:** Observation IDs of `browser_category` in the window.
+- **Confidence (ADR-007):** expected slots = 2 (browser / CSR); `confidence = coverage × mean(evidence Observation.confidence)`. Browser-only → lower confidence (coverage 0.5).
+- **Explanation factors:** when emitted — `browser_mix` (“Browser category mix”), `category_churn` (“Category changes”), optional `app_switches` (“App switching”); shares sum to 1.0.
+- **DAG:** depends on `ContextSwitchRate`; `feature_engine::register_distraction_v1` / `register_catalog_v1` (after `register_focus_v1`).
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
@@ -95,10 +113,9 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SleepDebt` | Sleep shortfall vs baseline | Sleep Observations | P7 |
 | `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 |
 | `NotificationPressure` | Interruption intensity | notification Observations | P10 (deferred — not ADR-010 wave-1) |
-| `DistractionScore` | Context fragmentation (calm; not clinical) | `browser_category` Observations (+ optional CSR) — **ADR-010 wave-1 → P10-E3** | P10 |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `ActivityBalance` | Movement vs sedentary | steps / workout Life Events | P6–P7 |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; others may omit until wired).
