@@ -313,12 +313,34 @@ let _ = list_prompt_packs(); // in-process registry (v1: default only)
 | `list_prompt_packs` / `default_prompt_pack` | In-process registry helpers. |
 | `ReportEngineError::UnknownPromptPack` | Typed miss for id/version. |
 
-Phase 4 `build_report(features, insights)` remains for existing host until **P11-E3** wires pack-aware Report flow. Provider UX (Dashboard status / pack picker) → **P11-E3**.
+Desktop host (**P11-E3-T1**) uses `build_report_with_pack` with default pack `biofocus.default` @ `1` inside `generate_report`. Phase 4 `build_report(features, insights)` remains available for Core callers that do not need Recommendations / packs.
 
-### `generate_report` (P4-E3-T3)
+### `get_local_llm_status` (P11-E3-T1)
+
+- **Invoke:** `invoke("get_local_llm_status")` — config-only provider status. Safe on Dashboard open / soft refresh.
+- **Purpose:** Calm `disabled` / `ready` / `error` reflecting host env (`BIOFOCUS_LOCAL_LLM*`). **No** HTTP probe, **no** interpret, **no** secrets/tokens, **no** SQLite.
+- Does **not** generate a report. Interpretation still happens only via explicit `generate_report`.
+
+```json
+{
+  "status": "disabled",
+  "detail": "Local AI is optional and currently off.",
+  "packId": "biofocus.default",
+  "packVersion": "1"
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `status` | string | `"disabled"` \| `"ready"` \| `"error"` |
+| `detail` | string | Calm one-liner for Dashboard |
+| `model` | string? | Present when `ready` (model id — not a secret) |
+| `packId` / `packVersion` | string | Default pack used by `generate_report` |
+
+### `generate_report` (P4-E3-T3 / P11-E3-T1)
 
 - **Invoke:** `invoke("generate_report")` — **explicit user action only** (Dashboard «Generate report»). Never on app / Dashboard open or soft poll.
-- **Purpose:** Offline `build_report` from cached Feature snapshot + evaluate-on-read Insights; optional `interpret_report` when `BIOFOCUS_LOCAL_LLM` is enabled on the host process.
+- **Purpose:** Offline `build_report_with_pack("biofocus.default", "1", …)` from cached Feature snapshot + evaluate-on-read Insights + Recommendations; optional `interpret_report` when `BIOFOCUS_LOCAL_LLM` is enabled on the host process.
 - **UI ↛ SQLite / Core crates.** Soft-fails LLM errors into `llmStatus` so markdown still returns. When disabled: no network.
 
 ```json
@@ -331,7 +353,7 @@ Phase 4 `build_report(features, insights)` remains for existing host until **P11
 
 | Field | Type | Notes |
 | :--- | :--- | :--- |
-| `markdown` | string | Deterministic offline report |
+| `markdown` | string | Deterministic offline report (default pack) |
 | `llmPrompt` | string | Prompt for optional local interpret |
 | `interpretation` | string? | Present when `llmStatus == "ok"` |
 | `llmStatus` | string | `"disabled"` \| `"ok"` \| `"error"` \| `"timeout"` |

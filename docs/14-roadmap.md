@@ -45,8 +45,8 @@
 
 - [ ] **Phase 11: AI coaching polish** (Sprint 21–22) — opened 2026-08-10
   - ADR-011 prompt packs + provider UX boundaries — **P11-E1 Done** (2026-08-10).
-  - Versioned prompt packs in `report-engine` — **P11-E2 Ready** (T1).
-  - Local LLM provider UX + pack-aware Report flow — **P11-E3** (queued).
+  - Versioned prompt packs in `report-engine` — **P11-E2 Done** (2026-08-10).
+  - Local LLM provider UX + pack-aware Report flow — **P11-E3 Ready** (T1).
 
 ### Horizon (accepted vision ladder — not Kanban-Ready yet)
 
@@ -64,7 +64,7 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open later phases via PM 
 **Phase 8:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P8-*-qa-to-pm.md` · branch `phase/8-pattern-discovery` (PR after freeze)  
 **Phase 9:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P9-*-qa-to-pm.md` · branch `phase/9-recommendations` (PR after freeze)  
 **Phase 10:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P10-*-qa-to-pm.md` · branch `phase/10-plugin-wave-1` (PR after freeze)  
-**Phase 11:** Opened 2026-08-10 — ADR-011 Done · Ready **P11-E2-T1** · branch `phase/11-ai-coaching-polish` (PR after freeze)
-**Next Kanban:** P11-E2-T1 packs → E3 provider UX · **PR freeze until 2026-09-01**
+**Phase 11:** Opened 2026-08-10 — ADR-011 + packs Done · Ready **P11-E3-T1** · branch `phase/11-ai-coaching-polish` (PR after freeze)
+**Next Kanban:** P11-E3-T1 provider UX · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

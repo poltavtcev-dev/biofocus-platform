@@ -42,6 +42,14 @@ rows show a calm category label (`Pattern` / `Focus` / `Stress`); suggestion
 rows use Core title/suggestion as returned (optional personal hints — not
 medical advice; no clinical UI chrome).
 
+Report slot (P4-E3-T3 / P11-E3-T1): calm **Local AI** provider status via
+`get_local_llm_status` (`disabled` / `ready` / `error` from host env — no HTTP
+probe, no secrets). Explicit **Generate report** → `generate_report` builds
+offline markdown through pack `biofocus.default` @ `1` (Features + Insights +
+Recommendations) and optionally interprets when `BIOFOCUS_LOCAL_LLM=1`. Soft
+`llmStatus` on timeout/error so markdown is kept. Never auto-invoked on open
+or soft poll.
+
 QA mocks:
 - `?view=dashboard&mockSnapshot=empty|ready|error`
   (`ready` includes a multi-window series for chart smoke)
@@ -50,12 +58,15 @@ QA mocks:
   `pattern` is a single `focus_vs_recent_baseline_v1`-shaped Insight)
 - `?view=dashboard&mockRecommendations=empty|ready|pace|error`
   (`ready` / `pace` = sample `focus_dip_pace_hint_v1`-shaped Recommendation)
+- `?view=dashboard&mockReport=idle|ready|disabled|ok|error`
+- `?view=dashboard&mockLlmStatus=disabled|ready|error`
 
 Dogfood (live pattern Insight + pace suggestion): run the desktop app with
 multi-day afternoon FocusScore evidence (UTC 13:00–17:00 windows, confidence
 ≥ 0.4) where **current Focus is lower** than baseline by |Δ| ≥ 10. Thin
 history → empty Insights / Suggestions (no error). UI never opens SQLite —
-only `invoke("get_insights")` / `invoke("get_recommendations")`.
+only `invoke("get_insights")` / `invoke("get_recommendations")` /
+`invoke("get_local_llm_status")` / `invoke("generate_report")`.
 
 ## Life Events quick-log (P6-E2-T1)
 

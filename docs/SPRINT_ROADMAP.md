@@ -28,17 +28,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P11-E2-T1** |
+| **Ready** | **P11-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **P11-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **P11-E1-T1** · **P11-E2-T1** |
 
-**Epic status:** P11-E1 ✅ · P11-E2 ⬜ (T1 Ready) · P11-E3 ⬜
+**Epic status:** P11-E1 ✅ · P11-E2 ✅ · P11-E3 ⬜ (T1 Ready)
 
-**Phase 11 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-011 recorded
+**Phase 11 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-011 + prompt packs shipped
 
 **Рекомендуемый порядок:**  
-~~P11-E1-T1~~ → **P11-E2-T1** → P11-E3-T1
+~~P11-E1-T1~~ → ~~P11-E2-T1~~ → **P11-E3-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -46,15 +46,17 @@
 
 ### Active assignment
 
-**Ready now:** **P11-E2-T1** — Versioned prompt packs in `report-engine`. Brief: `docs/handoffs/P11-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P11-E3-T1** — Local LLM provider UX + pack-aware Report flow. Brief: `docs/handoffs/P11-E3-T1-pm-brief.md`. Role: **UX + Dev**.
 
-**Closed:** P11-E1-T1 (QA Pass, 2026-08-10) — ADR-011 prompt packs + provider UX; Epic **P11-E1** ✅. Evidence: `docs/handoffs/P11-E1-T1-qa-to-pm.md`. No schema approve required.
+**Closed:** P11-E2-T1 (QA Pass, 2026-08-10) — `build_report_with_pack` + `biofocus.default` @ `1`; Epic **P11-E2** ✅. Evidence: `docs/handoffs/P11-E2-T1-qa-to-pm.md`.
 
-**Next after Pass:** P11-E3-T1 (provider UX / Dashboard).
+**Closed:** P11-E1-T1 (QA Pass, 2026-08-10) — ADR-011; Epic **P11-E1** ✅. Evidence: `docs/handoffs/P11-E1-T1-qa-to-pm.md`.
+
+**Next after Pass:** close Epic **P11-E3** + **Phase 11** Kanban (then Phase 12+ via separate PM gate).
 
 **Closed previous:** Phase 10 (E1–E3 Done, 2026-08-10) — ADR-010 Browser → `BrowserCategoryPlugin` → `DistractionScore`. Evidence: `docs/handoffs/P10-*-qa-to-pm.md`. Branch: `phase/10-plugin-wave-1`.
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 11 cluster on `phase/11-ai-coaching-polish`; local commits OK; one cluster PR **after** freeze (or when user lifts it). Phase 4 baseline: `build_report` + `interpret_report` + `generate_report` (env-only LLM, no in-app toggle).
+**Ops note:** **PR freeze until 2026-09-01** — Phase 11 cluster on `phase/11-ai-coaching-polish`; local commits OK; one cluster PR **after** freeze (or when user lifts it). E3 wires host to `build_report_with_pack` (default pack); LLM still env opt-in.
 
 ---
 
@@ -78,15 +80,9 @@
 
 | ID | Task | Role | Modules | AC (summary) | Depends |
 | :--- | :--- | :---: | :--- | :--- | :--- |
-| **P11-E2-T1** | Versioned prompt packs in report-engine | Dev | report-engine (+ bio-spec types as needed) | See below | P11-E1-T1 |
+| **P11-E2-T1** | Versioned prompt packs in report-engine | Dev | report-engine (+ bio-spec types as needed) | `build_report_with_pack` + default pack | P11-E1-T1 |
 
-**P11-E2-T1 AC:**
-1. Public Core API in `report-engine` per ADR-011: select/build a **named prompt pack** (`id` + `version`) that produces offline markdown + `llm_prompt` from already-computed Features / Insights / Recommendations — `Result`, **no** Feature math in the LLM/pack path.
-2. Default pack (e.g. `biofocus.default` / `1`) remains calm / non-clinical; `llm_prompt` instructions explicitly forbid inventing metrics, Evidence, or actions.
-3. Empty / partial Evidence → soft empty sections, `Ok`, no panic; unit tests cover pack selection + empty/partial inputs.
-4. No SQLite schema; no network from pack builder; no Desktop UI required in this task.
-5. Docs: finalize pack API in `09-api` (and security note if pack changes privacy surface); glossary Prompt Pack can drop “planned” if shipped.
-6. Handoff: `docs/handoffs/P11-E2-T1-dev-to-qa.md`.
+**P11-E2 shipped:** `build_report_with_pack(id, version, …)`; default `biofocus.default` @ `1`; empty/partial soft Ok; no SQLite/network/UI. QA Pass 2026-08-10.
 
 **Out of scope (E2):** in-app provider toggle / Dashboard UX (→ E3); cloud providers; auto-interpret; on-disk user pack overrides (future ADR).
 
@@ -100,14 +96,14 @@
 | **P11-E3-T1** | Local LLM provider UX + pack-aware Report flow | UX + Dev | apps/desktop (+ src-tauri IPC as needed) | See below | P11-E2-T1 |
 
 **P11-E3-T1 AC:**
-1. Dashboard shows calm **provider status** for local LLM (e.g. disabled / ready / error) via IPC — UI ↛ SQLite; no secrets in UI logs.
-2. Report / coaching flow uses a prompt pack from E2 (or default) behind **explicit** user action; never auto-invoke on open/poll.
+1. Dashboard shows calm **provider status** for local LLM (e.g. disabled / ready / error) via IPC — UI ↛ SQLite; no secrets in UI logs; status reflects host env/config (Phase 4 `BIOFOCUS_LOCAL_LLM` stance).
+2. Report / coaching flow uses **`build_report_with_pack`** (default `biofocus.default` @ `1`, or documented pack pick) behind **explicit** user action; never auto-invoke on open/poll; include Recommendations Evidence when available.
 3. When LLM off: offline markdown + prompt still available; calm copy that local AI is optional.
 4. When LLM on (host config): optional interpretation soft-fails without losing markdown (`llmStatus` pattern from Phase 4).
-5. Copy non-clinical; no employee-surveillance / diagnosis framing.
-6. Handoff: `docs/handoffs/P11-E3-T1-dev-to-qa.md` with smoke steps.
+5. Copy non-clinical; no employee-surveillance / diagnosis framing; no cloud marketplace.
+6. Mock/dev path documented for browser QA if needed; handoff with smoke steps: `docs/handoffs/P11-E3-T1-dev-to-qa.md`.
 
-**Out of scope (E3):** cloud LLM marketplace; chat history store; ambient Phase 12+; PR during freeze.
+**Out of scope (E3):** cloud LLM marketplace; chat history store; ambient Phase 12+; on-disk pack overrides; PR during freeze.
 
 ---
 
@@ -255,9 +251,9 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 ## Sprint 21–22 — Queue
 
 1. ~~P11-E1-T1 — ADR-011 AI coaching polish (prompt packs + provider UX)~~ ✅ Done  
-2. **P11-E2-T1** — Versioned prompt packs in `report-engine` ← **Ready**  
-3. P11-E3-T1 — Local LLM provider UX + pack-aware Report flow (queued)
+2. ~~P11-E2-T1 — Versioned prompt packs in `report-engine`~~ ✅ Done  
+3. **P11-E3-T1** — Local LLM provider UX + pack-aware Report flow ← **Ready**
 
 **Git:** `phase/11-ai-coaching-polish` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P11-E2-T1-pm-brief.md`.  
+**Brief:** `docs/handoffs/P11-E3-T1-pm-brief.md`.  
 **Next after Phase 11:** PM gate → Phase 12+ ambient + packaging (`docs/14-roadmap.md`).

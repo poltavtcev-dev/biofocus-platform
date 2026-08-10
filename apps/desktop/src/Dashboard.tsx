@@ -46,6 +46,13 @@ import {
   mockReportFromLocation,
   type ReportView,
 } from "./report";
+import {
+  fetchLocalLlmStatus,
+  loadingLlmProviderView,
+  llmProviderDotKind,
+  mockLlmProviderFromLocation,
+  type LlmProviderView,
+} from "./llmProvider";
 
 /** Soft refresh — idle-safe; no busy-loop. Does not regenerate reports. */
 const SNAPSHOT_POLL_MS = 30_000;
@@ -292,17 +299,37 @@ function ReportSlot({
   view,
   busy,
   onGenerate,
+  llmProvider,
 }: {
   view: ReportView;
   busy: boolean;
   onGenerate: () => void;
+  llmProvider: LlmProviderView;
 }) {
   const report = view.report;
   const showBody = view.kind === "ready" && report;
+  const packMeta = `${llmProvider.packId} @ ${llmProvider.packVersion}`;
 
   return (
     <section className="report-slot" aria-label="Report" aria-live="polite">
       <p className="chart-slot-title">Report</p>
+      <div
+        className="llm-provider-row"
+        aria-label="Local AI provider status"
+      >
+        <span
+          className={`status-dot status-dot--${llmProviderDotKind(llmProvider.status)}`}
+          aria-hidden
+        />
+        <div className="llm-provider-copy">
+          <p className="status-label">{llmProvider.label}</p>
+          <p className="status-meta">{llmProvider.detail}</p>
+          <p className="status-meta">
+            Report pack: {packMeta}
+            {llmProvider.model ? ` · model ${llmProvider.model}` : ""}
+          </p>
+        </div>
+      </div>
       <p className="status-meta">
         {view.kind === "loading" ? view.detail : view.label}
       </p>
@@ -310,7 +337,8 @@ function ReportSlot({
         <p className="status-meta">{view.detail}</p>
       )}
       <p className="report-ai-note">
-        AI interpretation is local and optional — never sent automatically.
+        Local AI is optional and never runs automatically. Offline markdown is
+        always available — interpretation only after you generate a report.
       </p>
       <button
         type="button"
@@ -353,6 +381,9 @@ export function Dashboard() {
   const [reportView, setReportView] = useState<ReportView>(
     () => mockReportFromLocation() ?? idleReportView(),
   );
+  const [llmProvider, setLlmProvider] = useState<LlmProviderView>(
+    () => mockLlmProviderFromLocation() ?? loadingLlmProviderView(),
+  );
   const [busy, setBusy] = useState(true);
   const [reportBusy, setReportBusy] = useState(false);
 
@@ -366,18 +397,22 @@ export function Dashboard() {
         setInsightsView(loadingInsightsView());
         setRecommendationsView(loadingRecommendationsView());
       }
-      // Snapshot / Insights / Recommendations only — never auto-invoke report / LLM.
-      const [next, nextInsights, nextRecommendations] = await Promise.all([
-        fetchFeatureSnapshot(),
-        fetchInsights(),
-        fetchRecommendations(),
-      ]);
+      // Snapshot / Insights / Recommendations / LLM status only —
+      // never auto-invoke report / interpret.
+      const [next, nextInsights, nextRecommendations, nextLlm] =
+        await Promise.all([
+          fetchFeatureSnapshot(),
+          fetchInsights(),
+          fetchRecommendations(),
+          fetchLocalLlmStatus(),
+        ]);
       if (cancelled) {
         return;
       }
       setView(next);
       setInsightsView(nextInsights);
       setRecommendationsView(nextRecommendations);
+      setLlmProvider(nextLlm);
       if (isFirst) {
         setBusy(false);
       }
@@ -403,10 +438,12 @@ export function Dashboard() {
       fetchFeatureSnapshot(),
       fetchInsights(),
       fetchRecommendations(),
-    ]).then(([next, nextInsights, nextRecommendations]) => {
+      fetchLocalLlmStatus(),
+    ]).then(([next, nextInsights, nextRecommendations, nextLlm]) => {
       setView(next);
       setInsightsView(nextInsights);
       setRecommendationsView(nextRecommendations);
+      setLlmProvider(nextLlm);
       setBusy(false);
     });
   };
@@ -493,6 +530,7 @@ export function Dashboard() {
         view={reportView}
         busy={reportBusy}
         onGenerate={onGenerateReport}
+        llmProvider={llmProvider}
       />
     </main>
   );

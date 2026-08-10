@@ -29,11 +29,11 @@ const COPY: Record<
   idle: {
     label: "Report",
     detail:
-      "Generate a calm offline summary from the latest Features and Insights. Local AI is optional and off by default.",
+      "Generate a calm offline summary from the latest Features, Insights, and Suggestions. Local AI is optional and off by default.",
   },
   ready: {
     label: "Report ready",
-    detail: "Offline summary from Core. Local AI is optional.",
+    detail: "Offline summary via pack biofocus.default. Local AI is optional.",
   },
   error: {
     label: "Could not generate report",

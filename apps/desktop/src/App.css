@@ -354,6 +354,20 @@ body {
   border-top: 1px solid var(--bf-bg-accent);
 }
 
+.llm-provider-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.2rem;
+}
+
+.llm-provider-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
 .report-ai-note {
   margin: 0;
   font-size: 0.78rem;

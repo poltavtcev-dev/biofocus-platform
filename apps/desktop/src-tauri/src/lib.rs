@@ -97,11 +97,18 @@
 //! }
 //! ```
 //!
-//! ## `generate_report` (P4-E3-T3)
+//! ## `get_local_llm_status` (P11-E3-T1)
+//!
+//! Calm local-AI provider status from host env (`BIOFOCUS_LOCAL_LLM*`):
+//! `disabled` / `ready` / `error`. Reflects config only — **no** HTTP probe,
+//! no secrets/tokens. Safe to read on Dashboard open; never invokes interpret.
+//!
+//! ## `generate_report` (P4-E3-T3 / P11-E3-T1)
 //!
 //! Explicit user action only — never call on app / Dashboard open. Builds an
 //! offline report from the cached Feature snapshot + evaluate-on-read Insights
-//! via `report_engine::build_report`. When `BIOFOCUS_LOCAL_LLM` is enabled,
+//! + Recommendations via `report_engine::build_report_with_pack`
+//! (`biofocus.default` @ `1`). When `BIOFOCUS_LOCAL_LLM` is enabled,
 //! optionally runs `interpret_report` (local HTTP). When disabled, returns
 //! deterministic markdown/prompt with `llmStatus: "disabled"` and **no**
 //! network. Soft-fails LLM errors into typed status so markdown still returns.
@@ -172,7 +179,8 @@ use knowledge_engine::{
 use qrcode::render::svg;
 use qrcode::QrCode;
 use report_engine::{
-    build_report, interpret_report, LocalLlmConfig, ReportDocument, ReportEngineError,
+    build_report_with_pack, interpret_report, LocalLlmConfig, ReportDocument, ReportEngineError,
+    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
 };
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -542,7 +550,60 @@ fn evaluate_recommendations_dto(
     ))
 }
 
-/// IPC payload for [`generate_report`] (P4-E3-T3).
+/// IPC payload for [`get_local_llm_status`] (P11-E3-T1).
+///
+/// Config-only status — no HTTP probe, no tokens, no filesystem paths.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct LocalLlmProviderStatusDto {
+    /// `"disabled"` | `"ready"` | `"error"`.
+    status: String,
+    /// Calm one-liner for Dashboard.
+    detail: String,
+    /// Model id when enabled and usable (not a secret).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    model: Option<String>,
+    /// Default pack used by [`generate_report`].
+    pack_id: String,
+    pack_version: String,
+}
+
+fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusDto {
+    let pack_id = DEFAULT_PROMPT_PACK_ID.to_owned();
+    let pack_version = DEFAULT_PROMPT_PACK_VERSION.to_owned();
+    if !config.enabled {
+        return LocalLlmProviderStatusDto {
+            status: "disabled".into(),
+            detail: "Local AI is optional and currently off.".into(),
+            model: None,
+            pack_id,
+            pack_version,
+        };
+    }
+
+    let url_ok = config.base_url.starts_with("http://") || config.base_url.starts_with("https://");
+    let model_ok = !config.model.trim().is_empty();
+    if url_ok && model_ok {
+        LocalLlmProviderStatusDto {
+            status: "ready".into(),
+            detail: "Local AI is configured. Interpretation runs only when you generate a report."
+                .into(),
+            model: Some(config.model.clone()),
+            pack_id,
+            pack_version,
+        }
+    } else {
+        LocalLlmProviderStatusDto {
+            status: "error".into(),
+            detail: "Local AI is enabled but the endpoint config looks unusable.".into(),
+            model: None,
+            pack_id,
+            pack_version,
+        }
+    }
+}
+
+/// IPC payload for [`generate_report`] (P4-E3-T3 / P11-E3-T1).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct ReportDto {
@@ -583,16 +644,24 @@ fn calm_llm_error(err: &ReportEngineError) -> String {
         ReportEngineError::BuildFailed { .. } => "Could not build the report.".into(),
         ReportEngineError::UnknownPromptPack { .. } => {
             "That report pack is not available.".into()
-        },
+        }
     }
 }
 
 async fn assemble_report_dto(
     features: &[Feature],
     insights: &[Insight],
+    recommendations: &[Recommendation],
     config: &LocalLlmConfig,
 ) -> Result<ReportDto, String> {
-    let doc = build_report(features, insights).map_err(|err| err.to_string())?;
+    let doc = build_report_with_pack(
+        DEFAULT_PROMPT_PACK_ID,
+        DEFAULT_PROMPT_PACK_VERSION,
+        features,
+        insights,
+        recommendations,
+    )
+    .map_err(|err| err.to_string())?;
 
     if !config.enabled {
         // No network when off — explicit offline path for the Dashboard.
@@ -817,18 +886,37 @@ fn get_recommendations(app: AppHandle) -> RecommendationsDto {
     evaluate_recommendations_dto(&state.engine, &snapshot, &insights)
 }
 
+/// Calm local-AI provider status from host env (P11-E3-T1).
+///
+/// Config-only — no HTTP probe, no interpret, no SQLite. Safe on Dashboard open.
+#[tauri::command]
+fn get_local_llm_status() -> LocalLlmProviderStatusDto {
+    local_llm_provider_status(&LocalLlmConfig::from_env())
+}
+
 /// Offline report (+ optional local LLM) for Dashboard — **explicit invoke only**
-/// (P4-E3-T3). Never auto-called on app / Dashboard open.
+/// (P4-E3-T3 / P11-E3-T1). Never auto-called on app / Dashboard open.
 #[tauri::command]
 async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
     let snapshot = current_feature_snapshot(&app);
     let pattern = pattern_inputs_for_insights(&app, &snapshot);
-    let insights = match app.try_state::<InsightsEngineState>() {
-        Some(state) => evaluate_insights_list(&state.engine, &snapshot, &pattern),
-        None => Vec::new(),
+    let (insights, recommendations) = match app.try_state::<InsightsEngineState>() {
+        Some(state) => {
+            let insights = evaluate_insights_list(&state.engine, &snapshot, &pattern);
+            let recommendations =
+                evaluate_recommendations_list(&state.engine, &snapshot, &insights);
+            (insights, recommendations)
+        }
+        None => (Vec::new(), Vec::new()),
     };
     let config = LocalLlmConfig::from_env();
-    assemble_report_dto(&snapshot.features, &insights, &config).await
+    assemble_report_dto(
+        &snapshot.features,
+        &insights,
+        &recommendations,
+        &config,
+    )
+    .await
 }
 
 /// Shows the Dashboard window (P4-E1-T2). Soft-fail if the window is missing.
@@ -938,6 +1026,7 @@ pub fn run() -> DesktopResult<()> {
             get_feature_snapshot,
             get_insights,
             get_recommendations,
+            get_local_llm_status,
             generate_report,
             open_dashboard,
             core_ping,
@@ -1367,7 +1456,7 @@ mod tests {
 
     #[tokio::test]
     async fn assemble_report_disabled_has_no_interpretation() {
-        let dto = assemble_report_dto(&[], &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&[], &[], &[], &LocalLlmConfig::disabled())
             .await
             .expect("offline report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1375,6 +1464,9 @@ mod tests {
         assert!(dto.llm_error.is_none());
         assert!(dto.markdown.contains("BioFocus"));
         assert!(!dto.llm_prompt.is_empty());
+        // Empty Evidence → calm minimal default-pack summary (not an error).
+        assert!(dto.markdown.contains("Nothing to summarize"));
+        assert!(dto.llm_prompt.contains("Do not invent"));
 
         let json = serde_json::to_value(&dto).expect("serialize");
         let obj = json.as_object().expect("object");
@@ -1400,9 +1492,9 @@ mod tests {
             value: FeatureValue::Scalar(72.5),
             provenance: vec![Uuid::from_u128(1)],
             confidence: bio_spec::Confidence::ONE,
-                factors: Vec::new(),
+            factors: Vec::new(),
         }];
-        let dto = assemble_report_dto(&features, &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&features, &[], &[], &LocalLlmConfig::disabled())
             .await
             .expect("report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1411,6 +1503,68 @@ mod tests {
         let raw = serde_json::to_string(&dto).expect("string");
         assert!(!raw.contains("/Users"));
         assert!(!raw.contains(".biofocus"));
+    }
+
+    #[tokio::test]
+    async fn assemble_report_includes_recommendations_section() {
+        let rec = Recommendation {
+            id: Uuid::from_u128(42),
+            title: "A gentler pace may help".into(),
+            suggestion: "If it fits your schedule, take a short break.".into(),
+            category: "pace".into(),
+            evidence_list: vec![EvidenceRef::Feature("FocusScore".into())],
+        };
+        let dto = assemble_report_dto(&[], &[], &[rec], &LocalLlmConfig::disabled())
+            .await
+            .expect("report");
+        assert!(dto.markdown.contains("## Recommendations"));
+        assert!(dto.markdown.contains("A gentler pace may help"));
+        assert!(dto.llm_prompt.contains("A gentler pace may help"));
+        assert_eq!(dto.llm_status, "disabled");
+    }
+
+    #[test]
+    fn local_llm_provider_status_disabled_by_default() {
+        let dto = local_llm_provider_status(&LocalLlmConfig::disabled());
+        assert_eq!(dto.status, "disabled");
+        assert!(dto.model.is_none());
+        assert_eq!(dto.pack_id, DEFAULT_PROMPT_PACK_ID);
+        assert_eq!(dto.pack_version, DEFAULT_PROMPT_PACK_VERSION);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.get("status").and_then(|v| v.as_str()), Some("disabled"));
+        assert_eq!(
+            obj.get("packId").and_then(|v| v.as_str()),
+            Some(DEFAULT_PROMPT_PACK_ID)
+        );
+        assert!(!serde_json::to_string(&dto).expect("s").contains("token"));
+        assert!(!serde_json::to_string(&dto).expect("s").contains("Bearer"));
+    }
+
+    #[test]
+    fn local_llm_provider_status_ready_when_enabled() {
+        let cfg = LocalLlmConfig {
+            enabled: true,
+            base_url: "http://127.0.0.1:11434/v1".into(),
+            model: "llama3.2".into(),
+            timeout: std::time::Duration::from_secs(30),
+        };
+        let dto = local_llm_provider_status(&cfg);
+        assert_eq!(dto.status, "ready");
+        assert_eq!(dto.model.as_deref(), Some("llama3.2"));
+    }
+
+    #[test]
+    fn local_llm_provider_status_error_on_bad_url() {
+        let cfg = LocalLlmConfig {
+            enabled: true,
+            base_url: "not-a-url".into(),
+            model: "llama3.2".into(),
+            timeout: std::time::Duration::from_secs(30),
+        };
+        let dto = local_llm_provider_status(&cfg);
+        assert_eq!(dto.status, "error");
+        assert!(dto.model.is_none());
     }
 
     #[test]
