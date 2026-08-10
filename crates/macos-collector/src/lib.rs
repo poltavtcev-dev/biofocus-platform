@@ -11,7 +11,9 @@
 //! Now Playing: coarse `media_kind` + `is_playing` only (no titles / lyrics). Opt-in via
 //! `BIOFOCUS_NOW_PLAYING=1`.
 //! Git activity: coarse `activity_kind` + optional `event_count` only (no paths /
-//! remotes / diffs). Opt-in via `BIOFOCUS_GIT_ACTIVITY=1`.
+//! remotes / diffs). Opt-in via `BIOFOCUS_GIT_ACTIVITY=1`. Watched roots:
+//! `~/.biofocus/git-watched-roots.toml` (ADR-014); optional `BIOFOCUS_GIT_WATCHED_ROOTS`
+//! when the config file is absent.
 
 #![cfg_attr(not(target_os = "macos"), forbid(unsafe_code))]
 // objc2 / CoreGraphics bindings require `unsafe` only inside macOS probe modules.
@@ -26,6 +28,7 @@ mod error;
 mod git_activity_plugin;
 mod git_activity_probe;
 mod git_activity_stream;
+mod git_watched_roots;
 mod ics;
 mod input_plugin;
 mod input_probe;
@@ -67,6 +70,11 @@ pub use git_activity_probe::{
 };
 pub use git_activity_stream::{
     observation_from_git_activity, spawn_git_activity_loop, GitActivityHandle,
+};
+pub use git_watched_roots::{
+    default_watched_roots_path, load_watched_roots_file, resolve_watched_roots, WatchedRoots,
+    WatchedRootsSource, BIOFOCUS_CONFIG_DIR_NAME, GIT_WATCHED_ROOTS_ENV,
+    GIT_WATCHED_ROOTS_FILE_NAME,
 };
 pub use ics::{parse_ics_events, parse_ics_file};
 pub use input_plugin::{

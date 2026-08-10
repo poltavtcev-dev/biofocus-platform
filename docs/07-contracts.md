@@ -271,7 +271,7 @@ Enable: `BIOFOCUS_GIT_ACTIVITY=1` (default **off**). Emit on activity change or 
 
 Validation: `bio_spec::validate_git_activity_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_git_activity`.
 
-**OS probe (v1):** `SystemGitActivityProbe` soft-fails to no emission when mapping / watched-roots allowlist is unavailable (no persisted path-allowlist table in v1 — ADR-013). Scripted/mock probes supply closed-set labels in tests.
+**OS probe (ADR-014 / P14-E2 shipped):** `SystemGitActivityProbe` loads user-chosen absolute roots from `~/.biofocus/git-watched-roots.toml`. Empty / missing / unreadable file → soft-fail idle (no emit, no whole-disk scan). When the config file is **absent**, optional `BIOFOCUS_GIT_WATCHED_ROOTS` (colon- or comma-separated absolute paths) may supply roots for tests/CI; **file is SoT when present** (no env merge). Probe considers nested repos under listed roots only. Observation **payload contract unchanged** (`activity_kind` + optional `event_count` — never persist allowlist/repo paths). Logs prefer Observation `id` / root_count / repo_count; do not dump roots or discovered repo paths at default log levels. Scripted/mock probes remain for tests. **No** SQLite allowlist table / **no** migration.
 
 ## Companion → ingest (P2-E3-T1)
 

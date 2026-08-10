@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 13** (Ready **P13-E3-T1**). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **Phase 14** (Ready **P14-E2-T1**). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -74,6 +74,8 @@ Immediate Kanban = **Phase 13** (Ready **P13-E3-T1**). Below is the accepted lad
 | **10** | Done — Plugin wave-1 (ADR-010 Browser categories → collector → `DistractionScore`) |
 | **11** | Done — AI coaching polish (ADR-011 → packs → provider UX; interpret-only) |
 | **12** | Done — Ambient + commercial packaging (ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook) |
-| **13** | Plugin wave-2 — ADR-013 ✅ → Git plugin ✅ → Ready `GitActivityRate`; IDE / weather/light / App Store deferred |
+| **13** | Done — Plugin wave-2 (ADR-013 → Git plugin → `GitActivityRate`) |
+| **14** | Active — Git path-allowlist (ADR-014 ✅ config file → Ready live probe) |
+| **15+** | Open via PM gate — IDE · weather/light · App Store packaging · NotificationPressure |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

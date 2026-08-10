@@ -1963,6 +1963,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.19",
  "tokio",
+ "toml 0.8.2",
  "tracing",
  "uuid",
 ]

@@ -17,7 +17,7 @@ use macos_collector::{
     FrontmostProbe, GitActivityPlugin, GitActivityProbe, GitActivitySample, IcsFileCalendarProbe,
     InputCountProbe, KeystrokeAggregatePlugin, NowPlayingPlugin, NowPlayingProbe,
     NowPlayingSample, ScriptedBrowserProbe, ScriptedCalendarProbe, ScriptedGitActivityProbe,
-    ScriptedInputProbe, ScriptedNowPlayingProbe, BROWSER_CATEGORY_DATA_TYPE,
+    ScriptedInputProbe, ScriptedNowPlayingProbe, SystemGitActivityProbe, BROWSER_CATEGORY_DATA_TYPE,
     CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE,
     KEYSTROKES_DATA_TYPE, NOW_PLAYING_DATA_TYPE,
 };
@@ -616,4 +616,99 @@ async fn git_activity_stop_halts_periodic_probe_work() {
         after_stop,
         "git_activity probe must not keep polling after stop_stream (no busy-loop)"
     );
+}
+
+#[tokio::test]
+async fn git_activity_empty_allowlist_emits_nothing() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemGitActivityProbe::with_roots(Vec::new()));
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+
+    let db = Database::open(&db_path).expect("re-open db");
+    let listed = ObservationRepository::new(&db)
+        .list_by_data_type(GIT_ACTIVITY_DATA_TYPE)
+        .expect("list");
+    assert!(
+        listed.is_empty(),
+        "empty allowlist must not emit git_activity Observations"
+    );
+}
+
+#[tokio::test]
+async fn git_activity_live_probe_fixture_root_emits_into_storage() {
+    use std::process::Command;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repo = dir.path().join("repo");
+    std::fs::create_dir_all(&repo).expect("mkdir");
+
+    let git = |args: &[&str]| {
+        let status = Command::new("git")
+            .args(args)
+            .current_dir(&repo)
+            .env("GIT_AUTHOR_NAME", "Dogfood")
+            .env("GIT_AUTHOR_EMAIL", "dogfood@example.com")
+            .env("GIT_COMMITTER_NAME", "Dogfood")
+            .env("GIT_COMMITTER_EMAIL", "dogfood@example.com")
+            .status()
+            .expect("spawn git");
+        assert!(status.success(), "git {args:?} failed");
+    };
+
+    git(&["init"]);
+    git(&["config", "user.email", "dogfood@example.com"]);
+    git(&["config", "user.name", "Dogfood"]);
+    std::fs::write(repo.join("a.txt"), "one\n").expect("write");
+    git(&["add", "a.txt"]);
+    git(&["commit", "-m", "init"]);
+
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemGitActivityProbe::with_roots(vec![dir
+        .path()
+        .to_path_buf()]));
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    // Prime baselines (first poll(s) must not emit).
+    tokio::time::sleep(Duration::from_millis(120)).await;
+
+    std::fs::write(repo.join("a.txt"), "two\n").expect("write");
+    git(&["add", "a.txt"]);
+    git(&["commit", "-m", "second"]);
+
+    let listed =
+        wait_for_data_type(&db_path, GIT_ACTIVITY_DATA_TYPE, 1, Duration::from_secs(4)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["activity_kind"], "commit");
+    assert!(listed[0].payload.get("repo_path").is_none());
+    assert!(listed[0].payload.get("path").is_none());
+    assert!(listed[0].payload.get("remote").is_none());
+    assert!(listed[0].payload.get("branch").is_none());
+    assert!(listed[0].payload.get("sha").is_none());
+    assert!(listed[0].payload.get("message").is_none());
+    assert!(listed[0].payload.get("diff").is_none());
+    assert!(listed[0].payload.get("author").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
 }

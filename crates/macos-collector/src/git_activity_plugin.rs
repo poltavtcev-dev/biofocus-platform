@@ -38,11 +38,11 @@ pub struct GitActivityPlugin {
 }
 
 impl GitActivityPlugin {
-    /// Production plugin using [`SystemGitActivityProbe`] (soft-fail without allowlist).
+    /// Production plugin using [`SystemGitActivityProbe`] (ADR-014 allowlist; soft-fail if empty).
     #[must_use]
     pub fn system_default() -> Self {
         Self::with_probe(
-            Arc::new(SystemGitActivityProbe),
+            Arc::new(SystemGitActivityProbe::new()),
             DEFAULT_GIT_ACTIVITY_POLL_INTERVAL,
         )
     }

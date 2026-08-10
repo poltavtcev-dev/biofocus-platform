@@ -55,4 +55,9 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 
 - **v1:** Git activity facts are ordinary rows in `observations` (`data_type = 'git_activity'`). **No** plugin registry table, remotes table, or repo-path allowlist columns.
 - **No migration** under ADR-013.
-- Future optional watched-roots allowlist / config store requires a **new ADR + user approve** — not part of wave-2 v1.
+
+### Git watched-roots allowlist (ADR-014 / Phase 14)
+
+- **v1 durable store:** local config file `~/.biofocus/git-watched-roots.toml` (user-chosen absolute roots only) — **not** SQLite. Live load + probe **shipped** (P14-E2).
+- **No migration** under ADR-014. Observations remain the only durable git **facts** store.
+- Future SQLite allowlist table (if ever needed for CRUD) requires a **new ADR + user approve** — not Phase 14 v1.

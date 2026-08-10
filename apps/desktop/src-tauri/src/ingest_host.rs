@@ -342,7 +342,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
             Ok(()) => {
                 info!(
                     plugin = plugin.id(),
-                    "git_activity collector armed (opt-in; coarse activity_kind only; poll ≥5s)"
+                    "git_activity collector armed (opt-in; allowlisted roots; coarse activity_kind only; poll ≥5s)"
                 );
                 Some(plugin)
             }

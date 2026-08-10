@@ -15,6 +15,7 @@
 | ADR-011 | 2026-08-10 | L5 coaching polish v1 = **named/versioned prompt packs** in `report-engine` (templates over already-computed Features / Insights / Recommendations) + **calm Dashboard provider UX** for opt-in local LLM status/config; interpret-only; in-process packs + existing env/IPC; **no** chat-history SQLite; **no** parallel Coach Engine | Vision L5 is NL explanation only. Phase 4 shipped `build_report` / `interpret_report` / `generate_report` (env-only). Phase 11 dogfood needs selectable packs + calmer provider surface without making LLM a Feature/Recommendation engine. Local-first; idle; explicit user action; no auto-invoke on Dashboard open. | Cloud LLM by default; LLM as SoT for Features/Recommendations; auto-invoke on Dashboard open; parallel Coach Engine that bypasses Evidence; clinical/prescription coaching tone; persist chat history SQLite without need; shipping packs without ADR |
 | ADR-012 | 2026-08-10 | Phase 12 v1 **primary** = ambient **Now Playing / music** Observation wave-1 (one source); **secondary** = commercial packaging as signed-build / notarization / update **runbook + process** (no default cloud sync). E2 = plugin; E3 = `AmbientMediaShare` Feature + packaging runbook. Existing `observations` store; AGPLv3 Core stays open | Vision ladder after plugins is ambient (music/weather/light) + commercial packaging ≠ secret math. macOS Now Playing dogfoods without mic / precise geo; weather/light deferred. Packaging stays open Core + distribution process | All three ambient sources in one wave; always-on ambient capture; cloud sync by default; secret/proprietary Feature formulas; ambient Features without Observations; packaging that forces UI→DB or cloud LLM; IDE/Git re-prioritized into P12; PR during freeze |
 | ADR-013 | 2026-08-10 | Plugin wave-2 v1 primary = **Git activity aggregates** (not IDE in the same wave); `data_type: "git_activity"` coarse `activity_kind` (+ optional `event_count`) → existing `observations` store; opt-in `BIOFOCUS_GIT_ACTIVITY` default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `GitActivityRate` | ADR-010 deferred IDE/Git after Browser. IDE apps already visible in `context_window` / CSR; privacy-safe IDE session kinds without paths/titles are weak on macOS collector alone. Git ops are invisible to context — additive signal via counts/cadence only (no paths / remotes / diffs). Personal self-tracking; finish plugin ladder before weather/light or App Store product | IDE+Git same wave; IDE as wave-2 when no additive privacy-safe signal; always-on capture; cloud git history sync; plugin marketplace crate; parallel plugin SQLite registry; weather/light or App Store as P13 primary; NotificationPressure as this wave’s Feature; redefining `DistractionScore`; PR during freeze |
+| ADR-014 | 2026-08-10 | Git watched-roots allowlist v1 = **local config file** under `~/.biofocus/git-watched-roots.toml` (user-chosen absolute roots only); unlocks live `SystemGitActivityProbe` in Phase 14 E2; ADR-013 Observation payload unchanged (`activity_kind` + optional `event_count`); **no** SQLite allowlist table / **no** migration; opt-in `BIOFOCUS_GIT_ACTIVITY` remains the enable switch; empty/missing file → soft-fail idle | ADR-013 deferred persisted allowlist → production probe soft-fails idle; dogfood needs privacy-scoped roots without widening Observation payloads. Config file is durable for dogfood, editable by hand / future Settings without schema approve. Personal self-tracking only | Always-on whole-disk scan; env-only allowlist as sole store; SQLite allowlist table in v1; workplace / manager dashboards; cloud git history sync; IDE as Phase 14 primary while allowlist unfinished; weather/light or App Store as this phase primary; NotificationPressure without notification Observations; PR during freeze; applying migration without user approve; persisting repo paths/remotes/branch/SHA/message/diff/author into Observations |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -557,7 +558,7 @@ E3 (P12-E3-T1) — AmbientMediaShare + packaging runbook:
 - Prefer existing `observations` store only (ADR-006 / ADR-010 / ADR-012 stance).
 - **No new SQLite tables/columns** for plugins, git remotes, or repo registries.
 - **Do not apply** any migration for this ADR.
-- Deferred (future ADR + user approve only): optional user-scoped allowlist of watched roots — out of Phase 13 v1 until then (E2 must soft-fail without a persisted path allowlist table).
+- Deferred allowlist: **resolved by ADR-014** (local config file `~/.biofocus/git-watched-roots.toml`; implement live probe in Phase 14 E2) — Phase 13 E2 soft-fails without it by design.
 
 **Capability Plugin Model**
 
@@ -613,3 +614,110 @@ E3 (P13-E3-T1) — GitActivityRate:
 9. **Redefining Browser `DistractionScore` math** for Git — rejected; lock a distinct Feature (`GitActivityRate`).
 10. **Opening a PR during freeze** (before 2026-09-01) — local branch commits only; cluster PR after freeze.
 11. **Persisting repo paths / remotes / diffs “for richer context”** — rejected; coarse activity_kind + optional event_count only.
+
+### ADR-014 detail — Git watched-roots / path-allowlist + live probe boundaries (v1)
+
+**Chosen v1 storage stance:** **local config file** — `~/.biofocus/git-watched-roots.toml` (create dir if missing). Exactly **one** durable allowlist store for Phase 14 v1.
+
+| Layer | Role in Phase 14 v1 |
+| :--- | :--- |
+| Allowlist config (file) | User-chosen **absolute directory roots** the live probe may watch — configuration only, not Observation history |
+| Capability Plugin (`plugin-sdk` + `macos-collector`) | Existing `com.biofocus.macos.git` / `GitActivityPlugin`; E2 wires live `SystemGitActivityProbe` to read allowlist |
+| Observation (SQLite) | Unchanged ADR-013 rows in `observations` (`data_type = 'git_activity'`) — **no** new tables/columns |
+| Feature (`feature-engine`) | Existing **`GitActivityRate`** — **no** formula rewrite in Phase 14 unless a later ADR finds a justified confidence tweak (none for v1) |
+| LLM | L5 interpret-only — must **not** invent allowlist paths, activity kinds, or Feature scores |
+
+**Why config file (not env-only, not SQLite)**
+
+1. **Closes ADR-013 soft-fail gap:** Production `SystemGitActivityProbe` intentionally emits nothing without a watched-roots allowlist. Dogfood needs real VCS cadence without whole-disk scanning.
+2. **Durable enough for dogfood:** Survives shell sessions / app restarts — better than an env list as the sole store.
+3. **No schema approve / migration:** Prefer non-SQLite for v1 (PM lean). Settings / IPC in optional E3 can read/write the same file later without a table.
+4. **Privacy boundary stays nameable:** Roots live only in local config; Observation payloads stay coarse (`activity_kind` + optional `event_count`).
+5. **Capability Model fit:** Extend existing git plugin + host — no parallel marketplace crate, no second Observation bus.
+6. **Personal self-tracking only:** User explicitly lists personal project roots — not workplace / fleet monitoring.
+
+**Config sketch (implement in P14-E2)**
+
+```toml
+# ~/.biofocus/git-watched-roots.toml
+# Absolute directory roots only. Empty / missing file → probe soft-fails idle (no emit).
+version = 1
+roots = [
+  "/Users/me/Developer/AI Project/BioFocus",
+]
+```
+
+| Rule | Detail |
+| :--- | :--- |
+| Path | `~/.biofocus/git-watched-roots.toml` (expand home at runtime) |
+| Contents | `version` (u32, start at `1`) + `roots` (list of absolute directory paths) |
+| Semantics | Probe may only consider git activity under these roots (or nested repos discovered **under** a listed root). Outside roots → ignore |
+| Missing / empty / unreadable | Soft-fail idle — **no** Observation emit (same safe default as ADR-013 without allowlist) |
+| Enable switch | Unchanged: host starts plugin only when `BIOFOCUS_GIT_ACTIVITY=1` (default **off**) |
+| Not in this file | Remotes, branch names, SHAs, messages, diffs, authors, per-repo metadata |
+
+**Optional E2 dogfood helper (non-durable):** a one-shot env override (e.g. `BIOFOCUS_GIT_WATCHED_ROOTS` colon/comma-separated) **may** merge or substitute for tests/CI only if implemented — it is **not** the v1 durable store. If both exist, E2 must document precedence; prefer file as SoT when present.
+
+**Privacy contract**
+
+| May store / appear | Must **never** |
+| :--- | :--- |
+| User-chosen root paths in **local config file only** | Repo paths / remotes / clone URLs / branch names / SHAs / commit messages / diffs / patches / authors / file-change lists inside `git_activity` Observation **payloads** |
+| Observation `id`, `timestamp`, `provider_id`, `data_type`, coarse `activity_kind`, optional `event_count`, `confidence` | Whole-disk / home-directory scans without an explicit allowlist |
+| Logs: Observation `id`, emit/drop **counts**, allowlist load **ok/empty/error** (no path dump by default) | Logging full allowlist roots or discovered repo paths at info/default levels (prefer debug-gated or omit) |
+
+Pipeline normalize (already shipped) continues to **strip** forbidden keys if a buggy probe ever emits them.
+
+**Schema (v1)**
+
+- **No SQLite allowlist / watched-roots table.**
+- **No migration** under ADR-014 — **do not apply** any SQL.
+- Sketch only if a future ADR revisits CRUD+Settings: optional `git_watched_roots(id, path, created_at)` — **not** proposed for Phase 14 v1; would require **user approve** before apply.
+- Observations remain the only durable git **facts** store.
+
+**Capability / live probe sketch**
+
+```text
+BIOFOCUS_GIT_ACTIVITY=1
+  → Desktop ingest_host starts GitActivityPlugin
+  → SystemGitActivityProbe loads ~/.biofocus/git-watched-roots.toml
+  → if roots empty/missing → soft-fail idle (no emit)
+  → else watch / poll under allowlisted roots only (≥5s or on change; no busy-loop)
+  → emit ADR-013 Observations → bounded channel → persist
+  → existing GitActivityRate consumes rows (no Feature rewrite)
+UI ↛ SQLite (unchanged); optional E3 Settings edits config file via IPC only
+```
+
+**E2 / E3 sketch (names locked)**
+
+```text
+E2 (P14-E2-T1) — Allowlist + live probe:
+  load/validate git-watched-roots.toml
+  live SystemGitActivityProbe under allowlisted roots
+  → existing Observation channel → persist
+  keep ScriptedGitActivityProbe for tests
+  no Feature formula rewrite; no SQLite migration
+
+E3 (P14-E3-T1) — optional companion:
+  calm Settings / IPC to edit allowlist file, and/or dogfood gate notes
+  still no Observation payload widening; still no Feature math rewrite
+```
+
+**Docs policy for this ADR**
+
+- Planned / ADR notes land now in `docs/08-plugin-sdk.md`, `docs/07-contracts.md`, `docs/10-security.md`, `docs/12-development.md`, `docs/04-storage.md`, `docs/16-glossary.md`.
+- Live probe behavior + file parse/validation finalized in **P14-E2**. Optional Settings/IPC / dogfood gate in **P14-E3**.
+
+**Rejected alternatives**
+
+1. **Always-on whole-disk / whole-home scan** — privacy bar; Personal self-tracking requires explicit roots.
+2. **Env-only allowlist as the sole durable store** — fragile for multi-root dogfood across restarts; rejected as *only* store (optional CI override OK).
+3. **SQLite allowlist table in Phase 14 v1** — unnecessary for dogfood; triggers schema approve; defer until proven CRUD need.
+4. **Workplace / manager dashboards** / employee git surveillance framing — product is personal self-tracking only.
+5. **Cloud git history sync** — local-first; no default remote store.
+6. **IDE wave as Phase 14 primary while allowlist unfinished** — PM-GATE-POST-P13 chose Git allowlist first; unlock shipped Feature before new collectors.
+7. **Weather / light ambient or App Store packaging product as this phase primary** — deferred (same gate).
+8. **NotificationPressure without notification Observations** — remains deferred; not this phase.
+9. **Opening a PR during freeze** (before 2026-09-01) — local branch commits only; cluster PR after freeze.
+10. **Applying a migration without user approve** — forbidden; this ADR chooses no migration.
+11. **Widening `git_activity` payloads with paths/remotes/diffs “for richer Features”** — rejected; ADR-013 contract stands.

@@ -118,13 +118,24 @@ Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packa
 | Crate | `crates/macos-collector` |
 | Plugin id | `com.biofocus.macos.git` |
 | `data_type` | `git_activity` |
-| Probe | `SystemGitActivityProbe` soft-fails idle (no path-allowlist in v1); `ScriptedGitActivityProbe` for tests |
+| Probe | `SystemGitActivityProbe` — ADR-014 allowlist + live FS probe under roots; empty allowlist → soft-fail idle; `ScriptedGitActivityProbe` for tests |
 | Payload | Coarse `activity_kind` (+ optional `event_count`) — **no** paths / remotes / diffs / branch names / commit messages (see `docs/07-contracts.md`) |
 | Enable | `BIOFOCUS_GIT_ACTIVITY=1` (default **off**) |
 | Poll | On activity change or rare ≥5s; no busy-loop; `stop_stream` joins |
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
 | Validation | `bio_spec::validate_git_activity_payload`; ingest `invalid_git_activity` |
-| E3 Feature | `GitActivityRate` (catalog §1.10; `register_git_v1` / `register_catalog_v1`) |
+| Feature | `GitActivityRate` (catalog §1.10; `register_git_v1` / `register_catalog_v1`) — **no** formula rewrite for Phase 14 |
+
+### 7.1 Watched-roots allowlist (ADR-014 / P14-E2 shipped)
+
+| Item | Value |
+| :--- | :--- |
+| Status | **Shipped** (live probe + file load in **P14-E2**; optional Settings/IPC in **P14-E3**) |
+| Store | Local file `~/.biofocus/git-watched-roots.toml` (`version` + `roots` absolute dirs) — **not** SQLite |
+| Env override | `BIOFOCUS_GIT_WATCHED_ROOTS` only when config **file is absent** (tests/CI); file remains SoT when present |
+| Scope | Probe may watch only under listed roots (nested repos ≤ depth 4 / ≤ 64 repos); empty/missing → soft-fail idle |
+| Privacy | Roots stay in config; **never** copy into Observation payloads or default logs |
+| Migration | **None** — no schema apply |
 
 IDE collectors remain **deferred** (no additive privacy-safe session kind beyond `context_window` in v1 — ADR-013). Weather / light ambient and App Store packaging product remain deferred. No plugin marketplace crate. Personal self-tracking only — not employee / workplace git surveillance.
 
