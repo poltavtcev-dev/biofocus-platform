@@ -72,9 +72,11 @@ pub use git_activity_stream::{
     observation_from_git_activity, spawn_git_activity_loop, GitActivityHandle,
 };
 pub use git_watched_roots::{
-    default_watched_roots_path, load_watched_roots_file, resolve_watched_roots, WatchedRoots,
-    WatchedRootsSource, BIOFOCUS_CONFIG_DIR_NAME, GIT_WATCHED_ROOTS_ENV,
-    GIT_WATCHED_ROOTS_FILE_NAME,
+    default_watched_roots_path, load_settings_watched_roots, load_watched_roots_file,
+    resolve_watched_roots, set_settings_watched_roots, validate_watched_root_inputs,
+    write_watched_roots_file, WatchedRoots, WatchedRootsSource, BIOFOCUS_CONFIG_DIR_NAME,
+    BIOFOCUS_HOME_ENV, GIT_WATCHED_ROOTS_ENV, GIT_WATCHED_ROOTS_FILE_NAME,
+    WATCHED_ROOTS_FILE_VERSION,
 };
 pub use ics::{parse_ics_events, parse_ics_file};
 pub use input_plugin::{

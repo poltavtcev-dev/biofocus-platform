@@ -30,17 +30,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P14-E2-T1** |
+| **Ready** | **P14-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **Phase 12** (E1–E3) · **Phase 13** (E1–E3) · **PM-GATE-POST-P13** · **P14-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **Phase 12** (E1–E3) · **Phase 13** (E1–E3) · **PM-GATE-POST-P13** · **P14-E1-T1** · **P14-E2-T1** |
 
-**Epic status:** P14-E1 ✅ · P14-E2 ⬜ (T1 Ready) · P14-E3 ⬜
+**Epic status:** P14-E1 ✅ · P14-E2 ✅ · P14-E3 ⬜ (T1 Ready)
 
-**Phase 14 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-014 ✅ config-file allowlist · Ready live probe
+**Phase 14 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-014 ✅ · live probe ✅ · Ready dogfood / allowlist UX
 
 **Рекомендуемый порядок (Phase 14):**  
-~~P14-E1-T1~~ → **P14-E2-T1** → P14-E3-T1
+~~P14-E1-T1~~ → ~~P14-E2-T1~~ → **P14-E3-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -48,13 +48,13 @@
 
 ### Active assignment
 
-**Ready now:** **P14-E2-T1** — Allowlist load (`~/.biofocus/git-watched-roots.toml`) + live `SystemGitActivityProbe`. Brief: `docs/handoffs/P14-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P14-E3-T1** — Dogfood gate + calm allowlist Settings/IPC companion. Brief: `docs/handoffs/P14-E3-T1-pm-brief.md`. Role: **Dev|UX**.
 
-**Closed:** P14-E1-T1 (QA Pass, 2026-08-10) — ADR-014: v1 allowlist = local config file `~/.biofocus/git-watched-roots.toml` (not SQLite / no migration); Observation payload unchanged. Epic **P14-E1** ✅. Evidence: `docs/handoffs/P14-E1-T1-qa-to-pm.md`.
+**Closed:** P14-E2-T1 (QA Pass, 2026-08-10) — `git-watched-roots.toml` load + live `SystemGitActivityProbe` under roots; opt-in `BIOFOCUS_GIT_ACTIVITY`; env override only if file absent; no Feature rewrite / no migration. Epic **P14-E2** ✅. Evidence: `docs/handoffs/P14-E2-T1-qa-to-pm.md`.
 
-**Closed gate:** PM-GATE-POST-P13 (2026-08-10) — chose **Git path-allowlist**. Evidence: `docs/handoffs/PM-GATE-POST-P13-pm-brief.md`.
+**Closed:** P14-E1-T1 (QA Pass, 2026-08-10) — ADR-014 config-file allowlist. Epic **P14-E1** ✅. Evidence: `docs/handoffs/P14-E1-T1-qa-to-pm.md`.
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 14 on `phase/14-git-allowlist`; local commits OK; cluster PR **after** freeze. Locked: `git-watched-roots.toml`, ADR-014, no schema approve before E2.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 14 on `phase/14-git-allowlist`; local commits OK; cluster PR **after** freeze. Dogfood needs `BIOFOCUS_GIT_ACTIVITY=1` + non-empty allowlist file (or CI env roots without a file).
 
 ---
 
@@ -64,18 +64,14 @@
 **P14-E1 shipped:** ADR-014 = v1 allowlist store **local config** `~/.biofocus/git-watched-roots.toml` (`version` + absolute `roots`); **no** SQLite table / **no** migration; Observation payload stays ADR-013 coarse; empty/missing → soft-fail idle; E2 live probe → existing `GitActivityRate`. QA Pass 2026-08-10.
 
 ### Epic P14-E2 — Live Git probe + allowlist
-**Goal:** Implement ADR-014 allowlist + live `SystemGitActivityProbe` → existing Observation channel (payload unchanged).
-
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **P14-E2-T1** | Allowlist + live git probe | Dev | macos-collector + host | See `P14-E2-T1-pm-brief.md` | P14-E1-T1 |
+**P14-E2 shipped:** Load/validate `git-watched-roots.toml`; live `SystemGitActivityProbe` under allowlisted roots only; opt-in `BIOFOCUS_GIT_ACTIVITY`; optional `BIOFOCUS_GIT_WATCHED_ROOTS` when file absent; idle-safe + stop joins; ADR-013 payload unchanged; scripted tests + empty-allowlist soft-fail. QA Pass 2026-08-10.
 
 ### Epic P14-E3 — Dogfood / allowlist UX companion
-**Goal:** Close Phase 14 with dogfood notes and/or calm Settings/IPC to edit allowlist (no Feature math rewrite).
+**Goal:** Close Phase 14 with dogfood notes and calm Settings/IPC to edit allowlist (no Feature math rewrite).
 
 | ID | Task | Role | Modules | AC (summary) | Depends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P14-E3-T1** | Dogfood gate / allowlist UX | Dev\|UX | docs + optional desktop IPC | Shaped by ADR-014 | P14-E2-T1 |
+| **P14-E3-T1** | Dogfood gate / allowlist UX | Dev\|UX | docs + desktop IPC | See `P14-E3-T1-pm-brief.md` | P14-E2-T1 |
 
 ---
 
@@ -298,9 +294,9 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 ## Queue (Phase 14)
 
 1. ~~P14-E1-T1 — ADR-014 Git watched-roots / path-allowlist~~ ✅ Done  
-2. **P14-E2-T1** — Allowlist + live git probe ← **Ready**  
-3. P14-E3-T1 — Dogfood gate / allowlist UX  
+2. ~~P14-E2-T1 — Allowlist + live git probe~~ ✅ Done  
+3. **P14-E3-T1** — Dogfood gate / allowlist UX ← **Ready**  
 
 **Git:** `phase/14-git-allowlist` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P14-E2-T1-pm-brief.md`.  
+**Brief:** `docs/handoffs/P14-E3-T1-pm-brief.md`.  
 **Deferred:** IDE · weather/light · App Store packaging · NotificationPressure · Phase 13 cluster PR batch after freeze.

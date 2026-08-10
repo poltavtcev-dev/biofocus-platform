@@ -29,6 +29,13 @@ import {
   type LifeEventsListView,
   type LogLifeEventView,
 } from "./lifeEvents";
+import {
+  fetchGitWatchedRoots,
+  saveGitWatchedRoots,
+  shortenRootPath,
+  type GitWatchedRootsSaveView,
+  type GitWatchedRootsView,
+} from "./gitWatchedRoots";
 import "./App.css";
 
 const TRAY_ID = "main";
@@ -73,6 +80,12 @@ function MenubarShell() {
     kind: "idle",
   });
   const [logView, setLogView] = useState<LogLifeEventView>({ kind: "idle" });
+  const [gitRoots, setGitRoots] = useState<GitWatchedRootsView>({ kind: "idle" });
+  const [gitSave, setGitSave] = useState<GitWatchedRootsSaveView>({
+    kind: "idle",
+  });
+  const [gitDraft, setGitDraft] = useState("");
+  const [gitLocalRoots, setGitLocalRoots] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +135,23 @@ function MenubarShell() {
     void fetchRecentLifeEvents().then((next) => {
       if (!cancelled) {
         setLifeEvents(next);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setGitRoots({ kind: "loading" });
+    void fetchGitWatchedRoots().then((next) => {
+      if (cancelled) {
+        return;
+      }
+      setGitRoots(next);
+      if (next.kind === "ready") {
+        setGitLocalRoots(next.info.roots);
       }
     });
     return () => {
@@ -188,8 +218,53 @@ function MenubarShell() {
     void fetchRecentLifeEvents().then(setLifeEvents);
   };
 
+  const onReloadGitRoots = () => {
+    setGitRoots({ kind: "loading" });
+    setGitSave({ kind: "idle" });
+    void fetchGitWatchedRoots().then((next) => {
+      setGitRoots(next);
+      if (next.kind === "ready") {
+        setGitLocalRoots(next.info.roots);
+      }
+    });
+  };
+
+  const onAddGitRoot = () => {
+    const next = gitDraft.trim();
+    if (!next) {
+      return;
+    }
+    if (gitLocalRoots.includes(next)) {
+      setGitDraft("");
+      return;
+    }
+    setGitLocalRoots([...gitLocalRoots, next]);
+    setGitDraft("");
+    setGitSave({ kind: "idle" });
+  };
+
+  const onRemoveGitRoot = (path: string) => {
+    setGitLocalRoots(gitLocalRoots.filter((r) => r !== path));
+    setGitSave({ kind: "idle" });
+  };
+
+  const onSaveGitRoots = () => {
+    if (gitSave.kind === "saving") {
+      return;
+    }
+    setGitSave({ kind: "saving" });
+    void saveGitWatchedRoots(gitLocalRoots).then((result) => {
+      setGitSave(result);
+      if (result.kind === "ok") {
+        setGitLocalRoots(result.info.roots);
+        setGitRoots({ kind: "ready", info: result.info });
+      }
+    });
+  };
+
   const alertLevel = view.alertLevel ?? "green";
   const logging = logView.kind === "logging";
+  const gitSaving = gitSave.kind === "saving";
 
   return (
     <main
@@ -297,6 +372,118 @@ function MenubarShell() {
             </ul>
           )}
         </div>
+      </section>
+
+      <section className="git-roots-block" aria-label="Git watched folders">
+        <h2 className="pairing-title">Git folders</h2>
+        <p className="pairing-detail">
+          Folders you choose for your own Git activity. BioFocus keeps only
+          coarse event kinds — not paths, remotes, or commit messages in
+          Observations.
+        </p>
+        <p className="status-meta">
+          Also set <code>BIOFOCUS_GIT_ACTIVITY=1</code> so the collector can run.
+          Empty list → idle (no whole-disk scan).
+        </p>
+
+        {gitRoots.kind === "loading" && (
+          <p className="status-meta">Loading watched folders…</p>
+        )}
+        {gitRoots.kind === "error" && (
+          <>
+            <p className="status-meta">{gitRoots.detail}</p>
+            <button type="button" className="retry" onClick={onReloadGitRoots}>
+              Try again
+            </button>
+          </>
+        )}
+
+        {(gitRoots.kind === "ready" ||
+          gitRoots.kind === "idle" ||
+          gitLocalRoots.length > 0) && (
+          <>
+            <div className="git-roots-add">
+              <input
+                className="git-roots-input"
+                type="text"
+                value={gitDraft}
+                placeholder="/Users/you/Developer/…"
+                aria-label="Folder path to watch"
+                onChange={(e) => setGitDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    onAddGitRoot();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="retry"
+                onClick={onAddGitRoot}
+                disabled={!gitDraft.trim() || gitSaving}
+              >
+                Add
+              </button>
+            </div>
+
+            {gitLocalRoots.length === 0 ? (
+              <p className="status-meta">No folders yet — Git activity stays idle.</p>
+            ) : (
+              <ul className="git-roots-rows">
+                {gitLocalRoots.map((path) => (
+                  <li key={path} className="git-roots-row">
+                    <span className="git-roots-path" title={path}>
+                      {shortenRootPath(path)}
+                    </span>
+                    <button
+                      type="button"
+                      className="retry"
+                      onClick={() => onRemoveGitRoot(path)}
+                      disabled={gitSaving}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="git-roots-actions">
+              <button
+                type="button"
+                className="retry"
+                onClick={onSaveGitRoots}
+                disabled={gitSaving}
+              >
+                Save folders
+              </button>
+              <button
+                type="button"
+                className="retry"
+                onClick={onReloadGitRoots}
+                disabled={gitSaving || gitRoots.kind === "loading"}
+              >
+                Reload
+              </button>
+            </div>
+            {gitSave.kind === "ok" && (
+              <p className="status-meta" aria-live="polite">
+                {gitSave.message}
+              </p>
+            )}
+            {gitSave.kind === "error" && (
+              <p className="status-meta" aria-live="polite">
+                {gitSave.detail}
+              </p>
+            )}
+            {gitSave.kind === "saving" && (
+              <p className="status-meta" aria-live="polite">
+                Saving…
+              </p>
+            )}
+          </>
+        )}
       </section>
 
       <section className="pairing-block" aria-label="Companion pairing">

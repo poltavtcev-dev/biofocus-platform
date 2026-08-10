@@ -99,6 +99,7 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **GitActivityRate (P13-E3-T1):** `feature_engine::register_git_v1` / `register_catalog_v1` — sum of `event_count` (default 1) for `activity_kind ∈ {commit,checkout,sync,other}` → events per 15m window; **omit** empty / only-`idle` / only-`unknown`; ADR-007 confidence + kind factors. Distinct from `DistractionScore`. Catalog: `docs/06-feature-catalog.md` §1.10.
 - **Git watched-roots allowlist (P14-E1-T1 / ADR-014):** v1 durable store = local file `~/.biofocus/git-watched-roots.toml` (absolute roots only). Observation payload unchanged (ADR-013). **No** SQLite allowlist table / **no** migration. Optional Settings/IPC / dogfood gate = **P14-E3**.
 - **Git live probe + allowlist (P14-E2-T1):** `SystemGitActivityProbe` loads allowlist (file SoT; `BIOFOCUS_GIT_WATCHED_ROOTS` only if file absent); discovers nested repos under roots; emits coarse `git_activity` on HEAD/reflog/FETCH_HEAD/index change; empty allowlist → idle. Still opt-in `BIOFOCUS_GIT_ACTIVITY`. Feature `GitActivityRate` unchanged. Tests: empty allowlist no emit; fixture root commit → channel → persist; `stop_stream` freezes. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md` / `docs/10-security.md`.
+- **Git allowlist Settings + dogfood (P14-E3-T1):** Menubar **Git folders** — `invoke("get_git_watched_roots")` / `invoke("set_git_watched_roots")` read/write ADR-014 TOML (`BIOFOCUS_HOME` for tests). UI ↛ SQLite. No `GitActivityRate` rewrite. Browser QA: `?mockGitRoots=empty|ready|error`. Dogfood runbook: below § Git activity dogfood.
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -205,6 +206,25 @@ IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; U
 - Tests / custom root: `export BIOFOCUS_HOME=/tmp/biofocus-test` → `$BIOFOCUS_HOME/pairing_token`
 - Share path: Desktop Companion UI (copy / QR) — do not commit the token
 - Details: `docs/10-security.md`
+
+### Git activity dogfood (P14-E3-T1 / ADR-014)
+
+Personal self-tracking only — not workplace monitoring.
+
+1. **Enable collector:** `export BIOFOCUS_GIT_ACTIVITY=1` (default off).
+2. **Allowlist (required for live emit):** non-empty absolute roots in `~/.biofocus/git-watched-roots.toml`, **or** use Menubar **Git folders** (`get_git_watched_roots` / `set_git_watched_roots`) to save the same file.
+3. **Expect:** coarse `git_activity` Observations (`activity_kind` + optional `event_count`) → existing Feature `GitActivityRate`. Empty / missing allowlist → soft-fail idle (no whole-disk scan).
+4. **CI / tests without a home file:** when the config file is **absent**, optional `BIOFOCUS_GIT_WATCHED_ROOTS=/abs/a:/abs/b` (colon or comma). File remains SoT when present (no env merge). Tests may set `BIOFOCUS_HOME=/tmp/…` so the TOML lands under `$BIOFOCUS_HOME/git-watched-roots.toml`.
+5. **Privacy:** roots stay in config / Settings IPC only — **never** in Observation payloads or default logs. See `docs/08-plugin-sdk.md` §7.1 / `docs/10-security.md`.
+
+Example file:
+
+```toml
+version = 1
+roots = [
+  "/Users/you/Developer/AI Project/BioFocus",
+]
+```
 
 ## CI
 

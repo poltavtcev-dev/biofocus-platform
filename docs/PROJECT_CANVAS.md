@@ -46,7 +46,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 11 (Done 2026-08-10):** AI coaching polish — ADR-011 → packs (`build_report_with_pack`) → provider UX (`get_local_llm_status` + pack-aware Report). L5 interpret-only.
 - **Phase 12 (Done 2026-08-10):** Ambient + packaging — ADR-012 → Now Playing → `AmbientMediaShare` + `docs/18-packaging-runbook.md`.
 - **Phase 13 (Done 2026-08-10):** Plugin wave-2 — ADR-013 → Git plugin → `GitActivityRate`.
-- **Phase 14 (Opened 2026-08-10):** Git path-allowlist — ADR-014 ✅ config `git-watched-roots.toml` → Ready **P14-E2-T1** (live probe). Deferred: IDE · weather/light · App Store · NotificationPressure.
+- **Phase 14 (Opened 2026-08-10):** Git path-allowlist — ADR-014 ✅ + live probe ✅ → Ready **P14-E3-T1** (dogfood / Settings IPC). Deferred: IDE · weather/light · App Store · NotificationPressure.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -118,7 +118,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 14** (`/docs/SPRINT_ROADMAP.md`). Ready **P14-E2-T1**.
+Immediate Kanban = **Phase 14** (`/docs/SPRINT_ROADMAP.md`). Ready **P14-E3-T1**.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -131,7 +131,7 @@ Immediate Kanban = **Phase 14** (`/docs/SPRINT_ROADMAP.md`). Ready **P14-E2-T1**
 | **11** | AI coaching polish (ADR-011 → packs → provider UX) — **done** |
 | **12** | Ambient + packaging (ADR-012 → Now Playing → AmbientMediaShare) — **done** |
 | **13** | Plugin wave-2 (Git → GitActivityRate) — **done** |
-| **14** | Git path-allowlist (ADR-014 ✅ → Ready live probe) — **active** |
+| **14** | Git path-allowlist (ADR-014 ✅ + live probe ✅ → Ready dogfood/UX) — **active** |
 | **15+** | Open via PM gate — IDE · weather/light · App Store · NotificationPressure |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.

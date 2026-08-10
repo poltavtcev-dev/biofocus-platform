@@ -78,6 +78,17 @@ busy-loop). Calm, non-evaluative copy only.
 
 QA mock: `?mockLifeEvents=empty|ready|error`
 
+## Git watched folders (P14-E3-T1)
+
+Menubar **Git folders** lists/adds/removes personal allowlist roots and saves via
+IPC `get_git_watched_roots` / `set_git_watched_roots` into
+`~/.biofocus/git-watched-roots.toml` (or `$BIOFOCUS_HOME/…` in tests). UI never
+opens the file or SQLite. Empty list → live Git probe stays idle. Also requires
+`BIOFOCUS_GIT_ACTIVITY=1` for the collector. Calm personal copy only — not
+workplace monitoring. Dogfood: `docs/12-development.md` § Git activity dogfood.
+
+QA mock: `?mockGitRoots=empty|ready|error`
+
 ## Companion pairing (P2-E3-T2 / P5-E2-T1)
 
 The shell **Companion** section loads pairing via IPC `get_pairing_token`:

@@ -130,12 +130,14 @@ Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packa
 
 | Item | Value |
 | :--- | :--- |
-| Status | **Shipped** (live probe + file load in **P14-E2**; optional Settings/IPC in **P14-E3**) |
+| Status | **Shipped** (live probe P14-E2; Settings/IPC + dogfood P14-E3) |
 | Store | Local file `~/.biofocus/git-watched-roots.toml` (`version` + `roots` absolute dirs) — **not** SQLite |
 | Env override | `BIOFOCUS_GIT_WATCHED_ROOTS` only when config **file is absent** (tests/CI); file remains SoT when present |
+| Settings IPC | `get_git_watched_roots` / `set_git_watched_roots` (P14-E3) — Menubar **Git folders**; UI ↛ SQLite |
 | Scope | Probe may watch only under listed roots (nested repos ≤ depth 4 / ≤ 64 repos); empty/missing → soft-fail idle |
-| Privacy | Roots stay in config; **never** copy into Observation payloads or default logs |
+| Privacy | Roots stay in config / Settings IPC; **never** copy into Observation payloads or default logs |
 | Migration | **None** — no schema apply |
+| Dogfood | `docs/12-development.md` § Git activity dogfood |
 
 IDE collectors remain **deferred** (no additive privacy-safe session kind beyond `context_window` in v1 — ADR-013). Weather / light ambient and App Store packaging product remain deferred. No plugin marketplace crate. Personal self-tracking only — not employee / workplace git surveillance.
 

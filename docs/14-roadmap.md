@@ -60,8 +60,8 @@
 
 - [ ] **Phase 14: Git path-allowlist / live probe** (Sprint 27–28) — opened 2026-08-10
   - ADR-014 watched-roots / path-allowlist boundaries — **P14-E1 Done** (2026-08-10).
-  - Allowlist + live `SystemGitActivityProbe` — **P14-E2 Ready** (T1).
-  - Dogfood gate / optional allowlist UX — **P14-E3** (after E2).
+  - Allowlist + live `SystemGitActivityProbe` — **P14-E2 Done** (2026-08-10).
+  - Dogfood gate / optional allowlist UX — **P14-E3 Ready** (T1).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)  
@@ -76,7 +76,7 @@
 **Phase 11:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P11-*-qa-to-pm.md` · branch `phase/11-ai-coaching-polish` (PR after freeze)  
 **Phase 12:** Done 2026-08-10 — ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook · branch `phase/12-ambient-packaging` (PR after freeze)
 **Phase 13:** Done 2026-08-10 — ADR-013 → Git plugin → `GitActivityRate` · branch `phase/13-plugin-wave-2` (PR after freeze)
-**Phase 14:** Opened 2026-08-10 — Git path-allowlist · ADR-014 ✅ (`git-watched-roots.toml`) · Ready **P14-E2-T1** · branch `phase/14-git-allowlist` (PR after freeze)
-**Next Kanban:** P14-E2-T1 live probe + allowlist · **PR freeze until 2026-09-01**
+**Phase 14:** Opened 2026-08-10 — Git path-allowlist · ADR-014 ✅ · live probe ✅ · Ready **P14-E3-T1** · branch `phase/14-git-allowlist` (PR after freeze)
+**Next Kanban:** P14-E3-T1 dogfood / allowlist UX · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

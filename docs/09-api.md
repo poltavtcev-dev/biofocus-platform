@@ -457,3 +457,29 @@ Errors are short UI-safe strings (no absolute paths). Never returns Observation 
 | `providerId` | string | Usually `com.biofocus.desktop` for quick-log |
 
 Errors are calm UI-safe strings (unknown kind, storage soft-fail). Never returns raw biometric payloads or absolute filesystem paths.
+
+### `get_git_watched_roots` / `set_git_watched_roots` (P14-E3-T1 / ADR-014)
+
+- **Invoke:** `invoke("get_git_watched_roots")` / `invoke("set_git_watched_roots", { roots })`
+- **Purpose:** Menubar editor for personal Git watched folders. Host reads/writes `~/.biofocus/git-watched-roots.toml` (or `$BIOFOCUS_HOME/git-watched-roots.toml`). UI ↛ SQLite; UI never opens the file itself.
+- **SoT:** Config **file** only for Settings get/set. Probe may still use `BIOFOCUS_GIT_WATCHED_ROOTS` when the file is **absent** (tests/CI) — that env list is not the Settings editor SoT.
+- **Validation:** absolute paths or `~/…`; empty `roots` writes `roots = []` → live probe soft-fails idle (no whole-disk scan).
+- **Privacy:** roots may appear on **this** IPC only so the user can edit them. Never copy roots into `git_activity` Observation payloads or default host logs.
+
+`get_git_watched_roots` / `set_git_watched_roots` success:
+
+```json
+{
+  "roots": ["/Users/you/Developer/AI Project/BioFocus"],
+  "source": "file",
+  "version": 1
+}
+```
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `roots` | string[] | Absolute directory paths from the config file |
+| `source` | string | `file` \| `empty` (Settings path; not env) |
+| `version` | number \| null | File schema version when present |
+
+Errors are calm UI-safe strings (relative path rejected, config folder unwritable).

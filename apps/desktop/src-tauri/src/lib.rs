@@ -143,6 +143,12 @@
 //! `bio_spec`, appends through [`storage::ObservationRepository`] (same store
 //! as ingest — no parallel table). UI never opens SQLite.
 //!
+//! ## `get_git_watched_roots` / `set_git_watched_roots` (P14-E3-T1 / ADR-014)
+//!
+//! Menubar editor for personal Git watched folders. Host reads/writes
+//! `git-watched-roots.toml` only (`BIOFOCUS_HOME` for tests). Paths stay in
+//! config — never copied into Observation payloads or default logs. UI ↛ SQLite.
+//!
 //! ## Local ingest HTTP (Phase 2)
 //!
 //! On startup the host opens the default DB, loads [`ingest::IngestConfig`],
@@ -164,6 +170,7 @@
 
 mod alert_state;
 mod feature_host;
+mod git_watched_roots_ipc;
 mod ingest_host;
 mod life_event_ipc;
 mod pattern_host;
@@ -968,6 +975,20 @@ fn list_recent_life_events(
     life_event_ipc::list_recent_life_events(limit)
 }
 
+/// Load personal Git watched folders from the ADR-014 config file (P14-E3-T1).
+#[tauri::command]
+fn get_git_watched_roots() -> Result<git_watched_roots_ipc::GitWatchedRootsDto, String> {
+    git_watched_roots_ipc::get_git_watched_roots()
+}
+
+/// Save personal Git watched folders to the ADR-014 config file (P14-E3-T1).
+#[tauri::command]
+fn set_git_watched_roots(
+    roots: Vec<String>,
+) -> Result<git_watched_roots_ipc::GitWatchedRootsDto, String> {
+    git_watched_roots_ipc::set_git_watched_roots(roots)
+}
+
 /// Starts the Tauri event loop (window + tray shell + local ingest).
 pub fn run() -> DesktopResult<()> {
     let _ = runtime::init_tracing(Some("info"));
@@ -1032,7 +1053,9 @@ pub fn run() -> DesktopResult<()> {
             core_ping,
             get_pairing_token,
             log_life_event,
-            list_recent_life_events
+            list_recent_life_events,
+            get_git_watched_roots,
+            set_git_watched_roots
         ])
         .build(tauri::generate_context!())?;
 
