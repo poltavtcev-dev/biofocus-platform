@@ -43,10 +43,10 @@ None blocking.
 - **Production `SystemNowPlayingProbe` intentionally returns `None`** (idle soft-fail) — no content-bearing MediaRemote/AppleScript in v1. Scripted probe covers emit→persist. Live OS mapping is a future privacy-safe refinement, not an AC fail (brief allows soft-fail when OS mapping unavailable).
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — mark **P12-E2-T1** Done; Ready **P12-E3-T1** (`AmbientMediaShare` + packaging runbook)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx`
-- [ ] Note public surface: `NowPlayingPlugin`, `BIOFOCUS_NOW_PLAYING`, `validate_now_playing_payload`, `invalid_now_playing`
-- [ ] **Do not open a PR** (PR freeze until 2026-09-01)
+- [x] `/docs/SPRINT_ROADMAP.md` — mark **P12-E2-T1** Done; Ready **P12-E3-T1** (`AmbientMediaShare` + packaging runbook)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx`
+- [x] Note public surface: `NowPlayingPlugin`, `BIOFOCUS_NOW_PLAYING`, `validate_now_playing_payload`, `invalid_now_playing`
+- [x] **Do not open a PR** (PR freeze until 2026-09-01)
 
 ## Suggested next Ready task
 - **P12-E3-T1** — `AmbientMediaShare` catalog Feature from `now_playing` Observations + packaging signed-build/notarization runbook companion. Branch: `phase/12-ambient-packaging`.

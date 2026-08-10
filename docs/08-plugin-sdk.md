@@ -95,7 +95,7 @@ IDE/Git collectors are **deferred** (not wave-1 v1). No plugin marketplace crate
 
 | Item | Value |
 | :--- | :--- |
-| Status | **Shipped** (collector); Feature `AmbientMediaShare` → **P12-E3** |
+| Status | **Shipped** (collector + Feature `AmbientMediaShare`) |
 | Crate | `crates/macos-collector` |
 | Plugin id | `com.biofocus.macos.now_playing` |
 | `data_type` | `now_playing` |
@@ -104,6 +104,6 @@ IDE/Git collectors are **deferred** (not wave-1 v1). No plugin marketplace crate
 | Enable | `BIOFOCUS_NOW_PLAYING=1` (default **off**) |
 | Poll | On play-state / media-kind change or rare ≥5s; no busy-loop |
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
-| E3 Feature | `AmbientMediaShare` (catalog) |
+| E3 Feature | `AmbientMediaShare` (catalog — `register_ambient_v1` / `register_catalog_v1`) |
 
-Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packaging signed-build runbook is a **secondary** Phase 12 track (docs/process in E3) — not a plugin marketplace.
+Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packaging signed-build runbook: [`docs/18-packaging-runbook.md`](18-packaging-runbook.md) — secondary Phase 12 track (docs/process); AGPLv3 Core stays open.

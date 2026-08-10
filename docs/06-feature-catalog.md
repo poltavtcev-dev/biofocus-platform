@@ -100,6 +100,23 @@
 - **Explanation factors:** when emitted — `browser_mix` (“Browser category mix”), `category_churn` (“Category changes”), optional `app_switches` (“App switching”); shares sum to 1.0.
 - **DAG:** depends on `ContextSwitchRate`; `feature_engine::register_distraction_v1` / `register_catalog_v1` (after `register_focus_v1`).
 
+### 1.9 `AmbientMediaShare`
+- **Goal:** Calm share of the window with **active personal media** playing. Ambient context only — “media present during this window” — **not** “you listen too much” and **not** a clinical / attention diagnosis.
+- **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR / DistractionScore.
+- **Inputs (required):** `now_playing` Observations (`media_kind` + `is_playing`) with ≥1 **closed-set** kind in the window: `music` / `podcast` / `other` (playing or paused).
+- **Formula Strategy (v1):** Sample share over the window:
+  - Count all `now_playing` samples in the window as denominator.
+  - Numerator = samples where `is_playing == true` **and** `media_kind ∈ {music, podcast, other}`.
+  - Value = `100 × numerator / denominator`, clamped 0–100.
+  - Paused closed-set samples (e.g. music with `is_playing: false`) count in the denominator but not the numerator → may emit **0**.
+- **Omit policy:** empty window, no `now_playing`, or **only-`none` / only-`unknown`** (no closed-set kinds) → **omit** Feature (soft-fail OS probe often emits `unknown` / idle `none` — Feature waits for closed-set kinds).
+- **Output:** Float (0.0 — 100.0).
+- **Units:** percent of window samples with active closed-set media.
+- **Provenance:** Observation IDs of `now_playing` in the window.
+- **Confidence (ADR-007):** single family (`now_playing`); when emitted `confidence = mean(evidence Observation.confidence)`.
+- **Explanation factors:** when ≥1 active-playing sample — per-kind shares among playing samples: `music` (“Music playing”), `podcast` (“Podcast playing”), `other` (“Other media playing”); shares sum to 1.0. Paused-only closed-set → value 0, empty factors.
+- **DAG:** независимый узел; `feature_engine::register_ambient_v1` / `register_catalog_v1`.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
@@ -113,10 +130,9 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SleepDebt` | Sleep shortfall vs baseline | Sleep Observations | P7 |
 | `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 |
 | `NotificationPressure` | Interruption intensity | notification Observations | P10 (deferred — not ADR-010 wave-1) |
-| `AmbientMediaShare` | Share of window with active personal media (playing) | `now_playing` Observations (ADR-012) | P12-E3 |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `ActivityBalance` | Movement vs sedentary | steps / workout Life Events | P6–P7 |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; others may omit until wired).

@@ -1,5 +1,5 @@
 //! Feature calculation engine (FocusScore, StressIndex, FatigueIndex, MeetingDensity,
-//! RecoveryScore, DistractionScore).
+//! RecoveryScore, DistractionScore, AmbientMediaShare).
 //!
 //! Phase 3 (P3-E2 / E3): DAG scheduler + catalog v1 nodes + alert mapping.
 //! Phase 4 (P4-E1-T1): [`FeatureSnapshot`] for dashboard / IPC (cached read).
@@ -7,6 +7,7 @@
 //! Phase 7 (P7-E3-T1): `RecoveryScore` from HRV + optional heart_rate.
 //! Phase 8 (P8-E2-T1): [`baseline`] recompute-on-read FocusScore afternoon series (ADR-008).
 //! Phase 10 (P10-E3-T1): `DistractionScore` from `browser_category` (+ optional CSR).
+//! Phase 12 (P12-E3-T1): `AmbientMediaShare` from `now_playing` Observations.
 //!
 //! # Entrypoint
 //!
@@ -16,7 +17,8 @@
 //! - [`catalog::register_calendar_v1`] — `MeetingDensity` + `RecoveryBetweenMeetings` (v1)
 //! - [`catalog::register_recovery_v1`] — `RecoveryScore` (v1; HRV + optional HR)
 //! - [`catalog::register_distraction_v1`] — `DistractionScore` (v1; needs CSR)
-//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar + Recovery + Distraction
+//! - [`catalog::register_ambient_v1`] — `AmbientMediaShare` (v1; `now_playing`)
+//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar + Recovery + Distraction + Ambient
 //! - [`baseline::recompute_focus_afternoon_baseline`] — bounded prior-day Focus means
 //! - [`FeatureEngine::run`] — topo compute → [`EngineOutput`]
 //! - [`FeatureSnapshot::from_engine_output`] — Features + Signals for IPC/dashboard
@@ -45,13 +47,14 @@ pub use baseline::{
 pub use bio_spec::{Feature, FeatureValue, Observation, Signal};
 
 pub use catalog::{
-    register_calendar_v1, register_catalog_v1, register_distraction_v1, register_focus_v1,
-    register_recovery_v1, register_stress_v1, ContextSwitchRateNode, DistractionScoreNode,
-    FatigueIndexNode, FocusScoreNode, MeetingDensityNode, RecoveryBetweenMeetingsNode,
-    RecoveryScoreNode, StressIndexNode, CONTEXT_SWITCH_RATE_ID, DISTRACTION_SCORE_ID,
-    FATIGUE_INDEX_ID, FOCUS_SCORE_ID, HIGH_STRESS_MIN_DURATION_SECS, HIGH_STRESS_SIGNAL_TYPE,
-    HIGH_STRESS_THRESHOLD, MEETING_DENSITY_ID, RECOVERY_BETWEEN_MEETINGS_ID, RECOVERY_SCORE_ID,
-    STEP_SECS, STRESS_INDEX_ID, WINDOW_SECS,
+    register_ambient_v1, register_calendar_v1, register_catalog_v1, register_distraction_v1,
+    register_focus_v1, register_recovery_v1, register_stress_v1, AmbientMediaShareNode,
+    ContextSwitchRateNode, DistractionScoreNode, FatigueIndexNode, FocusScoreNode,
+    MeetingDensityNode, RecoveryBetweenMeetingsNode, RecoveryScoreNode, StressIndexNode,
+    AMBIENT_MEDIA_SHARE_ID, CONTEXT_SWITCH_RATE_ID, DISTRACTION_SCORE_ID, FATIGUE_INDEX_ID,
+    FOCUS_SCORE_ID, HIGH_STRESS_MIN_DURATION_SECS, HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD,
+    MEETING_DENSITY_ID, RECOVERY_BETWEEN_MEETINGS_ID, RECOVERY_SCORE_ID, STEP_SECS,
+    STRESS_INDEX_ID, WINDOW_SECS,
 };
 pub use engine::{EngineOutput, FeatureEngine};
 pub use error::{FeatureEngineError, FeatureEngineResult};

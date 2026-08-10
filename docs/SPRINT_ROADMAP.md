@@ -29,17 +29,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P12-E2-T1** |
+| **Ready** | **P12-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **P12-E1-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **P12-E1-T1** · **P12-E2-T1** |
 
-**Epic status:** P12-E1 ✅ · P12-E2 ⬜ (T1 Ready) · P12-E3 ⬜
+**Epic status:** P12-E1 ✅ · P12-E2 ✅ · P12-E3 ⬜ (T1 Ready)
 
-**Phase 12 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-012 shipped · Ready Now Playing plugin
+**Phase 12 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-012 + Now Playing plugin shipped · Ready AmbientMediaShare
 
 **Рекомендуемый порядок:**  
-~~P12-E1-T1~~ → **P12-E2-T1** → P12-E3-T1 (`AmbientMediaShare` + packaging runbook)
+~~P12-E1-T1~~ → ~~P12-E2-T1~~ → **P12-E3-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -47,15 +47,17 @@
 
 ### Active assignment
 
-**Ready now:** **P12-E2-T1** — Now Playing ambient plugin (`now_playing` / `BIOFOCUS_NOW_PLAYING`). Brief: `docs/handoffs/P12-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P12-E3-T1** — `AmbientMediaShare` + packaging runbook. Brief: `docs/handoffs/P12-E3-T1-pm-brief.md`. Role: **Dev**.
 
-**Closed:** P12-E1-T1 (QA Pass, 2026-08-10) — ADR-012: primary Now Playing ambient; secondary packaging runbook; E2/E3 names locked. Epic **P12-E1** ✅. Evidence: `docs/handoffs/P12-E1-T1-qa-to-pm.md`.
+**Closed:** P12-E2-T1 (QA Pass with notes, 2026-08-10) — `NowPlayingPlugin` / `BIOFOCUS_NOW_PLAYING` / `validate_now_playing_payload`; Epic **P12-E2** ✅. Evidence: `docs/handoffs/P12-E2-T1-qa-to-pm.md`. Note: production OS probe soft-fails (`None`) by design; scripted probe covers emit→persist.
+
+**Closed:** P12-E1-T1 (QA Pass, 2026-08-10) — ADR-012: primary Now Playing ambient; secondary packaging runbook. Epic **P12-E1** ✅. Evidence: `docs/handoffs/P12-E1-T1-qa-to-pm.md`.
 
 **Closed previous:** Phase 11 (E1–E3 Done, 2026-08-10) — ADR-011 → packs → provider UX. Evidence: `docs/handoffs/P11-*-qa-to-pm.md`. Branch: `phase/11-ai-coaching-polish`.
 
-**Next after Pass:** Ready **P12-E3-T1** — `AmbientMediaShare` + packaging runbook.
+**Next after Pass:** close Epic **P12-E3** + **Phase 12** Kanban (then next horizon via separate PM gate).
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 12 cluster on `phase/12-ambient-packaging`; local commits OK; one cluster PR **after** freeze (or when user lifts it). No schema/sync migration approve needed for v1.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 12 cluster on `phase/12-ambient-packaging`; local commits OK; one cluster PR **after** freeze (or when user lifts it). Public surface: `NowPlayingPlugin`, `BIOFOCUS_NOW_PLAYING`, `validate_now_playing_payload`, ingest `invalid_now_playing`.
 
 ---
 
@@ -81,14 +83,7 @@
 | :--- | :--- | :---: | :--- | :--- | :--- |
 | **P12-E2-T1** | Now Playing ambient plugin | Dev | macos-collector / plugin-sdk + host | See below | P12-E1-T1 |
 
-**P12-E2-T1 AC:**
-1. `BioFocusPlugin` id `com.biofocus.macos.now_playing` with Capability covering `now_playing`; implement in `crates/macos-collector` (or thin adapter) per ADR-012 / `docs/08-plugin-sdk.md`.
-2. Desktop `ingest_host` starts the plugin **only** when `BIOFOCUS_NOW_PLAYING=1` (default **off**); same bounded Observation channel → persist worker (UI ↛ SQLite).
-3. Emitted Observations match ADR-012 / contracts: required `media_kind` (`music` \| `podcast` \| `other` \| `none` \| `unknown`) + `is_playing`; **never** titles/artists/lyrics/playlists/mic/geo dumps.
-4. Injectable probe for tests; production probe may soft-fail / emit nothing when OS mapping unavailable — idle-safe (change or rare ≥5s poll; **no** busy-loop); `stop_stream` joins background work.
-5. Docs finalized (shipped): `07-contracts`, `08-plugin-sdk`, `10-security`, `12-development` as needed.
-6. Tests with mock probe: emit → channel → persist where practical; after `stop_stream`, emissions freeze.
-7. Handoff: `docs/handoffs/P12-E2-T1-dev-to-qa.md`.
+**P12-E2 shipped:** `NowPlayingPlugin` (`com.biofocus.macos.now_playing`); opt-in `BIOFOCUS_NOW_PLAYING`; `validate_now_playing_payload`; ingest `invalid_now_playing`; idle-safe + stop joins; production OS probe soft-fails (`None`) by design — scripted probe covers emit→persist. QA Pass with notes 2026-08-10.
 
 **Out of scope (E2):** `AmbientMediaShare` / Feature DAG (→ **P12-E3**); packaging installer binary; weather/light; IDE/Git; new SQLite schema; PR during freeze.
 
@@ -99,11 +94,19 @@
 
 | ID | Task | Role | Modules | AC (summary) | Depends |
 | :--- | :--- | :---: | :--- | :--- | :--- |
-| **P12-E3-T1** | `AmbientMediaShare` + packaging runbook | Dev (+ UX if UI) | feature-engine + docs | AC at Ready after E2 | P12-E2-T1 |
+| **P12-E3-T1** | `AmbientMediaShare` + packaging runbook | Dev | feature-engine + pipeline + docs | See below | P12-E2-T1 |
 
-**Note:** Exact AC filled when PM Ready's E3 after E2 Pass. Locked names: Feature `AmbientMediaShare`; packaging = signed-build / notarization / update-channel runbook (sync stance only, off by default).
+**P12-E3-T1 AC:**
+1. Move **`AmbientMediaShare`** from `docs/06-feature-catalog.md` § Planned → §1 with: goal, window/step (15m / 1m align Focus/CSR), units, inputs, formula strategy (v1), provenance, ADR-007 confidence, DAG registration note. Calm framing only (“media present during this window” — **not** “you listen too much” / clinical).
+2. Inputs: `now_playing` Observations (`media_kind` + `is_playing`); formula sketch per ADR-012 — share of window with `is_playing && media_kind ∈ {music, podcast, other}` → 0–100; `none`/`unknown`-only thin windows → **omit** or lower confidence (pick one; document + test).
+3. Pipeline: ensure `now_playing` is a known normalized type; strip forbidden content keys (titles/artists/lyrics/playlists/etc.) if present.
+4. Register in `feature_engine::register_catalog_v1` (or helper wired into it); Feature appears on existing snapshot / Feature Worker path when inputs present — **no** mandatory new Dashboard UI.
+5. Packaging companion (same task): docs runbook for signed macOS build + notarization + update-channel stance; optional sync remains **off-by-default stance only** (no sync product). AGPLv3 Core stays open; commercial ≠ closed Feature math.
+6. Unit tests: rich playing media → emit; empty / none-unknown-only → omit or low confidence per policy; confidence per ADR-007.
+7. Optional: `ExplanationFactor`s if weighted components are clear (P7-E2 shape).
+8. Handoff: `docs/handoffs/P12-E3-T1-dev-to-qa.md`.
 
-**Out of scope (E3):** weather/light; App Store product; sync product; workplace surveillance framing.
+**Out of scope (E3):** weather/light; App Store product; sync product; live MediaRemote content mapping; workplace surveillance framing; PR during freeze.
 
 ---
 
@@ -267,7 +270,7 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | P12-E1-T1 ADR-012 ambient + packaging scope | | ● | ○ | | docs + decision-log |
 | P12-E2-T1 Now Playing ambient plugin | | ● | ○ | | macos-collector / plugin-sdk + host |
-| P12-E3-T1 AmbientMediaShare + packaging runbook | | ● | ○ | ○ | feature-engine + docs |
+| P12-E3-T1 AmbientMediaShare + packaging runbook | | ● | ○ | | feature-engine + pipeline + docs |
 
 ● = owner · ○ = collaborator
 
@@ -276,8 +279,9 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 ## Sprint 23–24 — Queue
 
 1. ~~P12-E1-T1 — ADR-012 Phase 12 scope (ambient + commercial packaging)~~ ✅ Done  
-2. **P12-E2-T1** — Now Playing ambient plugin ← **Ready**  
-3. P12-E3-T1 — `AmbientMediaShare` + packaging runbook
+2. ~~P12-E2-T1 — Now Playing ambient plugin~~ ✅ Done  
+3. **P12-E3-T1** — `AmbientMediaShare` + packaging runbook ← **Ready**
 
 **Git:** `phase/12-ambient-packaging` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P12-E2-T1-pm-brief.md`.
+**Brief:** `docs/handoffs/P12-E3-T1-pm-brief.md`.  
+**Next after Phase 12:** PM gate → next horizon (`docs/14-roadmap.md` / vision).

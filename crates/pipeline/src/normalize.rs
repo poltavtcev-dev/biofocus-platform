@@ -16,6 +16,7 @@
 //! | `keystrokes` | `{ "count": u64, "window_secs": u64, "rate_per_min": f64 }` | `window_seconds`→`window_secs`; `rate_per_min` recomputed; content keys stripped |
 //! | `calendar_event` | `{ "uid", "start", "end", "all_day"?, "busy"? }` | titles/bodies/attendees stripped; required uid/start/end |
 //! | `browser_category` | `{ "category": string, "browser_bundle_id"?: string }` | closed-set category; `url` / `title` / `href` / content extras stripped (ADR-010) |
+//! | `now_playing` | `{ "media_kind": string, "is_playing": bool }` | closed-set kind; `title` / `artist` / `album` / `lyrics` / playlist ids stripped (ADR-012) |
 //!
 //! Known type with missing / non-finite required fields → **skipped** (dropped from
 //! the batch; counted in [`NormalizedBatch::skipped_count`]).
@@ -25,7 +26,7 @@
 //! **Pass-through** — Observation kept unchanged (forward-compatible). Not counted
 //! as skipped.
 
-use bio_spec::Observation;
+use bio_spec::{is_v1_media_kind, Observation};
 use serde_json::{json, Map, Value as JsonValue};
 
 use crate::dedupe::DedupedBatch;
@@ -43,6 +44,8 @@ pub const DATA_TYPE_KEYSTROKES: &str = "keystrokes";
 pub const DATA_TYPE_CALENDAR_EVENT: &str = "calendar_event";
 /// Browser coarse category (ADR-010 / P10-E2).
 pub const DATA_TYPE_BROWSER_CATEGORY: &str = "browser_category";
+/// Now Playing ambient media (ADR-012 / P12-E2).
+pub const DATA_TYPE_NOW_PLAYING: &str = "now_playing";
 
 const V1_BROWSER_CATEGORIES: &[&str] = &[
     "work",
@@ -189,6 +192,13 @@ fn normalize_one(mut obs: Observation) -> NormalizeOutcome {
             }
             None => NormalizeOutcome::Skip,
         },
+        DATA_TYPE_NOW_PLAYING => match normalize_now_playing(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
         // Unknown type: pass-through unchanged.
         _ => NormalizeOutcome::Keep(obs),
     }
@@ -308,6 +318,23 @@ fn normalize_browser_category(payload: &JsonValue) -> Option<JsonValue> {
     Some(JsonValue::Object(out))
 }
 
+fn normalize_now_playing(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let media_kind = first_nonempty_str(obj, &["media_kind", "mediaKind"])?;
+    if !is_v1_media_kind(media_kind) {
+        return None;
+    }
+    let is_playing = match obj.get("is_playing").or_else(|| obj.get("isPlaying")) {
+        Some(JsonValue::Bool(b)) => *b,
+        _ => return None,
+    };
+    let mut out = Map::new();
+    out.insert("media_kind".to_string(), json!(media_kind));
+    out.insert("is_playing".to_string(), json!(is_playing));
+    // Explicitly drop title / artist / album / lyrics / playlist ids / etc.
+    Some(JsonValue::Object(out))
+}
+
 fn first_i64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<i64> {
     for key in keys {
         if let Some(v) = obj.get(*key) {
@@ -411,7 +438,7 @@ mod tests {
     use super::{
         normalize_deduped, normalize_observations, DATA_TYPE_BROWSER_CATEGORY,
         DATA_TYPE_CALENDAR_EVENT, DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV,
-        DATA_TYPE_KEYSTROKES,
+        DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING,
     };
     use crate::dedupe::DedupeState;
     use crate::intake::accept_observations;
@@ -572,6 +599,50 @@ mod tests {
     #[test]
     fn browser_category_rejects_unknown_label() {
         let input = obs(DATA_TYPE_BROWSER_CATEGORY, json!({ "category": "social" }));
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 0);
+        assert_eq!(out.skipped_count(), 1);
+    }
+
+    #[test]
+    fn now_playing_strips_title_artist_and_keeps_coarse_fields() {
+        let input = obs(
+            DATA_TYPE_NOW_PLAYING,
+            json!({
+                "media_kind": "music",
+                "is_playing": true,
+                "title": "Secret Song",
+                "artist": "Leak Band",
+                "album": "Private",
+                "lyrics": "do not persist",
+                "playlist_id": "pl-123",
+                "track_id": "tr-9"
+            }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let p = &out.observations()[0].payload;
+        assert_eq!(
+            p,
+            &json!({
+                "media_kind": "music",
+                "is_playing": true
+            })
+        );
+        assert!(p.get("title").is_none());
+        assert!(p.get("artist").is_none());
+        assert!(p.get("album").is_none());
+        assert!(p.get("lyrics").is_none());
+        assert!(p.get("playlist_id").is_none());
+        assert!(p.get("track_id").is_none());
+    }
+
+    #[test]
+    fn now_playing_rejects_invalid_kind() {
+        let input = obs(
+            DATA_TYPE_NOW_PLAYING,
+            json!({ "media_kind": "audiobook", "is_playing": true }),
+        );
         let out = normalize_observations(&[input]).expect("ok");
         assert_eq!(out.len(), 0);
         assert_eq!(out.skipped_count(), 1);

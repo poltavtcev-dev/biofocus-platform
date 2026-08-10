@@ -1,5 +1,5 @@
-//! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3 + Phase 10 E3) —
-//! deterministic v1 formulas.
+//! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3 + Phase 10 E3 +
+//! Phase 12 E3) — deterministic v1 formulas.
 //!
 //! | Node | Feature id | Task |
 //! | :--- | :--- | :--- |
@@ -11,12 +11,15 @@
 //! | [`RecoveryBetweenMeetingsNode`] | `RecoveryBetweenMeetings` | P6-E3-T2 |
 //! | [`RecoveryScoreNode`] | `RecoveryScore` | P7-E3-T1 |
 //! | [`DistractionScoreNode`] | `DistractionScore` | P10-E3-T1 |
+//! | [`AmbientMediaShareNode`] | `AmbientMediaShare` | P12-E3-T1 |
 //!
 //! Register Focus pair via [`register_focus_v1`]; Stress/Fatigue via
 //! [`register_stress_v1`] (requires FocusScore already registered for Fatigue);
 //! Calendar pair via [`register_calendar_v1`]; Recovery via [`register_recovery_v1`];
-//! Distraction via [`register_distraction_v1`] (requires `ContextSwitchRate`).
+//! Distraction via [`register_distraction_v1`] (requires `ContextSwitchRate`);
+//! Ambient media via [`register_ambient_v1`].
 
+mod ambient_media_share;
 mod calendar_meeting;
 mod confidence;
 mod context_switch_rate;
@@ -34,6 +37,7 @@ pub use confidence::{
     single_family_confidence,
 };
 
+pub use ambient_media_share::{AmbientMediaShareNode, FEATURE_ID as AMBIENT_MEDIA_SHARE_ID};
 pub use context_switch_rate::{ContextSwitchRateNode, FEATURE_ID as CONTEXT_SWITCH_RATE_ID};
 pub use distraction_score::{DistractionScoreNode, FEATURE_ID as DISTRACTION_SCORE_ID};
 pub use fatigue_index::{FatigueIndexNode, FEATURE_ID as FATIGUE_INDEX_ID};
@@ -90,12 +94,20 @@ pub fn register_distraction_v1(engine: &mut FeatureEngine) -> FeatureEngineResul
     Ok(())
 }
 
-/// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery, Distraction.
+/// Registers `AmbientMediaShare` (independent; `now_playing` Observations).
+pub fn register_ambient_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(AmbientMediaShareNode::new())?;
+    Ok(())
+}
+
+/// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery,
+/// Distraction, Ambient.
 pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
     register_focus_v1(engine)?;
     register_stress_v1(engine)?;
     register_calendar_v1(engine)?;
     register_recovery_v1(engine)?;
     register_distraction_v1(engine)?;
+    register_ambient_v1(engine)?;
     Ok(())
 }
