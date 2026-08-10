@@ -13,6 +13,7 @@
 | ADR-009 | 2026-08-08 | Recommendations v1 = first-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read); keep thin `Insight.actionRecommendation` as optional hint only; **no** Recommendation SQLite store; **no** parallel Coach Engine crate | Vision L4 needs Evidence-backed suggested actions, not only a string on Insight. Evolve existing Knowledge path (ADR-008); local-only; idle-safe; LLM stays L5 interpret-only. | LLM as source of truth for actions; clinical/prescription framing; parallel Coach Engine without Evidence; cloud sync of recommendations; persist Recommendation history in v1; replace Insights with Recommendations |
 | ADR-010 | 2026-08-10 | Plugin wave-1 source = **Browser categories** (not IDE/Git in v1); `data_type: "browser_category"` coarse labels only → existing `observations` store; opt-in env default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `DistractionScore` | Vision source priority after Calendar is IDE/Git/**Browser**; catalog already names `DistractionScore` (browser categories). Complements `context_window` / CSR (browser is one app — categories reveal in-browser fragmentation). Privacy-first: no full URLs / titles / keystroke content; personal self-tracking only. | Both IDE+Browser in same wave; always-on capture; cloud history sync; plugin marketplace crate; parallel plugin SQLite registry; ambient music/weather in P10; IDE/Git as wave-1 v1 (deferred) |
 | ADR-011 | 2026-08-10 | L5 coaching polish v1 = **named/versioned prompt packs** in `report-engine` (templates over already-computed Features / Insights / Recommendations) + **calm Dashboard provider UX** for opt-in local LLM status/config; interpret-only; in-process packs + existing env/IPC; **no** chat-history SQLite; **no** parallel Coach Engine | Vision L5 is NL explanation only. Phase 4 shipped `build_report` / `interpret_report` / `generate_report` (env-only). Phase 11 dogfood needs selectable packs + calmer provider surface without making LLM a Feature/Recommendation engine. Local-first; idle; explicit user action; no auto-invoke on Dashboard open. | Cloud LLM by default; LLM as SoT for Features/Recommendations; auto-invoke on Dashboard open; parallel Coach Engine that bypasses Evidence; clinical/prescription coaching tone; persist chat history SQLite without need; shipping packs without ADR |
+| ADR-012 | 2026-08-10 | Phase 12 v1 **primary** = ambient **Now Playing / music** Observation wave-1 (one source); **secondary** = commercial packaging as signed-build / notarization / update **runbook + process** (no default cloud sync). E2 = plugin; E3 = `AmbientMediaShare` Feature + packaging runbook. Existing `observations` store; AGPLv3 Core stays open | Vision ladder after plugins is ambient (music/weather/light) + commercial packaging ≠ secret math. macOS Now Playing dogfoods without mic / precise geo; weather/light deferred. Packaging stays open Core + distribution process | All three ambient sources in one wave; always-on ambient capture; cloud sync by default; secret/proprietary Feature formulas; ambient Features without Observations; packaging that forces UI→DB or cloud LLM; IDE/Git re-prioritized into P12; PR during freeze |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -352,3 +353,141 @@ E3 (P11-E3-T1) — Dashboard provider UX:
 6. **Persist chat history in SQLite without need** — premature schema; no coaching transcript store in v1.
 7. **Shipping prompt packs / provider UX without ADR** — Phase 11 boundary must be recorded before E2/E3 code.
 8. **In-app cloud provider marketplace** — out of Phase 11; ambient / commercial packaging is Phase 12+.
+
+### ADR-012 detail — Phase 12 scope: ambient Now Playing + packaging runbook (v1)
+
+**Chosen Phase 12 v1 primary track:** **Ambient Now Playing / music** — one ambient Observation source (Capability Plugin Model).  
+**Chosen Phase 12 v1 secondary track (same phase):** **Commercial packaging** as **signed-build / notarization / update-channel runbook + process** — not App Store productization; **not** default cloud sync; Core math stays AGPLv3 / open.
+
+| Layer | Role in Phase 12 v1 |
+| :--- | :--- |
+| Capability Plugin (`plugin-sdk`) | New `BioFocusPlugin` declares Capability for Now Playing ambient; `start_stream` / `stop_stream` only |
+| Observation (SQLite) | Immutable facts in existing `observations` table — **no** parallel ambient store (ADR-006 / ADR-010 stance) |
+| Feature (`feature-engine`) | E3: `AmbientMediaShare` consumes `now_playing` Observations — ADR-007 confidence; calm non-clinical |
+| Packaging | Docs/process: signed macOS build + notarization runbook + update-channel stance; optional sync **stance only** (off by default; **not** shipped as product in P12) |
+| LLM | L5 interpret-only — must **not** invent ambient Features, media kinds, or packaging policy |
+
+**Why Now Playing / music (not weather or light) for ambient wave-1**
+
+1. **Vision ladder:** After plugins, ambient is music / weather / light — pick **one** for dogfood.
+2. **macOS feasibility:** System Now Playing / MediaRemote-style probes can yield coarse **playing vs idle** + media kind without microphone, without song lyrics, and without precise home geolocation.
+3. **Complements existing context:** Browser categories + CSR describe *what app / in-browser mix*; Now Playing adds *whether personal media is active* during the same windows — useful for calm pattern dogfood without overlapping DistractionScore inputs.
+4. **Weather deferred:** Needs location or region; precise geo dumps conflict with privacy bar; coarse weather without good location UX is thin dogfood.
+5. **Light deferred:** Ambient-light sensors are uneven across Mac hardware; weaker v1 probe story than Now Playing.
+
+**Why packaging is secondary runbook (not primary code track)**
+
+1. Vision commercial split is **packaging** (signed builds, updates, optional sync, support) — algorithms stay open-source (ADR-004 AGPLv3).
+2. Dogfood value in Sprint 23–24 is higher from a real Observation → Feature loop than from shipping App Store listing mid-freeze.
+3. Signed-build / notarization / update-channel **process** can land as docs without a sync product or UI→DB break.
+4. Optional user-opt-in sync remains a **stance** in P12: if ever built later, default **off**; no mandatory cloud telemetry in this phase.
+
+**Observation contract sketch (implement in P12-E2)**
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | `"now_playing"` |
+| `provider_id` | `com.biofocus.macos.now_playing` (host collector / thin adapter — exact probe in E2) |
+| Opt-in | `BIOFOCUS_NOW_PLAYING=1` (default **off**); host starts plugin only when set |
+| Poll / idle | Emit **on play-state / media-kind change** (or rare poll ≥5s); **no** busy-loop; `stop_stream` must join background work |
+| Confidence | Provider-set ∈ `[0.0, 1.0]` (unknown mapping → lower confidence OK) |
+
+**Privacy-safe payload (v1)** — coarse aggregates only:
+
+```json
+{
+  "id": "…",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.now_playing",
+  "data_type": "now_playing",
+  "payload": {
+    "media_kind": "music",
+    "is_playing": true
+  },
+  "confidence": 0.85
+}
+```
+
+| Payload field | Rule |
+| :--- | :--- |
+| `media_kind` | **Required.** Closed v1 set: `music` \| `podcast` \| `other` \| `none` \| `unknown` (E2 may refine labels in contracts; keep coarse) |
+| `is_playing` | **Required.** Boolean — whether media is actively playing (vs paused / idle) |
+
+**Explicitly forbidden in v1 Observations / logs**
+
+- Song / episode titles, artists, albums, lyrics, playlist names or IDs, artwork URLs that identify content
+- Always-on microphone / audio waveform capture
+- Precise home geolocation dumps (weather path deferred partly for this reason)
+- Employee-surveillance / workplace ambient monitoring framing — product is **personal self-tracking** only
+- Always-on capture without opt-in env
+
+**Commercial packaging boundaries (Phase 12 v1)**
+
+| In Phase 12 v1 | Deferred (later epic / ADR + approve) |
+| :--- | :--- |
+| Signed macOS `.app` / `.dmg` **runbook** (Developer ID, notarization steps) | Full Mac App Store listing / review pipeline as product |
+| Update-channel **stance** documented (prefer local/manual or future opt-in updater — exact tool chosen in E3 runbook) | Mandatory auto-update that phones home without consent |
+| Optional sync **stance**: off by default; no sync product shipped in P12 | Cloud sync product, account system, remote Observation store |
+| Reaffirm AGPLv3 Core remains open; commercial packaging ≠ closed Feature / metric formulas | Proprietary / secret Core math forks |
+| Keep UI ↛ SQLite and LLM interpret-only unchanged | Packaging that forces UI→DB or cloud LLM marketplace |
+
+**Schema (v1)**
+
+- Prefer existing `observations` store only (ADR-006 / ADR-010 stance).
+- **No new SQLite tables/columns** for ambient media, sync mirrors, or packaging registries.
+- **Do not apply** any migration for this ADR.
+- Deferred (future ADR + user approve only): optional sync store / outbox; ambient allowlist config table — out of Phase 12 v1 until then.
+
+**Capability Plugin Model**
+
+```text
+BioFocusPlugin
+  id: com.biofocus.macos.now_playing
+  capabilities: [{ name: "now_playing", data_types: ["now_playing"] }]
+  start_stream(tx) → emit Observation on change (opt-in)
+  stop_stream() → join; freeze emissions
+Desktop ingest_host → same bounded Observation channel → spawn_persist_worker → SQLite
+UI ↛ SQLite (unchanged)
+```
+
+**E2 / E3 sketch (names locked)**
+
+```text
+E2 (P12-E2-T1) — Now Playing ambient plugin:
+  plugin (macos-collector or thin adapter) + mock/scripted probe
+  → ObservationSender → persist
+  contracts in 07-contracts / 08-plugin-sdk finalized
+  idle-safe tests; BIOFOCUS_NOW_PLAYING default off
+  no Feature math; no packaging installer binary required
+
+E3 (P12-E3-T1) — AmbientMediaShare + packaging runbook:
+  Feature AmbientMediaShare:
+    inputs: now_playing Observations (media_kind + is_playing)
+    window: 15m / step 1m (align Focus/CSR / DistractionScore)
+    formula sketch: share of window with is_playing && media_kind ∈ {music, podcast, other}
+                    → 0–100; none/unknown alone → omit or low confidence
+    confidence: ADR-007; thin → omit or lower
+    framing: calm personal “media present during this window” — not clinical / “you listen too much”
+    LLM must not invent score or media kinds
+  Packaging companion (same E3):
+    docs runbook: signed build + notarization + update-channel stance
+    optional sync remains off-by-default stance only (no product)
+```
+
+**Docs policy for this ADR**
+
+- Planned / ADR notes land now in `docs/08-plugin-sdk.md`, `docs/07-contracts.md`, `docs/10-security.md`, `docs/12-development.md`, `docs/16-glossary.md`, `docs/06-feature-catalog.md` (`AmbientMediaShare` → P12-E3).
+- Full payload validation + probe tables + Feature formula finalized in **P12-E2** / **P12-E3**.
+
+**Rejected alternatives**
+
+1. **Shipping music + weather + light in one wave** — triples collector + privacy surface; one dogfood loop first.
+2. **Always-on ambient capture** (no opt-in) — breaks privacy-first / Global DoD ambient rule.
+3. **Cloud sync by default** — local-first; optional sync must stay opt-in and off by default; no sync product in P12.
+4. **Secret / proprietary Feature formulas** as the commercial edge — AGPLv3 Core stays open; packaging ≠ closed metric math (vision).
+5. **Ambient Features without Observation inputs** — catalog rule: Features need real inputs; E3 waits on E2 Observations.
+6. **Packaging that forces UI→DB or cloud LLM** — UI ↛ SQLite unchanged; LLM stays L5 interpret-only / no marketplace.
+7. **IDE/Git plugin wave re-prioritized into Phase 12** — remains deferred from ADR-010 unless a future ADR re-opens with rationale (not this ADR).
+8. **Opening a PR during freeze** (before 2026-09-01) — local branch commits only; cluster PR after freeze.
+9. **Weather or light as wave-1 v1** — deferred (feasibility / privacy); may follow after AmbientMediaShare dogfood.
+10. **Mic / lyrics / playlist capture “for richer context”** — rejected; coarse media_kind + is_playing only.

@@ -14,8 +14,8 @@
 - **Phase 8:** **Done** (2026-08-08) — Pattern Discovery v1; E1–E3 (ADR-008 recompute-on-read → `focus_vs_recent_baseline_v1` → Dashboard Insights surface). Branch: `phase/8-pattern-discovery` (PR after freeze).
 - **Phase 9:** **Done** (2026-08-08) — Deterministic Recommendations; E1–E3 (ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Suggestions). Branch: `phase/9-recommendations` (PR after freeze).
 - **Phase 10:** **Done** (2026-08-10) — Plugin wave-1; E1–E3 (ADR-010 Browser → `BrowserCategoryPlugin` → `DistractionScore`). Branch: `phase/10-plugin-wave-1` (PR after freeze).
-- **Phase 11:** **Opened** (2026-08-10) — AI coaching polish; ADR-011 ✅ · packs ✅ (`build_report_with_pack`); Ready **P11-E3-T1** (provider UX). Branch: `phase/11-ai-coaching-polish` (PR after freeze).
-- **Horizon P12+:** Ambient + commercial packaging. Not Kanban-Ready until PM opens. **Next after P11:** Phase 12+.
+- **Phase 11:** **Done** (2026-08-10) — AI coaching polish; E1–E3 (ADR-011 → `build_report_with_pack` / `biofocus.default` → `get_local_llm_status` + pack-aware Report UX). Branch: `phase/11-ai-coaching-polish` (PR after freeze).
+- **Phase 12:** **Opened** (2026-08-10) — Ambient + commercial packaging; ADR-012 ✅ (Now Playing primary + packaging runbook); Ready **P12-E2-T1** (Now Playing plugin). Branch: `phase/12-ambient-packaging` (PR after freeze).
 
 ## Core Decisions
 - Local First Architecture

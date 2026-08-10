@@ -43,16 +43,15 @@
   - Browser categories collector plugin — **P10-E2 Done** (2026-08-10).
   - `DistractionScore` catalog Feature — **P10-E3 Done** (2026-08-10).
 
-- [ ] **Phase 11: AI coaching polish** (Sprint 21–22) — opened 2026-08-10
+- [x] **Phase 11: AI coaching polish** (Sprint 21–22) — closed 2026-08-10 (E1–E3 Done; cluster PR after freeze)
   - ADR-011 prompt packs + provider UX boundaries — **P11-E1 Done** (2026-08-10).
   - Versioned prompt packs in `report-engine` — **P11-E2 Done** (2026-08-10).
-  - Local LLM provider UX + pack-aware Report flow — **P11-E3 Ready** (T1).
+  - Local LLM provider UX + pack-aware Report flow — **P11-E3 Done** (2026-08-10).
 
-### Horizon (accepted vision ladder — not Kanban-Ready yet)
-
-Product philosophy + sequencing: `/docs/00-vision.md`. Open later phases via PM gate only.
-
-- [ ] **Phase 12+: Ambient + commercial packaging** — music/weather/light; signed builds / updates; optional user sync
+- [ ] **Phase 12: Ambient + commercial packaging** (Sprint 23–24) — opened 2026-08-10
+  - ADR-012 ambient + packaging boundaries — **P12-E1 Done** (2026-08-10).
+  - Now Playing ambient plugin — **P12-E2 Ready** (T1).
+  - `AmbientMediaShare` + packaging runbook — **P12-E3** (after E2).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)  
@@ -64,7 +63,8 @@ Product philosophy + sequencing: `/docs/00-vision.md`. Open later phases via PM 
 **Phase 8:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P8-*-qa-to-pm.md` · branch `phase/8-pattern-discovery` (PR after freeze)  
 **Phase 9:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P9-*-qa-to-pm.md` · branch `phase/9-recommendations` (PR after freeze)  
 **Phase 10:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P10-*-qa-to-pm.md` · branch `phase/10-plugin-wave-1` (PR after freeze)  
-**Phase 11:** Opened 2026-08-10 — ADR-011 + packs Done · Ready **P11-E3-T1** · branch `phase/11-ai-coaching-polish` (PR after freeze)
-**Next Kanban:** P11-E3-T1 provider UX · **PR freeze until 2026-09-01**
+**Phase 11:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P11-*-qa-to-pm.md` · branch `phase/11-ai-coaching-polish` (PR after freeze)  
+**Phase 12:** Opened 2026-08-10 — ADR-012 Done · Ready **P12-E2-T1** (Now Playing plugin) · branch `phase/12-ambient-packaging` (PR after freeze)
+**Next Kanban:** P12-E2-T1 Now Playing plugin · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

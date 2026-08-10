@@ -43,7 +43,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 8 (Done 2026-08-08):** Pattern Discovery v1 — ADR-008 **recompute-on-read** → `focus_vs_recent_baseline_v1` → calm Dashboard Insights surface.
 - **Phase 9 (Done 2026-08-08):** Deterministic Recommendations — ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Dashboard Suggestions.
 - **Phase 10 (Done 2026-08-10):** Plugin wave-1 — ADR-010 Browser → collector → `DistractionScore`. Later: IDE/Git plugins.
-- **Phase 11 (Opened 2026-08-10):** AI coaching polish — ADR-011 ✅ → packs ✅ → Ready **P11-E3-T1** (provider UX). L5 interpret-only.
+- **Phase 11 (Done 2026-08-10):** AI coaching polish — ADR-011 → packs (`build_report_with_pack`) → provider UX (`get_local_llm_status` + pack-aware Report). L5 interpret-only.
+- **Phase 12 (Opened 2026-08-10):** Ambient + commercial packaging — ADR-012 ✅ (Now Playing) → Ready **P12-E2-T1** (plugin).
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -115,7 +116,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 11** (`/docs/SPRINT_ROADMAP.md`). Ready **P11-E3-T1**.
+Immediate Kanban = **Phase 12** (`/docs/SPRINT_ROADMAP.md`). Ready **P12-E2-T1**.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -125,8 +126,8 @@ Immediate Kanban = **Phase 11** (`/docs/SPRINT_ROADMAP.md`). Ready **P11-E3-T1**
 | **8** | Pattern Discovery v1 (ADR-008 + baseline + Dashboard) — **done** |
 | **9** | Deterministic Recommendations — **done** |
 | **10** | Plugin wave-1 (Browser → DistractionScore) — **done** |
-| **11** | AI coaching polish (ADR-011 → packs → provider UX) — **active** (P11-E3 Ready) |
-| **12+** | Ambient sources + commercial packaging |
+| **11** | AI coaching polish (ADR-011 → packs → provider UX) — **done** |
+| **12** | Ambient + packaging (ADR-012 Now Playing → plugin → AmbientMediaShare) — **active** (P12-E2 Ready) |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

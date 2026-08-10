@@ -27,4 +27,8 @@ pub enum SpecError {
     /// Browser category Observation payload failed contract validation (ADR-010).
     #[error("invalid browser category payload: {reason}")]
     InvalidBrowserCategoryPayload { reason: String },
+
+    /// Now Playing Observation payload failed contract validation (ADR-012).
+    #[error("invalid now playing payload: {reason}")]
+    InvalidNowPlayingPayload { reason: String },
 }

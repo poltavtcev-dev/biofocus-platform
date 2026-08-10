@@ -6,6 +6,7 @@
 //! Opt-in input aggregates when `BIOFOCUS_INPUT_AGGREGATES=1`.
 //! Opt-in local Calendar (ICS) when `BIOFOCUS_CALENDAR=1` + `BIOFOCUS_CALENDAR_ICS`.
 //! Opt-in Browser categories when `BIOFOCUS_BROWSER_CATEGORIES=1`.
+//! Opt-in Now Playing ambient when `BIOFOCUS_NOW_PLAYING=1`.
 //! Shutdown stops collectors, then accept loop, then joins the worker.
 
 use std::sync::Mutex;
@@ -14,8 +15,8 @@ use std::time::Duration;
 use ingest::{serve_with_shutdown, spawn_persist_worker, IngestConfig, IngestState};
 use macos_collector::{
     browser_categories_enabled, calendar_enabled, calendar_ics_path_from_env,
-    input_aggregates_enabled, ActiveWindowPlugin, BrowserCategoryPlugin, CalendarPlugin,
-    KeystrokeAggregatePlugin,
+    input_aggregates_enabled, now_playing_enabled, ActiveWindowPlugin, BrowserCategoryPlugin,
+    CalendarPlugin, KeystrokeAggregatePlugin, NowPlayingPlugin,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::{observation_channel, DEFAULT_OBSERVATION_BUFFER};
@@ -33,11 +34,22 @@ pub struct IngestHost {
     input_collector: Mutex<Option<Arc<KeystrokeAggregatePlugin>>>,
     calendar_collector: Mutex<Option<Arc<CalendarPlugin>>>,
     browser_collector: Mutex<Option<Arc<BrowserCategoryPlugin>>>,
+    now_playing_collector: Mutex<Option<Arc<NowPlayingPlugin>>>,
 }
 
 impl IngestHost {
     /// Signals graceful HTTP shutdown, waits briefly for the server task, joins worker.
     pub fn shutdown(&self) {
+        if let Ok(mut guard) = self.now_playing_collector.lock() {
+            if let Some(plugin) = guard.take() {
+                match tauri::async_runtime::block_on(plugin.stop_stream()) {
+                    Ok(()) => info!("now_playing collector stopped"),
+                    Err(plugin_sdk::PluginError::NotRunning) => {}
+                    Err(err) => warn!(error = %err, "now_playing collector stop failed"),
+                }
+            }
+        }
+
         if let Ok(mut guard) = self.browser_collector.lock() {
             if let Some(plugin) = guard.take() {
                 match tauri::async_runtime::block_on(plugin.stop_stream()) {
@@ -267,7 +279,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
 
     let browser_collector = if browser_categories_enabled() {
         let plugin = Arc::new(BrowserCategoryPlugin::system_default());
-        match tauri::async_runtime::block_on(plugin.start_stream(collector_tx)) {
+        match tauri::async_runtime::block_on(plugin.start_stream(collector_tx.clone())) {
             Ok(()) => {
                 info!(
                     plugin = plugin.id(),
@@ -288,6 +300,29 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         None
     };
 
+    let now_playing_collector = if now_playing_enabled() {
+        let plugin = Arc::new(NowPlayingPlugin::system_default());
+        match tauri::async_runtime::block_on(plugin.start_stream(collector_tx)) {
+            Ok(()) => {
+                info!(
+                    plugin = plugin.id(),
+                    "now_playing collector armed (opt-in; coarse media_kind + is_playing; poll ≥5s)"
+                );
+                Some(plugin)
+            }
+            Err(err) => {
+                warn!(error = %err, "now_playing collector failed to start");
+                None
+            }
+        }
+    } else {
+        info!(
+            flag = macos_collector::NOW_PLAYING_ENABLE_ENV,
+            "now_playing collector off (set BIOFOCUS_NOW_PLAYING=1 to enable)"
+        );
+        None
+    };
+
     app.manage(IngestHost {
         shutdown_tx: Mutex::new(Some(shutdown_tx)),
         server_done: Mutex::new(Some(done_rx)),
@@ -296,6 +331,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         input_collector: Mutex::new(input_collector),
         calendar_collector: Mutex::new(calendar_collector),
         browser_collector: Mutex::new(browser_collector),
+        now_playing_collector: Mutex::new(now_playing_collector),
     });
 }
 

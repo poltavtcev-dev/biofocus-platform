@@ -44,10 +44,10 @@ None blocking.
 - Provider `ready` means env/config present, not that the endpoint answered — intentional per brief.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — mark **P11-E3-T1** Done; close Epic **P11-E3** and **Phase 11** Kanban if no further P11 tasks
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS` Phase 11 → closed; next horizon Phase 12+
-- [ ] **Do not open a PR** (PR freeze until 2026-09-01)
+- [x] `/docs/SPRINT_ROADMAP.md` — mark **P11-E3-T1** Done; close Epic **P11-E3** and **Phase 11** Kanban if no further P11 tasks
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `ARCHITECTURE_STATUS.md` / `PROJECT_CANVAS` Phase 11 → closed; next horizon Phase 12+
+- [x] **Do not open a PR** (PR freeze until 2026-09-01)
 
 ## Suggested next Ready task
 - Phase 12+ gate via separate PM brief (ambient sources / commercial packaging per roadmap) — **not** auto-start in this chat.

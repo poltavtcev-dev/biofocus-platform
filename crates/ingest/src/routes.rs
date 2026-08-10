@@ -190,6 +190,7 @@ async fn post_ingest(
                 bio_spec::SpecError::InvalidBrowserCategoryPayload { .. } => {
                     "invalid_browser_category"
                 }
+                bio_spec::SpecError::InvalidNowPlayingPayload { .. } => "invalid_now_playing",
                 _ => "invalid_life_event",
             };
             return (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response();

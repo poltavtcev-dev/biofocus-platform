@@ -44,4 +44,9 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 - **v1:** Browser category facts are ordinary rows in `observations` (`data_type = 'browser_category'`). **No** plugin registry table, browsing-history table, or category columns beyond payload JSON.
 - **No migration** under ADR-010.
 - Future optional host allowlist / config store requires a **new ADR + user approve** — not part of wave-1 v1.
-- Future optional dismiss / feedback history requires a **new ADR + user approve** — out of Phase 9 v1.
+
+### Ambient Now Playing + packaging (ADR-012)
+
+- **v1:** Now Playing ambient facts are ordinary rows in `observations` (`data_type = 'now_playing'`). **No** ambient media table, sync mirror, or packaging registry.
+- **No migration** under ADR-012. Optional sync store / outbox requires a **new ADR + user approve** — out of Phase 12 v1.
+- Commercial packaging in Phase 12 is runbook/process only — does not add SQLite schema.

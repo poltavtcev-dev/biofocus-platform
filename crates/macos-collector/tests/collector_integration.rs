@@ -1,8 +1,9 @@
 //! Integration: mock collectors → bounded channel → persist worker → SQLite.
 //!
 //! Covers emit Observation for `context_window`, opt-in `keystrokes`,
-//! synthetic Calendar → `calendar_event`, and opt-in Browser → `browser_category`,
-//! plus stop/idle: after `stop_stream` probe work must not keep ticking.
+//! synthetic Calendar → `calendar_event`, opt-in Browser → `browser_category`,
+//! and opt-in Now Playing → `now_playing`, plus stop/idle: after `stop_stream`
+//! probe work must not keep ticking.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -14,8 +15,9 @@ use macos_collector::{
     spawn_calendar_loop, ActiveWindowPlugin, BrowserCategoryPlugin, BrowserCategoryProbe,
     BrowserCategorySample, CalendarEvent, CalendarPlugin, CalendarProbe, FrontmostApp,
     FrontmostProbe, IcsFileCalendarProbe, InputCountProbe, KeystrokeAggregatePlugin,
-    ScriptedBrowserProbe, ScriptedCalendarProbe, ScriptedInputProbe, BROWSER_CATEGORY_DATA_TYPE,
-    CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, KEYSTROKES_DATA_TYPE,
+    NowPlayingPlugin, NowPlayingProbe, NowPlayingSample, ScriptedBrowserProbe,
+    ScriptedCalendarProbe, ScriptedInputProbe, ScriptedNowPlayingProbe, BROWSER_CATEGORY_DATA_TYPE,
+    CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, KEYSTROKES_DATA_TYPE, NOW_PLAYING_DATA_TYPE,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::observation_channel;
@@ -105,6 +107,27 @@ impl CountingBrowserProbe {
 
 impl BrowserCategoryProbe for CountingBrowserProbe {
     fn current(&self) -> macos_collector::CollectorResult<Option<BrowserCategorySample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
+    }
+}
+
+struct CountingNowPlayingProbe {
+    sample: NowPlayingSample,
+    polls: AtomicUsize,
+}
+
+impl CountingNowPlayingProbe {
+    fn new(sample: NowPlayingSample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl NowPlayingProbe for CountingNowPlayingProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<NowPlayingSample>> {
         self.polls.fetch_add(1, Ordering::SeqCst);
         Ok(Some(self.sample.clone()))
     }
@@ -439,5 +462,69 @@ async fn browser_category_stop_halts_periodic_probe_work() {
         probe.polls.load(Ordering::SeqCst),
         after_stop,
         "browser category probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn now_playing_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedNowPlayingProbe::new());
+    probe.push(Some(NowPlayingSample {
+        media_kind: "music".into(),
+        is_playing: true,
+    }));
+
+    let plugin = NowPlayingPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NowPlayingProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, NOW_PLAYING_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["media_kind"], "music");
+    assert_eq!(listed[0].payload["is_playing"], true);
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("artist").is_none());
+    assert!(listed[0].payload.get("album").is_none());
+    assert!(listed[0].payload.get("lyrics").is_none());
+    assert!(listed[0].payload.get("playlist_id").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn now_playing_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingNowPlayingProbe::new(NowPlayingSample {
+        media_kind: "podcast".into(),
+        is_playing: true,
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = NowPlayingPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NowPlayingProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "now_playing probe must not keep polling after stop_stream (no busy-loop)"
     );
 }

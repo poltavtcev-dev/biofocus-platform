@@ -19,6 +19,9 @@ pub const MACOS_CALENDAR_PROVIDER_ID: &str = "com.biofocus.macos.calendar";
 /// Provider id for the Browser categories collector (ADR-010).
 pub const MACOS_BROWSER_PROVIDER_ID: &str = "com.biofocus.macos.browser";
 
+/// Provider id for the Now Playing ambient collector (ADR-012).
+pub const MACOS_NOW_PLAYING_PROVIDER_ID: &str = "com.biofocus.macos.now_playing";
+
 /// Storage / schema `data_type` for active window context.
 pub const CONTEXT_WINDOW_DATA_TYPE: &str = "context_window";
 
@@ -30,6 +33,9 @@ pub const CALENDAR_EVENT_DATA_TYPE: &str = "calendar_event";
 
 /// Storage / schema `data_type` for Browser category context.
 pub const BROWSER_CATEGORY_DATA_TYPE: &str = "browser_category";
+
+/// Storage / schema `data_type` for Now Playing ambient context.
+pub const NOW_PLAYING_DATA_TYPE: &str = "now_playing";
 
 /// Builds privacy-safe payload: app identity only (no window title / content).
 #[must_use]
@@ -76,4 +82,13 @@ pub fn browser_category_payload(sample: &crate::browser_probe::BrowserCategorySa
             "category": sample.category,
         }),
     }
+}
+
+/// Builds privacy-safe Now Playing payload (coarse kind + playing — no titles).
+#[must_use]
+pub fn now_playing_payload(sample: &crate::now_playing_probe::NowPlayingSample) -> JsonValue {
+    json!({
+        "media_kind": sample.media_kind,
+        "is_playing": sample.is_playing,
+    })
 }

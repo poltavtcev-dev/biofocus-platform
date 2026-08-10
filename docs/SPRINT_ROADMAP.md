@@ -1,9 +1,9 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 11: AI coaching polish** (Sprint 21–22) — **Opened** 2026-08-10.  
-> Phase 0–10 Done. Goal: polish **L5 Coaching (AI)** — versioned **prompt packs** + calmer **provider UX** — while LLM stays **interpret-only** (never computes Features / Recommendations / Evidence).
+> **Phase 12: Ambient + commercial packaging** (Sprint 23–24) — **Opened** 2026-08-10.  
+> Phase 0–11 Done. Goal: Now Playing ambient Observations → `AmbientMediaShare` + packaging runbook — Local-First, opt-in — locked by ADR-012.
 
-**Phase 11 goal:** Turn the Phase 4 `report-engine` + opt-in local LLM path into a dogfood-ready coaching polish: named prompt packs that wrap already-computed Evidence (Features / Insights / Recommendations), plus a calm Dashboard provider surface — still local-first, explicit user action, no auto-send.
+**Phase 12 goal:** Dogfood **Now Playing** ambient (`now_playing` Observations) via Capability Plugin Model, then `AmbientMediaShare` Feature + commercial packaging runbook (signed builds / notarization / update stance) — algorithms remain open-source; sync off by default.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · horizon P12+ — `/docs/00-vision.md`.
 
@@ -21,24 +21,25 @@
 - [ ] **LLM не считает** Recommendations / Features / Evidence (interpret-only stays L5)
 - [ ] **Plugins:** opt-in; no full URL / keystroke content / employee-surveillance framing; stop joins background work
 - [ ] **Coaching:** never auto-invoke LLM on app / Dashboard open; opt-in local provider; no cloud LLM by default
+- [ ] **Ambient / packaging:** opt-in ambient capture; no always-on mic/geo dumps; commercial packaging ≠ closed Feature math; optional sync off by default
 
 ---
 
-## Kanban Overview (Phase 11 active)
+## Kanban Overview (Phase 12 active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P11-E3-T1** |
+| **Ready** | **P12-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **P11-E1-T1** · **P11-E2-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **P12-E1-T1** |
 
-**Epic status:** P11-E1 ✅ · P11-E2 ✅ · P11-E3 ⬜ (T1 Ready)
+**Epic status:** P12-E1 ✅ · P12-E2 ⬜ (T1 Ready) · P12-E3 ⬜
 
-**Phase 11 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-011 + prompt packs shipped
+**Phase 12 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-012 shipped · Ready Now Playing plugin
 
 **Рекомендуемый порядок:**  
-~~P11-E1-T1~~ → ~~P11-E2-T1~~ → **P11-E3-T1**
+~~P12-E1-T1~~ → **P12-E2-T1** → P12-E3-T1 (`AmbientMediaShare` + packaging runbook)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -46,64 +47,88 @@
 
 ### Active assignment
 
-**Ready now:** **P11-E3-T1** — Local LLM provider UX + pack-aware Report flow. Brief: `docs/handoffs/P11-E3-T1-pm-brief.md`. Role: **UX + Dev**.
+**Ready now:** **P12-E2-T1** — Now Playing ambient plugin (`now_playing` / `BIOFOCUS_NOW_PLAYING`). Brief: `docs/handoffs/P12-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Closed:** P11-E2-T1 (QA Pass, 2026-08-10) — `build_report_with_pack` + `biofocus.default` @ `1`; Epic **P11-E2** ✅. Evidence: `docs/handoffs/P11-E2-T1-qa-to-pm.md`.
+**Closed:** P12-E1-T1 (QA Pass, 2026-08-10) — ADR-012: primary Now Playing ambient; secondary packaging runbook; E2/E3 names locked. Epic **P12-E1** ✅. Evidence: `docs/handoffs/P12-E1-T1-qa-to-pm.md`.
 
-**Closed:** P11-E1-T1 (QA Pass, 2026-08-10) — ADR-011; Epic **P11-E1** ✅. Evidence: `docs/handoffs/P11-E1-T1-qa-to-pm.md`.
+**Closed previous:** Phase 11 (E1–E3 Done, 2026-08-10) — ADR-011 → packs → provider UX. Evidence: `docs/handoffs/P11-*-qa-to-pm.md`. Branch: `phase/11-ai-coaching-polish`.
 
-**Next after Pass:** close Epic **P11-E3** + **Phase 11** Kanban (then Phase 12+ via separate PM gate).
+**Next after Pass:** Ready **P12-E3-T1** — `AmbientMediaShare` + packaging runbook.
 
-**Closed previous:** Phase 10 (E1–E3 Done, 2026-08-10) — ADR-010 Browser → `BrowserCategoryPlugin` → `DistractionScore`. Evidence: `docs/handoffs/P10-*-qa-to-pm.md`. Branch: `phase/10-plugin-wave-1`.
-
-**Ops note:** **PR freeze until 2026-09-01** — Phase 11 cluster on `phase/11-ai-coaching-polish`; local commits OK; one cluster PR **after** freeze (or when user lifts it). E3 wires host to `build_report_with_pack` (default pack); LLM still env opt-in.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 12 cluster on `phase/12-ambient-packaging`; local commits OK; one cluster PR **after** freeze (or when user lifts it). No schema/sync migration approve needed for v1.
 
 ---
 
-## Phase 11 — Epics & Tasks (Sprint 21–22)
+## Phase 12 — Epics & Tasks (Sprint 23–24)
+
+### Epic P12-E1 — ADR-012 Phase 12 scope
+**Goal:** Decide how ambient sources and commercial packaging enter v1 without breaking Local-First / Capability Model / open Core math.
+
+| ID | Task | Role | Modules | AC (summary) | Depends |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **P12-E1-T1** | ADR-012: ambient + packaging boundaries | Dev | docs + decision-log | ADR-012 recorded | Phase 11 Done |
+
+**P12-E1 shipped:** ADR-012 = primary **Now Playing / music** ambient (`now_playing`); secondary packaging as signed-build / notarization / update **runbook**; E2 plugin → E3 `AmbientMediaShare` + runbook; existing `observations` only; no migration. QA Pass 2026-08-10.
+
+**Out of scope (E1):** implementing ambient collector / Feature / installer pipeline (→ E2/E3); IDE/Git wave; cloud LLM marketplace; PR during freeze.
+
+---
+
+### Epic P12-E2 — Now Playing ambient plugin
+**Goal:** Ship opt-in Now Playing `BioFocusPlugin` → Observation channel → persist (ADR-012).
+
+| ID | Task | Role | Modules | AC (summary) | Depends |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **P12-E2-T1** | Now Playing ambient plugin | Dev | macos-collector / plugin-sdk + host | See below | P12-E1-T1 |
+
+**P12-E2-T1 AC:**
+1. `BioFocusPlugin` id `com.biofocus.macos.now_playing` with Capability covering `now_playing`; implement in `crates/macos-collector` (or thin adapter) per ADR-012 / `docs/08-plugin-sdk.md`.
+2. Desktop `ingest_host` starts the plugin **only** when `BIOFOCUS_NOW_PLAYING=1` (default **off**); same bounded Observation channel → persist worker (UI ↛ SQLite).
+3. Emitted Observations match ADR-012 / contracts: required `media_kind` (`music` \| `podcast` \| `other` \| `none` \| `unknown`) + `is_playing`; **never** titles/artists/lyrics/playlists/mic/geo dumps.
+4. Injectable probe for tests; production probe may soft-fail / emit nothing when OS mapping unavailable — idle-safe (change or rare ≥5s poll; **no** busy-loop); `stop_stream` joins background work.
+5. Docs finalized (shipped): `07-contracts`, `08-plugin-sdk`, `10-security`, `12-development` as needed.
+6. Tests with mock probe: emit → channel → persist where practical; after `stop_stream`, emissions freeze.
+7. Handoff: `docs/handoffs/P12-E2-T1-dev-to-qa.md`.
+
+**Out of scope (E2):** `AmbientMediaShare` / Feature DAG (→ **P12-E3**); packaging installer binary; weather/light; IDE/Git; new SQLite schema; PR during freeze.
+
+---
+
+### Epic P12-E3 — AmbientMediaShare + packaging runbook
+**Goal:** Catalog Feature `AmbientMediaShare` from `now_playing` Observations + commercial packaging companion runbook (ADR-012).
+
+| ID | Task | Role | Modules | AC (summary) | Depends |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **P12-E3-T1** | `AmbientMediaShare` + packaging runbook | Dev (+ UX if UI) | feature-engine + docs | AC at Ready after E2 | P12-E2-T1 |
+
+**Note:** Exact AC filled when PM Ready's E3 after E2 Pass. Locked names: Feature `AmbientMediaShare`; packaging = signed-build / notarization / update-channel runbook (sync stance only, off by default).
+
+**Out of scope (E3):** weather/light; App Store product; sync product; workplace surveillance framing.
+
+---
+
+## Phase 11 archive (Done)
+
+<details>
+<summary>Phase 11 Kanban & epics (closed 2026-08-10 — E1–E3)</summary>
+
+**Done:** P11-E1 (T1) · P11-E2 (T1) · P11-E3 (T1).  
+ADR-011 → `build_report_with_pack` / `biofocus.default` @ `1` → `get_local_llm_status` + pack-aware Report UX.
+
+Evidence: `docs/handoffs/P11-*-qa-to-pm.md` · branch `phase/11-ai-coaching-polish` (cluster PR after freeze).
 
 ### Epic P11-E1 — ADR-011 Coaching polish scope
-**Goal:** Decide how prompt packs and provider UX evolve L5 without breaking interpret-only / Local-First.
-
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| **P11-E1-T1** | ADR-011: prompt packs + provider UX boundaries | Dev | docs + decision-log | ADR-011 recorded | Phase 10 Done |
-
 **P11-E1 shipped:** ADR-011 = named/versioned prompt packs in `report-engine` + calm Dashboard provider UX; interpret-only; no chat SQLite; no Coach Engine. QA Pass 2026-08-10.
 
-**Out of scope (E1):** implementing packs code (→ E2); Dashboard provider UI (→ E3); ambient plugins / commercial packaging (Phase 12+); opening a PR during freeze.
-
----
-
 ### Epic P11-E2 — Prompt packs (`report-engine`)
-**Goal:** Ship ≥1 versioned prompt pack that wraps deterministic report facts for interpret-only LLM use.
-
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| **P11-E2-T1** | Versioned prompt packs in report-engine | Dev | report-engine (+ bio-spec types as needed) | `build_report_with_pack` + default pack | P11-E1-T1 |
-
 **P11-E2 shipped:** `build_report_with_pack(id, version, …)`; default `biofocus.default` @ `1`; empty/partial soft Ok; no SQLite/network/UI. QA Pass 2026-08-10.
 
-**Out of scope (E2):** in-app provider toggle / Dashboard UX (→ E3); cloud providers; auto-interpret; on-disk user pack overrides (future ADR).
-
----
-
 ### Epic P11-E3 — Provider UX (Dashboard)
-**Goal:** Calm Dashboard surface so users understand local LLM opt-in status and can generate/interpret without env archaeology — still explicit action only.
+**P11-E3 shipped:** Calm Local AI status via `get_local_llm_status` (`disabled`/`ready`/`error`); `generate_report` uses `build_report_with_pack` + Recommendations Evidence; explicit Generate only; soft-fail retains markdown. QA Pass with notes 2026-08-10 (live Ollama smoke optional / deferred).
 
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :---: | :--- | :--- | :--- |
-| **P11-E3-T1** | Local LLM provider UX + pack-aware Report flow | UX + Dev | apps/desktop (+ src-tauri IPC as needed) | See below | P11-E2-T1 |
+**Out of scope (Phase 11):** cloud LLM marketplace; chat history store; ambient plugins; commercial packaging; on-disk pack overrides; PR during freeze.
 
-**P11-E3-T1 AC:**
-1. Dashboard shows calm **provider status** for local LLM (e.g. disabled / ready / error) via IPC — UI ↛ SQLite; no secrets in UI logs; status reflects host env/config (Phase 4 `BIOFOCUS_LOCAL_LLM` stance).
-2. Report / coaching flow uses **`build_report_with_pack`** (default `biofocus.default` @ `1`, or documented pack pick) behind **explicit** user action; never auto-invoke on open/poll; include Recommendations Evidence when available.
-3. When LLM off: offline markdown + prompt still available; calm copy that local AI is optional.
-4. When LLM on (host config): optional interpretation soft-fails without losing markdown (`llmStatus` pattern from Phase 4).
-5. Copy non-clinical; no employee-surveillance / diagnosis framing; no cloud marketplace.
-6. Mock/dev path documented for browser QA if needed; handoff with smoke steps: `docs/handoffs/P11-E3-T1-dev-to-qa.md`.
-
-**Out of scope (E3):** cloud LLM marketplace; chat history store; ambient Phase 12+; on-disk pack overrides; PR during freeze.
+</details>
 
 ---
 
@@ -236,24 +261,23 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 
 ---
 
-## Role × Module Matrix (Phase 11)
+## Role × Module Matrix (Phase 12)
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P11-E1-T1 ADR-011 prompt packs + provider UX | | ● | ○ | | docs + decision-log |
-| P11-E2-T1 Versioned prompt packs | | ● | ○ | | report-engine |
-| P11-E3-T1 Provider UX + pack-aware Report | | ● | ○ | ● | apps/desktop + IPC |
+| P12-E1-T1 ADR-012 ambient + packaging scope | | ● | ○ | | docs + decision-log |
+| P12-E2-T1 Now Playing ambient plugin | | ● | ○ | | macos-collector / plugin-sdk + host |
+| P12-E3-T1 AmbientMediaShare + packaging runbook | | ● | ○ | ○ | feature-engine + docs |
 
 ● = owner · ○ = collaborator
 
 ---
 
-## Sprint 21–22 — Queue
+## Sprint 23–24 — Queue
 
-1. ~~P11-E1-T1 — ADR-011 AI coaching polish (prompt packs + provider UX)~~ ✅ Done  
-2. ~~P11-E2-T1 — Versioned prompt packs in `report-engine`~~ ✅ Done  
-3. **P11-E3-T1** — Local LLM provider UX + pack-aware Report flow ← **Ready**
+1. ~~P12-E1-T1 — ADR-012 Phase 12 scope (ambient + commercial packaging)~~ ✅ Done  
+2. **P12-E2-T1** — Now Playing ambient plugin ← **Ready**  
+3. P12-E3-T1 — `AmbientMediaShare` + packaging runbook
 
-**Git:** `phase/11-ai-coaching-polish` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P11-E3-T1-pm-brief.md`.  
-**Next after Phase 11:** PM gate → Phase 12+ ambient + packaging (`docs/14-roadmap.md`).
+**Git:** `phase/12-ambient-packaging` → local commits → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P12-E2-T1-pm-brief.md`.

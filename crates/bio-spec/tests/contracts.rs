@@ -143,6 +143,36 @@ fn browser_category_contract_json_round_trip() {
     assert_eq!(again, parsed);
 }
 
+const CONTRACT_NOW_PLAYING_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.now_playing",
+  "data_type": "now_playing",
+  "payload": {
+    "media_kind": "music",
+    "is_playing": true
+  },
+  "confidence": 0.85
+}"#;
+
+#[test]
+fn now_playing_contract_json_round_trip() {
+    use bio_spec::{validate_now_playing_payload, DATA_TYPE_NOW_PLAYING};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_NOW_PLAYING_JSON)
+        .expect("now_playing contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_NOW_PLAYING);
+    assert_eq!(parsed.payload["media_kind"], json!("music"));
+    assert_eq!(parsed.payload["is_playing"], json!(true));
+    validate_now_playing_payload(&parsed.payload).expect("valid now_playing");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
 #[test]
 fn life_event_rejects_malformed_payloads() {
     let cases = [

@@ -207,6 +207,39 @@ Validation: `bio_spec::validate_browser_category_payload` (via `validate_observa
 
 **OS probe (v1):** when frontmost is a known browser bundle, emits `category: "unknown"` + `browser_bundle_id` (no URL capture). Richer category mapping without persisting URLs may arrive later; scripted/mock probes supply closed-set labels in tests.
 
+### `now_playing` payload (Phase 12 ambient wave-1 — ADR-012 / P12-E2-T1)
+
+Ambient media facts are **ordinary Observations** in the existing store. Wave-1 ambient source = **Now Playing / music** (weather / light deferred).
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | always `"now_playing"` |
+| `provider_id` | `com.biofocus.macos.now_playing` |
+| `payload.media_kind` | required coarse label: `music` \| `podcast` \| `other` \| `none` \| `unknown` |
+| `payload.is_playing` | required boolean |
+
+**Privacy:** collectors must **not** put titles, artists, albums, lyrics, playlist ids, or content-identifying artwork URLs into the Observation payload. No always-on mic. Personal self-tracking only — not workplace ambient monitoring.
+
+```json
+{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.now_playing",
+  "data_type": "now_playing",
+  "payload": {
+    "media_kind": "music",
+    "is_playing": true
+  },
+  "confidence": 0.85
+}
+```
+
+Enable: `BIOFOCUS_NOW_PLAYING=1` (default **off**). Emit on play-state / media-kind change or rare poll ≥5s; no busy-loop.
+
+Validation: `bio_spec::validate_now_playing_payload` (via `validate_observation_payload`). Ingest rejects malformed Now Playing with HTTP `400` + `{"error":"invalid_now_playing"}`.
+
+**OS probe (v1):** `SystemNowPlayingProbe` soft-fails to no emission when OS mapping is unavailable (no content-bearing MediaRemote / AppleScript in v1). Scripted/mock probes supply closed-set labels in tests.
+
 ## Companion → ingest (P2-E3-T1)
 
 Same Observation JSON; companion posts a **JSON array** to `POST /v1/ingest`.

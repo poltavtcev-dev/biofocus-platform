@@ -18,6 +18,7 @@ mod error;
 mod feature;
 mod insight;
 mod life_event;
+mod now_playing;
 mod observation;
 mod recommendation;
 mod signal;
@@ -39,6 +40,10 @@ pub use life_event::{
     is_v1_life_event_kind, validate_life_event_payload, validate_observation_payload,
     DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, LIFE_EVENT_KIND_LUNCH, LIFE_EVENT_KIND_WALK,
     LIFE_EVENT_KIND_WORKOUT, V1_LIFE_EVENT_KINDS,
+};
+pub use now_playing::{
+    is_v1_media_kind, validate_now_playing_payload, DATA_TYPE_NOW_PLAYING, MEDIA_KIND_MUSIC,
+    MEDIA_KIND_NONE, MEDIA_KIND_OTHER, MEDIA_KIND_PODCAST, MEDIA_KIND_UNKNOWN, V1_MEDIA_KINDS,
 };
 pub use observation::{Confidence, DataType, Observation, ObservationId, ProviderId};
 pub use recommendation::{Recommendation, RecommendationId};

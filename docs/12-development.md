@@ -91,6 +91,8 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Recommendations v1 engine (P9-E2-T1):** `bio-spec::{Recommendation, EvidenceRef::Insight}`; `register_recommendations_v1` + `focus_dip_pace_hint_v1` (Focus-below-baseline pattern Insight + FocusScore confidence ≥ 0.4 → calm pace hint); `KnowledgeEngine::evaluate_recommendations` / `evaluate_insights_and_recommendations`. IPC/UX → P9-E3.
 - **Recommendations IPC / UX (P9-E3-T1):** Desktop `invoke("get_recommendations")` — host registers Recommendations alongside Insights; evaluate-on-read after Insights on Feature snapshot + pattern inputs. Dashboard **Suggestions** section (Insights-adjacent); calm empty state. QA mocks: `?mockRecommendations=empty|ready|pace|error`. UI ↛ SQLite. Contract: `docs/09-api.md`.
 - **Plugin wave-1 (P10-E1-T1 / ADR-010):** Chosen source = **Browser categories** (`data_type: "browser_category"`; coarse labels only; opt-in `BIOFOCUS_BROWSER_CATEGORIES`; default off). Persist via existing `observations` store — **no** migration / plugin registry table. IDE/Git deferred. Collector → **P10-E2**; `DistractionScore` → **P10-E3**. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md`.
+- **Phase 12 ambient + packaging (P12-E1-T1 / ADR-012):** Primary = opt-in **Now Playing** Observations (`data_type: "now_playing"`; `BIOFOCUS_NOW_PLAYING`; default off; coarse `media_kind` + `is_playing` only). Existing `observations` store — **no** migration. Weather/light deferred. Secondary = signed-build / notarization / update **runbook** (E3); optional sync stance off by default (no sync product in P12). Collector → **P12-E2**; Feature `AmbientMediaShare` + packaging runbook → **P12-E3**. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md`.
+- **Now Playing collector (P12-E2-T1):** `NowPlayingPlugin` (`com.biofocus.macos.now_playing`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_NOW_PLAYING=1`. Emit on change / poll ≥5s; `stop_stream` joins. System probe soft-fails idle (no titles). Validation: `bio_spec::validate_now_playing_payload`. Tests: `collector_integration` + bio-spec contracts. `AmbientMediaShare` → P12-E3.
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -143,6 +145,13 @@ export BIOFOCUS_BROWSER_CATEGORIES=1
 # restart Desktop
 ```
 Emits `browser_category` Observations (`category` + optional `browser_bundle_id`) on change / poll ≥5s → same channel → persist. **Never** stores URLs or page titles. OS probe v1 emits `unknown` for known browsers (no URL mapping). Default off.
+
+**Now Playing ambient (P12-E2-T1, opt-in):**
+```bash
+export BIOFOCUS_NOW_PLAYING=1
+# restart Desktop
+```
+Arms `NowPlayingPlugin` (poll ≥5s; emit on change). System probe soft-fails idle without titles; use scripted probes in tests. Default off. `AmbientMediaShare` → P12-E3.
 
 ### Collector test suite (P2-E2-T3)
 

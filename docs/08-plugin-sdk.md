@@ -90,3 +90,20 @@ Window title capture remains deferred.
 | E3 Feature | `DistractionScore` (catalog) |
 
 IDE/Git collectors are **deferred** (not wave-1 v1). No plugin marketplace crate. Personal self-tracking only — not employee surveillance.
+
+## 6. Now Playing ambient (Phase 12 wave-1 — ADR-012 / P12-E2-T1)
+
+| Item | Value |
+| :--- | :--- |
+| Status | **Shipped** (collector); Feature `AmbientMediaShare` → **P12-E3** |
+| Crate | `crates/macos-collector` |
+| Plugin id | `com.biofocus.macos.now_playing` |
+| `data_type` | `now_playing` |
+| Probe | Soft-fail system probe (no content-bearing OS API in v1); injectable `ScriptedNowPlayingProbe` in tests |
+| Payload | Coarse `media_kind` + `is_playing` only — **no** titles / artists / lyrics / playlists (see `docs/07-contracts.md`) |
+| Enable | `BIOFOCUS_NOW_PLAYING=1` (default **off**) |
+| Poll | On play-state / media-kind change or rare ≥5s; no busy-loop |
+| Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
+| E3 Feature | `AmbientMediaShare` (catalog) |
+
+Weather / light ambient collectors are **deferred** (not Phase 12 wave-1). Packaging signed-build runbook is a **secondary** Phase 12 track (docs/process in E3) — not a plugin marketplace.
