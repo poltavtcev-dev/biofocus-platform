@@ -23,6 +23,7 @@
 | ADR-019 | 2026-08-11 | **Phase 18 contracts:** opt-in notification Observation `data_type: "notification_event"` (coarse `count` + optional closed-set `category` / `interruption_level` / `app_kind` only) → existing `observations` store; **no** migration v1; Capability Plugin via `plugin-sdk` + `macos-collector`; E3 Feature = **`NotificationPressure`** | PM-GATE-POST-P17 chose interruption intensity after wearable charts; catalog named `NotificationPressure` for years without an Observation family. Local-First + privacy bar (no body/title/content). Personal self-tracking only | IDE as Phase 18 primary; weather ambient; App Store product; content capture “for accuracy”; workplace surveillance framing; `CognitiveLoad` as E3; always-on / busy-loop; parallel notification SQLite store; PR during freeze; applying migration without approve |
 | ADR-020 | 2026-08-11 | **Phase 19:** unlock live `SystemNotificationEventProbe` via **hybrid** privacy-safe OS mapping (prefer public surfaces; private/undocumented OK only under hard **non-content field allowlist** + soft-fail); ADR-019 `notification_event` payload **unchanged**; **no** migration; opt-in `BIOFOCUS_NOTIFICATION_EVENTS` unchanged; existing `NotificationPressure` (no formula rewrite) | ADR-019 left production probe soft-fail idle until privacy-safe NC mapping; PM-GATE-POST-P18 chose Live NC OS mapping to dogfood shipped Feature. Pattern mirrors ADR-014 after Git soft-fail. Personal self-tracking only | Content capture / Accessibility UI text scrape; workplace monitoring; always-on busy-loop; rewriting NotificationPressure; IDE / weather / App Store / CognitiveLoad as P19 primary; parallel notification SQLite store; PR during freeze; applying migration without approve; widening payload with bundle_id / titles |
 | ADR-021 | 2026-08-11 | **Phase 20:** catalog Feature **`CognitiveLoad`** = Feature-level composite of **`MeetingDensity` + `ContextSwitchRate` + `NotificationPressure`**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “combined demand in this window” framing | PM-GATE-POST-P19 chose CognitiveLoad; all three input Features shipped (incl. live NC). Prefer Feature-level composition over Observation mix so catalog math stays stable and privacy bars stay with leaf Features. Personal self-tracking only | Clinical “cognitive overload” / burnout; workplace surveillance scoring; new Observation families; rewriting MeetingDensity / CSR / NotificationPressure; Observation-level mix as v1; IDE / weather / App Store as P20 primary; PR during freeze; migration without approve |
+| ADR-022 | 2026-08-11 | **Phase 21:** catalog Feature **`DeepWorkScore`** = Feature-level composite of **`FocusScore` + `ContextSwitchRate`** (idle **dropped** for v1); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “sustained focus in this window” framing | PM-GATE-POST-P20 chose DeepWorkScore after CognitiveLoad; FocusScore + CSR long shipped. Compose high Focus + low CSR — do not invent parallel FocusScore. Personal self-tracking only | Clinical “flow state” / burnout / ADHD; workplace surveillance; new Observation families; rewriting FocusScore / CSR; idle Observation invent; IDE / weather / App Store / AttentionStability / CircadianOffset as P21 primary; PR during freeze; migration without approve |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1433,4 +1434,109 @@ E3 (optional)
 9. **Applying a migration without user approve** — this ADR chooses no migration.
 10. **LLM inventing CognitiveLoad scores or overload diagnoses** — L5 interpret-only.
 11. **Parallel “Load Engine” crate** — extend `feature-engine` catalog only.
+
+### ADR-022 detail — Phase 21: DeepWorkScore Feature scope (v1)
+
+> **Relationship:** Catalog backlog named **`DeepWorkScore`** (P7-era) as sustained-focus windows from **FocusScore** + **ContextSwitchRate** (+ optional “idle”). **FocusScore** and **CSR** have long shipped. Phase 20 shipped demand-side **`CognitiveLoad`**. **PM-GATE-POST-P20** chose DeepWorkScore as Phase 21 primary (complement: demand vs sustained-focus quality). **ADR-022** = lock Feature-level inputs, formula stance, omit policy, and framing **before** math lands in `feature-engine`. Implement in **P21-E2**; optional dogfood / calm Dashboard surface in **P21-E3**. Epic split: `docs/SPRINT_ROADMAP.md` Phase 21.
+
+| Layer | Role in Phase 21 v1 |
+| :--- | :--- |
+| Inputs (Feature-level) | Upstream catalog Features: **`FocusScore`** (required) + **`ContextSwitchRate`** (optional stability term) for the **same** window |
+| Feature (`feature-engine`) | E2: new catalog node **`DeepWorkScore`** — sustained-focus intensity 0–100; ADR-007 confidence; optional explanation factors |
+| Observation (SQLite) | **Unchanged** — reuse existing keystrokes / context / HRV via FocusScore + CSR; **no** new `data_type` |
+| Leaf Features | **Do not** rewrite FocusScore / ContextSwitchRate formulas; **do not** invent a parallel FocusScore |
+| LLM | L5 interpret-only — must **not** invent DeepWorkScore scores or “flow state” claims |
+
+#### Chosen v1 input set: Feature-level Focus + CSR (idle dropped)
+
+Exactly **one** input stance for Phase 21 v1:
+
+1. **Prefer Feature-level:** `DeepWorkScore(window)` reads upstream **`FocusScore`** and (when present) **`ContextSwitchRate`** for that window (DAG depends on both nodes).
+2. **Idle dropped for v1:** backlog listed “idle”, but there is **no** shipped idle Feature / dedicated idle Observation family. Mapping “idle” onto thin heuristics (e.g. inventing gaps from raw context) would reopen Observation math and risk a parallel FocusScore. Idle / gap proxies → later ADR if a clear leaf exists.
+3. **Why not Observation-level mix:** FocusScore already owns typing / CSR-stability / HRV composition + ADR-007. Re-deriving from Observations would duplicate Focus math — Non-Goal.
+4. **Hard gap check:** FocusScore + CSR already ship. **Zero** new Observation `data_type` in v1.
+
+#### Formula stance sketch (for P21-E2)
+
+```text
+Window / step: 15 minutes / 1 minute (align Focus / CSR; series may coarsen)
+
+Compose high Focus + low CSR into sustained-focus intensity (0–100):
+  focus      = FocusScore                                    # already 0–100
+  stability  = clamp(100 - ContextSwitchRate × 50, 0, 100) # same CSR map as FocusScore stability term
+                                                    # (high when switches are low)
+
+Catalog weights:
+  w_focus = 0.60, w_stability = 0.40
+  (Focus is the primary sustained-focus signal; CSR refines — not a second FocusScore.)
+
+Missing-input policy (LOCKED):
+  • If FocusScore is ABSENT for the step → OMIT DeepWorkScore
+  • If FocusScore present and CSR absent → EMIT with RENORMALIZED weights (Focus-only)
+  • If both present → EMIT with catalog weights
+  (Do NOT invent Focus from Observations; do NOT emit CSR-only as “deep work”.)
+
+Confidence (ADR-007 sketch):
+  expected_slots = 2   # Focus / CSR
+  present_slots  = 1 if Focus-only; 2 if Focus+CSR
+  coverage       = present_slots / 2
+  mean_evidence  = mean(upstream Feature.confidence of present inputs)
+  Feature.confidence = clamp(coverage × mean_evidence, 0.0, 1.0)
+
+Provenance: union of Observation IDs from present upstream Features
+  (follow existing composite patterns, e.g. FatigueIndex / CognitiveLoad).
+
+Optional explanation factors (when emitted):
+  focus (“Focus depth”), stability (“App stability”) when CSR present;
+  share = catalog_weight / sum(present weights). Calm composition only — not clinical.
+
+Framing / copy:
+  “sustained focus in this window” — NOT “you are in flow” / burnout / ADHD / flow-state diagnosis.
+```
+
+#### Schema (v1)
+
+- Prefer existing `observations` store + existing Feature DAG only.
+- **No new SQLite tables/columns**; **no** Feature-history store.
+- **Do not apply** any migration for this ADR.
+- Future idle leaf / Observation-level variants → **new ADR + user approve**.
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 21)
+
+```text
+E1 (P21-E1-T1) — THIS ADR
+  Lock DeepWorkScore Feature scope: Focus required + optional CSR; idle dropped;
+  15m/1m; omit-without-Focus / renormalize-without-CSR; ADR-007 slots=2;
+  calm framing; rejected alts; no migration
+
+E2 (P21-E2-T1)
+  Ship DeepWorkScore in feature-engine + catalog §1 finalize
+  register_* / register_catalog_v1 after focus nodes (CSR + FocusScore)
+  Unit tests: rich Focus+CSR / Focus-only renormalize / omit without Focus /
+  confidence / factors
+  Do NOT rewrite FocusScore / ContextSwitchRate
+
+E3 (optional)
+  Dogfood / calm Dashboard surface (snapshot series) — still non-clinical copy
+```
+
+#### Docs policy for this ADR
+
+- Planned → ADR sketch notes land now in `docs/06-feature-catalog.md`, `docs/12-development.md`, `docs/16-glossary.md`.
+- Full §1 formula finalize + DAG registration names → **P21-E2** (must still obey this ADR).
+
+#### Rejected alternatives
+
+1. **Clinical “flow state” / burnout / ADHD diagnosis claims** — Non-Goal; calm personal observation only.
+2. **Workplace / employer surveillance scoring** or manager dashboards — personal self-tracking only.
+3. **Inventing new Observation families** this phase (including a dedicated idle family) — Focus + CSR already ship.
+4. **Rewriting FocusScore / ContextSwitchRate** formulas or inventing a parallel FocusScore — compose, do not reopen leaf math.
+5. **Keeping backlog “idle” as a required v1 input** — dropped (see above); revisit with a new ADR when a real idle leaf exists.
+6. **CSR-only emit as DeepWorkScore** — without Focus there is no sustained-focus intensity signal under this ADR.
+7. **IDE plugin / weather ambient / App Store packaging as Phase 21 primary** — deferred (PM-GATE-POST-P20).
+8. **AttentionStability or CircadianOffset as this-phase primary** — deferred siblings (PM-GATE-POST-P20).
+9. **Opening a PR during freeze** — local branch `phase/21-deep-work-score` until 2026-09-01.
+10. **Applying a migration without user approve** — this ADR chooses no migration.
+11. **LLM inventing DeepWorkScore scores or flow diagnoses** — L5 interpret-only.
+12. **Parallel “Deep Work Engine” crate** — extend `feature-engine` catalog only.
 

@@ -2,11 +2,10 @@
 
 **From:** PM  
 **To:** Dev (+ UX if UI)  
-**Status:** Ready  
-**Date:** 2026-08-11  
-**Closed previous:** **P20-E2-T1** (`CognitiveLoad` shipped; QA Pass)  
-**Evidence:** `docs/handoffs/P20-E2-T1-qa-to-pm.md` · `docs/handoffs/P20-E2-T1-dev-to-qa.md`  
-**Contract:** ADR-021 — Feature math locked; E3 is dogfood / surface only
+**Status:** Done (QA Pass 2026-08-11)  
+**Closed:** Epic **P20-E3** ✅ · **Phase 20** ✅  
+**Evidence:** `docs/handoffs/P20-E3-T1-qa-to-pm.md` · `docs/handoffs/P20-E3-T1-dev-to-qa.md`  
+**Next:** **PM-GATE-POST-P20** — `docs/handoffs/PM-GATE-POST-P20-pm-brief.md`
 
 ## Task
 **P20-E3-T1 — Dogfood notes + optional calm Dashboard surface for `CognitiveLoad`**

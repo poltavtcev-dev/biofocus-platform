@@ -23,7 +23,8 @@
 - **Phase 17:** **Done** (2026-08-11) — Wearable depth + chart ranges (**ADR-017** · **ADR-018**); E1–E3. Branch: `phase/17-wearable-charts` (PR after freeze).
 - **Phase 18:** **Done** (2026-08-11) — Notification pressure (**ADR-019**); E1–E3. Branch: `phase/18-notification-pressure` (PR after freeze).
 - **Phase 19:** **Done** (2026-08-11) — Live NC OS mapping (**ADR-020**); E1–E3. Branch: `phase/19-live-nc-mapping` (PR after freeze).
-- **Phase 20:** **Active** (2026-08-11) — CognitiveLoad; **ADR-021** ✅; Feature shipped (**P20-E2 Done**); Ready **P20-E3-T1** (dogfood / optional Dashboard). Branch: `phase/20-cognitive-load` (PR after freeze). Deferred: IDE · weather · App Store.
+- **Phase 20:** **Done** (2026-08-11) — CognitiveLoad; **ADR-021** ✅; Feature + dogfood + Combined demand chart. Branch: `phase/20-cognitive-load` (PR after freeze).
+- **Phase 21:** **Active** (2026-08-11) — DeepWorkScore; **ADR-022** ✅ (**P21-E1 Done**); Ready **P21-E2-T1** (ship Feature). Branch: `phase/21-deep-work-score` (PR after freeze). Deferred: IDE · weather · App Store.
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)
