@@ -1,10 +1,10 @@
-# iOS HealthKit companion (P5-E3-T1)
+# iOS HealthKit companion (P5-E3 + P15 ADR-016)
 
-Runnable Xcode app that posts one HealthKit heart-rate `Observation` to Desktop ingest — same HTTP contract as Rust `apps/companion`.
+Runnable Xcode app that posts HealthKit **heart rate** and **HRV (SDNN)** Observations to Desktop ingest — with optional **Auto-sync** (queue + background delivery). Same HTTP contract as Rust `apps/companion`.
 
 ## Signing (physical iPhone)
 
-Free **Personal Team** is enough for dogfood. Entitlements must be **HealthKit only** (`com.apple.developer.healthkit`) — do **not** enable Clinical / Verifiable Health Records (`healthkit.access`); Personal Teams cannot provision that.
+Free **Personal Team** is enough for dogfood. Entitlements: **HealthKit** + **background delivery** (`com.apple.developer.healthkit` / `healthkit.background-delivery`) — do **not** enable Clinical / Verifiable Health Records (`healthkit.access`).
 
 If Xcode still fails on the profile, set a unique Bundle Identifier, e.g. `com.<yourname>.biofocus.companion`.
 
@@ -16,10 +16,10 @@ open apps/companion/ios/BioFocusCompanion.xcodeproj
 
 1. Select scheme **BioFocusCompanion**.
 2. Destination: **iOS Simulator** (loopback) or a physical iPhone (LAN).
-3. For a physical device: set your Apple Development Team under Signing & Capabilities (bundle id `com.biofocus.companion`).
+3. For a physical device: set your Apple Development Team under Signing & Capabilities.
 4. Run (⌘R).
 
-Compile check (no Simulator runtime required — verifies Swift sources + UI against the iOS Simulator SDK):
+Compile check (no Simulator runtime required):
 
 ```bash
 cd apps/companion/ios
@@ -32,57 +32,54 @@ xcrun --sdk iphonesimulator swiftc \
   -emit-module \
   -module-name BioFocusCompanion \
   -framework Foundation -framework HealthKit -framework SwiftUI \
-  IngestClient.swift HeartRateSample.swift SamplePost.swift \
+  IngestClient.swift HeartRateSample.swift HrvSample.swift \
+  ObservationQueue.swift HealthKitSyncCoordinator.swift SamplePost.swift \
   BioFocusCompanion/BioFocusCompanionApp.swift BioFocusCompanion/ContentView.swift \
   -o .derivedData/swiftc-check/BioFocusCompanion.swiftmodule
-```
-
-Full `xcodebuild` / Run in Xcode needs a matching **iOS Simulator runtime** for your Xcode (Xcode → Settings → Components). List destinations:
-
-```bash
-xcodebuild -project BioFocusCompanion.xcodeproj -scheme BioFocusCompanion -showdestinations
 ```
 
 ## Files
 
 | Path | Role |
 | :--- | :--- |
-| `BioFocusCompanion.xcodeproj` | Runnable target |
-| `BioFocusCompanion/` | SwiftUI shell (base URL, token, one-shot button, status) |
+| `BioFocusCompanion/` | SwiftUI: pairing, Auto-sync toggle, send / flush, status |
 | `IngestClient.swift` | `POST /v1/ingest` + 401 / network errors |
-| `HeartRateSample.swift` | HealthKit → Observation DTO |
-| `SamplePost.swift` | One-shot orchestration (**no** polling loop) |
+| `HeartRateSample.swift` | HealthKit HR → Observation DTO |
+| `HrvSample.swift` | HealthKit SDNN → `hrv` Observation (`sdnn_ms`) |
+| `ObservationQueue.swift` | Durable pending JSON (UserDefaults), dedupe |
+| `HealthKitSyncCoordinator.swift` | Observers + background delivery + flush |
+| `SamplePost.swift` | Thin wrapper → coordinator |
 
 ## Pairing (Desktop → Companion)
 
-1. Start Desktop ingest (normal `pnpm tauri dev` / app launch).
-2. **Simulator / same Mac:** Base URL `http://127.0.0.1:8787` (default in the form).
-3. **Physical phone:** restart Desktop with `BIOFOCUS_INGEST_LAN=1`, then copy **Base URL** from Desktop → Companion (see `docs/12-development.md`).
-4. Paste the pairing token (Show / Copy / QR on Desktop Companion).
-5. Tap **Send one heart-rate sample** once.
+1. Start Desktop ingest (`pnpm tauri dev`).
+2. **Simulator:** Base URL `http://127.0.0.1:8787`.
+3. **Physical phone:** `BIOFOCUS_INGEST_LAN=1` (+ optional `BIOFOCUS_INGEST_BIND_HOST=<lan-ip>`), copy **Base URL** from Desktop → Companion.
+4. Paste pairing token.
+5. Leave **Auto-sync** on (default), or tap **Send latest HR + HRV now**.
 
-Contract: JSON array of `Observation` (`provider_id=com.biofocus.applehealth`, `data_type=heart_rate`) → `POST {baseURL}/v1/ingest` with `Authorization: Bearer …`. Errors (401, network, HTTP) surface in the Status section — not swallowed.
+Contract: JSON array of Observations (`provider_id=com.biofocus.applehealth`, `heart_rate` and/or `hrv`) → `POST {baseURL}/v1/ingest` with Bearer token.
 
-## Smoke notes
+## Autonomy (ADR-016)
 
-### Simulator (loopback)
+- HealthKit **observer** + **background delivery** (hourly) enqueue new samples — **no** busy-loop poll.
+- Offline / Desktop down → stay in local queue; **Flush queue only** when reachable.
+- HRV from many bands is **sparse** (often overnight). Missing HRV is calm / soft — HR still syncs. Not a clinical claim.
+- Core accepts `sdnn_ms`-only `hrv` Observations (prefer `rmssd_ms` when present).
 
-1. Desktop running; ingest on `127.0.0.1:8787`.
-2. Run companion on Simulator; leave default Base URL; paste token.
-3. Authorize heart-rate read when prompted.
-4. If Status says no sample: open the **Health** app on Simulator (or Settings → Health) and add a heart-rate sample, then send again.
-5. Expect Status success, or an explicit 401 / network message if Desktop is down / token wrong.
-6. Optional check: `curl -s http://127.0.0.1:8787/v1/status`.
+## Verify on Desktop
 
-### Physical device (LAN)
+```bash
+sqlite3 ~/.biofocus/data/biofocus_main.db \
+  "SELECT datetime(timestamp,'unixepoch','localtime'), data_type, payload
+   FROM observations
+   WHERE provider_id='com.biofocus.applehealth'
+   ORDER BY timestamp DESC LIMIT 10;"
+```
 
-1. Same Wi-Fi as the Mac; Desktop with `BIOFOCUS_INGEST_LAN=1`.
-2. Copy LAN Base URL + token from Desktop Companion.
-3. Run on device (signed with your team); send once.
-4. Local network permission may appear — allow so the phone can reach Desktop.
+Expect `heart_rate` and (when HealthKit has SDNN) `hrv` with `{"sdnn_ms":…}`.
 
 ## Privacy
 
-- HealthKit **read** heart rate only (no write of clinical data; no continuous background delivery).
-- Local Desktop only — no third-party analytics.
-- Idle-safe: send only on explicit button tap.
+- HealthKit **read** HR + HRV SDNN only; local Desktop ingest; no BioFocus cloud.
+- Idle-safe: event / background-delivery driven.

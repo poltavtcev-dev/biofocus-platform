@@ -19,7 +19,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>2</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -28,11 +28,15 @@
 		<true/>
 	</dict>
 	<key>NSHealthShareUsageDescription</key>
-	<string>BioFocus reads one heart-rate sample to send a local Observation to your Desktop app. Data stays on your devices.</string>
+	<string>BioFocus reads heart rate and heart-rate variability (SDNN) to send local Observations to your Desktop app. Data stays on your devices — not uploaded to BioFocus servers.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>BioFocus does not write health data; this key is required by HealthKit tooling.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>BioFocus Companion sends heart-rate Observations to your Desktop on the local network only.</string>
+	<string>BioFocus Companion sends heart-rate and HRV Observations to your Desktop on the local network only.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -46,4 +50,3 @@
 	</array>
 </dict>
 </plist>
-

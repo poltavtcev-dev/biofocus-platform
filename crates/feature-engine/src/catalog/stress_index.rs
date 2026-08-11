@@ -117,11 +117,9 @@ fn score_window(observations: &[Observation], window: &bio_spec::TimeWindow) -> 
 fn stress_from_hrv(hrv: &[&Observation]) -> Option<f64> {
     let mut parts: Vec<f64> = Vec::new();
 
-    if let Some(rmssd) = mean_f64_field(hrv, "rmssd_ms") {
-        parts.push(hrv_ms_to_stress(rmssd));
-    }
-    if let Some(sdnn) = mean_f64_field(hrv, "sdnn_ms") {
-        parts.push(hrv_ms_to_stress(sdnn));
+    // ADR-016: prefer RMSSD, else SDNN — do not average both when both present.
+    if let Some(ms) = super::hrv::mean_hrv_ms(hrv) {
+        parts.push(hrv_ms_to_stress(ms));
     }
     if let Some(pnn50) = mean_f64_field(hrv, "pnn50") {
         parts.push((100.0 - pnn50.clamp(0.0, 100.0)).clamp(0.0, 100.0));

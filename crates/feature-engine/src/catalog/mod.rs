@@ -28,6 +28,7 @@ mod distraction_score;
 mod fatigue_index;
 mod focus_score;
 mod git_activity_rate;
+mod hrv;
 mod meeting_density;
 mod recovery_between_meetings;
 mod recovery_score;

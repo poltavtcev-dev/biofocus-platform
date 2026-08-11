@@ -73,7 +73,7 @@
 ### 1.7 `RecoveryScore`
 - **Goal:** Short-term physiological recovery proxy from recent HRV (and optional heart rate). Calm data-quality metric — **not** a clinical recovery diagnosis; no sleep required for v1.
 - **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus/Stress.
-- **Inputs:** `hrv` Observations (`rmssd_ms` required to emit); optional `heart_rate` (`bpm`). Sleep Observations out of scope for v1.
+- **Inputs:** `hrv` Observations (`rmssd_ms` preferred; **`sdnn_ms` accepted as HRV-proxy when RMSSD absent — ADR-016**); optional `heart_rate` (`bpm`). Sleep Observations out of scope for v1.
 - **Formula Strategy (v1):** Weighted (renormalized if HR missing): HRV recovery map RMSSD 0 @ ≤15 ms → 100 @ ≥70 ms (0.70; inverse anchors of `StressIndex` RMSSD map) + HR calmness vs early-15m baseline BPM `100 - clamp((mean_bpm - baseline) / 20 * 100, 0, 100)` (0.30). Output clamped 0–100. HR alone (no usable HRV) → omit Feature.
 - **Output:** Float (0.0 — 100.0).
 - **Units:** dimensionless score (higher ≈ more recovered proxy in-window).

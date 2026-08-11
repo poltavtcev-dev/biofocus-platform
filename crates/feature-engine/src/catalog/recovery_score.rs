@@ -4,7 +4,7 @@
 //! # v1 formula (documented simplifications)
 //!
 //! - **Window / step:** 15 minutes / 1 minute (aligned with Focus / Stress).
-//! - **Inputs:** `hrv` (`rmssd_ms` required to emit); optional `heart_rate`
+//! - **Inputs:** `hrv` (`rmssd_ms` or `sdnn_ms` required to emit — ADR-016); optional `heart_rate`
 //!   (`bpm`). Sleep Observations are **not** required for v1.
 //! - **HRV component:** linear map — **0** at RMSSD ≤ 15 ms, **100** at
 //!   RMSSD ≥ 70 ms (higher variability ⇒ higher short-term recovery proxy).
@@ -119,12 +119,12 @@ fn score_window(
     let mut weighted: Vec<(&str, &str, f64, f64)> = Vec::new();
     let mut present_slots = 0usize;
 
-    let rmssd = mean_f64_field(&hrv, "rmssd_ms")?;
+    let hrv_ms = super::hrv::mean_hrv_ms(&hrv)?;
     weighted.push((
         FACTOR_HRV,
         LABEL_HRV,
         WEIGHT_HRV,
-        hrv_ms_to_recovery(rmssd),
+        hrv_ms_to_recovery(hrv_ms),
     ));
     present_slots += 1;
 
@@ -231,27 +231,6 @@ fn mean_bpm(obs: &[&Observation]) -> Option<f64> {
     }
 }
 
-fn mean_f64_field(obs: &[&Observation], key: &str) -> Option<f64> {
-    let mut sum = 0.0;
-    let mut n = 0usize;
-    for o in obs {
-        if let Some(v) = o
-            .payload
-            .get(key)
-            .and_then(|v| v.as_f64())
-            .filter(|r| r.is_finite())
-        {
-            sum += v;
-            n += 1;
-        }
-    }
-    if n == 0 {
-        None
-    } else {
-        Some(sum / n as f64)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use bio_spec::{FeatureValue, Observation, UnixTimestamp};
@@ -342,6 +321,25 @@ mod tests {
         assert_eq!(feat.factors[0].id, FACTOR_HRV);
         assert!((feat.factors[0].share - 1.0).abs() < 1e-12);
         assert_eq!(feat.factors[0].label, LABEL_HRV);
+    }
+
+    #[test]
+    fn sdnn_only_emits_recovery() {
+        let batch = vec![Observation::try_new(
+            Uuid::from_u128(9),
+            UnixTimestamp::from_secs(1500),
+            "test.provider",
+            DATA_TYPE_HRV,
+            json!({ "sdnn_ms": 70.0 }),
+            1.0,
+        )
+        .expect("obs")];
+        let feat = last_recovery(&batch);
+        let FeatureValue::Scalar(v) = feat.value else {
+            panic!("scalar");
+        };
+        assert!(v >= 99.0, "SDNN-only should map like high HRV, got {v}");
+        assert_eq!(feat.factors[0].id, FACTOR_HRV);
     }
 
     #[test]
