@@ -473,7 +473,21 @@ mod tests {
                 && !lower.contains("cannot focus")
                 && !lower.contains("you can't")
         }));
-        assert!((attn.confidence.get() - 1.0).abs() < 1e-12);
+        let start = attn.time_window.start.as_secs();
+        let end = attn.time_window.end.as_secs();
+        let focus_slot_conf = {
+            let in_win: Vec<f64> = focus_feats
+                .iter()
+                .filter(|f| {
+                    let tip = f.time_window.end.as_secs();
+                    tip >= start && tip <= end
+                })
+                .map(|f| f.confidence.get())
+                .collect();
+            in_win.iter().sum::<f64>() / in_win.len() as f64
+        };
+        let expected_conf = (focus_slot_conf + csr.confidence.get()) / 2.0;
+        assert!((attn.confidence.get() - expected_conf).abs() < 1e-12);
         assert!(!attn.provenance.is_empty());
     }
 

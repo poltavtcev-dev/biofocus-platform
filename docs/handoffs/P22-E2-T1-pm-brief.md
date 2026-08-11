@@ -2,10 +2,11 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
-**Date:** 2026-08-11  
+**Status:** Done (QA Pass 2026-08-11)  
+**Closed:** Epic **P22-E2** ✅ · `AttentionStability` shipped  
+**Evidence:** `docs/handoffs/P22-E2-T1-qa-to-pm.md` · `docs/handoffs/P22-E2-T1-dev-to-qa.md`  
+**Next:** **P22-E3-T1** — `docs/handoffs/P22-E3-T1-pm-brief.md`  
 **Closed previous:** P22-E1-T1 (ADR-023 locked; QA Pass)  
-**Evidence:** `docs/handoffs/P22-E1-T1-qa-to-pm.md` · `docs/handoffs/P22-E1-T1-dev-to-qa.md`  
 **Phase:** Phase 22 AttentionStability — Epic P22-E2
 
 ## Task
