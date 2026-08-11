@@ -49,7 +49,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 14 (Done 2026-08-10):** Git path-allowlist — ADR-014 → live probe → dogfood + Menubar **Git folders** IPC.
 - **Phase 15 (Done 2026-08-11):** Companion HRV + autonomy — ADR-016.
 - **Phase 16 (Done 2026-08-11):** Ambient light — ADR-015; collector + `AmbientLightShare`.
-- **Phase 17 (Active):** Wearable depth + chart ranges — ADR-017 · **ADR-018** ✅ · Companion emit ✅; Ready **P17-E3-T1** (chart ranges + Features). Deferred: IDE · weather · App Store · NotificationPressure.
+- **Phase 17 (Done 2026-08-11):** Wearable depth + chart ranges — ADR-017 · ADR-018 → Companion emit → `get_feature_series` + wearable Features.
+- **Phase 18 (Active):** Notification pressure — **ADR-019** ✅; Ready **P18-E2-T1** (collector). Deferred: IDE · weather · App Store.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -121,7 +122,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P16-E1-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–15 Done · Phase 16 Active (ambient light resume; ADR-015).
+Immediate Kanban = **P18-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–17 Done · Phase 18 Active (ADR-019 ✅; collector next).
 
 | Phase | Focus |
 | :--- | :--- |
@@ -136,8 +137,10 @@ Immediate Kanban = **P16-E1-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–15 Done 
 | **13** | Plugin wave-2 (Git → GitActivityRate) — **done** |
 | **14** | Git path-allowlist (ADR-014 → live probe → dogfood/UX) — **done** |
 | **15** | Done — Companion HRV + autonomy (ADR-016) |
-| **16** | Active — Ambient light resume (ADR-015 → plugin → AmbientLightShare); weather deferred |
-| **17+** | Open via later PM gate — IDE · weather · App Store · NotificationPressure |
+| **16** | Done — Ambient light (ADR-015 → plugin → AmbientLightShare); weather deferred |
+| **17** | Done — Wearable depth + chart ranges (ADR-017 · ADR-018) |
+| **18** | Active — Notification pressure (ADR-019 → collector → NotificationPressure) |
+| **19+** | Open via later PM gate — IDE · weather · App Store |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

@@ -233,6 +233,40 @@ fn ambient_light_contract_json_round_trip() {
     assert_eq!(again, parsed);
 }
 
+const CONTRACT_NOTIFICATION_EVENT_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789ab18",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.notifications",
+  "data_type": "notification_event",
+  "payload": {
+    "count": 2,
+    "category": "communication",
+    "interruption_level": "active",
+    "app_kind": "messaging"
+  },
+  "confidence": 0.9
+}"#;
+
+#[test]
+fn notification_event_contract_json_round_trip() {
+    use bio_spec::{validate_notification_event_payload, DATA_TYPE_NOTIFICATION_EVENT};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_NOTIFICATION_EVENT_JSON)
+        .expect("notification_event contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_NOTIFICATION_EVENT);
+    assert_eq!(parsed.payload["count"], json!(2));
+    assert_eq!(parsed.payload["category"], json!("communication"));
+    assert!(parsed.payload.get("title").is_none());
+    assert!(parsed.payload.get("body").is_none());
+    validate_notification_event_payload(&parsed.payload).expect("valid notification_event");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
 #[test]
 fn adr018_wearable_payloads_validate_via_router() {
     use bio_spec::{

@@ -72,3 +72,8 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 - **v1 Observations:** `step_count` / `active_energy` / `sleep_interval` (+ soft-optional `oxygen_saturation`) are ordinary rows in `observations` alongside `heart_rate` / `hrv`. **No** wearable mirror tables / SpO2 clinical store.
 - **Charts:** Long-range Feature series are **derived** (recompute-on-read) — **no** Feature-history SQLite table in v1.
 - **No migration** under ADR-018. Any future rollup / wearable registry requires a **new ADR + user approve**.
+
+### Notification events (ADR-019 / Phase 18)
+
+- **v1:** Notification facts are ordinary rows in `observations` (`data_type = 'notification_event'`). **No** notification mirror table / NC registry / content store.
+- **No migration** under ADR-019. Collector → **P18-E2**; Feature → **P18-E3**. Any future allowlist / richer taxonomy requires a **new ADR + user approve**.

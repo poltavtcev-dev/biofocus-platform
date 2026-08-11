@@ -308,7 +308,7 @@ Validation: `bio_spec::validate_ambient_light_payload` (also via `validate_obser
 
 ### Wearable depth payloads (ADR-018 / P17-E2 shipped)
 
-Companion HealthKit path keeps existing `heart_rate` + soft-optional `hrv` (ADR-016). Phase 17 emits Observation families Mi Fitness typically writes into Apple Health. **Companion emit shipped (P17-E2)**; chart ranges + Features → **P17-E3**. Existing `observations` store — **no** migration in v1.
+Companion HealthKit path keeps existing `heart_rate` + soft-optional `hrv` (ADR-016). Phase 17 emits Observation families Mi Fitness typically writes into Apple Health. **Companion emit shipped (P17-E2)**; chart ranges + Features **shipped (P17-E3)**. Existing `observations` store — **no** migration in v1.
 
 | `data_type` | Required payload | Optional | Notes |
 | :--- | :--- | :--- | :--- |
@@ -320,6 +320,41 @@ Companion HealthKit path keeps existing `heart_rate` + soft-optional `hrv` (ADR-
 **Deferred:** parallel `workout` Observation family (use Life Event `workout` + steps/energy). **Forbidden:** Mi Cloud payloads; inventing SpO2/sleep when absent; clinical framing.
 
 Validation: `bio_spec::validate_*_payload` / `validate_observation_payload`. Ingest reject codes: `invalid_step_count` / `invalid_active_energy` / `invalid_sleep_interval` / `invalid_oxygen_saturation`. Pipeline normalize strips aliases / out-of-range known types.
+
+### `notification_event` payload (ADR-019 / P18-E2 shipped)
+
+Phase 18 notification pressure Observation family. **Contracts locked (P18-E1)**; **collector shipped (P18-E2)**; Feature `NotificationPressure` → **P18-E3**. Existing `observations` store — **no** migration in v1.
+
+| Field | Rule |
+| :--- | :--- |
+| `data_type` | always `"notification_event"` |
+| `provider_id` | `com.biofocus.macos.notifications` |
+| `payload.count` | **Required.** Integer ≥ 1 (usually `1`; >1 when coalesced) |
+| `payload.category` | **Optional.** `communication` \| `calendar` \| `system` \| `media` \| `social` \| `other` \| `unknown` |
+| `payload.interruption_level` | **Optional.** `passive` \| `active` \| `time_sensitive` \| `critical` \| `unknown` |
+| `payload.app_kind` | **Optional.** `messaging` \| `mail` \| `calendar` \| `social` \| `system` \| `other` \| `unknown` |
+
+```json
+{
+  "provider_id": "com.biofocus.macos.notifications",
+  "data_type": "notification_event",
+  "payload": {
+    "count": 1,
+    "category": "communication",
+    "interruption_level": "active",
+    "app_kind": "messaging"
+  },
+  "confidence": 0.85
+}
+```
+
+Enable: `BIOFOCUS_NOTIFICATION_EVENTS=1` (default **off**). Emit on delivery / coalesced change or rare poll ≥5s; no busy-loop.
+
+**Forbidden:** notification body / title / subtitle / message text / screenshots / attachments / userInfo dumps / free-form app display names.
+
+Validation: `bio_spec::validate_notification_event_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_notification_event`. Pipeline normalize strips any accidental content keys (`title` / `body` / `subtitle` / `message` / `screenshot` / `userInfo`).
+
+**OS probe (P18-E2 shipped):** `SystemNotificationEventProbe` soft-fails when OS mapping unavailable (no body/title capture in v1 — idle, no emit). `ScriptedNotificationEventProbe` for tests. Emit on identity change or rare poll ≥5s; `stop_stream` joins. Host arms only when `BIOFOCUS_NOTIFICATION_EVENTS=1`. **No** migration.
 
 ## Companion → ingest (P2-E3-T1)
 

@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P16-E1-T1** (ambient light plugin · ADR-015). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P18-E2-T1** (notification collector · ADR-019). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -77,7 +77,9 @@ Immediate Kanban = **P16-E1-T1** (ambient light plugin · ADR-015). Below is the
 | **13** | Done — Plugin wave-2 (ADR-013 → Git plugin → `GitActivityRate`) |
 | **14** | Done — Git path-allowlist (ADR-014 → live probe → dogfood / Menubar Git folders) |
 | **15** | Done — Companion HRV + autonomy (ADR-016) |
-| **16** | Active — Ambient light resume (ADR-015 → collector → `AmbientLightShare`); weather deferred |
-| **17+** | Open via later PM gate — IDE · weather · App Store packaging · NotificationPressure |
+| **16** | Done — Ambient light resume (ADR-015 → collector → `AmbientLightShare`); weather deferred |
+| **17** | Done — Wearable depth + chart ranges (ADR-017 · ADR-018 → Companion emit → `get_feature_series` + wearable Features) |
+| **18** | Active — Notification pressure (ADR-019 → collector → `NotificationPressure`); IDE · weather · App Store deferred |
+| **19+** | Open via later PM gate — IDE · weather · App Store packaging · dogfood polish |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

@@ -1,9 +1,9 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 17: Wearable depth + chart ranges** (Sprint 33–34) — Active.  
-> Phase 0–16 Done. Goal: Mi Fitness / HealthKit max Observations + Dashboard ranges **1h / 8h / 12h / 1d / 1w** + deterministic analysis first (ADR-017 sequencing; **ADR-018** contracts).
+> **Phase 18: Notification pressure** (Sprint 35–36) — Active.  
+> Phase 0–17 Done. Goal: lock notification Observation contract (**ADR-019**) → opt-in macOS collector → catalog **`NotificationPressure`** (interruption intensity). No notification body/title content.
 
-**Phase 17 goal:** Lock contracts (**ADR-018** / E1) → expand Companion HealthKit ingest (E2) → chart ranges + Features without requiring LLM (E3). Soft-optional HRV; no Mi Cloud.
+**Phase 18 goal:** ADR contracts (E1) → collector emit (E2) → `NotificationPressure` Feature (E3). Personal self-tracking; calm non-clinical copy; opt-in default **off**.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -27,24 +27,25 @@
 - [ ] **Ambient light:** opt-in; coarse light labels/levels only — no camera frames / screen contents / precise geo
 - [ ] **Wearable depth:** HealthKit only (no Mi Cloud); soft-optional HRV; new types only per Phase 17 contract ADR
 - [ ] **Chart ranges:** recompute-on-read; UI ↛ SQLite; Snapshot = latest (series on chart)
+- [ ] **Notifications:** opt-in; coarse counts/cadence only — **no** notification body/title/content; personal self-tracking only
 
 ---
 
-## Kanban Overview (Phase 17 Active)
+## Kanban Overview (Phase 18 Active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P17-E3-T1** |
+| **Ready** | **P18-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–16 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** · **P17-E2-T1** |
+| **Done** | Phase 0–17 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** · **P17-E2-T1** · **P17-E3-T1** · **P18-E1-T1** |
 
-**Epic status:** P17-E1 ✅ · P17-E2 ✅ · P17-E3 ○ · Phase 16 ✅
+**Epic status:** P18-E1 ✅ · P18-E2 ○ · P18-E3 ○ · Phase 17 ✅
 
-**Phase 17 on `/docs/14-roadmap.md`:** opened 2026-08-11 · ADR-017 · **ADR-018** ✅ · E1+E2 Done · Ready E3 charts/Features
+**Phase 18 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-019** ✅ · Ready E2 collector
 
-**Рекомендуемый порядок (Phase 17):**  
-P17-E1-T1 (ADR-018) ✅ → P17-E2-T1 (Companion emit) ✅ → P17-E3-T1 (ranges + Features)
+**Рекомендуемый порядок (Phase 18):**  
+P18-E1-T1 (ADR-019) ✅ → P18-E2-T1 (collector) → P18-E3-T1 (`NotificationPressure`)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -52,42 +53,54 @@ P17-E1-T1 (ADR-018) ✅ → P17-E2-T1 (Companion emit) ✅ → P17-E3-T1 (ranges
 
 ### Active assignment
 
-**Ready now:** **P17-E3-T1** — Chart ranges IPC/UI + Features from wearable Observations (**ADR-018**). Brief: `docs/handoffs/P17-E3-T1-pm-brief.md`. Role: **Dev|UX**.
+**Ready now:** **P18-E2-T1** — Implement notification collector plugin per **ADR-019**. Brief: `docs/handoffs/P18-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **P17-E2-T1** (2026-08-11) — Companion HealthKit expand per ADR-018 (QA Pass). Branch: `phase/17-wearable-charts`. Evidence: `docs/handoffs/P17-E2-T1-qa-to-pm.md`.
+**Just closed:** **P18-E1-T1** (2026-08-11) — **ADR-019** locks `notification_event` + `NotificationPressure` scope (QA Pass). Branch: `phase/18-notification-pressure`. Evidence: `docs/handoffs/P18-E1-T1-qa-to-pm.md`.
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 17 on `phase/17-wearable-charts`; local commits OK; no PR. Physical-device dogfood still recommended for Companion emit.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 18 on `phase/18-notification-pressure`; local commits OK; no PR.
+
+---
+
+## Phase 18 — Notification pressure (Active)
+
+### Epic P18-E1 — Contracts ADR (**ADR-019**) ✅
+**Goal:** Lock notification Observation `data_type: "notification_event"` + privacy bar (no body/title) + Feature scope `NotificationPressure` before collector code. SoT: `docs/decision-log.md` ADR-019 + contracts sketches (`07-contracts`, `08-plugin-sdk`, catalog stub).  
+**Status:** Done 2026-08-11 (QA Pass). Evidence: `docs/handoffs/P18-E1-T1-qa-to-pm.md`.
+
+| ID | Task | Role | Modules | AC | Depends |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P18-E1-T1** ✅ | Lock notification Observation + `NotificationPressure` scope (**ADR-019**) | Dev | docs + decision-log | See `P18-E1-T1-pm-brief.md` | PM-GATE-POST-P17 |
+
+### Epic P18-E2 — Notification collector
+**Goal:** Opt-in macOS plugin (`com.biofocus.macos.notifications`, `BIOFOCUS_NOTIFICATION_EVENTS`) emits locked `notification_event` Observations via existing ingest channel (no body/title content).
+
+| ID | Task | Role | Modules | AC | Depends |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P18-E2-T1** | Implement notification collector plugin per ADR-019 | Dev | macos-collector + bio-spec/pipeline | See `P18-E2-T1-pm-brief.md` | P18-E1-T1 ✅ |
+
+### Epic P18-E3 — NotificationPressure Feature
+**Goal:** Catalog Feature `NotificationPressure` from `notification_event` Observations (omit empty; ADR-007 confidence + factors where practical).
+
+| ID | Task | Role | Modules | AC | Depends |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P18-E3-T1** | Ship `NotificationPressure` catalog Feature | Dev | feature-engine + docs | Shaped by ADR-019 | P18-E2-T1 |
+
+**Out of scope:** IDE plugin; weather ambient; App Store product; notification content capture; workplace surveillance framing; `CognitiveLoad` (later — needs more inputs); PR during freeze.
 
 ---
 
-## Phase 17 — Wearable depth + chart ranges (Active)
+## Phase 17 archive (Done)
 
-### Epic P17-E1 — Contracts ADR (**ADR-018**) ✅
-**Goal:** Lock Observation payloads + chart-range IPC stance before Companion/UI code. SoT: `docs/decision-log.md` ADR-018 + `07-contracts` / `09-api`.  
-**Status:** Done 2026-08-11 (QA Pass). Evidence: `docs/handoffs/P17-E1-T1-qa-to-pm.md`.
+<details>
+<summary>Phase 17 Kanban & epics (closed 2026-08-11 — wearable depth + chart ranges)</summary>
 
-| ID | Task | Role | Modules | AC | Depends |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **P17-E1-T1** ✅ | Lock HealthKit + chart-range contracts (**ADR-018**) | Dev | docs + decision-log | See `P17-E1-T1-pm-brief.md` | Phase 16 Done · ADR-017 |
+**Done:** P17-E1 (T1) · P17-E2 (T1) · P17-E3 (T1).  
+ADR-017 sequencing · **ADR-018** contracts · Companion HealthKit emit · `get_feature_series` + `ActivityBalance` / `EnergyScore` / `SleepDebt`.  
+Branch: `phase/17-wearable-charts` (cluster PR after freeze).
 
-### Epic P17-E2 — Companion HealthKit expand ✅
-**Goal:** Emit ADR-018 Observation types (`step_count` / `active_energy` / `sleep_interval`; soft-optional `oxygen_saturation`; keep HR/HRV) via existing queue → ingest autonomy path.  
-**Status:** Done 2026-08-11 (QA Pass). Evidence: `docs/handoffs/P17-E2-T1-qa-to-pm.md`.
+Evidence: `docs/handoffs/P17-*-qa-to-pm.md`.
 
-| ID | Task | Role | Modules | AC | Depends |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **P17-E2-T1** ✅ | Expand iOS Companion / HealthKit ingest per ADR-018 | Dev | apps/companion + bio-spec/pipeline | See `P17-E2-T1-pm-brief.md` | P17-E1-T1 ✅ |
-
-### Epic P17-E3 — Dashboard ranges + Features
-**Goal:** Range picker 1h/8h/12h/1d/1w via `get_feature_series` (recompute-on-read) + Snapshot latest UX + catalog Features from new Observations (no LLM required).
-
-| ID | Task | Role | Modules | AC | Depends |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **P17-E3-T1** | Chart ranges IPC/UI + Features from wearable Observations | Dev\|UX | desktop + feature-engine | See `P17-E3-T1-pm-brief.md` | P17-E2-T1 ✅ |
-
-**Out of scope:** Mi Cloud / unofficial API; Feature history SQLite v1; clinical claims; weather/IDE/App Store/NotificationPressure as this phase primary; PR during freeze.
-
----
+</details>
 
 ## Phase 16 archive (Done)
 
@@ -115,14 +128,14 @@ Evidence: `docs/handoffs/P15-*-qa-to-pm.md`.
 
 ---
 
-## Queue (Phase 17)
+## Queue (Phase 18)
 
-1. P17-E1-T1 — Lock HealthKit + chart-range contracts (**ADR-018**) ← **Done**  
-2. P17-E2-T1 — Companion HealthKit expand ← **Done**  
-3. **P17-E3-T1** — Chart ranges + Features ← **Ready**  
+1. P18-E1-T1 — Lock notification Observation + `NotificationPressure` (**ADR-019**) ← **Done**  
+2. **P18-E2-T1** — Notification collector plugin ← **Ready**  
+3. P18-E3-T1 — `NotificationPressure` Feature  
 
-**Git:** `phase/17-wearable-charts` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P17-E3-T1-pm-brief.md`.  
-**Deferred (later / other tracks):** IDE · weather ambient · App Store packaging · NotificationPressure.
+**Git:** `phase/18-notification-pressure` → local commits → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P18-E2-T1-pm-brief.md`.  
+**Deferred (later / other tracks):** IDE · weather ambient · App Store packaging · Companion dogfood polish (parallel OK) · `CognitiveLoad`.
 
-**Prior intent note:** `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md` — **contract-locked** (ADR-018); Companion emit Done; charts/Features = this Ready task.
+**Gate evidence:** `docs/handoffs/PM-GATE-POST-P17-pm-brief.md` — **Done** (chose NotificationPressure).

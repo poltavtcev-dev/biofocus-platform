@@ -4,6 +4,7 @@
 //! synthetic Calendar → `calendar_event`, opt-in Browser → `browser_category`,
 //! opt-in Now Playing → `now_playing`, opt-in Git activity → `git_activity`,
 //! and opt-in ambient light → `ambient_light`,
+//! and opt-in notification events → `notification_event`,
 //! plus stop/idle: after `stop_stream` probe work must not keep ticking.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -17,12 +18,14 @@ use macos_collector::{
     AmbientLightSample, BrowserCategoryPlugin, BrowserCategoryProbe, BrowserCategorySample,
     CalendarEvent, CalendarPlugin, CalendarProbe, FrontmostApp, FrontmostProbe, GitActivityPlugin,
     GitActivityProbe, GitActivitySample, IcsFileCalendarProbe, InputCountProbe,
-    KeystrokeAggregatePlugin, NowPlayingPlugin, NowPlayingProbe, NowPlayingSample,
-    ScriptedAmbientLightProbe, ScriptedBrowserProbe, ScriptedCalendarProbe,
-    ScriptedGitActivityProbe, ScriptedInputProbe, ScriptedNowPlayingProbe, SystemAmbientLightProbe,
-    SystemGitActivityProbe, AMBIENT_LIGHT_DATA_TYPE, BROWSER_CATEGORY_DATA_TYPE,
-    CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE,
-    KEYSTROKES_DATA_TYPE, NOW_PLAYING_DATA_TYPE,
+    KeystrokeAggregatePlugin, NotificationEventProbe, NotificationEventSample, NotificationPlugin,
+    NowPlayingPlugin, NowPlayingProbe, NowPlayingSample, ScriptedAmbientLightProbe,
+    ScriptedBrowserProbe, ScriptedCalendarProbe, ScriptedGitActivityProbe, ScriptedInputProbe,
+    ScriptedNotificationEventProbe, ScriptedNowPlayingProbe, SystemAmbientLightProbe,
+    SystemGitActivityProbe, SystemNotificationEventProbe, AMBIENT_LIGHT_DATA_TYPE,
+    BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE,
+    GIT_ACTIVITY_DATA_TYPE, KEYSTROKES_DATA_TYPE, NOTIFICATION_EVENT_DATA_TYPE,
+    NOW_PLAYING_DATA_TYPE,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::observation_channel;
@@ -154,6 +157,27 @@ impl CountingAmbientLightProbe {
 
 impl AmbientLightProbe for CountingAmbientLightProbe {
     fn current(&self) -> macos_collector::CollectorResult<Option<AmbientLightSample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
+    }
+}
+
+struct CountingNotificationEventProbe {
+    sample: NotificationEventSample,
+    polls: AtomicUsize,
+}
+
+impl CountingNotificationEventProbe {
+    fn new(sample: NotificationEventSample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl NotificationEventProbe for CountingNotificationEventProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<NotificationEventSample>> {
         self.polls.fetch_add(1, Ordering::SeqCst);
         Ok(Some(self.sample.clone()))
     }
@@ -827,5 +851,110 @@ async fn ambient_light_system_probe_soft_fails_emits_nothing() {
     assert!(
         listed.is_empty(),
         "soft-fail system ambient light probe must not emit Observations"
+    );
+}
+
+#[tokio::test]
+async fn notification_event_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedNotificationEventProbe::new());
+    probe.push(Some(NotificationEventSample {
+        count: 2,
+        category: Some("communication".into()),
+        interruption_level: Some("active".into()),
+        app_kind: Some("messaging".into()),
+    }));
+
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed = wait_for_data_type(
+        &db_path,
+        NOTIFICATION_EVENT_DATA_TYPE,
+        1,
+        Duration::from_secs(3),
+    )
+    .await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["count"], 2);
+    assert_eq!(listed[0].payload["category"], "communication");
+    assert_eq!(listed[0].payload["interruption_level"], "active");
+    assert_eq!(listed[0].payload["app_kind"], "messaging");
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("body").is_none());
+    assert!(listed[0].payload.get("subtitle").is_none());
+    assert!(listed[0].payload.get("message").is_none());
+    assert!(listed[0].payload.get("screenshot").is_none());
+    assert!(listed[0].payload.get("userInfo").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn notification_event_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingNotificationEventProbe::new(NotificationEventSample {
+        count: 1,
+        category: Some("system".into()),
+        interruption_level: None,
+        app_kind: None,
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "notification_event probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn notification_event_system_probe_soft_fails_emits_nothing() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemNotificationEventProbe);
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+
+    let db = Database::open(&db_path).expect("re-open db");
+    let listed = ObservationRepository::new(&db)
+        .list_by_data_type(NOTIFICATION_EVENT_DATA_TYPE)
+        .expect("list");
+    assert!(
+        listed.is_empty(),
+        "soft-fail system notification probe must not emit Observations"
     );
 }

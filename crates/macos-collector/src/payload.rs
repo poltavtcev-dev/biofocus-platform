@@ -27,6 +27,8 @@ pub const MACOS_GIT_PROVIDER_ID: &str = "com.biofocus.macos.git";
 
 /// Provider id for the ambient light collector (ADR-015).
 pub const MACOS_AMBIENT_LIGHT_PROVIDER_ID: &str = "com.biofocus.macos.ambient_light";
+/// Notification events collector (ADR-019 / P18-E2).
+pub const MACOS_NOTIFICATIONS_PROVIDER_ID: &str = "com.biofocus.macos.notifications";
 
 /// Storage / schema `data_type` for active window context.
 pub const CONTEXT_WINDOW_DATA_TYPE: &str = "context_window";
@@ -48,6 +50,8 @@ pub const GIT_ACTIVITY_DATA_TYPE: &str = "git_activity";
 
 /// Storage / schema `data_type` for ambient light context.
 pub const AMBIENT_LIGHT_DATA_TYPE: &str = "ambient_light";
+/// Observation `data_type` for notification events (ADR-019).
+pub const NOTIFICATION_EVENT_DATA_TYPE: &str = "notification_event";
 
 /// Builds privacy-safe payload: app identity only (no window title / content).
 #[must_use]
@@ -131,4 +135,23 @@ pub fn ambient_light_payload(sample: &crate::ambient_light_probe::AmbientLightSa
             "light_kind": sample.light_kind,
         }),
     }
+}
+
+/// Builds privacy-safe notification event payload (count + optional closed-set labels).
+#[must_use]
+pub fn notification_event_payload(
+    sample: &crate::notification_probe::NotificationEventSample,
+) -> JsonValue {
+    let mut map = serde_json::Map::new();
+    map.insert("count".to_string(), json!(sample.count.max(1)));
+    if let Some(ref category) = sample.category {
+        map.insert("category".to_string(), json!(category));
+    }
+    if let Some(ref level) = sample.interruption_level {
+        map.insert("interruption_level".to_string(), json!(level));
+    }
+    if let Some(ref app_kind) = sample.app_kind {
+        map.insert("app_kind".to_string(), json!(app_kind));
+    }
+    JsonValue::Object(map)
 }

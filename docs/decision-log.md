@@ -20,6 +20,7 @@
 | ADR-016 | 2026-08-11 | **Phase 15 execution supersedes ambient-light collector:** companion **HRV + autonomy** — HealthKit `heartRateVariabilitySDNN` → `hrv` Observation (`sdnn_ms`); keep `heart_rate`; event → local queue → Desktop ingest flush; Core accepts **`rmssd_ms` OR `sdnn_ms`** (prefer rmssd); **no** new SQLite; ADR-015 ambient light contract remains but E2/E3 deferred | Phase 5 companion was one-shot; dogfood needs autonomous HR+HRV without button. Apple HK exposes SDNN not RMSSD — Features must accept SDNN as HRV-proxy (non-clinical). User Priority A 2026-08-11 | Ambient light collector as active P15; sleep/steps/SpO2/ECG in same wave; always-on TCP socket; cloud relay; inventing RMSSD from SDNN without documenting proxy; clinical HRV claims; busy-loop HealthKit poll; new Observation SQLite schema; PR during freeze |
 | ADR-017 | 2026-08-11 | **Sequencing:** finish **Phase 16 ambient light** first; **Phase 17** = Mi Fitness / HealthKit depth + Dashboard chart ranges (parked intent — payload contracts in follow-up ADR before build) | User chose option B (2026-08-11): do not preempt P16 again; remember wearable-max + long-range chart UI for next phase. Dogfood still needs ambient light shipped; bracelet depth + 1h/8h/12h/1d/1w charts are committed backlog, not abandoned | Preempt P16 again for wearable (option A); Mi Cloud / unofficial API; Feature history SQLite; LLM as source of chart/Features; clinical claims |
 | ADR-018 | 2026-08-11 | **Phase 17 contracts:** HealthKit Observation `data_type`s (`step_count`, `active_energy`, `sleep_interval`; soft-optional `oxygen_saturation`) + keep `heart_rate`/`hrv`; Dashboard chart ranges **1h/8h/12h/1d/1w** via **recompute-on-read** IPC (`get_feature_series`); Snapshot = **latest** Features; existing `observations` store; **no** migration v1 | ADR-017 sequenced Phase 17 after P16; dogfood needs locked payloads/IPC before Companion/UI. Mi writes via Apple Health only. ADR-008 stance for long series. Personal self-tracking; L5 interpret-only | Mi Cloud / unofficial API; Feature-history SQLite for charts; UI→SQLite; clinical SpO2/sleep claims; busy-loop HK poll; workout as parallel Observation family (use Life Event); ECG/clinical labs; applying migration without approve; PR during freeze |
+| ADR-019 | 2026-08-11 | **Phase 18 contracts:** opt-in notification Observation `data_type: "notification_event"` (coarse `count` + optional closed-set `category` / `interruption_level` / `app_kind` only) → existing `observations` store; **no** migration v1; Capability Plugin via `plugin-sdk` + `macos-collector`; E3 Feature = **`NotificationPressure`** | PM-GATE-POST-P17 chose interruption intensity after wearable charts; catalog named `NotificationPressure` for years without an Observation family. Local-First + privacy bar (no body/title/content). Personal self-tracking only | IDE as Phase 18 primary; weather ambient; App Store product; content capture “for accuracy”; workplace surveillance framing; `CognitiveLoad` as E3; always-on / busy-loop; parallel notification SQLite store; PR during freeze; applying migration without approve |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1074,8 +1075,10 @@ invoke("get_feature_series", { range: "1h"|"8h"|"12h"|"1d"|"1w", featureIds?: st
 ```text
 P17-E1 — Contracts (this ADR + docs) ← Done 2026-08-11 (QA Pass)
 P17-E2 — Companion HealthKit expand (emit locked data_types via queue→ingest) ← Done 2026-08-11 (QA Pass)
-P17-E3 — Dashboard ranges IPC/UI + catalog Features from new Observations ← Ready
+P17-E3 — Dashboard ranges IPC/UI + catalog Features from new Observations ← Done 2026-08-11 (QA Pass)
 ```
+**Phase 17 closed.** Next slice → **PM-GATE-POST-P17**.
+
 
 #### D. Analysis ladder
 
@@ -1094,4 +1097,126 @@ P17-E3 — Dashboard ranges IPC/UI + catalog Features from new Observations ← 
 8. **Opening a PR during freeze** — local branch only until 2026-09-01.
 9. **Applying a migration without user approve** — this ADR chooses no migration.
 10. **LLM inventing bracelet metrics or chart values** — L5 interpret-only.
+
+### ADR-019 detail — Phase 18 contracts: notification Observation + NotificationPressure (v1)
+
+> **Relationship:** **PM-GATE-POST-P17** chose NotificationPressure over IDE / weather / App Store. **ADR-019** = buildable Observation + Feature scope lock for Phase 18. Implement collector in **P18-E2**; Feature math in **P18-E3**. Epic split: `docs/SPRINT_ROADMAP.md` Phase 18 (E1 this ADR · E2 collector · E3 Feature).
+
+| Layer | Role in Phase 18 v1 |
+| :--- | :--- |
+| Capability Plugin (`plugin-sdk`) | New `BioFocusPlugin` declares Capability for `notification_event`; `start_stream` / `stop_stream` only |
+| Observation (SQLite) | Immutable facts in existing `observations` table — **no** parallel notification store / migration (ADR-006 stance) |
+| Feature (`feature-engine`) | E3: `NotificationPressure` from `notification_event` — ADR-007 confidence; calm non-clinical |
+| LLM | L5 interpret-only — must **not** invent notification payloads, titles/bodies, or Features |
+
+#### Why this source now
+
+1. **Catalog readiness:** `NotificationPressure` has been named in the backlog for interruption intensity; every prior gate deferred it for lack of a notification Observation family.
+2. **Local-First fit:** macOS notification delivery metadata can be coarsened without cloud weather APIs or workplace IDE telemetry.
+3. **Privacy bar is enforceable:** counts / cadence / closed-set labels only — content capture is an explicit Non-Goal.
+4. **Deferred tracks stay deferred:** IDE still lacks an additive privacy-safe signal beyond `context_window`; weather implies cloud/geo; App Store is commercial packaging, not Core Features.
+
+#### Locked Observation family
+
+**Chosen `data_type` (closed set for Phase 18 v1):** **`notification_event`**
+
+> Not `notification_burst` as a separate family — coalesced arrivals in one sample use `payload.count` ≥ 1. One Observation family keeps the catalog / ingest surface small.
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | always `"notification_event"` |
+| `provider_id` | `com.biofocus.macos.notifications` (collector; exact probe in E2) |
+| Opt-in | `BIOFOCUS_NOTIFICATION_EVENTS=1` (default **off**); Desktop `ingest_host` starts plugin only when set |
+| Emit cadence | On notification delivery / coalesced change, or rare poll ≥5s; **no** busy-loop; `stop_stream` must join |
+| Soft-fail | OS APIs unavailable / permission denied → idle (no emit); injectable scripted probe for tests |
+| Confidence | Provider-set ∈ `[0.0, 1.0]` (unknown mapping → lower confidence OK) |
+
+**Privacy-safe payload (v1)** — coarse counts / labels only:
+
+```json
+{
+  "id": "…",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.notifications",
+  "data_type": "notification_event",
+  "payload": {
+    "count": 1,
+    "category": "communication",
+    "interruption_level": "active",
+    "app_kind": "messaging"
+  },
+  "confidence": 0.85
+}
+```
+
+| Payload field | Rule |
+| :--- | :--- |
+| `count` | **Required.** Integer ≥ 1 — notifications represented by this sample (usually `1`; >1 when OS coalesces) |
+| `category` | **Optional.** Closed set: `communication` \| `calendar` \| `system` \| `media` \| `social` \| `other` \| `unknown` |
+| `interruption_level` | **Optional.** Closed set: `passive` \| `active` \| `time_sensitive` \| `critical` \| `unknown` (maps to OS interruption bands when available — not a clinical urgency claim) |
+| `app_kind` | **Optional.** Closed set: `messaging` \| `mail` \| `calendar` \| `social` \| `system` \| `other` \| `unknown` |
+
+**Explicitly forbidden in v1 Observations / default logs**
+
+- Notification **body**, **title**, **subtitle**, message text, thread IDs, deep-link URLs, or userInfo dumps
+- Screenshots, attachment bytes, contact names, email subjects, chat previews
+- Free-form app display names or always-on content dumps “for accuracy”
+- Workplace / employer surveillance framing (product is **personal self-tracking** only)
+- Always-on capture without the opt-in env
+
+**Schema (v1)**
+
+- Prefer existing `observations` store only.
+- **No new SQLite tables/columns** for notifications, NC registries, or Feature history.
+- **Do not apply** any migration for this ADR.
+- Future allowlists / richer app taxonomy → **new ADR + user approve**.
+
+#### Capability Plugin Model
+
+```text
+BioFocusPlugin
+  id: com.biofocus.macos.notifications
+  capabilities: [{ name: "notification_events", data_types: ["notification_event"] }]
+  start_stream(tx) → emit Observation on delivery / rare poll (opt-in)
+  stop_stream() → join; freeze emissions
+Desktop ingest_host → same bounded Observation channel → spawn_persist_worker → SQLite
+UI ↛ SQLite (unchanged)
+```
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 18)
+
+```text
+E1 (P18-E1-T1) — THIS ADR ← Done 2026-08-11 (QA Pass)
+  Lock data_type + privacy bar + NotificationPressure scope in docs
+
+E2 (P18-E2-T1) ← Ready
+  macos-collector plugin + mock/scripted probe
+  bio-spec validate_notification_event_payload (+ ingest reject code)
+  pipeline normalize strips any accidental content keys
+  Host wire: BIOFOCUS_NOTIFICATION_EVENTS=1 only
+
+E3 (P18-E3-T1):
+  Catalog Feature NotificationPressure
+  Window / step aligned with Focus catalog (15m / 1m default; series may coarsen)
+  Inputs: notification_event in window (sum count → intensity map 0–100)
+  Omit when empty / no usable events
+  ADR-007: single family (notification_event); confidence = mean evidence when emitted
+  Optional explanation factors: category / interruption_level / app_kind shares when present
+  Calm copy only — not “you are overloaded” / clinical ADHD / workplace productivity scoring
+```
+
+#### Rejected alternatives
+
+1. **IDE as Phase 18 primary** — still no additive privacy-safe session kind beyond `context_window` / CSR.
+2. **Weather ambient** — implies cloud API and/or geo; deferred.
+3. **App Store packaging product** — commercial track, not Core Feature unlock.
+4. **Content capture “for accuracy”** — Non-Goal; forbid title/body/message.
+5. **Workplace surveillance framing** — personal self-tracking only.
+6. **`CognitiveLoad` as E3 target** — needs more inputs (meetings + CSR + notifications); later phase.
+7. **Separate `notification_burst` family** — coalescing via `count` on `notification_event` is enough for v1.
+8. **Parallel notification SQLite store / migration** — ADR-006 stance; observations only.
+9. **Always-on / busy-loop poll** — Global DoD idle footprint; event or rare ≥5s.
+10. **Opening a PR during freeze** — local branch `phase/18-notification-pressure` until 2026-09-01.
+11. **Applying a migration without user approve** — this ADR chooses no migration.
+12. **LLM inventing notification payloads or Features** — L5 interpret-only.
 

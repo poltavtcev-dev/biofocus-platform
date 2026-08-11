@@ -61,6 +61,9 @@ pub fn validate_observation_payload(obs: &Observation) -> SpecResult<()> {
         crate::ambient_light::DATA_TYPE_AMBIENT_LIGHT => {
             crate::ambient_light::validate_ambient_light_payload(&obs.payload)
         }
+        crate::notification_event::DATA_TYPE_NOTIFICATION_EVENT => {
+            crate::notification_event::validate_notification_event_payload(&obs.payload)
+        }
         crate::step_count::DATA_TYPE_STEP_COUNT => {
             crate::step_count::validate_step_count_payload(&obs.payload)
         }

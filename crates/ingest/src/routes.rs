@@ -193,6 +193,9 @@ async fn post_ingest(
                 bio_spec::SpecError::InvalidNowPlayingPayload { .. } => "invalid_now_playing",
                 bio_spec::SpecError::InvalidGitActivityPayload { .. } => "invalid_git_activity",
                 bio_spec::SpecError::InvalidAmbientLightPayload { .. } => "invalid_ambient_light",
+                bio_spec::SpecError::InvalidNotificationEventPayload { .. } => {
+                    "invalid_notification_event"
+                }
                 bio_spec::SpecError::InvalidStepCountPayload { .. } => "invalid_step_count",
                 bio_spec::SpecError::InvalidActiveEnergyPayload { .. } => "invalid_active_energy",
                 bio_spec::SpecError::InvalidSleepIntervalPayload { .. } => "invalid_sleep_interval",

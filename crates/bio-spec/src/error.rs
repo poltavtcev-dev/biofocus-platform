@@ -40,6 +40,10 @@ pub enum SpecError {
     #[error("invalid ambient light payload: {reason}")]
     InvalidAmbientLightPayload { reason: String },
 
+    /// Notification event Observation payload failed contract validation (ADR-019).
+    #[error("invalid notification_event payload: {reason}")]
+    InvalidNotificationEventPayload { reason: String },
+
     /// Step count Observation payload failed contract validation (ADR-018).
     #[error("invalid step_count payload: {reason}")]
     InvalidStepCountPayload { reason: String },

@@ -1,39 +1,28 @@
-# PARKED → OPENED — Phase 17 intent
+# PARKED → SHIPPED — Phase 17 intent
 
 **Date opened:** 2026-08-11 (P16 Done)  
-**Status:** **Active** — contracts **ADR-018** (P17-E1); implement E2/E3 next  
+**Date closed:** 2026-08-11 (P17-E1–E3 QA Pass)  
+**Status:** **Shipped** — Phase 17 Done  
 **ADR:** ADR-017 (sequencing) · **ADR-018** (payload + chart IPC lock)  
 **User decision:** Option **B** — finish Phase 16 ambient light first; then this wave ✅
 
-## Why was parked
+## Shipped
 
-Dogfood asked for (1) maximum bracelet info under Mi Fitness/HealthKit constraints, (2) calm Dashboard charts, (3) analysis **with and without** AI. User chose not to preempt P16 again.
+### A. Wearable depth (Companion / HealthKit) — ADR-018 · P17-E2
 
-## Must implement in Phase 17 (committed backlog)
+- Maximize what Mi Fitness writes into Apple Health (not Mi Cloud).
+- Keep HR + soft-optional HRV; emit `step_count`, `active_energy`, `sleep_interval`; soft-optional `oxygen_saturation`.
+- Autonomy: HK observer → local queue → Desktop ingest; no busy-loop; no clinical claims.
 
-### A. Wearable depth (Companion / HealthKit) — ADR-018
+### B. Dashboard chart range UI — ADR-018 · P17-E3
 
-- Maximize what Mi Fitness actually writes into Apple Health (not Mi Cloud).
-- Keep existing HR + soft-optional HRV SDNN path.
-- Locked Observations: `step_count`, `active_energy`, `sleep_interval`; soft-optional `oxygen_saturation`.
-- Same autonomy: HK observer → local queue → Desktop ingest flush; no busy-loop; no clinical claims.
+- Range picker: **1h / 8h / 12h / 1d / 1w** via `get_feature_series` recompute-on-read.
+- Snapshot = **latest** Features; chart holds the series. UI ↔ IPC only.
 
-### B. Dashboard chart range UI — ADR-018
+### C. Analysis ladder — P17-E3
 
-- Range picker: **1 hour / 8 hours / 12 hours / 1 day / 1 week**.
-- Longer ranges: **recompute-on-read** via `get_feature_series` (ADR-008); coarser step for longer spans.
-- Snapshot list: show **latest** Features. Chart holds the series.
-- UI ↔ IPC only (no UI→SQLite).
+1. Deterministic Features: `ActivityBalance` / `EnergyScore` / `SleepDebt` (`register_wearable_v1`).
+2. Optional L5 report / local LLM remains interpret-only.
 
-### C. Analysis ladder
-
-1. Deterministic Features / Insights / Recommendations from new + existing Observations.  
-2. Optional L5 report / local LLM = interpret-only over Evidence (never invent bracelet values).
-
-## Unblock checklist (PM)
-
-1. ~~P16-E1-T1 + P16-E2-T1 Done~~ ✅  
-2. ~~Follow-up ADR locking HealthKit `data_type` payloads~~ → **ADR-018** (P17-E1)  
-3. ~~PM-brief epic split~~ — E1 contracts · E2 Companion · E3 ranges/Features in `SPRINT_ROADMAP`  
-
-**Brief:** `docs/handoffs/P17-E1-T1-pm-brief.md`
+**Evidence:** `docs/handoffs/P17-E*-qa-to-pm.md` · branch `phase/17-wearable-charts`  
+**Next:** `docs/handoffs/PM-GATE-POST-P17-pm-brief.md`

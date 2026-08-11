@@ -16,6 +16,8 @@
 //! when the config file is absent.
 //! Ambient light: coarse `light_kind` + optional `level` 0–100 only (no camera /
 //! screen / geo / mic). Opt-in via `BIOFOCUS_AMBIENT_LIGHT=1`.
+//! Notification events: coarse `count` + optional closed-set labels only (no body /
+//! title / message). Opt-in via `BIOFOCUS_NOTIFICATION_EVENTS=1`.
 
 #![cfg_attr(not(target_os = "macos"), forbid(unsafe_code))]
 // objc2 / CoreGraphics bindings require `unsafe` only inside macOS probe modules.
@@ -38,6 +40,9 @@ mod ics;
 mod input_plugin;
 mod input_probe;
 mod input_stream;
+mod notification_plugin;
+mod notification_probe;
+mod notification_stream;
 mod now_playing_plugin;
 mod now_playing_probe;
 mod now_playing_stream;
@@ -55,6 +60,17 @@ pub use ambient_light_probe::{
 };
 pub use ambient_light_stream::{
     observation_from_ambient_light, spawn_ambient_light_loop, AmbientLightHandle,
+};
+pub use notification_plugin::{
+    notification_events_enabled, NotificationPlugin, DEFAULT_NOTIFICATION_POLL_INTERVAL,
+    NOTIFICATION_ENABLE_ENV,
+};
+pub use notification_probe::{
+    NotificationEventProbe, NotificationEventSample, ScriptedNotificationEventProbe,
+    SystemNotificationEventProbe,
+};
+pub use notification_stream::{
+    observation_from_notification_event, spawn_notification_event_loop, NotificationEventHandle,
 };
 pub use browser_plugin::{
     browser_categories_enabled, BrowserCategoryPlugin, BROWSER_ENABLE_ENV,
@@ -114,12 +130,13 @@ pub use now_playing_stream::{
 };
 pub use payload::{
     ambient_light_payload, browser_category_payload, calendar_event_payload,
-    context_window_payload, git_activity_payload, keystrokes_payload, now_playing_payload,
-    AMBIENT_LIGHT_DATA_TYPE, BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE,
-    CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE, KEYSTROKES_DATA_TYPE,
-    MACOS_AMBIENT_LIGHT_PROVIDER_ID, MACOS_BROWSER_PROVIDER_ID, MACOS_CALENDAR_PROVIDER_ID,
-    MACOS_CONTEXT_PROVIDER_ID, MACOS_GIT_PROVIDER_ID, MACOS_INPUT_PROVIDER_ID,
-    MACOS_NOW_PLAYING_PROVIDER_ID, NOW_PLAYING_DATA_TYPE,
+    context_window_payload, git_activity_payload, keystrokes_payload, notification_event_payload,
+    now_playing_payload, AMBIENT_LIGHT_DATA_TYPE, BROWSER_CATEGORY_DATA_TYPE,
+    CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE,
+    KEYSTROKES_DATA_TYPE, MACOS_AMBIENT_LIGHT_PROVIDER_ID, MACOS_BROWSER_PROVIDER_ID,
+    MACOS_CALENDAR_PROVIDER_ID, MACOS_CONTEXT_PROVIDER_ID, MACOS_GIT_PROVIDER_ID,
+    MACOS_INPUT_PROVIDER_ID, MACOS_NOTIFICATIONS_PROVIDER_ID, MACOS_NOW_PLAYING_PROVIDER_ID,
+    NOTIFICATION_EVENT_DATA_TYPE, NOW_PLAYING_DATA_TYPE,
 };
 pub use plugin::{ActiveWindowPlugin, DEFAULT_POLL_INTERVAL};
 pub use probe::{FrontmostApp, FrontmostProbe, SystemFrontmostProbe};

@@ -19,6 +19,7 @@
 //! | `now_playing` | `{ "media_kind": string, "is_playing": bool }` | closed-set kind; `title` / `artist` / `album` / `lyrics` / playlist ids stripped (ADR-012) |
 //! | `git_activity` | `{ "activity_kind": string, "event_count"?: u64 }` | closed-set kind; paths / remotes / branch / SHA / message / diff / author stripped (ADR-013) |
 //! | `ambient_light` | `{ "light_kind": string, "level"?: u64 }` | closed-set kind; optional level 0–100; camera / screen / geo / mic extras stripped (ADR-015) |
+//! | `notification_event` | `{ "count": u64, "category"?, "interruption_level"?, "app_kind"? }` | count ≥ 1; optional closed-sets; body/title/message/screenshot extras stripped (ADR-019) |
 //! | `step_count` | `{ "count": u64, "window_secs"?: u64 }` | non-neg count; optional window ≥ 1 (ADR-018) |
 //! | `active_energy` | `{ "kcal": f64 }` | kcal ≥ 0; aliases `active_energy_kcal` / `calories` (ADR-018) |
 //! | `sleep_interval` | `{ "start", "end", "stage"? }` | end ≥ start; stage closed-set (ADR-018) |
@@ -33,7 +34,8 @@
 //! as skipped.
 
 use bio_spec::{
-    is_v1_activity_kind, is_v1_light_kind, is_v1_media_kind, is_v1_sleep_stage, Observation,
+    is_v1_activity_kind, is_v1_interruption_level, is_v1_light_kind, is_v1_media_kind,
+    is_v1_notification_app_kind, is_v1_notification_category, is_v1_sleep_stage, Observation,
 };
 use serde_json::{json, Map, Value as JsonValue};
 
@@ -58,6 +60,8 @@ pub const DATA_TYPE_NOW_PLAYING: &str = "now_playing";
 pub const DATA_TYPE_GIT_ACTIVITY: &str = "git_activity";
 /// Ambient light (ADR-015 / P15-E2).
 pub const DATA_TYPE_AMBIENT_LIGHT: &str = "ambient_light";
+/// Notification event (ADR-019 / P18-E2).
+pub const DATA_TYPE_NOTIFICATION_EVENT: &str = "notification_event";
 /// Step count (ADR-018 / P17-E2).
 pub const DATA_TYPE_STEP_COUNT: &str = "step_count";
 /// Active energy kcal (ADR-018 / P17-E2).
@@ -227,6 +231,13 @@ fn normalize_one(mut obs: Observation) -> NormalizeOutcome {
             None => NormalizeOutcome::Skip,
         },
         DATA_TYPE_AMBIENT_LIGHT => match normalize_ambient_light(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
+        DATA_TYPE_NOTIFICATION_EVENT => match normalize_notification_event(&obs.payload) {
             Some(payload) => {
                 obs.payload = payload;
                 NormalizeOutcome::Keep(obs)
@@ -444,6 +455,37 @@ fn normalize_ambient_light(payload: &JsonValue) -> Option<JsonValue> {
     Some(JsonValue::Object(out))
 }
 
+fn normalize_notification_event(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let count = first_u64(obj, &["count"])?;
+    if count < 1 {
+        return None;
+    }
+    let mut out = Map::new();
+    out.insert("count".to_string(), json!(count));
+
+    if let Some(category) = first_nonempty_str(obj, &["category"]) {
+        if !is_v1_notification_category(category) {
+            return None;
+        }
+        out.insert("category".to_string(), json!(category));
+    }
+    if let Some(level) = first_nonempty_str(obj, &["interruption_level", "interruptionLevel"]) {
+        if !is_v1_interruption_level(level) {
+            return None;
+        }
+        out.insert("interruption_level".to_string(), json!(level));
+    }
+    if let Some(app_kind) = first_nonempty_str(obj, &["app_kind", "appKind"]) {
+        if !is_v1_notification_app_kind(app_kind) {
+            return None;
+        }
+        out.insert("app_kind".to_string(), json!(app_kind));
+    }
+    // Explicitly drop body / title / message / screenshot / userInfo extras.
+    Some(JsonValue::Object(out))
+}
+
 fn normalize_step_count(payload: &JsonValue) -> Option<JsonValue> {
     let obj = payload.as_object()?;
     let count = first_u64(obj, &["count", "steps"])?;
@@ -606,8 +648,8 @@ mod tests {
         normalize_deduped, normalize_observations, DATA_TYPE_ACTIVE_ENERGY,
         DATA_TYPE_AMBIENT_LIGHT, DATA_TYPE_BROWSER_CATEGORY, DATA_TYPE_CALENDAR_EVENT,
         DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_GIT_ACTIVITY, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV,
-        DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING, DATA_TYPE_OXYGEN_SATURATION,
-        DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
+        DATA_TYPE_KEYSTROKES, DATA_TYPE_NOTIFICATION_EVENT, DATA_TYPE_NOW_PLAYING,
+        DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
     };
     use crate::dedupe::DedupeState;
     use crate::intake::accept_observations;
@@ -919,6 +961,65 @@ mod tests {
         assert!(p.get("latitude").is_none());
         assert!(p.get("longitude").is_none());
         assert!(p.get("mic_waveform").is_none());
+    }
+
+    #[test]
+    fn notification_event_strips_content_and_keeps_coarse_fields() {
+        let input = obs(
+            DATA_TYPE_NOTIFICATION_EVENT,
+            json!({
+                "count": 2,
+                "category": "communication",
+                "interruption_level": "active",
+                "app_kind": "messaging",
+                "title": "Secret subject",
+                "body": "Message body",
+                "subtitle": "Preview",
+                "message": "chat text",
+                "screenshot": "...",
+                "userInfo": { "thread": "abc" }
+            }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let p = &out.observations()[0].payload;
+        assert_eq!(
+            p,
+            &json!({
+                "count": 2,
+                "category": "communication",
+                "interruption_level": "active",
+                "app_kind": "messaging"
+            })
+        );
+        assert!(p.get("title").is_none());
+        assert!(p.get("body").is_none());
+        assert!(p.get("subtitle").is_none());
+        assert!(p.get("message").is_none());
+        assert!(p.get("screenshot").is_none());
+        assert!(p.get("userInfo").is_none());
+    }
+
+    #[test]
+    fn notification_event_rejects_zero_count() {
+        let input = obs(
+            DATA_TYPE_NOTIFICATION_EVENT,
+            json!({ "count": 0, "category": "system" }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 0);
+        assert_eq!(out.skipped_count(), 1);
+    }
+
+    #[test]
+    fn notification_event_rejects_bad_category() {
+        let input = obs(
+            DATA_TYPE_NOTIFICATION_EVENT,
+            json!({ "count": 1, "category": "urgent_work" }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 0);
+        assert_eq!(out.skipped_count(), 1);
     }
 
     #[test]
