@@ -159,20 +159,20 @@ IDE collectors remain **deferred** (no additive privacy-safe session kind beyond
 
 Weather ambient collector remains **deferred**. Personal self-tracking only — not workplace light surveillance.
 
-### Notification events (ADR-019 / P18-E2 shipped)
+### Notification events (ADR-019 · ADR-020 live probe shipped)
 
 | Item | Value |
 | :--- | :--- |
-| Status | **Collector shipped** (P18-E2); Feature **`NotificationPressure` shipped** (P18-E3) |
+| Status | **Collector + Feature shipped** (P18); **live OS mapping shipped** (P19-E2 / ADR-020) |
 | Crate | `crates/macos-collector` |
 | Plugin id | `com.biofocus.macos.notifications` |
 | `data_type` | `notification_event` |
-| Probe | Soft-fail `SystemNotificationEventProbe` when OS mapping unavailable (idle, no emit); injectable `ScriptedNotificationEventProbe` for tests |
-| Payload | Required `count` (≥1) + optional closed-set `category` / `interruption_level` / `app_kind` — **no** body / title / message / screenshots (see `docs/07-contracts.md`) |
+| Probe | Live `SystemNotificationEventProbe` → **usernoted** NC SQLite (`group.com.apple.usernoted/db2/db`); allowlisted columns only; soft-fail when unavailable / TCC denied; injectable `ScriptedNotificationEventProbe` / `with_db_path` for tests |
+| Payload | Required `count` (≥1) + optional closed-set `category` / `interruption_level` / `app_kind` — **no** body / title / message / screenshots / `bundle_id` (ADR-019 unchanged) |
 | Enable | `BIOFOCUS_NOTIFICATION_EVENTS=1` (default **off**) |
 | Poll | On change / coalesced identity or rare ≥5s; no busy-loop; `stop_stream` joins |
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
 | Validation | `bio_spec::validate_notification_event_payload`; ingest `invalid_notification_event` |
-| Feature | `NotificationPressure` via `register_notification_v1` / `register_catalog_v1` (P18-E3) |
+| Feature | `NotificationPressure` via `register_notification_v1` / `register_catalog_v1` (P18-E3) — **no** formula rewrite in P19 |
 
-Personal self-tracking only — not workplace / employer notification monitoring.
+Personal self-tracking only — not workplace / employer notification monitoring. Full Disk Access may be required for the usernoted Group Container; without it the probe soft-fails idle.

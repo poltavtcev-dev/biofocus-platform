@@ -1958,6 +1958,7 @@ dependencies = [
  "objc2-foundation",
  "plugin-sdk",
  "runtime",
+ "rusqlite",
  "serde",
  "serde_json",
  "storage",

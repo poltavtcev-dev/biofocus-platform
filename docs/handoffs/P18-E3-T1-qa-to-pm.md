@@ -34,12 +34,12 @@ cargo test -p feature-engine                         # 113 passed
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P18-E3-T1 → Done; close Epic **P18-E3** and **Phase 18**; open next gate / phase
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE / todos / stats / callout / DAG
-- [ ] Optional status docs (`ARCHITECTURE_STATUS` / vision) if not already reflecting Phase 18 close
+- [x] `/docs/SPRINT_ROADMAP.md` — P18-E3-T1 → Done; close Epic **P18-E3** and **Phase 18**; open **PM-GATE-POST-P18**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE / todos / stats / callout / DAG
+- [x] Status docs (`ARCHITECTURE_STATUS` / vision / PROJECT_CANVAS / 14-roadmap / 12-development / decision-log)
 
 ## Suggested next Ready task
-- Per roadmap after Phase 18 close (PM-GATE / next phase) — not IDE/weather/App Store unless gate chooses them; `CognitiveLoad` remains later.
+- **PM-GATE-POST-P18** — choose Phase 19+ · `docs/handoffs/PM-GATE-POST-P18-pm-brief.md`
 
 ## Notes for PM
 - Branch: `phase/18-notification-pressure` (may have other dirty PM docs from E2 close — fold when clustering).

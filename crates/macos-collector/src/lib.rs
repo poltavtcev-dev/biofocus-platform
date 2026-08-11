@@ -17,7 +17,9 @@
 //! Ambient light: coarse `light_kind` + optional `level` 0–100 only (no camera /
 //! screen / geo / mic). Opt-in via `BIOFOCUS_AMBIENT_LIGHT=1`.
 //! Notification events: coarse `count` + optional closed-set labels only (no body /
-//! title / message). Opt-in via `BIOFOCUS_NOTIFICATION_EVENTS=1`.
+//! title / message). Opt-in via `BIOFOCUS_NOTIFICATION_EVENTS=1`. Live OS mapping
+//! (ADR-020 / P19-E2): read-only **usernoted** NC SQLite (`group.com.apple.usernoted/db2/db`)
+//! with hard non-content field allowlist; soft-fail when unavailable / TCC denied.
 
 #![cfg_attr(not(target_os = "macos"), forbid(unsafe_code))]
 // objc2 / CoreGraphics bindings require `unsafe` only inside macOS probe modules.
@@ -40,6 +42,7 @@ mod ics;
 mod input_plugin;
 mod input_probe;
 mod input_stream;
+mod notification_nc_db;
 mod notification_plugin;
 mod notification_probe;
 mod notification_stream;
@@ -68,6 +71,9 @@ pub use notification_plugin::{
 pub use notification_probe::{
     NotificationEventProbe, NotificationEventSample, ScriptedNotificationEventProbe,
     SystemNotificationEventProbe,
+};
+pub use notification_nc_db::{
+    candidate_nc_db_paths, write_fixture_nc_db, USERNOTED_DB_REL,
 };
 pub use notification_stream::{
     observation_from_notification_event, spawn_notification_event_loop, NotificationEventHandle,

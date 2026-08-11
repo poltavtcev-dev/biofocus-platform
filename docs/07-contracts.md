@@ -321,9 +321,9 @@ Companion HealthKit path keeps existing `heart_rate` + soft-optional `hrv` (ADR-
 
 Validation: `bio_spec::validate_*_payload` / `validate_observation_payload`. Ingest reject codes: `invalid_step_count` / `invalid_active_energy` / `invalid_sleep_interval` / `invalid_oxygen_saturation`. Pipeline normalize strips aliases / out-of-range known types.
 
-### `notification_event` payload (ADR-019 / P18-E2 shipped)
+### `notification_event` payload (ADR-019 / P18 shipped · ADR-020 live probe shipped)
 
-Phase 18 notification pressure Observation family. **Contracts locked (P18-E1)**; **collector shipped (P18-E2)**; Feature `NotificationPressure` → **P18-E3**. Existing `observations` store — **no** migration in v1.
+Phase 18 notification pressure Observation family. **Contracts locked (ADR-019)**; collector + Feature **shipped** (P18-E2/E3). **ADR-020** live `SystemNotificationEventProbe` mapping **shipped** (P19-E2): read-only **usernoted** NC SQLite; **payload unchanged**; soft-fail when mapping unavailable / TCC denied. Existing `observations` store — **no** migration in v1.
 
 | Field | Rule |
 | :--- | :--- |
@@ -354,7 +354,7 @@ Enable: `BIOFOCUS_NOTIFICATION_EVENTS=1` (default **off**). Emit on delivery / c
 
 Validation: `bio_spec::validate_notification_event_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_notification_event`. Pipeline normalize strips any accidental content keys (`title` / `body` / `subtitle` / `message` / `screenshot` / `userInfo`).
 
-**OS probe (P18-E2 shipped):** `SystemNotificationEventProbe` soft-fails when OS mapping unavailable (no body/title capture in v1 — idle, no emit). `ScriptedNotificationEventProbe` for tests. Emit on identity change or rare poll ≥5s; `stop_stream` joins. Host arms only when `BIOFOCUS_NOTIFICATION_EVENTS=1`. **No** migration.
+**OS probe (P19-E2 shipped):** Live `SystemNotificationEventProbe` maps macOS **usernoted** Notification Center SQLite (`~/Library/Group Containers/group.com.apple.usernoted/db2/db`, fallback `$DARWIN_USER_DIR/com.apple.notificationcenter/db2/db`) → ADR-019 payloads. **Allowlisted SELECT only:** `record.delivered_date` + `app.identifier` (bundle → closed-set labels in-memory). **Never** `SELECT` `record.data` / title / body / subtitle / message / userInfo / attachments. Soft-fail idle when DB missing, TCC/authorization denies access, or schema lacks allowlisted columns. First successful open sets a watermark (no historical dump); later polls emit coalesced `count` for new deliveries. `ScriptedNotificationEventProbe` / `with_db_path` fixtures for tests. Emit on identity change or rare poll ≥5s; `stop_stream` joins. Host arms only when `BIOFOCUS_NOTIFICATION_EVENTS=1`. **No** migration. Optional dogfood/status UX → **P19-E3**.
 
 ## Companion → ingest (P2-E3-T1)
 

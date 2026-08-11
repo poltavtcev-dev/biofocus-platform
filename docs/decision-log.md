@@ -21,6 +21,7 @@
 | ADR-017 | 2026-08-11 | **Sequencing:** finish **Phase 16 ambient light** first; **Phase 17** = Mi Fitness / HealthKit depth + Dashboard chart ranges (parked intent — payload contracts in follow-up ADR before build) | User chose option B (2026-08-11): do not preempt P16 again; remember wearable-max + long-range chart UI for next phase. Dogfood still needs ambient light shipped; bracelet depth + 1h/8h/12h/1d/1w charts are committed backlog, not abandoned | Preempt P16 again for wearable (option A); Mi Cloud / unofficial API; Feature history SQLite; LLM as source of chart/Features; clinical claims |
 | ADR-018 | 2026-08-11 | **Phase 17 contracts:** HealthKit Observation `data_type`s (`step_count`, `active_energy`, `sleep_interval`; soft-optional `oxygen_saturation`) + keep `heart_rate`/`hrv`; Dashboard chart ranges **1h/8h/12h/1d/1w** via **recompute-on-read** IPC (`get_feature_series`); Snapshot = **latest** Features; existing `observations` store; **no** migration v1 | ADR-017 sequenced Phase 17 after P16; dogfood needs locked payloads/IPC before Companion/UI. Mi writes via Apple Health only. ADR-008 stance for long series. Personal self-tracking; L5 interpret-only | Mi Cloud / unofficial API; Feature-history SQLite for charts; UI→SQLite; clinical SpO2/sleep claims; busy-loop HK poll; workout as parallel Observation family (use Life Event); ECG/clinical labs; applying migration without approve; PR during freeze |
 | ADR-019 | 2026-08-11 | **Phase 18 contracts:** opt-in notification Observation `data_type: "notification_event"` (coarse `count` + optional closed-set `category` / `interruption_level` / `app_kind` only) → existing `observations` store; **no** migration v1; Capability Plugin via `plugin-sdk` + `macos-collector`; E3 Feature = **`NotificationPressure`** | PM-GATE-POST-P17 chose interruption intensity after wearable charts; catalog named `NotificationPressure` for years without an Observation family. Local-First + privacy bar (no body/title/content). Personal self-tracking only | IDE as Phase 18 primary; weather ambient; App Store product; content capture “for accuracy”; workplace surveillance framing; `CognitiveLoad` as E3; always-on / busy-loop; parallel notification SQLite store; PR during freeze; applying migration without approve |
+| ADR-020 | 2026-08-11 | **Phase 19:** unlock live `SystemNotificationEventProbe` via **hybrid** privacy-safe OS mapping (prefer public surfaces; private/undocumented OK only under hard **non-content field allowlist** + soft-fail); ADR-019 `notification_event` payload **unchanged**; **no** migration; opt-in `BIOFOCUS_NOTIFICATION_EVENTS` unchanged; existing `NotificationPressure` (no formula rewrite) | ADR-019 left production probe soft-fail idle until privacy-safe NC mapping; PM-GATE-POST-P18 chose Live NC OS mapping to dogfood shipped Feature. Pattern mirrors ADR-014 after Git soft-fail. Personal self-tracking only | Content capture / Accessibility UI text scrape; workplace monitoring; always-on busy-loop; rewriting NotificationPressure; IDE / weather / App Store / CognitiveLoad as P19 primary; parallel notification SQLite store; PR during freeze; applying migration without approve; widening payload with bundle_id / titles |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1196,7 +1197,7 @@ E2 (P18-E2-T1) ← Done 2026-08-11 (QA Pass)
   Host wire: BIOFOCUS_NOTIFICATION_EVENTS=1 only
   System probe soft-fails idle until privacy-safe OS mapping
 
-E3 (P18-E3-T1) ← Feature shipped
+E3 (P18-E3-T1) ← Done 2026-08-11 (QA Pass)
   Catalog Feature NotificationPressure — sum count → 0–100 (saturation 20/15m)
   Window / step aligned with Focus catalog (15m / 1m default; series may coarsen)
   Inputs: notification_event in window
@@ -1205,6 +1206,8 @@ E3 (P18-E3-T1) ← Feature shipped
   Optional explanation factors: category / interruption_level / app_kind shares when present
   Calm copy only — not “you are overloaded” / clinical ADHD / workplace productivity scoring
 ```
+**Phase 18 closed.** Next slice → **PM-GATE-POST-P18**.
+
 
 #### Rejected alternatives
 
@@ -1220,4 +1223,111 @@ E3 (P18-E3-T1) ← Feature shipped
 10. **Opening a PR during freeze** — local branch `phase/18-notification-pressure` until 2026-09-01.
 11. **Applying a migration without user approve** — this ADR chooses no migration.
 12. **LLM inventing notification payloads or Features** — L5 interpret-only.
+
+### ADR-020 detail — Phase 19: privacy-safe Notification Center OS mapping + live probe boundaries (v1)
+
+> **Relationship:** **ADR-019** shipped `notification_event` + `NotificationPlugin` + **`NotificationPressure`**, but production `SystemNotificationEventProbe` intentionally soft-fails idle until a privacy-safe OS mapping exists. **PM-GATE-POST-P18** chose Live NC OS mapping as Phase 19 primary. **ADR-020** = unlock that probe without widening the Observation privacy bar. Pattern mirrors **ADR-014** (allowlist unlock after Git soft-fail). Implement live mapping in **P19-E2**; optional dogfood/status notes in **P19-E3**. Epic split: `docs/SPRINT_ROADMAP.md` Phase 19.
+
+| Layer | Role in Phase 19 v1 |
+| :--- | :--- |
+| Capability Plugin (`plugin-sdk` + `macos-collector`) | Existing `com.biofocus.macos.notifications` / `NotificationPlugin`; E2 wires live `SystemNotificationEventProbe` |
+| OS mapping (this ADR) | **Hybrid** privacy-safe NC metadata → ADR-019 payload fields only |
+| Observation (SQLite) | Unchanged ADR-019 rows in `observations` (`data_type = 'notification_event'`) — **no** new tables/columns |
+| Feature (`feature-engine`) | Existing **`NotificationPressure`** — **no** formula rewrite in Phase 19 unless a later ADR finds a justified confidence tweak (none for v1) |
+| LLM | L5 interpret-only — must **not** invent notification content, labels, or Feature scores |
+
+#### Chosen v1 OS/API stance: **hybrid + soft-fail**
+
+Exactly **one** stance for Phase 19 v1:
+
+1. **Prefer public macOS APIs** when they can supply delivery **counts** and/or **non-content** classification (interruption band, poster identity coarse enough to map to closed-set `app_kind`) **without** title/body/subtitle/message/userInfo/attachments.
+2. **Honest gap:** as of this ADR, there is **no** supported public API that lets a third-party Desktop app observe *other apps'* Notification Center deliveries with useful metadata while staying content-free. Claiming “public-only forever” would strand dogfood on soft-fail idle.
+3. Therefore E2 **may** use a **private / undocumented / unstable** OS surface (daemon metadata, NC persistence, or equivalent) **only** under a hard **field allowlist**:
+   - May read: delivery timestamps, coalesced delivery counts, poster **bundle id** / process identity (for **in-memory** closed-set mapping only), OS interruption/importance **class codes** when available without text.
+   - Must **never** read, select, deserialize, OCR, or log: title, body, subtitle, message, thread/preview text, attachment bytes, screenshots, contact names, deep-link URLs, or userInfo/dictionary dumps — even transiently “for classification”.
+4. Map in-memory signals → ADR-019 closed-set labels only (`category` / `interruption_level` / `app_kind`) + required `count` ≥ 1. **Do not** persist raw bundle ids, display names, or free-form strings in Observation payloads (zero schema change; no justified closed-set extension in E1).
+5. **Soft-fail idle** (`Ok(None)` / no emit) when: opt-in off; mapping unavailable; entitlement / TCC / schema drift; only content-bearing fields would be available; or mapping would require forbidden reads.
+6. Emit cadence unchanged: on delivery / coalesced identity change, or rare poll ≥5s; **no** busy-loop; `stop_stream` joins.
+7. Opt-in unchanged: `BIOFOCUS_NOTIFICATION_EVENTS=1` (default **off**); Desktop `ingest_host` starts plugin only when set.
+8. Observation `confidence`: coarse / incomplete label mapping → lower confidence OK (ADR-019 already allows).
+
+**Why hybrid (not public-only, not unrestricted private)**
+
+1. **Closes ADR-019 soft-fail gap** for personal dogfood of shipped `NotificationPressure`.
+2. **Privacy bar stays enforceable** via field allowlist — same Non-Goal as ADR-019 (no content capture).
+3. **Capability Model fit:** extend existing notifications plugin + host — no parallel marketplace crate, no second Observation bus.
+4. **Personal self-tracking only** — not workplace / employer notification monitoring.
+
+#### Privacy contract (reaffirmed)
+
+| May store / appear | Must **never** |
+| :--- | :--- |
+| Observation `id`, `timestamp`, `provider_id`, `data_type`, required `count`, optional closed-set `category` / `interruption_level` / `app_kind`, `confidence` | Notification **body**, **title**, **subtitle**, message text, thread IDs, deep-link URLs, userInfo dumps |
+| Logs (prefer): Observation `id`, emit/drop **counts**, closed-set labels, mapping **ok / unavailable / soft-fail** reason codes | Screenshots, attachment bytes, contact names, email subjects, chat previews |
+| In-memory only: bundle id → closed-set `app_kind` map (never written to payload / default logs) | Free-form app display names or always-on content dumps “for accuracy” |
+| Accessibility / UI scrape of banner text as a classification source | Workplace / employer surveillance framing |
+
+Pipeline normalize (already shipped) continues to **strip** accidental content keys (`title` / `body` / `subtitle` / `message` / `screenshot` / `userInfo`).
+
+#### Schema (v1)
+
+- Prefer existing `observations` store only.
+- **ADR-019 payload unchanged** — **no** closed-set label extension in this ADR.
+- **No new SQLite tables/columns** for NC registries, allowlists, or Feature history.
+- **Do not apply** any migration for this ADR.
+- Future richer taxonomy / bundle allowlists → **new ADR + user approve**.
+
+#### Capability / live probe sketch
+
+```text
+BIOFOCUS_NOTIFICATION_EVENTS=1
+  → Desktop ingest_host starts NotificationPlugin
+  → SystemNotificationEventProbe attempts hybrid OS mapping
+  → if mapping unavailable / would need content fields → soft-fail idle (no emit)
+  → else emit ADR-019 Observations (count + optional closed-set labels only)
+  → bounded Observation channel → spawn_persist_worker → SQLite
+  → existing NotificationPressure consumes rows (no Feature rewrite)
+UI ↛ SQLite (unchanged)
+ScriptedNotificationEventProbe remains for tests / CI
+```
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 19)
+
+```text
+E1 (P19-E1-T1) — THIS ADR ← Done 2026-08-11 (QA Pass)
+  Lock hybrid OS stance + privacy field allowlist + soft-fail boundaries
+  ADR-019 payload unchanged; no migration
+
+E2 (P19-E2-T1) — Live probe ← shipped
+  SystemNotificationEventProbe → usernoted NC SQLite (allowlisted columns only)
+  → existing Observation channel → persist
+  Keep ScriptedNotificationEventProbe for tests
+  No Feature formula rewrite; no SQLite migration
+  Soft-fail idle remains OK when mapping truly unavailable
+
+E3 (P19-E3-T1) — optional companion:
+  Dogfood runbook and/or calm status note when mapping unavailable
+  Still no Observation payload widening; still no NotificationPressure math rewrite
+```
+
+#### Docs policy for this ADR
+
+- Planned / ADR notes land now in `docs/08-plugin-sdk.md`, `docs/07-contracts.md`, `docs/10-security.md`, `docs/12-development.md`, `docs/16-glossary.md`.
+- Live probe implementation + exact OS surface chosen in **P19-E2** (must still obey field allowlist). Optional dogfood/status in **P19-E3**.
+
+#### Rejected alternatives
+
+1. **Content capture “for accuracy”** (title/body/subtitle/message/screenshots/userInfo) — Non-Goal; forbid even transient reads for classification.
+2. **Accessibility / UI banner text scrape** — content capture by another name.
+3. **Workplace / employer monitoring** framing or manager dashboards — personal self-tracking only.
+4. **Always-on / busy-loop poll** — Global DoD idle footprint; event or rare ≥5s.
+5. **Rewriting `NotificationPressure` formula** in Phase 19 — Feature stays; unlock inputs only.
+6. **IDE / weather ambient / App Store packaging / `CognitiveLoad` as Phase 19 primary** — deferred (PM-GATE-POST-P18).
+7. **Parallel notification SQLite store / migration** — ADR-006 / ADR-019 stance; observations only.
+8. **Public-APIs-only forever** (with no private fallback) — would leave production probe soft-fail idle indefinitely given current public API surface.
+9. **Unrestricted private API** without field allowlist — rejects privacy bar.
+10. **Widening Observation payload** with `bundle_id` / display names in v1 — prefer zero schema change; map to closed-set in probe.
+11. **Opening a PR during freeze** — local branch `phase/19-live-nc-mapping` until 2026-09-01.
+12. **Applying a migration without user approve** — this ADR chooses no migration.
+13. **LLM inventing notification payloads or Features** — L5 interpret-only.
 

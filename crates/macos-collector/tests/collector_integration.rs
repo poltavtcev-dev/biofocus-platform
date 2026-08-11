@@ -25,7 +25,7 @@ use macos_collector::{
     SystemGitActivityProbe, SystemNotificationEventProbe, AMBIENT_LIGHT_DATA_TYPE,
     BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE,
     GIT_ACTIVITY_DATA_TYPE, KEYSTROKES_DATA_TYPE, NOTIFICATION_EVENT_DATA_TYPE,
-    NOW_PLAYING_DATA_TYPE,
+    NOW_PLAYING_DATA_TYPE, write_fixture_nc_db,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::observation_channel;
@@ -939,7 +939,9 @@ async fn notification_event_system_probe_soft_fails_emits_nothing() {
     let (tx, rx) = observation_channel(8).expect("channel");
     let worker = spawn_persist_worker(rx, db);
 
-    let probe = Arc::new(SystemNotificationEventProbe);
+    // Force missing NC DB path → deterministic soft-fail (no Full Disk Access / no OS DB).
+    let missing_nc = dir.path().join("missing-usernoted-db");
+    let probe = Arc::new(SystemNotificationEventProbe::with_db_path(missing_nc));
     let plugin = NotificationPlugin::with_probe(
         Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
         Duration::from_millis(40),
@@ -957,4 +959,62 @@ async fn notification_event_system_probe_soft_fails_emits_nothing() {
         listed.is_empty(),
         "soft-fail system notification probe must not emit Observations"
     );
+}
+
+#[tokio::test]
+async fn notification_event_live_fixture_db_emits_into_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let nc_path = dir.path().join("usernoted-fixture.db");
+    write_fixture_nc_db(&nc_path, &[("com.apple.mail", 10.0)]).expect("fixture nc");
+
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemNotificationEventProbe::with_db_path(&nc_path));
+    // Watermark init (no emit).
+    assert!(probe.current().expect("ok").is_none());
+
+    // New delivery after watermark.
+    {
+        use rusqlite::Connection;
+        let conn = Connection::open(&nc_path).expect("open nc");
+        let app_id: i64 = conn
+            .query_row(
+                "SELECT app_id FROM app WHERE identifier = 'com.apple.mail' LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .expect("app");
+        conn.execute(
+            "INSERT INTO record (rec_id, app_id, delivered_date) VALUES (42, ?1, 50.0)",
+            [app_id],
+        )
+        .expect("insert");
+    }
+
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed = wait_for_data_type(
+        &db_path,
+        NOTIFICATION_EVENT_DATA_TYPE,
+        1,
+        Duration::from_secs(3),
+    )
+    .await;
+    assert_eq!(listed.len(), 1);
+    assert!(listed[0].payload["count"].as_u64().unwrap_or(0) >= 1);
+    assert_eq!(listed[0].payload["app_kind"], "mail");
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("body").is_none());
+    assert!(listed[0].payload.get("bundle_id").is_none());
+    assert!(listed[0].payload.get("data").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
 }

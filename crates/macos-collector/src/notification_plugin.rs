@@ -42,7 +42,7 @@ impl NotificationPlugin {
     #[must_use]
     pub fn system_default() -> Self {
         Self::with_probe(
-            Arc::new(SystemNotificationEventProbe),
+            Arc::new(SystemNotificationEventProbe::new()),
             DEFAULT_NOTIFICATION_POLL_INTERVAL,
         )
     }
