@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **PM-GATE-POST-P22** (choose Phase 23+). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P23-E2-T1** (ship DeskAwayPresence). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -84,6 +84,7 @@ Immediate Kanban = **PM-GATE-POST-P22** (choose Phase 23+). Below is the accepte
 | **20** | Done — CognitiveLoad (**ADR-021** → Feature + dogfood + Combined demand) |
 | **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
 | **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
-| **23+** | Open via **PM-GATE-POST-P22** — IDE · weather · App Store packaging · Companion polish · CircadianOffset |
+| **23** | Active — Personal Context Layer (**ADR-024** ✅ · Ready P23-E2); deferred IDE · weather · App Store · CircadianOffset |
+| **24+** | Open via later PM gate — IDE · weather · App Store · Companion polish · CircadianOffset |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

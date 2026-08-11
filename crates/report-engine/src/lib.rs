@@ -28,6 +28,7 @@
 
 mod builder;
 mod error;
+mod health_context;
 mod llm;
 mod packs;
 
@@ -38,13 +39,18 @@ pub use bio_spec::{
 
 pub use builder::{build_report, ReportDocument};
 pub use error::{ReportEngineError, ReportResult};
+pub use health_context::{
+    default_health_context_path, is_v1_health_condition, load_health_context,
+    load_health_context_file, parse_health_context_toml, HealthContext, BIOFOCUS_CONFIG_DIR_NAME,
+    BIOFOCUS_HOME_ENV, HEALTH_CONTEXT_FILE_NAME, V1_HEALTH_CONDITION_IDS,
+};
 pub use llm::{
     interpret_llm_prompt, interpret_report, LocalLlmConfig, LOCAL_LLM_BASE_URL_ENV, LOCAL_LLM_ENV,
     LOCAL_LLM_MODEL_ENV, LOCAL_LLM_TIMEOUT_SECS_ENV,
 };
 pub use packs::{
-    build_report_with_pack, default_prompt_pack, list_prompt_packs, PromptPackRef,
-    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
+    build_report_with_pack, build_report_with_pack_and_health, default_prompt_pack,
+    list_prompt_packs, PromptPackRef, DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
 };
 
 /// Crate identity used by dependents and status payloads.

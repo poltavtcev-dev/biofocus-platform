@@ -25,6 +25,7 @@
 | ADR-021 | 2026-08-11 | **Phase 20:** catalog Feature **`CognitiveLoad`** = Feature-level composite of **`MeetingDensity` + `ContextSwitchRate` + `NotificationPressure`**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “combined demand in this window” framing | PM-GATE-POST-P19 chose CognitiveLoad; all three input Features shipped (incl. live NC). Prefer Feature-level composition over Observation mix so catalog math stays stable and privacy bars stay with leaf Features. Personal self-tracking only | Clinical “cognitive overload” / burnout; workplace surveillance scoring; new Observation families; rewriting MeetingDensity / CSR / NotificationPressure; Observation-level mix as v1; IDE / weather / App Store as P20 primary; PR during freeze; migration without approve |
 | ADR-022 | 2026-08-11 | **Phase 21:** catalog Feature **`DeepWorkScore`** = Feature-level composite of **`FocusScore` + `ContextSwitchRate`** (idle **dropped** for v1); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “sustained focus in this window” framing | PM-GATE-POST-P20 chose DeepWorkScore after CognitiveLoad; FocusScore + CSR long shipped. Compose high Focus + low CSR — do not invent parallel FocusScore. Personal self-tracking only | Clinical “flow state” / burnout / ADHD; workplace surveillance; new Observation families; rewriting FocusScore / CSR; idle Observation invent; IDE / weather / App Store / AttentionStability / CircadianOffset as P21 primary; PR during freeze; migration without approve |
 | ADR-023 | 2026-08-11 | **Phase 22:** catalog Feature **`AttentionStability`** = Feature-level **variance/stability** composite of **`FocusScore` + `ContextSwitchRate`** (distinct from DeepWorkScore intensity); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; Focus term from **in-window Focus range** (not Focus level); ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “focus stability in this window” framing | PM-GATE-POST-P21 chose AttentionStability after DeepWorkScore; same leaves, different question (consistency vs intensity). Personal self-tracking only | Clinical ADHD / “you can’t focus”; workplace surveillance; new Observation families; rewriting FocusScore / CSR / DeepWorkScore; using Focus level as intensity (DeepWorkScore); IDE / weather / App Store / CircadianOffset as P22 primary; PR during freeze; migration without approve |
+| ADR-024 | 2026-08-11 | **Phase 23:** **Personal Context Layer** — three pillars: (**1**) reference bands **Variant B** (personal baseline primary; literature secondary, cited calm orienting ranges); (**2**) opt-in **user-declared** health context → prompt packs / report (L5); (**3**) **desk-away** from secondary signals (**no** precise GPS). Prefer local config (`~/.biofocus/…`); **no** migration v1; Features stay provider-agnostic | PM-GATE-POST-P22 chose Personal Context Layer (supersedes CircadianOffset draft). Focus-ladder Features shipped — next gap is interpretation + presence context without medical/GPS product | Precise GPS / continuous geo; clinical diagnosis engine; LLM inventing conditions; cloud health sync by default; workplace presence monitoring; rewriting Focus/Stress from disease tags; CircadianOffset / IDE / weather / App Store as P23 primary; PR during freeze; migration without approve |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1657,3 +1658,147 @@ E3 (optional)
 11. **LLM inventing AttentionStability scores or ADHD diagnoses** — L5 interpret-only.
 12. **Parallel “Attention Engine” crate** — extend `feature-engine` catalog only.
 
+
+### ADR-024 detail — Phase 23: Personal Context Layer (v1)
+
+> **Relationship:** Focus-ladder catalog Features (`FocusScore`, `DeepWorkScore`, `AttentionStability`, `CognitiveLoad`, …) are shipped. The next product gap is **interpretation context**: how we orient numbers (personal + literature), optional user-declared health framing for L5 reports, and whether the person left the desk — **without** becoming a medical device or a GPS tracker. **PM-GATE-POST-P22** chose **Personal Context Layer** (supersedes same-day CircadianOffset draft). **ADR-024** locks three pillars, layer relationships, E2 ship order, and rejected alts **before** implementation. Epic split: `docs/SPRINT_ROADMAP.md` Phase 23.
+
+#### Three locked pillars
+
+| Pillar | v1 lock |
+| :--- | :--- |
+| **1. Reference bands = Variant B** | **Personal baseline primary** (existing ADR-008 recompute-on-read patterns). **Literature bands secondary** — cited, calm **orienting ranges** only (“often discussed around …”); **never** “нельзя / diagnosis / clinical cutoff” tone. |
+| **2. Health context** | Opt-in **user-declared** curated conditions the user already knows. v1 **consumer = prompt packs / report** (L5 interpret-only). May sketch later Insight soft-framing with Evidence. **Must not** invent disease from HR/HRV. **Must not** rewrite Feature formulas from disease labels in v1. |
+| **3. Desk-away / presence** | Infer leave-desk / likely break-or-walk from **secondary signals** (prefer existing Observations). **Reject precise GPS / continuous geo** for v1. Calm copy: “away from desk in this window” — **not** workplace surveillance. |
+
+#### Layer relationships (how pieces connect)
+
+| Layer | Role in Personal Context Layer v1 |
+| :--- | :--- |
+| `Observation` (SQLite) | Immutable facts — keystrokes, `context_window`, `step_count`, `life_event` (`walk`), … Unchanged store; **no** GPS Observation family in v1. |
+| `Feature` (`feature-engine`) | Windowed metrics stay provider-agnostic (consume Observation **contracts**, not Apple-only APIs). New candidate: **`DeskAwayPresence`** (E2). Existing Focus/Stress/… formulas **not** rewritten from health tags. |
+| `Insight` (`knowledge-engine`) | Variant B reference-band Insights via a **case catalog** (one rule family per Feature/context — not one mega-rule). Personal-baseline cases first; literature-orienting cases thin / later. Soft health framing only with Evidence + declared context — never diagnose. |
+| `Recommendation` | Unchanged L4 contract; may later reference desk-away / baseline Insights — **not** medical prescriptions. |
+| Prompt packs / report (`report-engine`) | **Primary v1 consumer of health context** — inject declared conditions into interpret-only `llm_prompt` / offline markdown as **user-supplied context**, not as diagnoses. LLM remains L5. |
+| Local profile config | Prefer **`~/.biofocus/…` files** (same pattern as Git watched roots ADR-014) for health context + optional literature-cite prefs. **No** new SQLite profile schema / **no** migration in v1 unless a future ADR + user approve. |
+| UI | IPC only; UI ↛ SQLite. Optional calm surface for desk-away / health declaration → **E3**. |
+
+#### Provider universality (product stance)
+
+- **Core path is universal:** any source posting valid `Observation` JSON to local ingest works (`provider_id` + `data_type` contracts).
+- **Dogfood path today:** Mac Desktop + iOS Companion + Apple Health (Watch; Mi Band via Health OK).
+- **Not architectural lock-in:** Features / Insights / prompt packs **must not** hard-code “only Apple Watch” or Apple-only APIs. New platforms = new Capability plugins / companions behind the same contracts.
+
+#### Formula / product stance sketches (for P23-E2)
+
+##### A. Reference bands (Variant B) — case catalog
+
+```text
+Approach: case-catalog Insight rules — NOT one mega-rule for all Features.
+
+Per case (example shape):
+  • id: focus_vs_personal_afternoon_v1   (personal baseline — already patterned ADR-008)
+  • id: focus_vs_literature_orient_v1    (optional later) — cites source; calm copy only
+  • Compare current Feature vs personal baseline FIRST
+  • Literature band (if present) is SECONDARY orienting note — never “you are unhealthy”
+  • Thin history / missing baseline → omit Insight (Ok([]))
+  • Large literature library is OUT of E2 first slice
+```
+
+##### B. Health context — local config shape
+
+```text
+Path (v1): ~/.biofocus/health-context.toml   # mirror Git folders pattern
+Enable: opt-in (missing/empty file = no health context injected)
+
+Sketch:
+  [health_context]
+  # Closed-set curated ids the user already knows (examples — finalize in E2):
+  # conditions = ["sleep_sensitive", "migraine_prone", "caffeine_sensitive"]
+  conditions = []
+  # Optional free-text, local-only, never synced by default:
+  # note = "I already know I am sensitive to late caffeine"
+  note = ""
+
+Rules:
+  • User-declared only — Core never invents conditions from biometrics
+  • Prompt packs may include declared ids + note as interpret-only context
+  • Feature math MUST NOT branch on condition ids in v1
+  • No cloud health-records sync by default; no SQLite migration
+```
+
+##### C. Desk-away — Feature candidate `DeskAwayPresence`
+
+```text
+Working name: DeskAwayPresence
+Goal: calm likelihood the person is away from the desk / on a break-or-walk in the window
+Framing: “away from desk in this window” — NOT employer presence monitoring / GPS tracking
+
+Window / step: prefer 15 minutes / 1 minute (align catalog)
+
+Inputs (prefer EXISTING Observations — Feature or Observation-level compose OK if documented in E2):
+  • Quiet / absent keystrokes in window
+  • Quiet / stable or absent context_window (no active desktop focus)
+  • Optional: step_count cadence rise (walk-like)
+  • Optional: life_event kind = walk
+  • Optional later (not required for E2): screen-lock / idle OS signal — only if privacy-safe + ADR note
+
+Omit policy (LOCKED sketch):
+  • Insufficient evidence to distinguish “idle at desk” vs “away” → OMIT (no false presence claims)
+  • Do NOT emit from precise geo
+  • Do NOT invent a GPS / continuous-location Observation family in v1
+
+Output: Float 0–100 (away-from-desk likelihood) OR omit
+Confidence: ADR-007 expected slots sketched in E2 from present evidence families
+Optional factors: calm ids only (e.g. input_quiet / steps / walk_event)
+
+Schema: prefer NO new Observation data_type; NO migration.
+  Thin new Observation only if E2 proves an unavoidable gap — requires ADR amend + approve.
+```
+
+#### E2 / E3 sketch (LOCKED ship order)
+
+```text
+E1 (P23-E1-T1) — THIS ADR
+  Lock Personal Context Layer: Variant B + health context + desk-away;
+  layer relationships; config preference; universality; rejected alts; no migration
+
+E2 (P23-E2-T1) — FIRST IMPLEMENTATION SLICE (order LOCKED)
+  1. PRIMARY: DeskAwayPresence Feature path from existing secondary signals
+     (register_* / catalog stub → formula; unit tests; omit policy)
+  2. SECONDARY (same epic if capacity, else immediate follow-on under E2):
+     health-context local config + prompt-pack / report injection (L5 consume only)
+  3. DEFER: large literature-band library — at most thin Variant B case stub(s);
+     personal-baseline Insights already exist (ADR-008) — do not rebuild them
+
+E3 (optional)
+  Dogfood notes + optional calm UI (desk-away series / health-context declare surface)
+  Still non-clinical; UI ↛ SQLite; no GPS
+```
+
+#### Schema / persistence (v1)
+
+- Prefer existing `observations` store + `feature-engine` / `knowledge-engine` / `report-engine`.
+- Health profile: **`~/.biofocus/health-context.toml`** (or equivalent file under `~/.biofocus/`) — **not** SQLite.
+- **Do not apply** any migration for this ADR.
+- Precise geo / location tables → **rejected**. Future schema → **new ADR + user approve**.
+
+#### Docs policy for this ADR
+
+- Planned names / stubs land now in `docs/06-feature-catalog.md`, `docs/12-development.md`, `docs/16-glossary.md`.
+- Full Feature math + pack wiring → **P23-E2** (must still obey this ADR).
+
+#### Rejected alternatives
+
+1. **Precise GPS / continuous geo** for desk-away or walk tracking in v1 — Local-First privacy bar; secondary signals first.
+2. **Clinical diagnosis engine** or “нельзя / diagnosis” reference-band tone — Non-Goal; Variant B only.
+3. **LLM inventing health conditions** from biometrics — L5 interpret-only; user-declared only.
+4. **Cloud health-records sync by default** — local config; opt-in sync would need a future ADR.
+5. **Workplace / employer presence monitoring** dashboards — personal self-tracking only.
+6. **Rewriting Focus / Stress / Recovery Feature formulas from disease tags** in v1 — context may frame reports; math stays disease-agnostic.
+7. **CircadianOffset / IDE / weather / App Store as Phase 23 primary** — deferred (PM-GATE-POST-P22).
+8. **Opening a PR during freeze** — local branch `phase/23-personal-context` until 2026-09-01.
+9. **Applying a migration without user approve** — this ADR chooses no migration.
+10. **Hard-coding Apple-only APIs into Features** — contracts stay provider-agnostic.
+11. **One mega Insight rule** for all reference bands — case catalog only.
+12. **Large literature library as E2 primary** — deferred behind desk-away + health→prompt.

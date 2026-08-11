@@ -248,13 +248,28 @@
 - **DAG:** depends on FocusScore + ContextSwitchRate; `feature_engine::register_attention_stability_v1` / `register_catalog_v1` (after focus / DeepWork nodes).
 - **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite leaf / DeepWorkScore formulas.
 
+### 1.19 `DeskAwayPresence` (P23-E2 / ADR-024 — shipped)
+
+- **Goal:** Calm likelihood the person is **away from the desk** / on a break-or-walk in the window. “Away from desk in this window” — **not** employer surveillance; **not** precise location tracking.
+- **Window:** 15 minutes (sliding, шаг 1 мин) — align catalog; series may coarsen.
+- **Inputs (Observation-level, existing only):** quiet / absent `keystrokes`; quiet / absent `context_window`; optional `step_count` cadence; optional `life_event` `walk`. **No** precise GPS / continuous geo; **no** new `data_type`.
+- **Formula Strategy (v1):** require **positive away evidence** — `walk` Life Event **or** step sum ≥ 40. Quiet input/context alone → **omit** (idle-at-desk vs away indistinguishable). Active typing without walk and weak steps → **omit**. When emitted: renormalized weights — walk 0.40 / steps 0.35 / input quiet (+ context quiet) 0.15+0.10 → 0–100.
+- **Omit policy:** insufficient positive away evidence → omit. Never emit from geo.
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless away-from-desk likelihood.
+- **Provenance:** Observation IDs of present evidence families.
+- **Confidence (ADR-007):** expected slots = 3 (`input_quiet` / `steps` / `walk_event`); `coverage × mean(evidence Observation.confidence)`.
+- **Explanation factors:** when emitted — `input_quiet` (“Input quiet”), `steps` (“Steps”), `walk_event` (“Walk event”) as present; shares sum to 1.0.
+- **DAG:** independent; `feature_engine::register_desk_away_v1` / `register_catalog_v1`.
+- **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite Focus / Stress formulas; Feature math **does not** branch on health-context labels.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 / later |
+| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | deferred (after Personal Context) |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
@@ -266,5 +281,6 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 > **Phase 21 note (ADR-022 / P21-E2):** Catalog Feature **`DeepWorkScore`** **shipped** — Feature-level FocusScore + optional CSR (idle dropped); §1.17 above.
 >
 > **Phase 22 note (ADR-023 / P22-E2):** Catalog Feature **`AttentionStability`** **shipped** — Feature-level Focus range + optional CSR; distinct from DeepWorkScore; §1.18 above.
-
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; others may omit until wired).
+>
+> **Phase 23 note (ADR-024 / P23-E2):** **Personal Context Layer** — **`DeskAwayPresence` shipped** (§1.19); health-context local config + prompt-pack injection shipped (L5 consume-only). Variant B large literature library deferred. Provider-agnostic Observation contracts.
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; others may omit until wired).

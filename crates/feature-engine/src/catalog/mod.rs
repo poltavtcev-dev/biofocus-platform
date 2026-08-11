@@ -1,6 +1,6 @@
 //! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3 + Phase 10 E3 +
 //! Phase 12 E3 + Phase 13 E3 + Phase 16 E2 + Phase 17 E3 + Phase 18 E3 +
-//! Phase 20 E2 + Phase 21 E2 + Phase 22 E2) — deterministic v1 formulas.
+//! Phase 20 E2 + Phase 21 E2 + Phase 22 E2 + Phase 23 E2) — deterministic v1 formulas.
 //!
 //! | Node | Feature id | Task |
 //! | :--- | :--- | :--- |
@@ -22,6 +22,7 @@
 //! | [`CognitiveLoadNode`] | `CognitiveLoad` | P20-E2-T1 |
 //! | [`DeepWorkScoreNode`] | `DeepWorkScore` | P21-E2-T1 |
 //! | [`AttentionStabilityNode`] | `AttentionStability` | P22-E2-T1 |
+//! | [`DeskAwayPresenceNode`] | `DeskAwayPresence` | P23-E2-T1 |
 //!
 //! Register Focus pair via [`register_focus_v1`]; Stress/Fatigue via
 //! [`register_stress_v1`] (requires FocusScore already registered for Fatigue);
@@ -32,7 +33,8 @@
 //! Notification via [`register_notification_v1`]; CognitiveLoad via
 //! [`register_cognitive_v1`] (requires MeetingDensity + CSR + NotificationPressure);
 //! DeepWorkScore via [`register_deep_work_v1`] (requires FocusScore + CSR);
-//! AttentionStability via [`register_attention_stability_v1`] (requires FocusScore + CSR).
+//! AttentionStability via [`register_attention_stability_v1`] (requires FocusScore + CSR);
+//! DeskAwayPresence via [`register_desk_away_v1`] (Observation-level; independent).
 
 mod activity_balance;
 mod ambient_light_share;
@@ -43,6 +45,7 @@ mod cognitive_load;
 mod confidence;
 mod context_switch_rate;
 mod deep_work_score;
+mod desk_away_presence;
 mod distraction_score;
 mod energy_score;
 mod fatigue_index;
@@ -69,6 +72,7 @@ pub use attention_stability::{AttentionStabilityNode, FEATURE_ID as ATTENTION_ST
 pub use cognitive_load::{CognitiveLoadNode, FEATURE_ID as COGNITIVE_LOAD_ID};
 pub use context_switch_rate::{ContextSwitchRateNode, FEATURE_ID as CONTEXT_SWITCH_RATE_ID};
 pub use deep_work_score::{DeepWorkScoreNode, FEATURE_ID as DEEP_WORK_SCORE_ID};
+pub use desk_away_presence::{DeskAwayPresenceNode, FEATURE_ID as DESK_AWAY_PRESENCE_ID, MIN_STEPS_AWAY};
 pub use distraction_score::{DistractionScoreNode, FEATURE_ID as DISTRACTION_SCORE_ID};
 pub use energy_score::{EnergyScoreNode, FEATURE_ID as ENERGY_SCORE_ID};
 pub use fatigue_index::{FatigueIndexNode, FEATURE_ID as FATIGUE_INDEX_ID};
@@ -192,9 +196,19 @@ pub fn register_attention_stability_v1(engine: &mut FeatureEngine) -> FeatureEng
     Ok(())
 }
 
+/// Registers `DeskAwayPresence` (Observation-level; ADR-024 / P23-E2).
+///
+/// Independent of other Feature nodes — uses keystrokes / context_window /
+/// step_count / life_event walk only. No GPS.
+pub fn register_desk_away_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(DeskAwayPresenceNode::new())?;
+    Ok(())
+}
+
 /// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery,
 /// Distraction, Ambient media, Git activity, Ambient light, Wearable,
-/// Notification pressure, CognitiveLoad, DeepWorkScore, AttentionStability.
+/// Notification pressure, CognitiveLoad, DeepWorkScore, AttentionStability,
+/// DeskAwayPresence.
 pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
     register_focus_v1(engine)?;
     register_stress_v1(engine)?;
@@ -209,5 +223,6 @@ pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()
     register_cognitive_v1(engine)?;
     register_deep_work_v1(engine)?;
     register_attention_stability_v1(engine)?;
+    register_desk_away_v1(engine)?;
     Ok(())
 }

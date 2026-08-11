@@ -1,9 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 22: AttentionStability** — **Done** (2026-08-11).  
-> Phase 0–22 Done. Gate **PM-GATE-POST-P22** ← **Ready** (choose Phase 23+).
+> **Phase 23: Personal Context Layer** (Sprint 45–46) — **Active**.  
+> Phase 0–22 Done. Gate **PM-GATE-POST-P22** ✅ · **ADR-024** ✅ · Ready **P23-E2-T1**.  
+> **Supersedes** same-day CircadianOffset gate draft.
 
-**Phase 22 outcome:** **ADR-023** ✅ → `AttentionStability` Feature shipped → dogfood + Dashboard **Focus stability**. No new Observation family; calm non-clinical framing; distinct from DeepWorkScore.
+**Phase 23 outcome (target):** **ADR-024** ✅ locks Personal Context Layer → ship first slice (`DeskAwayPresence` + optional health→prompt) → dogfood / calm surface. Reference bands = Variant B. No precise GPS. Calm non-clinical framing.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -28,21 +29,22 @@
 - [ ] **Wearable depth:** HealthKit only (no Mi Cloud); soft-optional HRV; new types only per Phase 17 contract ADR
 - [ ] **Chart ranges:** recompute-on-read; UI ↛ SQLite; Snapshot = latest (series on chart)
 - [ ] **Notifications:** opt-in; coarse counts/cadence only — **no** notification body/title/content; personal self-tracking only
+- [ ] **Personal context:** Variant B framing; user-declared health only; no precise GPS desk-away; no diagnosis from biometrics
 
 ---
 
-## Kanban Overview (Post–Phase 22)
+## Kanban Overview (Phase 23)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **PM-GATE-POST-P22** |
+| **Ready** | **P23-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–22 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **PM-GATE-POST-P18** · **PM-GATE-POST-P19** · **PM-GATE-POST-P20** · **PM-GATE-POST-P21** · **P22-E1–E3** (see archive) |
+| **Done** | Phase 0–22 · **PM-GATE-POST-P14…P22** · **P23-E1-T1** · **P22-E1–E3** (see archives) |
 
-**Epic status:** Phase 22 ✅ · Gate Ready
+**Epic status:** Phase 23 Active (E1 ✅ · E2 Ready) · Phase 22 ✅
 
-**Phase 22 on `/docs/14-roadmap.md`:** closed 2026-08-11 · **ADR-023** ✅ · Feature + dogfood + Focus stability
+**Phase 23 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-024** ✅ · E2 Ready
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -50,11 +52,33 @@
 
 ### Active assignment
 
-**Ready now:** **PM-GATE-POST-P22** — Choose Phase 23+ primary slice. Brief: `docs/handoffs/PM-GATE-POST-P22-pm-brief.md`. Role: **PM**.
+**Ready now:** **P23-E2-T1** — Ship first slice per ADR-024 (`DeskAwayPresence` primary; health→prompt secondary). Brief: `docs/handoffs/P23-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **P22-E3-T1** (2026-08-11) — dogfood + Focus stability chart; **Phase 22** closed.
+**Just closed:** **P23-E1-T1** (2026-08-11) — **ADR-024** locked Personal Context Layer (QA Pass).
 
-**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 22 remains on `phase/22-attention-stability`.
+**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 23 on `phase/23-personal-context`.
+
+---
+
+## Phase 23 — Personal Context Layer (Active)
+
+### Epic P23-E1 — Contracts ADR (**ADR-024**)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P23-E1-T1** ✅ Done | Lock Personal Context Layer (**ADR-024**) | Dev | docs + decision-log |
+
+### Epic P23-E2 — First ship slice
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P23-E2-T1** ← Ready | Ship first slice per ADR-024 (`DeskAwayPresence` + health→prompt) | Dev | core crates + docs |
+
+### Epic P23-E3 — Dogfood / surface (optional)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P23-E3-T1** | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
 
 ---
 
@@ -97,25 +121,15 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 
 </details>
 
-## Phase 19 archive (Done)
-
-<details>
-<summary>Phase 19 Kanban & epics (closed 2026-08-11 — live NC OS mapping)</summary>
-
-**Done:** P19-E1 (T1) · P19-E2 (T1) · P19-E3 (T1).  
-**ADR-020** · usernoted live probe · dogfood runbook for `NotificationPressure`.  
-Branch: `phase/19-live-nc-mapping` (cluster PR after freeze).
-
-Evidence: `docs/handoffs/P19-*-qa-to-pm.md`.
-
-</details>
-
 ---
 
-## Queue (Post–Phase 22)
+## Queue (Phase 23)
 
-1. **PM-GATE-POST-P22** — Choose Phase 23+ ← **Ready**  
-   Candidates: IDE · weather · App Store · Companion polish · CircadianOffset · other  
+1. **P23-E1-T1** — ADR-024 Personal Context Layer ← **Done**  
+2. **P23-E2-T1** — First ship slice (`DeskAwayPresence` + health→prompt) ← **Ready**  
+3. **P23-E3-T1** — Dogfood / optional surface  
 
-**Git:** Phase 22 on `phase/22-attention-stability` → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/PM-GATE-POST-P22-pm-brief.md`.
+**Deferred:** IDE · weather · App Store · Companion polish-as-primary · CircadianOffset · TypingRhythm · precise GPS.
+
+**Git:** Phase 23 on `phase/23-personal-context` → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P23-E2-T1-pm-brief.md`.
