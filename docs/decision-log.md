@@ -1073,8 +1073,8 @@ invoke("get_feature_series", { range: "1h"|"8h"|"12h"|"1d"|"1w", featureIds?: st
 
 ```text
 P17-E1 — Contracts (this ADR + docs) ← Done 2026-08-11 (QA Pass)
-P17-E2 — Companion HealthKit expand (emit locked data_types via queue→ingest) ← Ready
-P17-E3 — Dashboard ranges IPC/UI + catalog Features from new Observations
+P17-E2 — Companion HealthKit expand (emit locked data_types via queue→ingest) ← Done 2026-08-11 (QA Pass)
+P17-E3 — Dashboard ranges IPC/UI + catalog Features from new Observations ← Ready
 ```
 
 #### D. Analysis ladder

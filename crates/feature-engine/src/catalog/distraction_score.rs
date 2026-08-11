@@ -31,7 +31,7 @@ use bio_spec::{ExplanationFactor, Feature, FeatureValue, Observation, TimeWindow
 use crate::catalog::confidence::compute_feature_confidence;
 use crate::catalog::context_switch_rate;
 use crate::catalog::window::{
-    in_window, sliding_window_ends, snapshot_time_span, window_ending_at,
+    in_window, sliding_window_ends_for, snapshot_time_span, window_ending_at,
 };
 use crate::{ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput};
 
@@ -94,7 +94,7 @@ impl FeatureNode for DistractionScoreNode {
         };
 
         let mut features = Vec::new();
-        for end in sliding_window_ends(min_ts, max_ts) {
+        for end in sliding_window_ends_for(ctx, min_ts, max_ts) {
             let window = window_ending_at(end);
             if let Some(feature) = score_window(ctx, &window) {
                 features.push(feature);

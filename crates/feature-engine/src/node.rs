@@ -11,11 +11,13 @@ pub type NodeId = String;
 ///
 /// Observations are an in-memory snapshot (typically post-normalize).
 /// Features / Signals already produced by upstream nodes appear in topo order.
+/// `step_secs` controls sliding-window spacing (ADR-018 chart ranges).
 #[derive(Debug)]
 pub struct ComputeContext<'a> {
     observations: &'a [Observation],
     features: &'a [Feature],
     signals: &'a [Signal],
+    step_secs: i64,
 }
 
 impl<'a> ComputeContext<'a> {
@@ -23,11 +25,13 @@ impl<'a> ComputeContext<'a> {
         observations: &'a [Observation],
         features: &'a [Feature],
         signals: &'a [Signal],
+        step_secs: i64,
     ) -> Self {
         Self {
             observations,
             features,
             signals,
+            step_secs: step_secs.max(1),
         }
     }
 
@@ -47,6 +51,12 @@ impl<'a> ComputeContext<'a> {
     #[must_use]
     pub fn signals(&self) -> &'a [Signal] {
         self.signals
+    }
+
+    /// Sliding-window step in seconds (default catalog = 60; series IPC may coarsen).
+    #[must_use]
+    pub fn step_secs(&self) -> i64 {
+        self.step_secs
     }
 
     /// First Feature with matching `feature_id`, if any.

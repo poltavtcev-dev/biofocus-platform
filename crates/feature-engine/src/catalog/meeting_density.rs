@@ -21,7 +21,7 @@ use crate::catalog::calendar_meeting::{
     collect_busy_meetings, meeting_time_span, meetings_overlapping_window, merged_overlap_secs,
 };
 use crate::catalog::confidence::compute_from_values;
-use crate::catalog::window::{sliding_window_ends, window_ending_at, WINDOW_SECS};
+use crate::catalog::window::{sliding_window_ends_for, window_ending_at, WINDOW_SECS};
 use crate::{ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput};
 
 /// Stable Feature / node id (`docs/06-feature-catalog.md`).
@@ -55,7 +55,7 @@ impl FeatureNode for MeetingDensityNode {
         };
 
         let mut features = Vec::new();
-        for end in sliding_window_ends(min_ts, max_ts) {
+        for end in sliding_window_ends_for(ctx, min_ts, max_ts) {
             let window = window_ending_at(end);
             let overlapping = meetings_overlapping_window(&meetings, &window);
             if overlapping.is_empty() {

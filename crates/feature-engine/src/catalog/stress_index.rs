@@ -26,7 +26,7 @@ use uuid::Uuid;
 
 use crate::catalog::confidence::single_family_confidence;
 use crate::catalog::window::{
-    in_window, sliding_window_ends, snapshot_time_span, window_ending_at, STEP_SECS,
+    in_window, sliding_window_ends_for, snapshot_time_span, window_ending_at, STEP_SECS,
 };
 use crate::{ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput};
 
@@ -76,7 +76,7 @@ impl FeatureNode for StressIndexNode {
         };
 
         let mut features = Vec::new();
-        for end in sliding_window_ends(min_ts, max_ts) {
+        for end in sliding_window_ends_for(ctx, min_ts, max_ts) {
             let window = window_ending_at(end);
             if let Some(feature) = score_window(ctx.observations(), &window) {
                 features.push(feature);

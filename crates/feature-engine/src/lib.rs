@@ -1,5 +1,6 @@
 //! Feature calculation engine (FocusScore, StressIndex, FatigueIndex, MeetingDensity,
-//! RecoveryScore, DistractionScore, AmbientMediaShare, GitActivityRate, AmbientLightShare).
+//! RecoveryScore, DistractionScore, AmbientMediaShare, GitActivityRate, AmbientLightShare,
+//! ActivityBalance, EnergyScore, SleepDebt).
 //!
 //! Phase 3 (P3-E2 / E3): DAG scheduler + catalog v1 nodes + alert mapping.
 //! Phase 4 (P4-E1-T1): [`FeatureSnapshot`] for dashboard / IPC (cached read).
@@ -10,6 +11,7 @@
 //! Phase 12 (P12-E3-T1): `AmbientMediaShare` from `now_playing` Observations.
 //! Phase 13 (P13-E3-T1): `GitActivityRate` from `git_activity` Observations.
 //! Phase 16 (P16-E2-T1): `AmbientLightShare` from `ambient_light` Observations.
+//! Phase 17 (P17-E3-T1): Wearable Features + `run_with_step` for chart ranges (ADR-018).
 //!
 //! # Entrypoint
 //!
@@ -22,9 +24,10 @@
 //! - [`catalog::register_ambient_v1`] — `AmbientMediaShare` (v1; `now_playing`)
 //! - [`catalog::register_git_v1`] — `GitActivityRate` (v1; `git_activity`)
 //! - [`catalog::register_ambient_light_v1`] — `AmbientLightShare` (v1; `ambient_light`)
-//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar + Recovery + Distraction + Ambient media + Git + Ambient light
+//! - [`catalog::register_wearable_v1`] — `ActivityBalance` + `EnergyScore` + `SleepDebt` (v1)
+//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar + Recovery + Distraction + Ambient media + Git + Ambient light + Wearable
 //! - [`baseline::recompute_focus_afternoon_baseline`] — bounded prior-day Focus means
-//! - [`FeatureEngine::run`] — topo compute → [`EngineOutput`]
+//! - [`FeatureEngine::run`] / [`FeatureEngine::run_with_step`] — topo compute → [`EngineOutput`]
 //! - [`FeatureSnapshot::from_engine_output`] — Features + Signals for IPC/dashboard
 //! - [`map_alert_level`] — [`EngineOutput`] → [`AlertLevel`] { Green, Yellow, Red }
 //!
@@ -53,13 +56,15 @@ pub use bio_spec::{Feature, FeatureValue, Observation, Signal};
 pub use catalog::{
     register_ambient_light_v1, register_ambient_v1, register_calendar_v1, register_catalog_v1,
     register_distraction_v1, register_focus_v1, register_git_v1, register_recovery_v1,
-    register_stress_v1, AmbientLightShareNode, AmbientMediaShareNode, ContextSwitchRateNode,
-    DistractionScoreNode, FatigueIndexNode, FocusScoreNode, GitActivityRateNode,
-    MeetingDensityNode, RecoveryBetweenMeetingsNode, RecoveryScoreNode, StressIndexNode,
-    AMBIENT_LIGHT_SHARE_ID, AMBIENT_MEDIA_SHARE_ID, CONTEXT_SWITCH_RATE_ID, DISTRACTION_SCORE_ID,
-    FATIGUE_INDEX_ID, FOCUS_SCORE_ID, GIT_ACTIVITY_RATE_ID, HIGH_STRESS_MIN_DURATION_SECS,
-    HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD, MEETING_DENSITY_ID,
-    RECOVERY_BETWEEN_MEETINGS_ID, RECOVERY_SCORE_ID, STEP_SECS, STRESS_INDEX_ID, WINDOW_SECS,
+    register_stress_v1, register_wearable_v1, ActivityBalanceNode, AmbientLightShareNode,
+    AmbientMediaShareNode, ContextSwitchRateNode, DistractionScoreNode, EnergyScoreNode,
+    FatigueIndexNode, FocusScoreNode, GitActivityRateNode, MeetingDensityNode,
+    RecoveryBetweenMeetingsNode, RecoveryScoreNode, SleepDebtNode, StressIndexNode,
+    ACTIVITY_BALANCE_ID, AMBIENT_LIGHT_SHARE_ID, AMBIENT_MEDIA_SHARE_ID, CONTEXT_SWITCH_RATE_ID,
+    DISTRACTION_SCORE_ID, ENERGY_SCORE_ID, FATIGUE_INDEX_ID, FOCUS_SCORE_ID, GIT_ACTIVITY_RATE_ID,
+    HIGH_STRESS_MIN_DURATION_SECS, HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD,
+    MEETING_DENSITY_ID, RECOVERY_BETWEEN_MEETINGS_ID, RECOVERY_SCORE_ID, SLEEP_DEBT_ID, STEP_SECS,
+    STRESS_INDEX_ID, WINDOW_SECS,
 };
 pub use engine::{EngineOutput, FeatureEngine};
 pub use error::{FeatureEngineError, FeatureEngineResult};

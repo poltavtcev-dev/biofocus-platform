@@ -203,11 +203,49 @@ body {
   gap: 0.4rem;
 }
 
+.chart-slot-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .chart-slot-title {
   margin: 0;
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+.range-picker {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.range-picker-btn {
+  margin: 0;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--bf-retry-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bf-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.range-picker-btn:hover {
+  color: var(--bf-fg, inherit);
+  border-color: var(--bf-meta);
+}
+
+.range-picker-btn--active {
+  background: var(--bf-bg-accent);
+  color: var(--bf-fg, inherit);
+  border-color: var(--bf-meta);
 }
 
 .chart-slot-body {

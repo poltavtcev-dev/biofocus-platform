@@ -171,18 +171,16 @@ Example (non-empty):
 
 Core API (crate): `feature_engine::FeatureSnapshot::from_engine_output` — Features + Signals without Observation payloads.
 
-### Chart ranges + `get_feature_series` (ADR-018 / P17-E3 sketch)
+### Chart ranges + `get_feature_series` (ADR-018 / P17-E3)
 
 Phase 17 Dashboard range picker (closed set): **`1h` / `8h` / `12h` / `1d` / `1w`**.
 
 | Surface | IPC | Behavior |
 | :--- | :--- | :--- |
-| Snapshot list / “latest” cards | [`get_feature_snapshot`](#get_feature_snapshot-p4-e1-t1) | **Latest** Feature per `featureId` (E3 may collapse multi-window cache to latest-per-id). Not a dump of every window. |
-| Chart series | `get_feature_series` (**P17-E3**) | **Recompute-on-read** from local Observations for the selected span (ADR-008); coarser `stepSecs` for longer ranges |
+| Snapshot list / “latest” cards | [`get_feature_snapshot`](#get_feature_snapshot-p4-e1-t1) | **Latest** Feature per `featureId` (collapsed from multi-window cache). Not a dump of every window. |
+| Chart series | `get_feature_series` (**shipped P17-E3**) | **Recompute-on-read** from local Observations for the selected span (ADR-008); coarser `stepSecs` for longer ranges |
 
-**Default steps (v1):** `1h`→60s · `8h`/`12h`→300s · `1d`→900s · `1w`→3600s (E3 may tune within the same range set).
-
-Sketch:
+**Default steps (v1):** `1h`→60s · `8h`/`12h`→300s · `1d`→900s · `1w`→3600s.
 
 ```text
 invoke("get_feature_series", {
@@ -203,11 +201,12 @@ Success shape:
 ```
 
 - Empty / thin history → `{ "features": [] }` (calm).
-- UI ↛ SQLite; host loads Observations + runs FeatureEngine.
-- **No** Feature-history SQLite table in v1.
+- Unknown `range` → empty series (soft-fail).
+- UI ↛ SQLite; host loads Observations + runs FeatureEngine with the range step.
+- Optional in-process memo only — **no** Feature-history SQLite table in v1.
 - Never returns raw Observation biometric payloads or absolute filesystem paths.
 - LLM must not invent series points (L5 interpret-only).
-
+- Optional `featureIds` filters emitted Features (omit / empty = all catalog Features for the span).
 ### `get_insights` (P4-E2-T3 / P8-E2 / P8-E3)
 
 - **Invoke:** `invoke("get_insights")`

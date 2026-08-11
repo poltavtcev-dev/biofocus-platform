@@ -22,9 +22,16 @@ import {
   fetchFeatureSnapshot,
   formatFeatureValue,
   loadingView,
-  type FeatureDto,
   type SnapshotView,
 } from "./featureSnapshot";
+import {
+  CHART_RANGES,
+  fetchFeatureSeries,
+  loadingSeriesView,
+  rangeLabel,
+  type ChartRange,
+  type SeriesView,
+} from "./featureSeries";
 import {
   fetchInsights,
   formatEvidenceRef,
@@ -58,29 +65,62 @@ import {
 const SNAPSHOT_POLL_MS = 30_000;
 
 function ChartSlot({
-  empty,
-  features,
+  seriesView,
+  range,
+  onRangeChange,
 }: {
-  empty: boolean;
-  features: FeatureDto[];
+  seriesView: SeriesView;
+  range: ChartRange;
+  onRangeChange: (next: ChartRange) => void;
 }) {
+  const features = seriesView.series?.features ?? [];
+  const empty =
+    seriesView.kind === "loading" ||
+    seriesView.kind === "error" ||
+    seriesView.kind === "empty";
   const points = empty ? [] : buildChartPoints(features);
   const series = presentSeriesIds(points);
   const scoreSeries = series.filter((id) => SCORE_SERIES_IDS.includes(id));
   const showCsr = series.includes("ContextSwitchRate");
 
+  let placeholder = "No Feature series yet.";
+  if (seriesView.kind === "loading") {
+    placeholder = "Loading Feature series…";
+  } else if (seriesView.kind === "error") {
+    placeholder = seriesView.detail;
+  } else if (seriesView.kind === "empty") {
+    placeholder = "No Feature series for this range yet.";
+  } else if (points.length === 0) {
+    placeholder = "No chartable Feature values in this series.";
+  }
+
   return (
     <section className="chart-slot" aria-label="Feature charts">
-      <p className="chart-slot-title">Features</p>
+      <div className="chart-slot-header">
+        <p className="chart-slot-title">Features</p>
+        <div
+          className="range-picker"
+          role="group"
+          aria-label="Chart range"
+        >
+          {CHART_RANGES.map((r) => (
+            <button
+              key={r}
+              type="button"
+              className={`range-picker-btn${r === range ? " range-picker-btn--active" : ""}`}
+              aria-pressed={r === range}
+              onClick={() => onRangeChange(r)}
+            >
+              {rangeLabel(r)}
+            </button>
+          ))}
+        </div>
+      </div>
       <div
         className={`chart-slot-body${points.length > 0 ? " chart-slot-body--chart" : ""}`}
       >
         {points.length === 0 ? (
-          <p className="chart-slot-placeholder">
-            {empty
-              ? "No Feature series yet."
-              : "No chartable Feature values in this snapshot."}
-          </p>
+          <p className="chart-slot-placeholder">{placeholder}</p>
         ) : (
           <FeatureSeriesChart
             points={points}
@@ -373,6 +413,10 @@ function ReportSlot({
 
 export function Dashboard() {
   const [view, setView] = useState<SnapshotView>(() => loadingView());
+  const [seriesView, setSeriesView] = useState<SeriesView>(() =>
+    loadingSeriesView(),
+  );
+  const [chartRange, setChartRange] = useState<ChartRange>("1d");
   const [insightsView, setInsightsView] = useState<InsightsView>(() =>
     loadingInsightsView(),
   );
@@ -429,18 +473,42 @@ export function Dashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setSeriesView(loadingSeriesView());
+    void fetchFeatureSeries(chartRange).then((next) => {
+      if (!cancelled) {
+        setSeriesView(next);
+      }
+    });
+    const timer = window.setInterval(() => {
+      void fetchFeatureSeries(chartRange).then((next) => {
+        if (!cancelled) {
+          setSeriesView(next);
+        }
+      });
+    }, SNAPSHOT_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [chartRange]);
+
   const onRetry = () => {
     setBusy(true);
     setView(loadingView());
+    setSeriesView(loadingSeriesView());
     setInsightsView(loadingInsightsView());
     setRecommendationsView(loadingRecommendationsView());
     void Promise.all([
       fetchFeatureSnapshot(),
+      fetchFeatureSeries(chartRange),
       fetchInsights(),
       fetchRecommendations(),
       fetchLocalLlmStatus(),
-    ]).then(([next, nextInsights, nextRecommendations, nextLlm]) => {
+    ]).then(([next, nextSeries, nextInsights, nextRecommendations, nextLlm]) => {
       setView(next);
+      setSeriesView(nextSeries);
       setInsightsView(nextInsights);
       setRecommendationsView(nextRecommendations);
       setLlmProvider(nextLlm);
@@ -457,12 +525,13 @@ export function Dashboard() {
     });
   };
 
+  const onRangeChange = (next: ChartRange) => {
+    setChartRange(next);
+  };
+
   const features = view.snapshot?.features ?? [];
   const signals = view.snapshot?.signals ?? [];
-  const isEmpty = view.kind === "empty";
   const isReady = view.kind === "ready";
-  const chartEmpty =
-    isEmpty || view.kind === "loading" || view.kind === "error";
 
   return (
     <main className="shell shell--dashboard" data-snapshot={view.kind}>
@@ -501,7 +570,11 @@ export function Dashboard() {
         </button>
       )}
 
-      <ChartSlot empty={chartEmpty} features={features} />
+      <ChartSlot
+        seriesView={seriesView}
+        range={chartRange}
+        onRangeChange={onRangeChange}
+      />
 
       {isReady && features.length > 0 && (
         <section className="feature-list" aria-label="Feature snapshot">

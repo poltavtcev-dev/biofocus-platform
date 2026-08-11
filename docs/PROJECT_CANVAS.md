@@ -49,7 +49,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 14 (Done 2026-08-10):** Git path-allowlist — ADR-014 → live probe → dogfood + Menubar **Git folders** IPC.
 - **Phase 15 (Done 2026-08-11):** Companion HRV + autonomy — ADR-016.
 - **Phase 16 (Done 2026-08-11):** Ambient light — ADR-015; collector + `AmbientLightShare`.
-- **Phase 17 (Active):** Wearable depth + chart ranges — ADR-017 · **ADR-018** ✅; Ready **P17-E2-T1** (Companion HealthKit expand). Deferred: IDE · weather · App Store · NotificationPressure.
+- **Phase 17 (Active):** Wearable depth + chart ranges — ADR-017 · **ADR-018** ✅ · Companion emit ✅; Ready **P17-E3-T1** (chart ranges + Features). Deferred: IDE · weather · App Store · NotificationPressure.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 

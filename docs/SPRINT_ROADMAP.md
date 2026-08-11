@@ -34,17 +34,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P17-E2-T1** |
+| **Ready** | **P17-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–16 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** |
+| **Done** | Phase 0–16 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** · **P17-E2-T1** |
 
-**Epic status:** P17-E1 ✅ · P17-E2 ○ · P17-E3 ○ · Phase 16 ✅
+**Epic status:** P17-E1 ✅ · P17-E2 ✅ · P17-E3 ○ · Phase 16 ✅
 
-**Phase 17 on `/docs/14-roadmap.md`:** opened 2026-08-11 · ADR-017 unlock · **ADR-018** contracts **Done** (E1) · Ready E2 Companion
+**Phase 17 on `/docs/14-roadmap.md`:** opened 2026-08-11 · ADR-017 · **ADR-018** ✅ · E1+E2 Done · Ready E3 charts/Features
 
 **Рекомендуемый порядок (Phase 17):**  
-P17-E1-T1 (ADR-018) ✅ → P17-E2-T1 (Companion emit) → P17-E3-T1 (ranges + Features)
+P17-E1-T1 (ADR-018) ✅ → P17-E2-T1 (Companion emit) ✅ → P17-E3-T1 (ranges + Features)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -52,11 +52,11 @@ P17-E1-T1 (ADR-018) ✅ → P17-E2-T1 (Companion emit) → P17-E3-T1 (ranges + F
 
 ### Active assignment
 
-**Ready now:** **P17-E2-T1** — Expand iOS Companion / HealthKit ingest per **ADR-018**. Brief: `docs/handoffs/P17-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P17-E3-T1** — Chart ranges IPC/UI + Features from wearable Observations (**ADR-018**). Brief: `docs/handoffs/P17-E3-T1-pm-brief.md`. Role: **Dev|UX**.
 
-**Just closed:** **P17-E1-T1** (2026-08-11) — **ADR-018** HealthKit + chart-range contracts locked (QA Pass). Branch: `phase/17-wearable-charts`. Evidence: `docs/handoffs/P17-E1-T1-qa-to-pm.md`.
+**Just closed:** **P17-E2-T1** (2026-08-11) — Companion HealthKit expand per ADR-018 (QA Pass). Branch: `phase/17-wearable-charts`. Evidence: `docs/handoffs/P17-E2-T1-qa-to-pm.md`.
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 17 on `phase/17-wearable-charts`; local commits OK; no PR.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 17 on `phase/17-wearable-charts`; local commits OK; no PR. Physical-device dogfood still recommended for Companion emit.
 
 ---
 
@@ -70,19 +70,20 @@ P17-E1-T1 (ADR-018) ✅ → P17-E2-T1 (Companion emit) → P17-E3-T1 (ranges + F
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **P17-E1-T1** ✅ | Lock HealthKit + chart-range contracts (**ADR-018**) | Dev | docs + decision-log | See `P17-E1-T1-pm-brief.md` | Phase 16 Done · ADR-017 |
 
-### Epic P17-E2 — Companion HealthKit expand
-**Goal:** Emit ADR-018 Observation types (`step_count` / `active_energy` / `sleep_interval`; soft-optional `oxygen_saturation`; keep HR/HRV) via existing queue → ingest autonomy path.
+### Epic P17-E2 — Companion HealthKit expand ✅
+**Goal:** Emit ADR-018 Observation types (`step_count` / `active_energy` / `sleep_interval`; soft-optional `oxygen_saturation`; keep HR/HRV) via existing queue → ingest autonomy path.  
+**Status:** Done 2026-08-11 (QA Pass). Evidence: `docs/handoffs/P17-E2-T1-qa-to-pm.md`.
 
 | ID | Task | Role | Modules | AC | Depends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P17-E2-T1** | Expand iOS Companion / HealthKit ingest per ADR-018 | Dev | apps/companion + bio-spec/pipeline | See `P17-E2-T1-pm-brief.md` | P17-E1-T1 ✅ |
+| **P17-E2-T1** ✅ | Expand iOS Companion / HealthKit ingest per ADR-018 | Dev | apps/companion + bio-spec/pipeline | See `P17-E2-T1-pm-brief.md` | P17-E1-T1 ✅ |
 
 ### Epic P17-E3 — Dashboard ranges + Features
 **Goal:** Range picker 1h/8h/12h/1d/1w via `get_feature_series` (recompute-on-read) + Snapshot latest UX + catalog Features from new Observations (no LLM required).
 
 | ID | Task | Role | Modules | AC | Depends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P17-E3-T1** | Chart ranges IPC/UI + Features from wearable Observations | Dev\|UX | desktop + feature-engine | Shaped by ADR-018 | P17-E2-T1 |
+| **P17-E3-T1** | Chart ranges IPC/UI + Features from wearable Observations | Dev\|UX | desktop + feature-engine | See `P17-E3-T1-pm-brief.md` | P17-E2-T1 ✅ |
 
 **Out of scope:** Mi Cloud / unofficial API; Feature history SQLite v1; clinical claims; weather/IDE/App Store/NotificationPressure as this phase primary; PR during freeze.
 
@@ -117,11 +118,11 @@ Evidence: `docs/handoffs/P15-*-qa-to-pm.md`.
 ## Queue (Phase 17)
 
 1. P17-E1-T1 — Lock HealthKit + chart-range contracts (**ADR-018**) ← **Done**  
-2. **P17-E2-T1** — Companion HealthKit expand ← **Ready**  
-3. P17-E3-T1 — Chart ranges + Features  
+2. P17-E2-T1 — Companion HealthKit expand ← **Done**  
+3. **P17-E3-T1** — Chart ranges + Features ← **Ready**  
 
 **Git:** `phase/17-wearable-charts` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P17-E2-T1-pm-brief.md`.  
+**Brief:** `docs/handoffs/P17-E3-T1-pm-brief.md`.  
 **Deferred (later / other tracks):** IDE · weather ambient · App Store packaging · NotificationPressure.
 
-**Prior intent note:** `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md` — **contract-locked** (ADR-018); Companion emit = this Ready task.
+**Prior intent note:** `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md` — **contract-locked** (ADR-018); Companion emit Done; charts/Features = this Ready task.

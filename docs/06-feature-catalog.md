@@ -150,24 +150,58 @@
 - **Explanation factors:** when ≥1 closed-set sample — per-kind shares among closed-set samples: `dark` (“Dark band”), `dim` (“Dim band”), `moderate` (“Moderate band”), `bright` (“Bright band”); shares sum to 1.0.
 - **DAG:** независимый узел; `feature_engine::register_ambient_light_v1` / `register_catalog_v1`.
 
+### 1.12 `ActivityBalance` (P17-E3 / ADR-018)
+- **Goal:** Calm movement vs sedentary proxy from step counts (+ optional workout Life Event). Personal activity context — **not** fitness coaching or clinical advice.
+- **Window:** 15 minutes (sliding; step from engine context — default 1m; chart series may coarsen per ADR-018).
+- **Inputs (required):** `step_count` Observations (`count`; optional `window_secs`).
+- **Inputs (optional):** `life_event` with `kind == "workout"`.
+- **Formula Strategy (v1):** Sum `count` in-window → linear map 0 @ 0 steps → 100 @ ≥750 steps. With workout present: floor steps component at 70, then blend 85% steps / 15% workout-present (100), renormalized. Workout alone (no steps) → **omit**.
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless score (higher ≈ more movement proxy in-window).
+- **Provenance:** Observation IDs of `step_count` / workout `life_event` used.
+- **Confidence (ADR-007):** expected slots = 2 (steps / workout); `coverage × mean(evidence Observation.confidence)`.
+- **Explanation factors:** `step_count` (“Steps”), optional `workout` (“Workout”); shares sum to 1.0.
+- **DAG:** независимый узел; `feature_engine::register_wearable_v1` / `register_catalog_v1`.
+
+### 1.13 `EnergyScore` (P17-E3 / ADR-018)
+- **Goal:** Calm subjective energy proxy from active energy + optional HR + recent rest. **Not** a clinical fatigue / energy diagnosis. SpO2 unused (sparse / non-clinical).
+- **Window:** 15 minutes (sliding; context step as above). Sleep rest uses a **24h lookback** ending at the window end.
+- **Inputs (at least one):** `active_energy` (`kcal`); optional `heart_rate` (`bpm`); optional qualifying `sleep_interval` rest (`asleep` / `in_bed` / missing stage).
+- **Formula Strategy (v1):** Weighted renormalized over present families — active energy 0.45 (0→0, ≥80 kcal→100); sleep sufficiency 0.35 (`100 × clamp(rest_secs / 8h, 0, 1)`); HR calmness vs early baseline 0.20 (`100 - clamp((mean_bpm - baseline) / 25 * 100, 0, 100)`).
+- **Omit:** none of the three families present.
+- **Output:** Float (0.0 — 100.0).
+- **Provenance:** Observation IDs of contributing families.
+- **Confidence (ADR-007):** expected slots = 3; coverage × mean evidence confidence.
+- **Explanation factors:** present of `active_energy` / `sleep_interval` / `heart_rate`; shares sum to 1.0.
+- **DAG:** независимый узел; `register_wearable_v1` / `register_catalog_v1`.
+
+### 1.14 `SleepDebt` (P17-E3 / ADR-018)
+- **Goal:** Calm shortfall vs an 8h personal rest target from `sleep_interval` overlap in the last 24h. **Not** a sleep diagnosis; no SpO2.
+- **Window:** Feature `timeWindow` remains 15m / context step; rest overlap measured on `[end−24h, end]`.
+- **Inputs:** `sleep_interval` with stage ∈ {`asleep`, `in_bed`} or missing stage. `awake` / `unknown` do not add rest.
+- **Formula Strategy (v1):** `value = 100 × clamp((target − rest) / target, 0, 1)` with `target = 8h`. 0 = met/exceeded; 100 = no qualifying rest.
+- **Omit:** no overlapping qualifying intervals in the lookback.
+- **Output:** Float (0.0 — 100.0).
+- **Provenance:** contributing `sleep_interval` Observation IDs.
+- **Confidence (ADR-007):** single family; mean evidence Observation confidence.
+- **Explanation factors:** `rest` / `shortfall` renormalized shares.
+- **DAG:** независимый узел; `register_wearable_v1` / `register_catalog_v1`.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `EnergyScore` | Subjective energy proxy from bio + activity | HR, `active_energy`, sleep | **P17** (ADR-018 inputs) |
 | `DeepWorkScore` | Sustained focus windows | FocusScore, CSR, idle | P7 |
 | `AttentionStability` | Variance of focus / switches | FocusScore, CSR | P7 |
 | `CognitiveLoad` | Combined demand proxy | MeetingDensity, CSR, notifications | P7–P8 |
-| `SleepDebt` | Sleep shortfall vs baseline | `sleep_interval` Observations | **P17** (ADR-018) |
-| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 / P17 |
+| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 / later |
 | `NotificationPressure` | Interruption intensity | notification Observations | P10 (deferred — not ADR-010 wave-1) |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
-| `ActivityBalance` | Movement vs sedentary | `step_count` / Life Event `workout` | **P17** (ADR-018) |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-> **Phase 17 note (ADR-018):** Observation contracts for `step_count` / `active_energy` / `sleep_interval` (+ soft-optional `oxygen_saturation`) are **locked**. Feature **formulas** remain backlog until **P17-E3** (after Companion emits in E2). Prefer calm names above; no clinical SpO2/sleep Features in v1.
+> **Phase 17 note (ADR-018):** `ActivityBalance`, `EnergyScore`, and `SleepDebt` shipped in **P17-E3** from locked wearable Observation contracts. No clinical SpO2/sleep Features in v1.
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; others may omit until wired).

@@ -23,7 +23,7 @@ use crate::catalog::calendar_meeting::{
     collect_busy_meetings, gap_intersects_window, inter_meeting_gaps, meeting_time_span,
 };
 use crate::catalog::confidence::compute_from_values;
-use crate::catalog::window::{sliding_window_ends, window_ending_at};
+use crate::catalog::window::{sliding_window_ends_for, window_ending_at};
 use crate::{ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput};
 
 /// Stable Feature / node id (`docs/06-feature-catalog.md`).
@@ -62,7 +62,7 @@ impl FeatureNode for RecoveryBetweenMeetingsNode {
         }
 
         let mut features = Vec::new();
-        for end in sliding_window_ends(min_ts, max_ts) {
+        for end in sliding_window_ends_for(ctx, min_ts, max_ts) {
             let window = window_ending_at(end);
             let mut gap_minutes: Vec<f64> = Vec::new();
             let mut provenance: Vec<Uuid> = Vec::new();

@@ -20,7 +20,7 @@
 - **Phase 14:** **Done** (2026-08-10) — Git path-allowlist / live probe; ADR-014 → live `SystemGitActivityProbe` → dogfood + Menubar **Git folders** IPC. Branch: `phase/14-git-allowlist` (PR after freeze).
 - **Phase 15:** **Done** (2026-08-11) — Companion HRV + autonomy; **ADR-016**. Branch: `phase/15-companion-hrv-autonomy` (PR after freeze).
 - **Phase 16:** **Done** (2026-08-11) — Ambient light (**ADR-015**); collector + `AmbientLightShare`. Branch: `phase/16-ambient-light` (PR after freeze).
-- **Phase 17:** **Active** (2026-08-11) — Wearable depth + chart ranges (**ADR-017** sequencing · **ADR-018** contracts ✅ E1); Ready **P17-E2-T1** (Companion HealthKit expand). Branch: `phase/17-wearable-charts` (PR after freeze). Intent: `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md` (contract-locked).
+- **Phase 17:** **Active** (2026-08-11) — Wearable depth + chart ranges (**ADR-017** · **ADR-018** ✅); E1+E2 Done; Ready **P17-E3-T1** (chart ranges + Features). Branch: `phase/17-wearable-charts` (PR after freeze). Intent: `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md` (contract-locked).
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)

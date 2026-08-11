@@ -75,8 +75,8 @@
 
 - [ ] **Phase 17: Wearable depth + chart ranges** (Sprint 33–34) — opened 2026-08-11 (ADR-017 unlock)
   - Lock HealthKit + chart-range contracts (**ADR-018**) — **P17-E1 Done** (2026-08-11).
-  - Companion HealthKit expand — **P17-E2 Ready** (T1).
-  - Dashboard ranges 1h/8h/12h/1d/1w + Features — **P17-E3** (after E2).
+  - Companion HealthKit expand — **P17-E2 Done** (2026-08-11).
+  - Dashboard ranges 1h/8h/12h/1d/1w + Features — **P17-E3 Ready** (T1).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)  
@@ -94,7 +94,7 @@
 **Phase 14:** Done 2026-08-10 — ADR-014 → live probe → dogfood + Menubar **Git folders** · branch `phase/14-git-allowlist` (PR after freeze)
 **Phase 15:** Done 2026-08-11 — ADR-016 companion HRV + autonomy · branch `phase/15-companion-hrv-autonomy` (PR after freeze)
 **Phase 16:** Done 2026-08-11 — ADR-015 collector + `AmbientLightShare` · branch `phase/16-ambient-light` (PR after freeze)
-**Phase 17:** Active — ADR-017 · **ADR-018** ✅ (E1 Done 2026-08-11) · Ready **P17-E2-T1** · branch `phase/17-wearable-charts` (PR after freeze)
+**Phase 17:** Active — ADR-017 · **ADR-018** ✅ · E1+E2 Done · Ready **P17-E3-T1** · branch `phase/17-wearable-charts` (PR after freeze)
 **Gate:** **PM-GATE-POST-P15** ✅ · **ADR-017** ✅ · **ADR-018** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

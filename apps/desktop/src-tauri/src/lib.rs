@@ -174,6 +174,7 @@ mod git_watched_roots_ipc;
 mod ingest_host;
 mod life_event_ipc;
 mod pattern_host;
+mod series_host;
 
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -198,6 +199,9 @@ use tracing::warn;
 
 use crate::alert_state::{AlertState, SnapshotState};
 use crate::pattern_host::{load_focus_baseline_series, BaselineMemoState};
+use crate::series_host::{
+    latest_features_per_id, load_feature_series, FeatureSeriesResult, SeriesMemoState,
+};
 
 /// Process-lifetime Knowledge Engine with v1 Insight + Recommendation rules.
 struct InsightsEngineState {
@@ -373,9 +377,33 @@ fn severity_wire(severity: bio_spec::Severity) -> String {
 }
 
 fn snapshot_to_dto(snapshot: &FeatureSnapshot) -> FeatureSnapshotDto {
+    // Snapshot surfaces stay latest-oriented (ADR-018); chart uses series IPC.
+    let latest = latest_features_per_id(&snapshot.features);
     FeatureSnapshotDto {
-        features: snapshot.features.iter().map(FeatureDto::from).collect(),
+        features: latest.iter().map(FeatureDto::from).collect(),
         signals: snapshot.signals.iter().map(SignalDto::from).collect(),
+    }
+}
+
+/// IPC payload for [`get_feature_series`] (ADR-018 / P17-E3).
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct FeatureSeriesDto {
+    range: String,
+    step_secs: i64,
+    window: TimeWindowDto,
+    features: Vec<FeatureDto>,
+}
+
+fn series_to_dto(series: &FeatureSeriesResult) -> FeatureSeriesDto {
+    FeatureSeriesDto {
+        range: series.range.clone(),
+        step_secs: series.step_secs,
+        window: TimeWindowDto {
+            start: series.window_start,
+            end: series.window_end,
+        },
+        features: series.features.iter().map(FeatureDto::from).collect(),
     }
 }
 
@@ -855,9 +883,32 @@ fn get_status(app: AppHandle) -> CoreStatus {
 }
 
 /// Latest cached Feature snapshot for Dashboard (P4-E1-T1). Pure cache read.
+///
+/// Features are collapsed to **latest per `featureId`** (ADR-018). Chart series
+/// use [`get_feature_series`].
 #[tauri::command]
 fn get_feature_snapshot(app: AppHandle) -> FeatureSnapshotDto {
     snapshot_to_dto(&current_feature_snapshot(&app))
+}
+
+/// Recompute-on-read Feature series for a Dashboard chart range (ADR-018 / P17-E3).
+///
+/// Host loads Observations for the span and runs FeatureEngine with the range
+/// step. Soft-fails to empty `features`. No Feature-history SQLite; UI ↛ DB.
+#[tauri::command]
+fn get_feature_series(
+    app: AppHandle,
+    range: String,
+    feature_ids: Option<Vec<String>>,
+) -> FeatureSeriesDto {
+    let memo = app.try_state::<SeriesMemoState>();
+    let series = load_feature_series(
+        memo.as_deref(),
+        &range,
+        feature_ids.as_deref(),
+        unix_now_secs(),
+    );
+    series_to_dto(&series)
 }
 
 /// Insights from v1 product rules over the cached Feature snapshot (P4-E2-T3).
@@ -1039,12 +1090,14 @@ pub fn run() -> DesktopResult<()> {
             feature_host::start_feature_host(app.handle());
             app.manage(InsightsEngineState::new());
             app.manage(BaselineMemoState::new());
+            app.manage(SeriesMemoState::new());
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_status,
             get_feature_snapshot,
+            get_feature_series,
             get_insights,
             get_recommendations,
             get_local_llm_status,
@@ -1079,6 +1132,8 @@ mod tests {
     use bio_spec::{Severity, TimeWindow, UnixTimestamp};
     use feature_engine::FeatureValue;
     use uuid::Uuid;
+
+    use super::FeatureSeriesResult;
 
     /// Serializes env-mutating pairing tests.
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -1286,6 +1341,100 @@ mod tests {
         assert_eq!(factors[0]["label"].as_str(), Some("Typing activity"));
         assert_eq!(factors[0]["share"].as_f64(), Some(0.4));
         assert!(!serde_json::to_string(&dto).expect("s").contains("payload"));
+    }
+
+    #[test]
+    fn snapshot_dto_collapses_to_latest_per_feature_id() {
+        let older =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let newer =
+            TimeWindow::try_new(UnixTimestamp::from_secs(1100), UnixTimestamp::from_secs(2000))
+                .expect("window");
+        let snap = FeatureSnapshot {
+            features: vec![
+                Feature {
+                    feature_id: "FocusScore".into(),
+                    time_window: older,
+                    value: FeatureValue::Scalar(10.0),
+                    provenance: vec![Uuid::from_u128(1)],
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
+                },
+                Feature {
+                    feature_id: "FocusScore".into(),
+                    time_window: newer,
+                    value: FeatureValue::Scalar(90.0),
+                    provenance: vec![Uuid::from_u128(2)],
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
+                },
+            ],
+            signals: vec![],
+        };
+        let dto = snapshot_to_dto(&snap);
+        assert_eq!(dto.features.len(), 1);
+        assert_eq!(dto.features[0].feature_id, "FocusScore");
+        assert_eq!(dto.features[0].time_window.end, 2000);
+    }
+
+    #[test]
+    fn empty_feature_series_dto_is_calm() {
+        let series = FeatureSeriesResult::empty("1d", 900, 1000, 2000);
+        let dto = series_to_dto(&series);
+        assert!(dto.features.is_empty());
+        assert_eq!(dto.range, "1d");
+        assert_eq!(dto.step_secs, 900);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.get("range").and_then(|v| v.as_str()), Some("1d"));
+        assert_eq!(obj.get("stepSecs").and_then(|v| v.as_i64()), Some(900));
+        assert_eq!(
+            obj.get("features")
+                .and_then(|v| v.as_array())
+                .map(|a| a.len()),
+            Some(0)
+        );
+        assert!(!serde_json::to_string(&dto).expect("s").contains("payload"));
+        assert!(!serde_json::to_string(&dto).expect("s").contains("rmssd"));
+    }
+
+    #[test]
+    fn non_empty_feature_series_dto_has_wire_shape_no_biometrics() {
+        let window =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let series = FeatureSeriesResult {
+            range: "1h".into(),
+            step_secs: 60,
+            window_start: 0,
+            window_end: 3600,
+            features: vec![Feature {
+                feature_id: "ActivityBalance".into(),
+                time_window: window,
+                value: FeatureValue::Scalar(55.0),
+                provenance: vec![Uuid::from_u128(7)],
+                confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
+            }],
+        };
+        let dto = series_to_dto(&series);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.get("range").and_then(|v| v.as_str()), Some("1h"));
+        assert_eq!(obj.get("stepSecs").and_then(|v| v.as_i64()), Some(60));
+        let tw = obj.get("window").and_then(|v| v.as_object()).expect("window");
+        assert_eq!(tw.get("start").and_then(|v| v.as_i64()), Some(0));
+        assert_eq!(tw.get("end").and_then(|v| v.as_i64()), Some(3600));
+        let features = obj.get("features").and_then(|v| v.as_array()).expect("features");
+        assert_eq!(features.len(), 1);
+        assert_eq!(
+            features[0].get("featureId").and_then(|v| v.as_str()),
+            Some("ActivityBalance")
+        );
+        let raw = serde_json::to_string(&dto).expect("string");
+        assert!(!raw.contains("rmssd"));
+        assert!(!raw.contains("/Users"));
     }
 
     #[test]
