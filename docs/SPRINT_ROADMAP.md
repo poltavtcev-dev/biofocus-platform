@@ -1,9 +1,9 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 15: Companion HRV + autonomy** (Sprint 29–30) — **Done** (2026-08-11).  
-> Phase 0–15 Done. ADR-016 HealthKit HRV + Auto-sync. ADR-015 ambient light **parked**. Next: **PM-GATE-POST-P15**.
+> **Phase 15: Companion HRV + autonomy** (Sprint 29–30) — Active.  
+> Phase 0–14 Done. ADR-016 HealthKit HRV + Auto-sync (ADR-015 ambient light **parked**).
 
-**Phase 15 goal (shipped):** Autonomous wearable companion — HR + HRV (SDNN) → local queue → Desktop ingest; Core accepts SDNN-or-RMSSD. Sleep/steps out of scope.
+**Phase 15 goal:** Autonomous wearable companion — HR + HRV (SDNN) → local queue → Desktop ingest; Core accepts SDNN-or-RMSSD. Sleep/steps out of scope. Ambient light collector deferred.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -27,16 +27,16 @@
 
 ---
 
-## Kanban Overview (Post–Phase 15)
+## Kanban Overview (Phase 15 Active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **PM-GATE-POST-P15** |
+| **Ready** | **P15-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–14 · **PM-GATE-POST-P14** · **P15-E1-T1** · **P15-E2-T1** · **P15-E3-T1** · **Phase 15** (companion HRV) · ADR-015 ambient light parked |
+| **Done** | Phase 0–14 · **PM-GATE-POST-P14** · **P15-E1-T1** · **P15-E2-T1** |
 
-**Epic status:** P15-E1 ✅ · P15-E2 ✅ · P15-E3 ✅ · **Phase 15** ✅
+**Epic status:** P15-E1 ✅ · P15-E2 ✅ · P15-E3 ○ · Phase 14 ✅ · **PM-GATE-POST-P14** ✅
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -44,33 +44,44 @@
 
 ### Active assignment
 
-**Ready now:** **PM-GATE-POST-P15** — Choose next Phase 16+ slice. Brief: `docs/handoffs/PM-GATE-POST-P15-pm-brief.md`. Role: **PM**.
+**Ready now:** **P15-E3-T1** — Dogfood companion + Auto-sync UI/status. Brief: `docs/handoffs/P15-E3-T1-pm-brief.md`. Role: **Dev/UX**.  
+**Note:** Build + QA Pass already on disk (`P15-E3-T1-*-qa-to-pm.md`) — next chat may **pm-close** directly.
 
-**Closed:** Phase 15 companion (2026-08-11) — ADR-016 → Core SDNN-or-RMSSD + iOS Auto-sync → dogfood. Branch: `phase/15-companion-hrv-autonomy`. Evidence: `docs/handoffs/P15-E*-qa-to-pm.md`.
+**Closed:** P15-E2-T1 (QA Pass, 2026-08-11) — Core SDNN-or-RMSSD + iOS Auto-sync (queue / observers / background delivery). Epic **P15-E2** ✅. Evidence: `docs/handoffs/P15-E2-T1-qa-to-pm.md`.
 
-**Parked:** ADR-015 ambient light — collector/Feature deferred.
+**Closed:** P15-E1-T1 (QA Pass, 2026-08-11) — ADR-016 companion scope; ambient light parked. Epic **P15-E1** ✅. Evidence: `docs/handoffs/P15-E1-T1-qa-to-pm.md`.
+
+**Parked:** ADR-015 ambient light — collector / `AmbientLightShare` deferred to a later PM gate.
 
 **Ops note:** **PR freeze until 2026-09-01** — cluster on `phase/15-companion-hrv-autonomy`.
 
 ---
 
-## Phase 15 — Companion HRV + autonomy (Done)
+## Phase 15 — Companion HRV + autonomy (Active)
 
 ### Epic P15-E1 — ADR-016 companion scope
 **P15-E1 shipped:** ADR-016 = HealthKit HRV (SDNN) + existing HR; event → queue → flush; Core accepts `rmssd_ms` OR `sdnn_ms`; no new SQLite; ambient light E2/E3 deferred. QA Pass 2026-08-11.
 
 ### Epic P15-E2 — Core + iOS autonomy
-**P15-E2 shipped:** `normalize_hrv` SDNN-only; Focus/Recovery prefer rmssd then sdnn; iOS HRV + ObservationQueue + HKObserver background delivery + Auto-sync UI. QA Pass 2026-08-11.
+**P15-E2 shipped:** `normalize_hrv` SDNN-only; Focus/Recovery prefer rmssd then sdnn; iOS HRV + ObservationQueue + HKObserver background delivery + Auto-sync wiring. QA Pass 2026-08-11.
 
 ### Epic P15-E3 — Dogfood companion
-**P15-E3 shipped:** `docs/12-development.md` companion autonomy runbook; iOS README; Auto-sync / last sync / calm empty HRV. QA Pass 2026-08-11.
+**Goal:** Operator dogfood runbook + calm Companion Auto-sync UI/status.
+
+| ID | Task | Role | Modules | AC | Depends |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P15-E3-T1** | Dogfood + Companion Auto-sync UI | Dev/UX | docs + ios | See `P15-E3-T1-pm-brief.md` | P15-E2-T1 |
 
 **Out of scope:** sleep/steps/SpO2/ECG; ambient light collector; weather; IDE; App Store; cloud relay; PR during freeze.
 
 ---
 
-## Queue (Post–Phase 15)
+## Queue (Phase 15)
 
-1. **PM-GATE-POST-P15** — choose next slice (ambient light resume · IDE · weather · other)
+1. ~~P15-E1-T1 — ADR-016 companion scope~~ ✅  
+2. ~~P15-E2-T1 — Core SDNN + iOS Auto-sync~~ ✅  
+3. **P15-E3-T1** — Dogfood + Companion UI ← **Ready**  
 
-**Branch:** `phase/15-companion-hrv-autonomy` (PR after freeze).
+**Branch:** `phase/15-companion-hrv-autonomy` (PR after freeze).  
+**Brief:** `docs/handoffs/P15-E3-T1-pm-brief.md`.  
+**Deferred:** ambient light resume · IDE · weather · App Store · NotificationPressure.

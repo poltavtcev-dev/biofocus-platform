@@ -139,23 +139,23 @@ Weather / light ambient collectors were **deferred** from Phase 12 wave-1. **Upd
 | Migration | **None** — no schema apply |
 | Dogfood | `docs/12-development.md` § Git activity dogfood |
 
-IDE collectors remain **deferred** (no additive privacy-safe session kind beyond `context_window` in v1 — ADR-013). Weather ambient and App Store packaging product remain deferred. Ambient **light** is Phase 15 (ADR-015 / §8). No plugin marketplace crate. Personal self-tracking only — not employee / workplace git surveillance.
+IDE collectors remain **deferred** (no additive privacy-safe session kind beyond `context_window` in v1 — ADR-013). Weather ambient and App Store packaging product remain deferred. Ambient **light** contract = ADR-015 / §8 (**parked** while Phase 15 ships companion). No plugin marketplace crate. Personal self-tracking only — not employee / workplace git surveillance.
 
-## 8. Ambient light (Phase 15 — ADR-015 / P15-E2 shipped)
+## 8. Ambient light (ADR-015 — parked)
 
 | Item | Value |
 | :--- | :--- |
-| Status | **Shipped** (collector P15-E2; Feature `AmbientLightShare` → **P15-E3**) |
-| Crate | `crates/macos-collector` |
+| Status | **Parked** — contract locked; collector / `AmbientLightShare` deferred (Phase 15 execution = ADR-016 companion) |
+| Crate | `crates/macos-collector` (when resumed) |
 | Plugin id | `com.biofocus.macos.ambient_light` |
 | `data_type` | `ambient_light` |
-| Probe | Soft-fail `SystemAmbientLightProbe` when mapping unavailable; injectable `ScriptedAmbientLightProbe` for tests |
+| Probe | Soft-fail OS probe when mapping unavailable; injectable scripted probe for tests |
 | Payload | Coarse `light_kind` (+ optional bounded `level` 0–100) — **no** camera frames / screen contents / precise geo / mic (see `docs/07-contracts.md`) |
 | Enable | `BIOFOCUS_AMBIENT_LIGHT=1` (default **off**) |
 | Poll | On light-band change or rare ≥5s; no busy-loop; `stop_stream` joins |
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
 | Validation | `bio_spec::validate_ambient_light_payload`; ingest `invalid_ambient_light` |
-| E3 Feature | `AmbientLightShare` (catalog — planned P15-E3; distinct from `AmbientMediaShare` / `GitActivityRate`) |
+| Feature | `AmbientLightShare` (catalog — deferred with collector) |
 
-Weather ambient collector remains **deferred** (not Phase 15 primary). Personal self-tracking only — not workplace light surveillance.
+Weather ambient collector remains **deferred**. Personal self-tracking only — not workplace light surveillance.
 

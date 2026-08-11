@@ -7,26 +7,26 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		F0BCD1869D974D2B9A757539 /* BioFocusCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */; };
+		17740C59FE8E4E3E99782CCB /* SamplePost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E18F70078C1438884E94B8D /* SamplePost.swift */; };
 		18E7A9CC022C427E94BFE84C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E2D7A0EB0A0485E995D2577 /* ContentView.swift */; };
 		67EF38BF45784186BA9FCD6D /* IngestClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9744D8C50AD44D4FBEFDBFF7 /* IngestClient.swift */; };
-		BDC438EB85A148209BF56D69 /* HeartRateSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B4D44507344687A3976590 /* HeartRateSample.swift */; };
-		17740C59FE8E4E3E99782CCB /* SamplePost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E18F70078C1438884E94B8D /* SamplePost.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* HrvSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* HrvSample.swift */; };
+		BDC438EB85A148209BF56D69 /* HeartRateSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B4D44507344687A3976590 /* HeartRateSample.swift */; };
 		C2D3E4F5061728394A5B6C7D /* ObservationQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F5061728394A5B6C7D8E /* ObservationQueue.swift */; };
 		E4F5061728394A5B6C7D8E9F /* HealthKitSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5061728394A5B6C7D8E9F0A /* HealthKitSyncCoordinator.swift */; };
+		F0BCD1869D974D2B9A757539 /* BioFocusCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0E18F70078C1438884E94B8D /* SamplePost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePost.swift; sourceTree = "<group>"; };
 		13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BioFocusCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BioFocusCompanionApp.swift; sourceTree = "<group>"; };
-		6E2D7A0EB0A0485E995D2577 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		50464D89F8F04EA29055267F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioFocusCompanion.entitlements; sourceTree = "<group>"; };
-		9744D8C50AD44D4FBEFDBFF7 /* IngestClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestClient.swift; sourceTree = "<group>"; };
 		61B4D44507344687A3976590 /* HeartRateSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateSample.swift; sourceTree = "<group>"; };
-		0E18F70078C1438884E94B8D /* SamplePost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePost.swift; sourceTree = "<group>"; };
+		6E2D7A0EB0A0485E995D2577 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9744D8C50AD44D4FBEFDBFF7 /* IngestClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestClient.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5061728394A5B6C /* HrvSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrvSample.swift; sourceTree = "<group>"; };
+		C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioFocusCompanion.entitlements; sourceTree = "<group>"; };
 		D3E4F5061728394A5B6C7D8E /* ObservationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationQueue.swift; sourceTree = "<group>"; };
 		F5061728394A5B6C7D8E9F0A /* HealthKitSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSyncCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -42,6 +42,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5C9F28EF073343F18DAA0ADD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		8E89A619489C4A2FA38E3BAD = {
 			isa = PBXGroup;
 			children = (
@@ -49,17 +57,6 @@
 				ABAD077593414214A87DD340 /* Contract */,
 				5C9F28EF073343F18DAA0ADD /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		AFE3A842F011446AA0A4C14D /* BioFocusCompanion */ = {
-			isa = PBXGroup;
-			children = (
-				2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */,
-				6E2D7A0EB0A0485E995D2577 /* ContentView.swift */,
-				50464D89F8F04EA29055267F /* Info.plist */,
-				C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */,
-			);
-			path = BioFocusCompanion;
 			sourceTree = "<group>";
 		};
 		ABAD077593414214A87DD340 /* Contract */ = {
@@ -75,12 +72,15 @@
 			name = Contract;
 			sourceTree = "<group>";
 		};
-		5C9F28EF073343F18DAA0ADD /* Products */ = {
+		AFE3A842F011446AA0A4C14D /* BioFocusCompanion */ = {
 			isa = PBXGroup;
 			children = (
-				13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */,
+				2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */,
+				6E2D7A0EB0A0485E995D2577 /* ContentView.swift */,
+				50464D89F8F04EA29055267F /* Info.plist */,
+				C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */,
 			);
-			name = Products;
+			path = BioFocusCompanion;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -165,6 +165,75 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		564C8D247DDE409E8F977082 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BioFocusCompanion/BioFocusCompanion.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 84C2C9CBD3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BioFocusCompanion/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "BioFocus Companion";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		89C7C5F5FF7442A8B1E841F1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BioFocusCompanion/BioFocusCompanion.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 84C2C9CBD3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BioFocusCompanion/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "BioFocus Companion";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		CD97BD57BAB94ED2A95D16BA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		F4511984B59F48BE90480C28 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -184,75 +253,6 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
-		};
-		CD97BD57BAB94ED2A95D16BA /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		89C7C5F5FF7442A8B1E841F1 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = BioFocusCompanion/BioFocusCompanion.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = BioFocusCompanion/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "BioFocus Companion";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		564C8D247DDE409E8F977082 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = BioFocusCompanion/BioFocusCompanion.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = BioFocusCompanion/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "BioFocus Companion";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
 		};
 /* End XCBuildConfiguration section */
 

@@ -273,9 +273,9 @@ Validation: `bio_spec::validate_git_activity_payload` (also via `validate_observ
 
 **OS probe (ADR-014 / P14-E2 shipped):** `SystemGitActivityProbe` loads user-chosen absolute roots from `~/.biofocus/git-watched-roots.toml`. Empty / missing / unreadable file → soft-fail idle (no emit, no whole-disk scan). When the config file is **absent**, optional `BIOFOCUS_GIT_WATCHED_ROOTS` (colon- or comma-separated absolute paths) may supply roots for tests/CI; **file is SoT when present** (no env merge). Probe considers nested repos under listed roots only. Observation **payload contract unchanged** (`activity_kind` + optional `event_count` — never persist allowlist/repo paths). Logs prefer Observation `id` / root_count / repo_count; do not dump roots or discovered repo paths at default log levels. Scripted/mock probes remain for tests. **No** SQLite allowlist table / **no** migration.
 
-### `ambient_light` payload (Phase 15 — ADR-015 / P15-E2 shipped)
+### `ambient_light` payload (ADR-015 — parked / deferred)
 
-Ambient light facts are **ordinary Observations** in the existing store. Phase 15 ambient source = **ambient light** (weather deferred — ADR-015). Exactly one ambient source this phase.
+Ambient light facts are **ordinary Observations** in the existing store. ADR-015 locked the contract; **Phase 15 execution** is companion HRV (ADR-016) — ambient light **collector / Feature deferred** to a later PM gate. Weather remains deferred.
 
 | Field | Value |
 | :--- | :--- |
@@ -304,7 +304,7 @@ Enable: `BIOFOCUS_AMBIENT_LIGHT=1` (default **off**). Emit on light-band change 
 
 Validation: `bio_spec::validate_ambient_light_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_ambient_light`.
 
-**OS probe (P15-E2 shipped):** `SystemAmbientLightProbe` soft-fails to no emission when OS mapping is unavailable (no camera / scene capture in v1). Scripted/mock probes supply closed-set labels in tests. **No** migration.
+**OS probe (planned when collector resumes):** Soft-fail when OS mapping unavailable (no camera / scene capture in v1). Scripted/mock probes for tests. **No** migration. Collector **not** shipped in Phase 15 companion wave.
 
 ## Companion → ingest (P2-E3-T1)
 

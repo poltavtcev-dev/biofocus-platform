@@ -1,15 +1,15 @@
 # PM Brief → PM: PM-GATE-POST-P15
 
-**From:** PM (close of Phase 15 companion)  
-**To:** PM (next chat)  
-**Status:** Ready  
+**Status:** Draft for after P15-E3 close — not Ready until Phase 15 Done.  
 **Date:** 2026-08-11  
-**Closed previous:** Phase 15 companion HRV + autonomy (E1–E3); ADR-016  
-**Evidence:** `docs/handoffs/P15-E*-qa-to-pm.md`  
+**Closed previous (pending):** Phase 15 companion after **P15-E3-T1** pm-close  
+**Evidence (when Ready):** `docs/handoffs/P15-E*-qa-to-pm.md`  
 **Branch:** `phase/15-companion-hrv-autonomy` (PR after freeze)
 
 ## Task
 **PM-GATE-POST-P15 — Choose next Phase 16+ slice**
+
+> Do not run this gate until **P15-E3-T1** is formally Done.
 
 ## Candidates
 - Resume **ambient light** collector (ADR-015 parked)

@@ -133,18 +133,18 @@
 - **Explanation factors:** when ≥1 countable event — per-kind shares of summed counts: `commit` (“Commits”), `checkout` (“Checkouts”), `sync` (“Sync events”), `other` (“Other VCS events”); shares sum to 1.0.
 - **DAG:** независимый узел; `feature_engine::register_git_v1` / `register_catalog_v1`.
 
-### 1.11 `AmbientLightShare` (planned — ADR-015 / P15-E3)
+### 1.11 `AmbientLightShare` (deferred — ADR-015 parked)
 - **Goal:** Calm share / band context of **ambient light** in-window. Environment context only — “light context during this window” — **not** clinical lighting advice and **not** “bad lighting harms you”. **Distinct from** `AmbientMediaShare` (media presence) and `GitActivityRate` (VCS cadence).
 - **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR / AmbientMediaShare / GitActivityRate.
 - **Inputs (required):** `ambient_light` Observations (`light_kind` + optional `level`) with ≥1 **closed-set** kind in the window: `dark` / `dim` / `moderate` / `bright`.
-- **Formula Strategy (v1 sketch — finalize in P15-E3):** Sample share over the window among closed-set kinds (exact band-share math in E3); optional `level` may refine confidence / factors only if still coarse.
-- **Omit policy (sketch):** empty window, no `ambient_light`, or **only-`unknown`** → **omit** Feature (soft-fail OS probe → Feature waits for closed-set kinds).
-- **Output:** Float (0.0 — 100.0) sketch — finalize units in E3.
+- **Formula Strategy (v1 sketch — finalize when collector resumes):** Sample share over the window among closed-set kinds; optional `level` may refine confidence / factors only if still coarse.
+- **Omit policy (sketch):** empty window, no `ambient_light`, or **only-`unknown`** → **omit** Feature.
+- **Output:** Float (0.0 — 100.0) sketch.
 - **Units:** percent of window samples in closed-set light bands (sketch).
 - **Provenance:** Observation IDs of `ambient_light` in the window.
 - **Confidence (ADR-007):** single family (`ambient_light`); when emitted `confidence = mean(evidence Observation.confidence)`.
-- **DAG:** независимый узел; planned `register_ambient_light_v1` / `register_catalog_v1` in P15-E3.
-- **Status:** **Planned** — needs P15-E2 Observations first.
+- **DAG:** независимый узел; planned `register_ambient_light_v1` / `register_catalog_v1` when resumed.
+- **Status:** **Deferred** — ADR-015 contract parked; Phase 15 execution = companion HRV (ADR-016). Not P15-E3 (dogfood).
 
 ## 2. Planned backlog (not sprint-Ready)
 
@@ -164,4 +164,4 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P15-E3 — `AmbientLightShare` planned; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; `AmbientLightShare` deferred with ADR-015; others may omit until wired).

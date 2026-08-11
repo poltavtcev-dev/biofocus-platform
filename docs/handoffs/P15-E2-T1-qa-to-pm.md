@@ -13,5 +13,11 @@
 - Live Xcode device smoke not run in this session — dogfood E3 covers operator steps.
 - Mi Fitness HRV may remain sparse — by design soft empty.
 
-## PM should reflect
-- E2 Done; E3 dogfood companion.
+## What PM must update
+- [x] `/docs/SPRINT_ROADMAP.md` — P15-E2-T1 Done; Ready **P15-E3-T1**; Phase not Done yet
+- [x] Execution canvas — QUEUE, todos, stats, callout, DAG
+- [x] Status docs — ARCHITECTURE_STATUS / PROJECT_CANVAS / 14-roadmap
+- [x] Correct stale ambient-light «P15-E2 shipped» notes → parked (ADR-016)
+
+## Suggested next Ready task
+- **P15-E3-T1** — Dogfood companion + Auto-sync UI (build+QA already Pass → prefer pm-close)
