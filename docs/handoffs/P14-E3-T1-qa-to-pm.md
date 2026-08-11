@@ -35,10 +35,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — mark **P14-E3-T1** Done; close Epic **P14-E3** and **Phase 14** if no further P14 tasks
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Optionally mirror: Phase 14 complete in `ARCHITECTURE_STATUS` / vision; next horizon via separate PM gate
-- [ ] **Do not open a PR** (freeze until 2026-09-01)
+- [x] `/docs/SPRINT_ROADMAP.md` — mark **P14-E3-T1** Done; close Epic **P14-E3** and **Phase 14** if no further P14 tasks
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Optionally mirror: Phase 14 complete in `ARCHITECTURE_STATUS` / vision; next horizon via separate PM gate
+- [x] **Do not open a PR** (freeze until 2026-09-01)
 
 ## Suggested next Ready task
 - Separate **PM gate** for post–Phase 14 horizon (IDE / weather-light / App Store / NotificationPressure / other) — not a P14 task.

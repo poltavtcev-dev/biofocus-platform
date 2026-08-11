@@ -192,6 +192,7 @@ async fn post_ingest(
                 }
                 bio_spec::SpecError::InvalidNowPlayingPayload { .. } => "invalid_now_playing",
                 bio_spec::SpecError::InvalidGitActivityPayload { .. } => "invalid_git_activity",
+                bio_spec::SpecError::InvalidAmbientLightPayload { .. } => "invalid_ambient_light",
                 _ => "invalid_life_event",
             };
             return (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response();

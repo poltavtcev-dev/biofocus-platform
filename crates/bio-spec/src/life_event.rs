@@ -58,6 +58,9 @@ pub fn validate_observation_payload(obs: &Observation) -> SpecResult<()> {
         crate::git_activity::DATA_TYPE_GIT_ACTIVITY => {
             crate::git_activity::validate_git_activity_payload(&obs.payload)
         }
+        crate::ambient_light::DATA_TYPE_AMBIENT_LIGHT => {
+            crate::ambient_light::validate_ambient_light_payload(&obs.payload)
+        }
         _ => Ok(()),
     }
 }

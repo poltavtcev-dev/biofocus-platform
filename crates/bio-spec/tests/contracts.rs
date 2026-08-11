@@ -203,6 +203,36 @@ fn git_activity_contract_json_round_trip() {
     assert_eq!(again, parsed);
 }
 
+const CONTRACT_AMBIENT_LIGHT_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.ambient_light",
+  "data_type": "ambient_light",
+  "payload": {
+    "light_kind": "dim",
+    "level": 25
+  },
+  "confidence": 0.8
+}"#;
+
+#[test]
+fn ambient_light_contract_json_round_trip() {
+    use bio_spec::{validate_ambient_light_payload, DATA_TYPE_AMBIENT_LIGHT};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_AMBIENT_LIGHT_JSON)
+        .expect("ambient_light contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_AMBIENT_LIGHT);
+    assert_eq!(parsed.payload["light_kind"], json!("dim"));
+    assert_eq!(parsed.payload["level"], json!(25));
+    validate_ambient_light_payload(&parsed.payload).expect("valid ambient_light");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
 #[test]
 fn life_event_rejects_malformed_payloads() {
     let cases = [

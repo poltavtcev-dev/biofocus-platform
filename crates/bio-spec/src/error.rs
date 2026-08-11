@@ -35,4 +35,8 @@ pub enum SpecError {
     /// Git activity Observation payload failed contract validation (ADR-013).
     #[error("invalid git activity payload: {reason}")]
     InvalidGitActivityPayload { reason: String },
+
+    /// Ambient light Observation payload failed contract validation (ADR-015).
+    #[error("invalid ambient light payload: {reason}")]
+    InvalidAmbientLightPayload { reason: String },
 }

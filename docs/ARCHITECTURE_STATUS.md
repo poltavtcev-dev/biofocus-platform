@@ -17,7 +17,8 @@
 - **Phase 11:** **Done** (2026-08-10) — AI coaching polish; E1–E3 (ADR-011 → `build_report_with_pack` / `biofocus.default` → `get_local_llm_status` + pack-aware Report UX). Branch: `phase/11-ai-coaching-polish` (PR after freeze).
 - **Phase 12:** **Done** (2026-08-10) — Ambient + commercial packaging; ADR-012 → Now Playing (`BIOFOCUS_NOW_PLAYING`) → `AmbientMediaShare` (`register_ambient_v1`) + `docs/18-packaging-runbook.md`. Branch: `phase/12-ambient-packaging` (PR after freeze).
 - **Phase 13:** **Done** (2026-08-10) — Plugin wave-2 = **Git activity**; ADR-013 → `GitActivityPlugin` (`BIOFOCUS_GIT_ACTIVITY`) → `GitActivityRate` (`register_git_v1`). Branch: `phase/13-plugin-wave-2` (PR after freeze).
-- **Phase 14:** **Opened** (2026-08-10) — Git path-allowlist / live probe; ADR-014 ✅ (`~/.biofocus/git-watched-roots.toml`); live probe **shipped** (P14-E2); Ready **P14-E3-T1** (dogfood / allowlist UX). Branch: `phase/14-git-allowlist` (PR after freeze). IDE / weather/light / App Store packaging / NotificationPressure remain deferred.
+- **Phase 14:** **Done** (2026-08-10) — Git path-allowlist / live probe; ADR-014 → live `SystemGitActivityProbe` → dogfood + Menubar **Git folders** IPC. Branch: `phase/14-git-allowlist` (PR after freeze).
+- **Phase 15:** **Done** (2026-08-11) — Companion HRV + autonomy; **ADR-016** (ADR-015 ambient light parked/deferred). Branch: `phase/15-companion-hrv-autonomy` (PR after freeze). Next: **PM-GATE-POST-P15**. IDE / weather / App Store packaging / NotificationPressure / ambient light collector remain deferred.
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)

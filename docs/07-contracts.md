@@ -68,7 +68,7 @@ Aggregates only: **never** characters, reconstructable key codes, clipboard, or 
 }
 ```
 
-Canonical after `pipeline::normalize_*`: required `rmssd_ms` (milliseconds); optional `sdnn_ms`, `pnn50` (0–100). Providers may send aliases (`rmssd` / `hrv_ms` / `hrv`) and `unit: "s"` (converted ×1000). See `crates/pipeline/src/normalize.rs`.
+Canonical after `pipeline::normalize_*`: at least one of `rmssd_ms` (milliseconds) **or** `sdnn_ms` (ADR-016 Apple HealthKit HRV-proxy); optional `pnn50` (0–100). Providers may send aliases (`rmssd` / `hrv_ms` / `hrv`, `sdnn`) and `unit: "s"` (converted ×1000). See `crates/pipeline/src/normalize.rs`. Features prefer RMSSD then SDNN (`mean_hrv_ms`).
 
 ### `life_event` payload (Life Events v1, P6-E1-T1 / ADR-006)
 
@@ -209,7 +209,7 @@ Validation: `bio_spec::validate_browser_category_payload` (via `validate_observa
 
 ### `now_playing` payload (Phase 12 ambient wave-1 — ADR-012 / P12-E2-T1)
 
-Ambient media facts are **ordinary Observations** in the existing store. Wave-1 ambient source = **Now Playing / music** (weather / light deferred).
+Ambient media facts are **ordinary Observations** in the existing store. Wave-1 ambient source = **Now Playing / music** (weather deferred; light → ADR-015 / Phase 15).
 
 | Field | Value |
 | :--- | :--- |
@@ -272,6 +272,39 @@ Enable: `BIOFOCUS_GIT_ACTIVITY=1` (default **off**). Emit on activity change or 
 Validation: `bio_spec::validate_git_activity_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_git_activity`.
 
 **OS probe (ADR-014 / P14-E2 shipped):** `SystemGitActivityProbe` loads user-chosen absolute roots from `~/.biofocus/git-watched-roots.toml`. Empty / missing / unreadable file → soft-fail idle (no emit, no whole-disk scan). When the config file is **absent**, optional `BIOFOCUS_GIT_WATCHED_ROOTS` (colon- or comma-separated absolute paths) may supply roots for tests/CI; **file is SoT when present** (no env merge). Probe considers nested repos under listed roots only. Observation **payload contract unchanged** (`activity_kind` + optional `event_count` — never persist allowlist/repo paths). Logs prefer Observation `id` / root_count / repo_count; do not dump roots or discovered repo paths at default log levels. Scripted/mock probes remain for tests. **No** SQLite allowlist table / **no** migration.
+
+### `ambient_light` payload (Phase 15 — ADR-015 / P15-E2 shipped)
+
+Ambient light facts are **ordinary Observations** in the existing store. Phase 15 ambient source = **ambient light** (weather deferred — ADR-015). Exactly one ambient source this phase.
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | always `"ambient_light"` |
+| `provider_id` | `com.biofocus.macos.ambient_light` |
+| `payload.light_kind` | required coarse label: `dark` \| `dim` \| `moderate` \| `bright` \| `unknown` |
+| `payload.level` | optional bounded integer 0–100 (relative brightness band) |
+
+**Privacy:** collectors must **not** put camera frames, screen contents / screenshots, precise geolocation, or always-on mic audio into the Observation payload. No cloud light telemetry. Personal self-tracking only — not workplace ambient monitoring. Pipeline normalize **strips** those extras if present.
+
+```json
+{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.ambient_light",
+  "data_type": "ambient_light",
+  "payload": {
+    "light_kind": "dim",
+    "level": 25
+  },
+  "confidence": 0.8
+}
+```
+
+Enable: `BIOFOCUS_AMBIENT_LIGHT=1` (default **off**). Emit on light-band change or rare poll ≥5s; no busy-loop.
+
+Validation: `bio_spec::validate_ambient_light_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_ambient_light`.
+
+**OS probe (P15-E2 shipped):** `SystemAmbientLightProbe` soft-fails to no emission when OS mapping is unavailable (no camera / scene capture in v1). Scripted/mock probes supply closed-set labels in tests. **No** migration.
 
 ## Companion → ingest (P2-E3-T1)
 

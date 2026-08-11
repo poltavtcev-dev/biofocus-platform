@@ -11,13 +11,14 @@
 //! | `data_type` | Canonical payload | Calibration / aliases |
 //! | :--- | :--- | :--- |
 //! | `heart_rate` | `{ "bpm": f64, "source"?: string }` | bpm from `bpm` / `heart_rate` / `hr` / `beats_per_minute`; if `unit` is `hz` → ×60; optional `source` kept |
-//! | `hrv` | `{ "rmssd_ms": f64, "sdnn_ms"?: f64, "pnn50"?: f64 }` | RMSSD from `rmssd_ms` / `rmssd` / `hrv_ms` / `hrv`; if `unit` is `s` → ×1000; optional SDNN / pNN50 |
+//! | `hrv` | `{ "rmssd_ms"?: f64, "sdnn_ms"?: f64, "pnn50"?: f64 }` | at least one of RMSSD (`rmssd_ms` / `rmssd` / `hrv_ms` / `hrv`) or SDNN (`sdnn_ms` / `sdnn`); if `unit` is `s` → ×1000; optional pNN50 |
 //! | `context_window` | `{ "bundle_id": string, "app_name": string }` | aliases `bundleId` / `appName` / `name`; other keys stripped |
 //! | `keystrokes` | `{ "count": u64, "window_secs": u64, "rate_per_min": f64 }` | `window_seconds`→`window_secs`; `rate_per_min` recomputed; content keys stripped |
 //! | `calendar_event` | `{ "uid", "start", "end", "all_day"?, "busy"? }` | titles/bodies/attendees stripped; required uid/start/end |
 //! | `browser_category` | `{ "category": string, "browser_bundle_id"?: string }` | closed-set category; `url` / `title` / `href` / content extras stripped (ADR-010) |
 //! | `now_playing` | `{ "media_kind": string, "is_playing": bool }` | closed-set kind; `title` / `artist` / `album` / `lyrics` / playlist ids stripped (ADR-012) |
 //! | `git_activity` | `{ "activity_kind": string, "event_count"?: u64 }` | closed-set kind; paths / remotes / branch / SHA / message / diff / author stripped (ADR-013) |
+//! | `ambient_light` | `{ "light_kind": string, "level"?: u64 }` | closed-set kind; optional level 0–100; camera / screen / geo / mic extras stripped (ADR-015) |
 //!
 //! Known type with missing / non-finite required fields → **skipped** (dropped from
 //! the batch; counted in [`NormalizedBatch::skipped_count`]).
@@ -27,7 +28,7 @@
 //! **Pass-through** — Observation kept unchanged (forward-compatible). Not counted
 //! as skipped.
 
-use bio_spec::{is_v1_activity_kind, is_v1_media_kind, Observation};
+use bio_spec::{is_v1_activity_kind, is_v1_light_kind, is_v1_media_kind, Observation};
 use serde_json::{json, Map, Value as JsonValue};
 
 use crate::dedupe::DedupedBatch;
@@ -49,6 +50,8 @@ pub const DATA_TYPE_BROWSER_CATEGORY: &str = "browser_category";
 pub const DATA_TYPE_NOW_PLAYING: &str = "now_playing";
 /// Git activity aggregates (ADR-013 / P13-E2).
 pub const DATA_TYPE_GIT_ACTIVITY: &str = "git_activity";
+/// Ambient light (ADR-015 / P15-E2).
+pub const DATA_TYPE_AMBIENT_LIGHT: &str = "ambient_light";
 
 const V1_BROWSER_CATEGORIES: &[&str] = &[
     "work",
@@ -209,6 +212,13 @@ fn normalize_one(mut obs: Observation) -> NormalizeOutcome {
             }
             None => NormalizeOutcome::Skip,
         },
+        DATA_TYPE_AMBIENT_LIGHT => match normalize_ambient_light(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
         // Unknown type: pass-through unchanged.
         _ => NormalizeOutcome::Keep(obs),
     }
@@ -236,24 +246,33 @@ fn normalize_heart_rate(payload: &JsonValue) -> Option<JsonValue> {
 
 fn normalize_hrv(payload: &JsonValue) -> Option<JsonValue> {
     let obj = payload.as_object()?;
-    let mut rmssd_ms = first_f64(obj, &["rmssd_ms", "rmssd", "hrv_ms", "hrv"])?;
-    if !rmssd_ms.is_finite() || rmssd_ms < 0.0 {
+    let unit_s = unit_is(obj, "s");
+
+    let mut rmssd_ms = first_f64(obj, &["rmssd_ms", "rmssd", "hrv_ms", "hrv"]).and_then(|v| {
+        if !v.is_finite() || v < 0.0 {
+            return None;
+        }
+        Some(if unit_s { v * 1000.0 } else { v })
+    });
+
+    let mut sdnn_ms = first_f64(obj, &["sdnn_ms", "sdnn"]).and_then(|v| {
+        if !v.is_finite() || v < 0.0 {
+            return None;
+        }
+        Some(if unit_s { v * 1000.0 } else { v })
+    });
+
+    // ADR-016: accept SDNN-only (Apple HealthKit HRV) or RMSSD-only / both.
+    if rmssd_ms.is_none() && sdnn_ms.is_none() {
         return None;
-    }
-    if unit_is(obj, "s") {
-        rmssd_ms *= 1000.0;
     }
 
     let mut out = Map::new();
-    out.insert("rmssd_ms".to_string(), json!(rmssd_ms));
-
-    if let Some(mut sdnn) = first_f64(obj, &["sdnn_ms", "sdnn"]) {
-        if sdnn.is_finite() && sdnn >= 0.0 {
-            if unit_is(obj, "s") {
-                sdnn *= 1000.0;
-            }
-            out.insert("sdnn_ms".to_string(), json!(sdnn));
-        }
+    if let Some(v) = rmssd_ms.take() {
+        out.insert("rmssd_ms".to_string(), json!(v));
+    }
+    if let Some(v) = sdnn_ms.take() {
+        out.insert("sdnn_ms".to_string(), json!(v));
     }
     if let Some(pnn50) = first_f64(obj, &["pnn50", "pNN50"]) {
         if pnn50.is_finite() && (0.0..=100.0).contains(&pnn50) {
@@ -364,6 +383,25 @@ fn normalize_git_activity(payload: &JsonValue) -> Option<JsonValue> {
     Some(JsonValue::Object(out))
 }
 
+fn normalize_ambient_light(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let light_kind = first_nonempty_str(obj, &["light_kind", "lightKind"])?;
+    if !is_v1_light_kind(light_kind) {
+        return None;
+    }
+    let mut out = Map::new();
+    out.insert("light_kind".to_string(), json!(light_kind));
+    if let Some(level) = first_u64(obj, &["level"]) {
+        if level <= 100 {
+            out.insert("level".to_string(), json!(level));
+        } else {
+            return None;
+        }
+    }
+    // Explicitly drop camera / screen / geo / mic extras if present.
+    Some(JsonValue::Object(out))
+}
+
 fn first_i64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<i64> {
     for key in keys {
         if let Some(v) = obj.get(*key) {
@@ -465,9 +503,10 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        normalize_deduped, normalize_observations, DATA_TYPE_BROWSER_CATEGORY,
-        DATA_TYPE_CALENDAR_EVENT, DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_GIT_ACTIVITY,
-        DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING,
+        normalize_deduped, normalize_observations, DATA_TYPE_AMBIENT_LIGHT,
+        DATA_TYPE_BROWSER_CATEGORY, DATA_TYPE_CALENDAR_EVENT, DATA_TYPE_CONTEXT_WINDOW,
+        DATA_TYPE_GIT_ACTIVITY, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES,
+        DATA_TYPE_NOW_PLAYING,
     };
     use crate::dedupe::DedupeState;
     use crate::intake::accept_observations;
@@ -530,6 +569,31 @@ mod tests {
         assert_eq!(p["sdnn_ms"], json!(50.0));
         assert_eq!(p["pnn50"], json!(12.5));
         assert!(p.get("noise").is_none());
+    }
+
+    #[test]
+    fn hrv_sdnn_only_is_kept() {
+        let input = obs(
+            DATA_TYPE_HRV,
+            json!({
+                "sdnn_ms": 42.0,
+                "source": "HealthKit"
+            }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let p = &out.observations()[0].payload;
+        assert_eq!(p["sdnn_ms"], json!(42.0));
+        assert!(p.get("rmssd_ms").is_none());
+        assert!(p.get("source").is_none());
+    }
+
+    #[test]
+    fn hrv_missing_both_ms_fields_is_skipped() {
+        let input = obs(DATA_TYPE_HRV, json!({ "pnn50": 10.0 }));
+        let out = normalize_observations(&[input]).expect("ok");
+        assert!(out.is_empty());
+        assert_eq!(out.skipped_count(), 1);
     }
 
     #[test]
@@ -719,6 +783,59 @@ mod tests {
         let input = obs(
             DATA_TYPE_GIT_ACTIVITY,
             json!({ "activity_kind": "rebase", "event_count": 1 }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 0);
+        assert_eq!(out.skipped_count(), 1);
+    }
+
+    #[test]
+    fn ambient_light_strips_camera_geo_and_keeps_coarse_fields() {
+        let input = obs(
+            DATA_TYPE_AMBIENT_LIGHT,
+            json!({
+                "light_kind": "dim",
+                "level": 25,
+                "camera_frame": "base64...",
+                "screenshot": "...",
+                "latitude": 52.1,
+                "longitude": 21.0,
+                "mic_waveform": [0.1, 0.2]
+            }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let p = &out.observations()[0].payload;
+        assert_eq!(
+            p,
+            &json!({
+                "light_kind": "dim",
+                "level": 25
+            })
+        );
+        assert!(p.get("camera_frame").is_none());
+        assert!(p.get("screenshot").is_none());
+        assert!(p.get("latitude").is_none());
+        assert!(p.get("longitude").is_none());
+        assert!(p.get("mic_waveform").is_none());
+    }
+
+    #[test]
+    fn ambient_light_rejects_invalid_kind() {
+        let input = obs(
+            DATA_TYPE_AMBIENT_LIGHT,
+            json!({ "light_kind": "glaring", "level": 10 }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 0);
+        assert_eq!(out.skipped_count(), 1);
+    }
+
+    #[test]
+    fn ambient_light_rejects_level_above_100() {
+        let input = obs(
+            DATA_TYPE_AMBIENT_LIGHT,
+            json!({ "light_kind": "dim", "level": 101 }),
         );
         let out = normalize_observations(&[input]).expect("ok");
         assert_eq!(out.len(), 0);

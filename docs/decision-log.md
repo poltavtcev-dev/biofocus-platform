@@ -16,6 +16,8 @@
 | ADR-012 | 2026-08-10 | Phase 12 v1 **primary** = ambient **Now Playing / music** Observation wave-1 (one source); **secondary** = commercial packaging as signed-build / notarization / update **runbook + process** (no default cloud sync). E2 = plugin; E3 = `AmbientMediaShare` Feature + packaging runbook. Existing `observations` store; AGPLv3 Core stays open | Vision ladder after plugins is ambient (music/weather/light) + commercial packaging ≠ secret math. macOS Now Playing dogfoods without mic / precise geo; weather/light deferred. Packaging stays open Core + distribution process | All three ambient sources in one wave; always-on ambient capture; cloud sync by default; secret/proprietary Feature formulas; ambient Features without Observations; packaging that forces UI→DB or cloud LLM; IDE/Git re-prioritized into P12; PR during freeze |
 | ADR-013 | 2026-08-10 | Plugin wave-2 v1 primary = **Git activity aggregates** (not IDE in the same wave); `data_type: "git_activity"` coarse `activity_kind` (+ optional `event_count`) → existing `observations` store; opt-in `BIOFOCUS_GIT_ACTIVITY` default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `GitActivityRate` | ADR-010 deferred IDE/Git after Browser. IDE apps already visible in `context_window` / CSR; privacy-safe IDE session kinds without paths/titles are weak on macOS collector alone. Git ops are invisible to context — additive signal via counts/cadence only (no paths / remotes / diffs). Personal self-tracking; finish plugin ladder before weather/light or App Store product | IDE+Git same wave; IDE as wave-2 when no additive privacy-safe signal; always-on capture; cloud git history sync; plugin marketplace crate; parallel plugin SQLite registry; weather/light or App Store as P13 primary; NotificationPressure as this wave’s Feature; redefining `DistractionScore`; PR during freeze |
 | ADR-014 | 2026-08-10 | Git watched-roots allowlist v1 = **local config file** under `~/.biofocus/git-watched-roots.toml` (user-chosen absolute roots only); unlocks live `SystemGitActivityProbe` in Phase 14 E2; ADR-013 Observation payload unchanged (`activity_kind` + optional `event_count`); **no** SQLite allowlist table / **no** migration; opt-in `BIOFOCUS_GIT_ACTIVITY` remains the enable switch; empty/missing file → soft-fail idle | ADR-013 deferred persisted allowlist → production probe soft-fails idle; dogfood needs privacy-scoped roots without widening Observation payloads. Config file is durable for dogfood, editable by hand / future Settings without schema approve. Personal self-tracking only | Always-on whole-disk scan; env-only allowlist as sole store; SQLite allowlist table in v1; workplace / manager dashboards; cloud git history sync; IDE as Phase 14 primary while allowlist unfinished; weather/light or App Store as this phase primary; NotificationPressure without notification Observations; PR during freeze; applying migration without user approve; persisting repo paths/remotes/branch/SHA/message/diff/author into Observations |
+| ADR-015 | 2026-08-11 | Phase 15 v1 **primary** = ambient **light** Observation (exactly one ambient source this phase — **not** weather); `data_type: "ambient_light"` coarse `light_kind` (+ optional bounded `level`) → existing `observations` store; opt-in `BIOFOCUS_AMBIENT_LIGHT` default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `AmbientLightShare` | ADR-012 deferred weather/light after Now Playing; PM-GATE-POST-P14 chose weather/light track and locks **ambient light** for Local-First on-device dogfood (no cloud weather API / precise geo). Complements `AmbientMediaShare` without overlapping media inputs. Personal self-tracking only | Weather as P15 primary when cloud/geo implied; IDE as P15 primary; App Store packaging product as P15 primary; NotificationPressure without notification Observations; always-on capture; cloud light telemetry; parallel marketplace crate; parallel SQLite ambient registry; PR during freeze; applying migration without user approve; camera frames / screen contents / precise geo / always-on mic in payload |
+| ADR-016 | 2026-08-11 | **Phase 15 execution supersedes ambient-light collector:** companion **HRV + autonomy** — HealthKit `heartRateVariabilitySDNN` → `hrv` Observation (`sdnn_ms`); keep `heart_rate`; event → local queue → Desktop ingest flush; Core accepts **`rmssd_ms` OR `sdnn_ms`** (prefer rmssd); **no** new SQLite; ADR-015 ambient light contract remains but E2/E3 deferred | Phase 5 companion was one-shot; dogfood needs autonomous HR+HRV without button. Apple HK exposes SDNN not RMSSD — Features must accept SDNN as HRV-proxy (non-clinical). User Priority A 2026-08-11 | Ambient light collector as active P15; sleep/steps/SpO2/ECG in same wave; always-on TCP socket; cloud relay; inventing RMSSD from SDNN without documenting proxy; clinical HRV claims; busy-loop HealthKit poll; new Observation SQLite schema; PR during freeze |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -721,3 +723,178 @@ E3 (P14-E3-T1) — optional companion:
 9. **Opening a PR during freeze** (before 2026-09-01) — local branch commits only; cluster PR after freeze.
 10. **Applying a migration without user approve** — forbidden; this ADR chooses no migration.
 11. **Widening `git_activity` payloads with paths/remotes/diffs “for richer Features”** — rejected; ADR-013 contract stands.
+
+### ADR-015 detail — Phase 15 scope: ambient light Observation contract (v1)
+
+> **Supersession (2026-08-11):** Phase **execution** moved to **ADR-016** (companion HRV + autonomy). ADR-015 contract remains valid; ambient light **collector / Feature deferred** to a later PM gate. Do not treat ambient light E2/E3 as active Phase 15 work.
+
+**Chosen Phase 15 v1 primary track (original):** **Ambient light** — exactly **one** ambient Observation source this phase (Capability Plugin Model).  
+**Not in this wave:** weather ambient (deferred again — cloud / geo implications), IDE plugin, App Store packaging product, NotificationPressure.
+
+| Layer | Role in Phase 15 v1 |
+| :--- | :--- |
+| Capability Plugin (`plugin-sdk`) | New `BioFocusPlugin` declares Capability for ambient light; `start_stream` / `stop_stream` only |
+| Observation (SQLite) | Immutable facts in existing `observations` table — **no** parallel ambient-light / weather store (ADR-006 / ADR-010 / ADR-012 stance) |
+| Feature (`feature-engine`) | E3: **`AmbientLightShare`** consumes `ambient_light` — ADR-007 confidence; calm non-clinical; **distinct from** `AmbientMediaShare` / `GitActivityRate` |
+| LLM | L5 interpret-only — must **not** invent light kinds, levels, or Feature formulas |
+
+**Why ambient light (not weather) for Phase 15**
+
+1. **ADR-012 deferral:** Wave-1 ambient shipped Now Playing; weather / light were deferred. PM-GATE-POST-P14 reopened the weather/light track and locks **light** as v1 primary within that track.
+2. **Local-First:** Prefer **on-device** ambient-light / display-brightness style probes over a **network weather API** that implies region or precise geo.
+3. **Privacy bar:** Coarse light bands dogfood without camera frames, screen pixel dumps, mic, or home geolocation.
+4. **Complements existing ambient:** `AmbientMediaShare` describes *personal media presence*; ambient light adds *environment brightness context* in the same windows — useful for calm pattern dogfood without overlapping media inputs.
+5. **Weather deferred (same phase):** Cloud weather + coarse region UX is a later ambient slice; not parallel with light in P15.
+
+**Observation contract sketch (implement in P15-E2)**
+
+| Field | Value |
+| :--- | :--- |
+| `data_type` | `"ambient_light"` |
+| `provider_id` | `com.biofocus.macos.ambient_light` (host collector / thin adapter — exact probe in E2) |
+| Opt-in | `BIOFOCUS_AMBIENT_LIGHT=1` (default **off**); host starts plugin only when set |
+| Poll / idle | Emit **on light-band change** (or rare poll ≥5s); **no** busy-loop; `stop_stream` must join background work |
+| Confidence | Provider-set ∈ `[0.0, 1.0]` (unknown / unavailable mapping → lower confidence or soft-fail idle OK) |
+
+**Privacy-safe payload (v1)** — coarse aggregates only:
+
+```json
+{
+  "id": "…",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.ambient_light",
+  "data_type": "ambient_light",
+  "payload": {
+    "light_kind": "dim",
+    "level": 25
+  },
+  "confidence": 0.8
+}
+```
+
+| Payload field | Rule |
+| :--- | :--- |
+| `light_kind` | **Required.** Closed v1 set: `dark` \| `dim` \| `moderate` \| `bright` \| `unknown` (E2 may refine labels in contracts; keep coarse closed-set) |
+| `level` | **Optional.** Bounded integer **0–100** relative brightness band (not raw identifying sensor dumps; not continuous camera lux streams) |
+
+**Explicitly forbidden in v1 Observations / logs**
+
+- Camera frames, images, video, or scene-understanding embeddings
+- Screen contents / screenshots / pixel buffers
+- Precise geolocation / home address / region dumps (weather path stays deferred partly for this reason)
+- Always-on microphone / audio waveform capture
+- Cloud light / weather telemetry phones-home
+- Employee-surveillance / workplace ambient monitoring framing — product is **personal self-tracking** only
+- Always-on capture without opt-in env
+
+**Schema (v1)**
+
+- Prefer existing `observations` store only (ADR-006 / ADR-010 / ADR-012 stance).
+- **No new SQLite tables/columns** for ambient light, weather mirrors, or ambient registries.
+- **Do not apply** any migration for this ADR.
+- Deferred (future ADR + user approve only): weather Observation family; ambient allowlist / calibration table — out of Phase 15 v1 until then.
+
+**Capability Plugin Model**
+
+```text
+BioFocusPlugin
+  id: com.biofocus.macos.ambient_light
+  capabilities: [{ name: "ambient_light", data_types: ["ambient_light"] }]
+  start_stream(tx) → emit Observation on change (opt-in)
+  stop_stream() → join; freeze emissions
+Desktop ingest_host → same bounded Observation channel → spawn_persist_worker → SQLite
+UI ↛ SQLite (unchanged)
+```
+
+**E2 / E3 sketch (names locked)**
+
+```text
+E2 (P15-E2-T1) — Ambient light plugin:
+  plugin (macos-collector or thin adapter) + soft-fail OS probe + scripted probe for tests
+  → ObservationSender → persist
+  contracts in 07-contracts / 08-plugin-sdk finalized
+  idle-safe tests; BIOFOCUS_AMBIENT_LIGHT default off
+  soft-fail idle when mapping unavailable (no busy-loop)
+  no Feature math
+
+E3 (P15-E3-T1) — AmbientLightShare:
+  Feature AmbientLightShare:
+    inputs: ambient_light Observations (light_kind + optional level)
+    window: 15m / step 1m (align Focus/CSR / AmbientMediaShare / GitActivityRate)
+    formula sketch: share of window samples with light_kind ∈ {dark, dim, moderate, bright}
+                    (or calm band-share — exact formula in E3); unknown alone → omit or low confidence
+    confidence: ADR-007; thin → omit or lower
+    framing: calm personal “light context during this window” — not clinical / “bad lighting harms you”
+    distinct from AmbientMediaShare (media) and GitActivityRate (VCS cadence)
+    LLM must not invent score or light kinds
+```
+
+**Docs policy for this ADR**
+
+- Planned / ADR notes land now in `docs/08-plugin-sdk.md`, `docs/07-contracts.md`, `docs/10-security.md`, `docs/12-development.md`, `docs/16-glossary.md`, `docs/06-feature-catalog.md` (`AmbientLightShare` → P15-E3), `docs/04-storage.md`.
+- Full payload validation + probe tables + Feature formula finalized in **P15-E2** / **P15-E3**.
+
+**Rejected alternatives**
+
+1. **Weather as Phase 15 primary when cloud/geo implied** — Local-First prefers on-device light; weather deferred to a later ambient slice.
+2. **IDE as Phase 15 primary** — still no additive privacy-safe signal beyond `context_window` without a new contract (PM-GATE-POST-P14).
+3. **App Store packaging product as Phase 15 primary** — commercial track beyond P12 runbook; not an Observation unlock.
+4. **NotificationPressure without notification Observations** — remains deferred; Features need real inputs.
+5. **Always-on capture** (no opt-in) — breaks privacy-first / Global DoD ambient rule.
+6. **Cloud light telemetry** — local-first; no phones-home ambient sensor stream.
+7. **Parallel marketplace crate** — Capability Plugin Model via existing `plugin-sdk` + `macos-collector` / host.
+8. **Parallel SQLite ambient registry without need** — existing `observations` store only.
+9. **Opening a PR during freeze** (before 2026-09-01) — local branch commits only; cluster PR after freeze.
+10. **Applying a migration without user approve** — forbidden; this ADR chooses no migration.
+11. **Camera / screen / precise geo / always-on mic “for richer light context”** — rejected; coarse `light_kind` + optional bounded `level` only.
+
+### ADR-016 detail — Phase 15 execution: companion HRV + autonomy (v1)
+
+**Chosen Phase 15 execution track (2026-08-11):** **iOS companion HRV + autonomous sync** (supersedes ambient-light collector for active Sprint 29–30).
+
+| Layer | Role |
+| :--- | :--- |
+| iOS Companion | HealthKit HR + HRV (SDNN) → local durable queue → `POST /v1/ingest` when Desktop reachable |
+| Observation | Existing `heart_rate` + `hrv` contracts — **no** new `data_type` / **no** SQLite migration |
+| Pipeline | `normalize_hrv` accepts **`rmssd_ms` OR `sdnn_ms`** (keep both when present) |
+| Features | Prefer mean `rmssd_ms`, else mean `sdnn_ms` as HRV-proxy ms (Focus / Recovery); Stress already accepts SDNN |
+| LLM | L5 interpret-only — must **not** invent HRV values or clinical claims |
+
+**Why companion autonomy (not ambient light collector) now**
+
+1. **Dogfood gap:** Phase 5 companion is one-shot button; wearable north-star needs continuous facts without manual taps.
+2. **Feature unlock:** `StressIndex` / `RecoveryScore` / Focus HRV slot need `hrv` Observations — currently almost never present.
+3. **Apple reality:** HealthKit exposes `heartRateVariabilitySDNN` (ms). Catalog historically required `rmssd_ms`. v1 treats SDNN as **non-clinical HRV-proxy** with the same numeric maps when RMSSD absent — documented, not “fake RMSSD”.
+4. **Local-First:** LAN ingest + Bearer; queue on device; no cloud relay / always-on TCP.
+5. **ADR-015 parked:** Ambient light contract stays; collector deferred.
+
+**Autonomy mechanics (v1)**
+
+```text
+HealthKit sample / HKObserver wake
+  → encode Observation(s) (heart_rate and/or hrv)
+  → durable local queue (dedupe by sample identity)
+  → flush POST /v1/ingest when base URL reachable
+  → on failure keep queued (no busy-loop retry spin)
+```
+
+- Auto-sync **opt-in** in Companion UI (default on after user enables once is OK; document).
+- Manual send remains for dogfood.
+- Idle-safe: event / background delivery only — **no** tight HealthKit poll loop.
+
+**Schema**
+
+- **No** new SQLite tables/columns.
+- Existing `observations` store only.
+
+**Rejected alternatives**
+
+1. **Keep ambient light collector as active Phase 15** while companion stays one-shot — rejected by user Priority A.
+2. **Sleep / steps / SpO2 / ECG in same wave** — new contracts / clinical risk; deferred.
+3. **Always-on TCP / cloud relay** — privacy / battery; queue+flush only.
+4. **Silently writing SDNN into `rmssd_ms`** without ADR — pollutes semantics; prefer explicit `sdnn_ms` + Feature prefer path.
+5. **Clinical HRV / recovery diagnosis copy** — Non-Goals.
+6. **Busy-loop polling HealthKit** — Global DoD idle footprint.
+7. **New Observation SQLite schema / migration** — unnecessary; `hrv` already contracted.
+8. **Opening a PR during freeze** — local branch only until 2026-09-01.
+

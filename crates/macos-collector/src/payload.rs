@@ -25,6 +25,9 @@ pub const MACOS_NOW_PLAYING_PROVIDER_ID: &str = "com.biofocus.macos.now_playing"
 /// Provider id for the Git activity collector (ADR-013).
 pub const MACOS_GIT_PROVIDER_ID: &str = "com.biofocus.macos.git";
 
+/// Provider id for the ambient light collector (ADR-015).
+pub const MACOS_AMBIENT_LIGHT_PROVIDER_ID: &str = "com.biofocus.macos.ambient_light";
+
 /// Storage / schema `data_type` for active window context.
 pub const CONTEXT_WINDOW_DATA_TYPE: &str = "context_window";
 
@@ -42,6 +45,9 @@ pub const NOW_PLAYING_DATA_TYPE: &str = "now_playing";
 
 /// Storage / schema `data_type` for Git activity context.
 pub const GIT_ACTIVITY_DATA_TYPE: &str = "git_activity";
+
+/// Storage / schema `data_type` for ambient light context.
+pub const AMBIENT_LIGHT_DATA_TYPE: &str = "ambient_light";
 
 /// Builds privacy-safe payload: app identity only (no window title / content).
 #[must_use]
@@ -109,6 +115,20 @@ pub fn git_activity_payload(sample: &crate::git_activity_probe::GitActivitySampl
         }),
         _ => json!({
             "activity_kind": sample.activity_kind,
+        }),
+    }
+}
+
+/// Builds privacy-safe ambient light payload (coarse kind + optional level — no frames).
+#[must_use]
+pub fn ambient_light_payload(sample: &crate::ambient_light_probe::AmbientLightSample) -> JsonValue {
+    match sample.level {
+        Some(n) if n <= 100 => json!({
+            "light_kind": sample.light_kind,
+            "level": n,
+        }),
+        _ => json!({
+            "light_kind": sample.light_kind,
         }),
     }
 }

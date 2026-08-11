@@ -46,7 +46,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 11 (Done 2026-08-10):** AI coaching polish — ADR-011 → packs (`build_report_with_pack`) → provider UX (`get_local_llm_status` + pack-aware Report). L5 interpret-only.
 - **Phase 12 (Done 2026-08-10):** Ambient + packaging — ADR-012 → Now Playing → `AmbientMediaShare` + `docs/18-packaging-runbook.md`.
 - **Phase 13 (Done 2026-08-10):** Plugin wave-2 — ADR-013 → Git plugin → `GitActivityRate`.
-- **Phase 14 (Opened 2026-08-10):** Git path-allowlist — ADR-014 ✅ + live probe ✅ → Ready **P14-E3-T1** (dogfood / Settings IPC). Deferred: IDE · weather/light · App Store · NotificationPressure.
+- **Phase 14 (Done 2026-08-10):** Git path-allowlist — ADR-014 → live probe → dogfood + Menubar **Git folders** IPC.
+- **Phase 15 (Done 2026-08-11):** Companion HRV + autonomy — ADR-016 (ADR-015 ambient light parked). Deferred: IDE · weather · ambient light collector · App Store · NotificationPressure.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -118,7 +119,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 14** (`/docs/SPRINT_ROADMAP.md`). Ready **P14-E3-T1**.
+Immediate Kanban = **PM-GATE-POST-P15** (`/docs/SPRINT_ROADMAP.md`). Phase 0–15 Done · companion HRV autonomy shipped (ADR-016); ambient light deferred.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -131,8 +132,9 @@ Immediate Kanban = **Phase 14** (`/docs/SPRINT_ROADMAP.md`). Ready **P14-E3-T1**
 | **11** | AI coaching polish (ADR-011 → packs → provider UX) — **done** |
 | **12** | Ambient + packaging (ADR-012 → Now Playing → AmbientMediaShare) — **done** |
 | **13** | Plugin wave-2 (Git → GitActivityRate) — **done** |
-| **14** | Git path-allowlist (ADR-014 ✅ + live probe ✅ → Ready dogfood/UX) — **active** |
-| **15+** | Open via PM gate — IDE · weather/light · App Store · NotificationPressure |
+| **14** | Git path-allowlist (ADR-014 → live probe → dogfood/UX) — **done** |
+| **15** | Active — Ambient light (ADR-015 locked; plugin next); weather deferred |
+| **16+** | Open via later PM gate — IDE · weather · App Store · NotificationPressure |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

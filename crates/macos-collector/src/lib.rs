@@ -14,10 +14,15 @@
 //! remotes / diffs). Opt-in via `BIOFOCUS_GIT_ACTIVITY=1`. Watched roots:
 //! `~/.biofocus/git-watched-roots.toml` (ADR-014); optional `BIOFOCUS_GIT_WATCHED_ROOTS`
 //! when the config file is absent.
+//! Ambient light: coarse `light_kind` + optional `level` 0–100 only (no camera /
+//! screen / geo / mic). Opt-in via `BIOFOCUS_AMBIENT_LIGHT=1`.
 
 #![cfg_attr(not(target_os = "macos"), forbid(unsafe_code))]
 // objc2 / CoreGraphics bindings require `unsafe` only inside macOS probe modules.
 
+mod ambient_light_plugin;
+mod ambient_light_probe;
+mod ambient_light_stream;
 mod browser_plugin;
 mod browser_probe;
 mod browser_stream;
@@ -41,6 +46,16 @@ mod plugin;
 mod probe;
 mod stream;
 
+pub use ambient_light_plugin::{
+    ambient_light_enabled, AmbientLightPlugin, AMBIENT_LIGHT_ENABLE_ENV,
+    DEFAULT_AMBIENT_LIGHT_POLL_INTERVAL,
+};
+pub use ambient_light_probe::{
+    AmbientLightProbe, AmbientLightSample, ScriptedAmbientLightProbe, SystemAmbientLightProbe,
+};
+pub use ambient_light_stream::{
+    observation_from_ambient_light, spawn_ambient_light_loop, AmbientLightHandle,
+};
 pub use browser_plugin::{
     browser_categories_enabled, BrowserCategoryPlugin, BROWSER_ENABLE_ENV,
     DEFAULT_BROWSER_POLL_INTERVAL,
@@ -98,12 +113,13 @@ pub use now_playing_stream::{
     observation_from_now_playing, spawn_now_playing_loop, NowPlayingHandle,
 };
 pub use payload::{
-    browser_category_payload, calendar_event_payload, context_window_payload, git_activity_payload,
-    keystrokes_payload, now_playing_payload, BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE,
+    ambient_light_payload, browser_category_payload, calendar_event_payload,
+    context_window_payload, git_activity_payload, keystrokes_payload, now_playing_payload,
+    AMBIENT_LIGHT_DATA_TYPE, BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE,
     CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE, KEYSTROKES_DATA_TYPE,
-    MACOS_BROWSER_PROVIDER_ID, MACOS_CALENDAR_PROVIDER_ID, MACOS_CONTEXT_PROVIDER_ID,
-    MACOS_GIT_PROVIDER_ID, MACOS_INPUT_PROVIDER_ID, MACOS_NOW_PLAYING_PROVIDER_ID,
-    NOW_PLAYING_DATA_TYPE,
+    MACOS_AMBIENT_LIGHT_PROVIDER_ID, MACOS_BROWSER_PROVIDER_ID, MACOS_CALENDAR_PROVIDER_ID,
+    MACOS_CONTEXT_PROVIDER_ID, MACOS_GIT_PROVIDER_ID, MACOS_INPUT_PROVIDER_ID,
+    MACOS_NOW_PLAYING_PROVIDER_ID, NOW_PLAYING_DATA_TYPE,
 };
 pub use plugin::{ActiveWindowPlugin, DEFAULT_POLL_INTERVAL};
 pub use probe::{FrontmostApp, FrontmostProbe, SystemFrontmostProbe};

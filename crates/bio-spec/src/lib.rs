@@ -12,6 +12,7 @@
 
 #![forbid(unsafe_code)]
 
+mod ambient_light;
 mod browser_category;
 mod calendar_event;
 mod error;
@@ -25,6 +26,11 @@ mod recommendation;
 mod signal;
 mod time;
 
+pub use ambient_light::{
+    is_v1_light_kind, validate_ambient_light_payload, DATA_TYPE_AMBIENT_LIGHT, LEVEL_MAX,
+    LIGHT_KIND_BRIGHT, LIGHT_KIND_DARK, LIGHT_KIND_DIM, LIGHT_KIND_MODERATE, LIGHT_KIND_UNKNOWN,
+    V1_LIGHT_KINDS,
+};
 pub use browser_category::{
     is_v1_browser_category, validate_browser_category_payload, BROWSER_CATEGORY_COMMUNICATION,
     BROWSER_CATEGORY_ENTERTAINMENT, BROWSER_CATEGORY_REFERENCE, BROWSER_CATEGORY_SHOPPING,

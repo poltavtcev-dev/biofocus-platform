@@ -1,9 +1,9 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 14: Git path-allowlist / live probe** (Sprint 27–28) — Active.  
-> Phase 0–13 Done. Goal: ADR-014 watched-roots allowlist → live `SystemGitActivityProbe` for already-shipped `git_activity` / `GitActivityRate` — Local-First, personal self-tracking only.
+> **Phase 15: Ambient light** (Sprint 29–30) — Active.  
+> Phase 0–14 Done. Goal: ADR-015 ambient light Observation → opt-in collector → calm ambient Feature — Local-First, personal self-tracking only.
 
-**Phase 14 goal:** Unlock **live** Git activity Observations via a privacy-scoped **path / watched-roots allowlist** (ADR-014). Observation payload contract from ADR-013 stays coarse (`activity_kind` + optional `event_count`). IDE, weather/light, App Store packaging product, and NotificationPressure remain deferred.
+**Phase 15 goal:** Ship **ambient light** as the next ambient Observation source after Now Playing (weather deferred). Coarse privacy-safe payload only; Feature only from real Observations.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -23,24 +23,25 @@
 - [ ] **Coaching:** never auto-invoke LLM on app / Dashboard open; opt-in local provider; no cloud LLM by default
 - [ ] **Ambient / packaging:** opt-in ambient capture; no always-on mic/geo dumps; commercial packaging ≠ closed Feature math; optional sync off by default
 - [ ] **Git allowlist:** user-chosen roots only; never widen `git_activity` Observation payloads with paths/remotes/diffs
+- [ ] **Ambient light:** opt-in; coarse light labels/levels only — no camera frames / screen contents / precise geo
 
 ---
 
-## Kanban Overview (Phase 14 Active)
+## Kanban Overview (Phase 15 Active)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P14-E3-T1** |
+| **Ready** | **P15-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **Phase 12** (E1–E3) · **Phase 13** (E1–E3) · **PM-GATE-POST-P13** · **P14-E1-T1** · **P14-E2-T1** |
+| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) · **Phase 8** (E1–E3) · **Phase 9** (E1–E3) · **Phase 10** (E1–E3) · **Phase 11** (E1–E3) · **Phase 12** (E1–E3) · **Phase 13** (E1–E3) · **PM-GATE-POST-P13** · **Phase 14** (E1–E3) · **PM-GATE-POST-P14** · **P14-E1-T1** · **P14-E2-T1** · **P14-E3-T1** · **P15-E1-T1** |
 
-**Epic status:** P14-E1 ✅ · P14-E2 ✅ · P14-E3 ⬜ (T1 Ready)
+**Epic status:** P15-E1 ✅ · P15-E2 ○ · P15-E3 ○ · Phase 14 ✅ · **PM-GATE-POST-P14** ✅
 
-**Phase 14 on `/docs/14-roadmap.md`:** opened 2026-08-10 · ADR-014 ✅ · live probe ✅ · Ready dogfood / allowlist UX
+**Phase 15 on `/docs/14-roadmap.md`:** opened 2026-08-10 · Ambient light · ADR-015 locked · Ready plugin
 
-**Рекомендуемый порядок (Phase 14):**  
-~~P14-E1-T1~~ → ~~P14-E2-T1~~ → **P14-E3-T1**
+**Рекомендуемый порядок (Phase 15):**  
+P15-E1-T1 → P15-E2-T1 → P15-E3-T1
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -48,17 +49,54 @@
 
 ### Active assignment
 
-**Ready now:** **P14-E3-T1** — Dogfood gate + calm allowlist Settings/IPC companion. Brief: `docs/handoffs/P14-E3-T1-pm-brief.md`. Role: **Dev|UX**.
+**Ready now:** **P15-E2-T1** — Implement ambient light plugin (`macos-collector` + host) per ADR-015. Brief: `docs/handoffs/P15-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Closed:** P14-E2-T1 (QA Pass, 2026-08-10) — `git-watched-roots.toml` load + live `SystemGitActivityProbe` under roots; opt-in `BIOFOCUS_GIT_ACTIVITY`; env override only if file absent; no Feature rewrite / no migration. Epic **P14-E2** ✅. Evidence: `docs/handoffs/P14-E2-T1-qa-to-pm.md`.
+**Closed:** P15-E1-T1 (QA Pass, 2026-08-11) — ADR-015 ambient light Observation contract; Epic **P15-E1** ✅. Evidence: `docs/handoffs/P15-E1-T1-qa-to-pm.md`. No schema approve needed (existing `observations` only).
 
-**Closed:** P14-E1-T1 (QA Pass, 2026-08-10) — ADR-014 config-file allowlist. Epic **P14-E1** ✅. Evidence: `docs/handoffs/P14-E1-T1-qa-to-pm.md`.
+**Closed gate:** PM-GATE-POST-P14 (2026-08-10) — chose **ambient light** (weather/light track) over IDE / weather-as-primary / App Store / NotificationPressure. Evidence: `docs/handoffs/PM-GATE-POST-P14-pm-brief.md`.
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 14 on `phase/14-git-allowlist`; local commits OK; cluster PR **after** freeze. Dogfood needs `BIOFOCUS_GIT_ACTIVITY=1` + non-empty allowlist file (or CI env roots without a file).
+**Closed:** P14-E3-T1 (QA Pass, 2026-08-10) — dogfood + Menubar **Git folders** IPC; Epic **P14-E3** ✅ · **Phase 14** ✅. Evidence: `docs/handoffs/P14-E3-T1-qa-to-pm.md`.
+
+**Ops note:** **PR freeze until 2026-09-01** — Phase 14 cluster on `phase/14-git-allowlist`; Phase 15 on `phase/15-ambient-light`; local commits OK; cluster PRs **after** freeze.
 
 ---
 
-## Phase 14 — Git path-allowlist / live probe (Active)
+## Phase 15 — Ambient light (Active)
+
+### Epic P15-E1 — ADR-015 ambient light scope
+**Goal:** Lock Observation contract + privacy boundaries before collector/Feature.
+
+| ID | Task | Role | Modules | AC | Depends |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P15-E1-T1** | ADR-015: ambient light contract | Dev | docs + decision-log | See `P15-E1-T1-pm-brief.md` | PM-GATE-POST-P14 |
+
+**P15-E1 shipped:** ADR-015 = Phase 15 v1 primary **ambient light** (not weather); `data_type: "ambient_light"`, coarse `light_kind` + optional `level` 0–100; opt-in `BIOFOCUS_AMBIENT_LIGHT` default off; existing `observations` only (**no** migration); E3 Feature name **`AmbientLightShare`**. QA Pass 2026-08-11.
+
+### Epic P15-E2 — Ambient light plugin
+**Goal:** Opt-in collector → existing Observation channel (payload per ADR-015).
+
+| ID | Task | Role | Modules | AC | Depends |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P15-E2-T1** | Implement ambient light plugin | Dev | macos-collector + host | See `P15-E2-T1-pm-brief.md` | P15-E1-T1 |
+
+### Epic P15-E3 — Ambient light Feature
+**Goal:** Catalog Feature from ambient light Observations (ADR-007; calm framing).
+
+| ID | Task | Role | Modules | AC | Depends |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P15-E3-T1** | Ambient light catalog Feature | Dev | feature-engine + docs | Shaped by ADR-015 | P15-E2-T1 |
+
+---
+
+## Phase 14 archive (Done)
+
+<details>
+<summary>Phase 14 Kanban & epics (closed 2026-08-10 — E1–E3)</summary>
+
+**Done:** P14-E1 (T1) · P14-E2 (T1) · P14-E3 (T1).  
+ADR-014 config allowlist → live `SystemGitActivityProbe` → dogfood + Menubar **Git folders** IPC.
+
+Evidence: `docs/handoffs/P14-*-qa-to-pm.md` · branch `phase/14-git-allowlist` (cluster PR after freeze).
 
 ### Epic P14-E1 — ADR-014 allowlist scope
 **P14-E1 shipped:** ADR-014 = v1 allowlist store **local config** `~/.biofocus/git-watched-roots.toml` (`version` + absolute `roots`); **no** SQLite table / **no** migration; Observation payload stays ADR-013 coarse; empty/missing → soft-fail idle; E2 live probe → existing `GitActivityRate`. QA Pass 2026-08-10.
@@ -67,11 +105,11 @@
 **P14-E2 shipped:** Load/validate `git-watched-roots.toml`; live `SystemGitActivityProbe` under allowlisted roots only; opt-in `BIOFOCUS_GIT_ACTIVITY`; optional `BIOFOCUS_GIT_WATCHED_ROOTS` when file absent; idle-safe + stop joins; ADR-013 payload unchanged; scripted tests + empty-allowlist soft-fail. QA Pass 2026-08-10.
 
 ### Epic P14-E3 — Dogfood / allowlist UX companion
-**Goal:** Close Phase 14 with dogfood notes and calm Settings/IPC to edit allowlist (no Feature math rewrite).
+**P14-E3 shipped:** Dogfood runbook in `docs/12-development.md`; Tauri IPC `get_git_watched_roots` / `set_git_watched_roots` (file only, absolute roots); Menubar **Git folders**; `?mockGitRoots=` for browser QA; no Feature rewrite / no SQLite migration. QA Pass 2026-08-10.
 
-| ID | Task | Role | Modules | AC (summary) | Depends |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **P14-E3-T1** | Dogfood gate / allowlist UX | Dev\|UX | docs + desktop IPC | See `P14-E3-T1-pm-brief.md` | P14-E2-T1 |
+**Out of scope (Phase 14):** IDE collector; weather/light; App Store product; NotificationPressure; SQLite allowlist table; workplace surveillance framing; PR during freeze.
+
+</details>
 
 ---
 
@@ -279,24 +317,24 @@ Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes`
 
 ---
 
-## Role × Module Matrix (Phase 14)
+## Role × Module Matrix (Phase 15 Active)
 
 | Task | PM | Dev | QA | UX | Primary modules |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| P14-E1-T1 ADR-014 allowlist scope | | ● | ○ | | docs + decision-log |
-| P14-E2-T1 live probe + allowlist | | ● | ○ | | macos-collector + host |
-| P14-E3-T1 dogfood / allowlist UX | | ● | ○ | ○ | docs + optional desktop |
+| P15-E1-T1 ADR-015 ambient light scope | | ● | ○ | | docs + decision-log |
+| P15-E2-T1 ambient light plugin | | ● | ○ | | macos-collector + host |
+| P15-E3-T1 ambient light Feature | | ● | ○ | | feature-engine + docs |
 
 ● = owner · ○ = collaborator
 
 ---
 
-## Queue (Phase 14)
+## Queue (Phase 15)
 
-1. ~~P14-E1-T1 — ADR-014 Git watched-roots / path-allowlist~~ ✅ Done  
-2. ~~P14-E2-T1 — Allowlist + live git probe~~ ✅ Done  
-3. **P14-E3-T1** — Dogfood gate / allowlist UX ← **Ready**  
+1. ~~P15-E1-T1 — ADR-015 Ambient light Observation contract~~ ✅  
+2. **P15-E2-T1** — Ambient light plugin ← **Ready**  
+3. P15-E3-T1 — Ambient light catalog Feature  
 
-**Git:** `phase/14-git-allowlist` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P14-E3-T1-pm-brief.md`.  
-**Deferred:** IDE · weather/light · App Store packaging · NotificationPressure · Phase 13 cluster PR batch after freeze.
+**Git:** `phase/15-ambient-light` → local commits → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P15-E2-T1-pm-brief.md`.  
+**Deferred:** IDE · weather ambient · App Store packaging · NotificationPressure · Phase 14/15 cluster PR batch after freeze.

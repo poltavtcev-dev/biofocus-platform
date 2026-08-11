@@ -61,3 +61,8 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 - **v1 durable store:** local config file `~/.biofocus/git-watched-roots.toml` (user-chosen absolute roots only) — **not** SQLite. Live load + probe **shipped** (P14-E2); Settings IPC **shipped** (P14-E3). Tests may use `$BIOFOCUS_HOME/git-watched-roots.toml`.
 - **No migration** under ADR-014. Observations remain the only durable git **facts** store.
 - Future SQLite allowlist table (if ever needed for CRUD) requires a **new ADR + user approve** — not Phase 14 v1.
+
+### Ambient light (ADR-015 / Phase 15)
+
+- **v1:** Ambient light facts are ordinary rows in `observations` (`data_type = 'ambient_light'`). **No** ambient-light table, weather mirror, or ambient registry.
+- **No migration** under ADR-015. Weather Observation family / ambient calibration store require a **new ADR + user approve** — out of Phase 15 v1.
