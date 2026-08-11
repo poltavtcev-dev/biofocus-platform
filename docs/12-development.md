@@ -108,7 +108,7 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Phase 20 CognitiveLoad (ADR-021 ✅ Done 2026-08-11):** Catalog Feature **`CognitiveLoad`** via `register_cognitive_v1` / `register_catalog_v1` — Feature-level composite of **MeetingDensity + ContextSwitchRate + NotificationPressure**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; explanation factors. Calm framing: “combined demand in this window”. Dashboard chart series label **Combined demand** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.16. Dogfood: below § CognitiveLoad dogfood. Branch `phase/20-cognitive-load` (cluster PR after freeze). **PM-GATE-POST-P20** ✅ chose `DeepWorkScore` for Phase 21.
 - **Phase 21 DeepWorkScore (ADR-022 ✅ Done 2026-08-11):** Catalog Feature **`DeepWorkScore`** via `register_deep_work_v1` / `register_catalog_v1` — Feature-level composite of **FocusScore (required) + ContextSwitchRate (optional)**; idle **dropped** for v1; window **15m / 1m**; output 0–100; omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “sustained focus in this window”. Dashboard chart series label **Sustained focus** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.17. Dogfood: below § DeepWorkScore dogfood. Branch `phase/21-deep-work-score` (cluster PR after freeze).
 - **Phase 22 AttentionStability (ADR-023 ✅ Done 2026-08-11):** Catalog Feature **`AttentionStability`** via `register_attention_stability_v1` / `register_catalog_v1` — Feature-level **variance/stability** composite of **FocusScore (required) + ContextSwitchRate (optional)**; window **15m / 1m**; output 0–100; Focus term from **in-window Focus range** (not Focus level); omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “focus stability in this window” — not ADHD / “you can’t focus”. **Distinct from DeepWorkScore** (intensity). Dashboard chart series label **Focus stability** when present (omit stays quiet). **No** new Observation family / **no** migration; **do not** rewrite FocusScore / CSR / DeepWorkScore. Catalog: `docs/06-feature-catalog.md` §1.18. Dogfood: below § AttentionStability dogfood. Branch `phase/22-attention-stability` (cluster PR after freeze). **Next:** Phase 23 **Personal Context Layer** — Ready **P23-E1-T1** (**ADR-024**). Gate **PM-GATE-POST-P22** ✅.
-- **Phase 23 Personal Context Layer (ADR-024 ✅ / P23-E2 shipped first slice):** **`DeskAwayPresence`** via `register_desk_away_v1` / `register_catalog_v1` — secondary signals only (walk Life Event and/or steps ≥ 40); omit without positive away evidence; quiet alone insufficient; **no** GPS; ADR-007 slots = 3; calm “away from desk in this window”. **Health context:** opt-in `~/.biofocus/health-context.toml` → `report_engine::build_report_with_pack` injects “User-declared context” (L5 consume-only; Feature math does **not** branch on labels). Large literature-band library **deferred**. Catalog §1.19. Branch `phase/23-personal-context` (cluster PR after freeze). Dogfood / UI → **P23-E3**. Deferred: IDE · weather · App Store · Companion polish · CircadianOffset · TypingRhythm · precise GPS.
+- **Phase 23 Personal Context Layer (ADR-024 ✅ / P23-E2–E3):** **`DeskAwayPresence`** via `register_desk_away_v1` / `register_catalog_v1` — secondary signals only (walk Life Event and/or steps ≥ 40); omit without positive away evidence; quiet alone insufficient; **no** GPS; ADR-007 slots = 3. Calm framing: “away from desk in this window”. Dashboard chart series label **Away from desk** when present (omit stays quiet). **Health context:** opt-in `~/.biofocus/health-context.toml` → `report_engine::build_report_with_pack` injects “User-declared context” (L5; Feature math does **not** branch on labels). Declare via editing that file (no Dashboard health editor in v1). Large literature-band library **deferred**. Catalog §1.19. Dogfood: below § DeskAwayPresence / health-context dogfood. Branch `phase/23-personal-context` (cluster PR after freeze). Deferred: IDE · weather · App Store · Companion polish · CircadianOffset · TypingRhythm · precise GPS.
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -344,6 +344,53 @@ Personal self-tracking only — **not** workplace / employer attention scoring. 
 6. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic AttentionStability series for chart layout QA; `mockSnapshot=empty` stays calm empty.
 7. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
 8. Contracts / catalog: `docs/06-feature-catalog.md` §1.18 · ADR-023 in `docs/decision-log.md`.
+
+### DeskAwayPresence / health-context dogfood (P23-E3-T1 / ADR-024)
+
+Personal self-tracking only — **not** workplace / employer presence monitoring. Calm framing: **“away from desk in this window”** — never GPS tracking, surveillance scoring, or clinical claims. Health context is **user-declared only** — never “you have X from HRV”.
+
+#### A. DeskAwayPresence
+
+1. **Prerequisite:** Phase 23 E2 shipped `DeskAwayPresence` in `feature-engine` (`register_desk_away_v1` / `register_catalog_v1`). No new Observation `data_type`; no migration; no GPS; leaf formulas unchanged.
+2. **Inputs (existing Observations):** quiet/absent keystrokes; quiet/absent `context_window`; optional `step_count`; optional `life_event` `walk`.
+3. **Emit / omit (ADR-024):**
+   - **Emit** with positive away evidence — `walk` Life Event **and/or** step sum ≥ 40.
+   - **Omit** quiet-alone (idle-at-desk vs away indistinguishable); omit active typing + weak steps without walk; never emit from geo.
+4. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine desk_away
+   ```
+   Covers walk/steps emit, quiet-alone omit, typing+weak-steps omit, factors, `register_catalog_v1`, no geo payload keys.
+5. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Log a Walk Life Event and/or ensure Companion/`step_count` evidence; quiet desktop alone will **not** emit.
+   - Open Dashboard → IPC `get_feature_snapshot` and/or `get_feature_series`.
+   - Look for Feature id **`DeskAwayPresence`**. Chart calm label: **Away from desk** (0–100). Empty / omit → quiet (no error row).
+6. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic DeskAwayPresence series; `mockSnapshot=empty` stays calm empty.
+
+#### B. Health context → prompt packs
+
+1. **Prerequisite:** E2 shipped `~/.biofocus/health-context.toml` loader + pack injection (`report_engine::build_report_with_pack` / `build_report_with_pack_and_health`).
+2. **Declare (docs-only UI — edit the file):**
+   ```toml
+   [health_context]
+   conditions = ["sleep_sensitive", "caffeine_sensitive"]  # closed-set: sleep_sensitive | migraine_prone | caffeine_sensitive
+   note = "I already know late caffeine hits me"
+   ```
+   Path: `$HOME/.biofocus/health-context.toml` (or `$BIOFOCUS_HOME/health-context.toml`). Missing / empty conditions+note → **no** injection.
+3. **Verify pack path:**
+   ```bash
+   cargo test -p report-engine health_context
+   cargo test -p report-engine packs::
+   ```
+   Generate a report via Desktop **Generate report** (uses `build_report_with_pack`) — markdown / LLM prompt should include **User-declared context** when the file is non-empty. Feature numeric values must be unchanged by health labels.
+4. **Important:** Phase 4 `build_report` (non-pack) does **not** auto-inject health — only the **pack** path does.
+5. **No cloud sync**; **no** SQLite profile store; UI ↛ SQLite (file edit is operator config, not product DB access).
+
+#### C. Contracts
+
+- Catalog: `docs/06-feature-catalog.md` §1.19 · ADR-024 in `docs/decision-log.md`.
+- Glossary: Personal Context Layer / DeskAwayPresence / Health context.
 
 ## CI
 

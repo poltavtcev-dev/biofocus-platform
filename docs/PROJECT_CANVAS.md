@@ -55,7 +55,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 20 (Done 2026-08-11):** CognitiveLoad — **ADR-021** ✅; Feature + dogfood + Dashboard **Combined demand**.
 - **Phase 21 (Done 2026-08-11):** DeepWorkScore — **ADR-022** ✅; Feature + dogfood + Dashboard **Sustained focus**.
 - **Phase 22 (Done 2026-08-11):** AttentionStability — **ADR-023** ✅; Feature + dogfood + Dashboard **Focus stability**.
-- **Next:** Phase 23 **Personal Context Layer** — Ready **P23-E2-T1** (ship `DeskAwayPresence` + health→prompt). **ADR-024** ✅. Gate **PM-GATE-POST-P22** ✅.
+- **Next:** Phase 23 **Personal Context Layer** — Ready **P23-E3-T1** (dogfood / optional UI). `DeskAwayPresence` + health→prompt shipped · **ADR-024** ✅. Gate **PM-GATE-POST-P22** ✅.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -127,7 +127,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P23-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–22 Done · Phase 23 Active (E1 ✅).
+Immediate Kanban = **P23-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–22 Done · Phase 23 Active (E1–E2 ✅).
 
 | Phase | Focus |
 | :--- | :--- |
@@ -149,7 +149,7 @@ Immediate Kanban = **P23-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–22 Done 
 | **20** | Done — CognitiveLoad (**ADR-021** → Feature + dogfood + Combined demand) |
 | **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
 | **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
-| **23** | Active — Personal Context Layer (**ADR-024** ✅ · Ready P23-E2) |
+| **23** | Active — Personal Context Layer (**ADR-024** ✅ · Feature + health→prompt shipped · Ready P23-E3) |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

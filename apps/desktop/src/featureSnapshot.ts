@@ -103,6 +103,7 @@ export function mockSnapshotFromLocation(
     const cognitive = [42, 45, 48, 46, 44];
     const deepWork = [70, 72, 75, 73, 74];
     const attentionStability = [88, 90, 86, 92, 91];
+    const deskAway = [0, 55, 72, 40, 65];
     const features: FeatureDto[] = [];
     for (let i = 0; i < windows.length; i += 1) {
       const tw = windows[i];
@@ -148,6 +149,12 @@ export function mockSnapshotFromLocation(
           timeWindow: tw,
           value: attentionStability[i],
           provenance: ["00000000-0000-0000-0000-00000000000c"],
+        },
+        {
+          featureId: "DeskAwayPresence",
+          timeWindow: tw,
+          value: deskAway[i],
+          provenance: ["00000000-0000-0000-0000-00000000000d"],
         },
       );
     }

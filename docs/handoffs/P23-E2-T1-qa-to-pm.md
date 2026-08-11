@@ -33,10 +33,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — move **P23-E2-T1** to Done; Ready **P23-E3-T1**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `14-roadmap` / `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` — DeskAwayPresence + health→prompt shipped
-- [ ] Brief for **P23-E3-T1** (dogfood / optional calm UI for desk-away and/or health declare)
+- [x] `/docs/SPRINT_ROADMAP.md` — move **P23-E2-T1** to Done; Ready **P23-E3-T1**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `14-roadmap` / `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` — DeskAwayPresence + health→prompt shipped
+- [x] Brief for **P23-E3-T1** (dogfood / optional calm UI for desk-away and/or health declare)
 
 ## Suggested next Ready task
 - **P23-E3-T1** — Dogfood notes + optional calm Dashboard / health-declare surface (no formula rewrite; no GPS; no migration).

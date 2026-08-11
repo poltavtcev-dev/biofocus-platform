@@ -13,6 +13,7 @@ export const CHART_FEATURE_IDS = [
   "CognitiveLoad",
   "DeepWorkScore",
   "AttentionStability",
+  "DeskAwayPresence",
 ] as const;
 
 export type ChartFeatureId = (typeof CHART_FEATURE_IDS)[number];
@@ -29,6 +30,7 @@ export const SCORE_SERIES_IDS: ChartFeatureId[] = [
   "CognitiveLoad",
   "DeepWorkScore",
   "AttentionStability",
+  "DeskAwayPresence",
 ];
 
 /** Calm UI labels — Feature names only, no evaluative / medical claims. */
@@ -91,6 +93,11 @@ export const CHART_SERIES_META: Record<
     unit: "0–100",
     color: "#5b7a8c",
   },
+  DeskAwayPresence: {
+    label: "Away from desk",
+    unit: "0–100",
+    color: "#7a6b5c",
+  },
 };
 
 export type ChartPoint = {
@@ -107,6 +114,7 @@ export type ChartPoint = {
   CognitiveLoad?: number;
   DeepWorkScore?: number;
   AttentionStability?: number;
+  DeskAwayPresence?: number;
 };
 
 function scalarValue(value: FeatureDto["value"]): number | null {

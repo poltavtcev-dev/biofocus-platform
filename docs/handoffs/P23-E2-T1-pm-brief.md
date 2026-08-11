@@ -2,10 +2,11 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
-**Date:** 2026-08-11  
+**Status:** Done (QA Pass 2026-08-11)  
+**Closed:** Epic **P23-E2** ✅ · `DeskAwayPresence` + health→prompt shipped  
+**Evidence:** `docs/handoffs/P23-E2-T1-qa-to-pm.md` · `docs/handoffs/P23-E2-T1-dev-to-qa.md`  
+**Next:** **P23-E3-T1** — `docs/handoffs/P23-E3-T1-pm-brief.md`  
 **Closed previous:** P23-E1-T1 (ADR-024 locked; QA Pass)  
-**Evidence:** `docs/handoffs/P23-E1-T1-qa-to-pm.md` · `docs/handoffs/P23-E1-T1-dev-to-qa.md`  
 **Phase:** Phase 23 Personal Context Layer — Epic P23-E2  
 **Branch:** `phase/23-personal-context`
 

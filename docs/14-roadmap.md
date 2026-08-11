@@ -111,8 +111,8 @@
 
 - [ ] **Phase 23: Personal Context Layer** (Sprint 45–46) — opened 2026-08-11 (**PM-GATE-POST-P22**)
   - Lock Personal Context Layer (**ADR-024**: Variant B + health context + desk-away) — **P23-E1 Done** (2026-08-11).
-  - First ship slice (`DeskAwayPresence` + health→prompt) — **P23-E2 Ready** (T1).
-  - Dogfood / optional surface — **P23-E3** (after E2).
+  - First ship slice (`DeskAwayPresence` + health→prompt) — **P23-E2 Done** (2026-08-11).
+  - Dogfood / optional surface — **P23-E3 Ready** (T1).
 
 **Deferred (gate leftovers):** IDE · weather ambient · App Store packaging · Companion polish-as-primary · CircadianOffset · TypingRhythm · precise GPS.
 
@@ -138,7 +138,7 @@
 **Phase 20:** Done 2026-08-11 — **ADR-021** → `CognitiveLoad` → dogfood + Combined demand · branch `phase/20-cognitive-load` (PR after freeze)
 **Phase 21:** Done 2026-08-11 — **ADR-022** → `DeepWorkScore` → dogfood + Sustained focus · branch `phase/21-deep-work-score` (PR after freeze)
 **Phase 22:** Done 2026-08-11 — **ADR-023** → `AttentionStability` → dogfood + Focus stability · branch `phase/22-attention-stability` (PR after freeze)
-**Phase 23:** Active — **ADR-024** ✅ · Ready **P23-E2-T1** · branch `phase/23-personal-context` (PR after freeze)
+**Phase 23:** Active — **ADR-024** ✅ · Feature + health→prompt shipped · Ready **P23-E3-T1** · branch `phase/23-personal-context` (PR after freeze)
 **Gate:** **PM-GATE-POST-P22** ✅ · **ADR-019** ✅ · **ADR-020** ✅ · **ADR-021** ✅ · **ADR-022** ✅ · **ADR-023** ✅ · **ADR-024** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

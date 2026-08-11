@@ -1,10 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
 > **Phase 23: Personal Context Layer** (Sprint 45–46) — **Active**.  
-> Phase 0–22 Done. Gate **PM-GATE-POST-P22** ✅ · **ADR-024** ✅ · Ready **P23-E2-T1**.  
+> Phase 0–22 Done. Gate **PM-GATE-POST-P22** ✅ · **ADR-024** ✅ · `DeskAwayPresence` + health→prompt shipped · Ready **P23-E3-T1**.  
 > **Supersedes** same-day CircadianOffset gate draft.
 
-**Phase 23 outcome (target):** **ADR-024** ✅ locks Personal Context Layer → ship first slice (`DeskAwayPresence` + optional health→prompt) → dogfood / calm surface. Reference bands = Variant B. No precise GPS. Calm non-clinical framing.
+**Phase 23 outcome (target):** **ADR-024** ✅ locks Personal Context Layer → **`DeskAwayPresence` + health→prompt shipped** → optional dogfood / calm surface. Reference bands = Variant B. No precise GPS. Calm non-clinical framing.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -37,14 +37,14 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P23-E2-T1** |
+| **Ready** | **P23-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–22 · **PM-GATE-POST-P14…P22** · **P23-E1-T1** · **P22-E1–E3** (see archives) |
+| **Done** | Phase 0–22 · **PM-GATE-POST-P14…P22** · **P23-E1-T1** · **P23-E2-T1** · **P22-E1–E3** (see archives) |
 
-**Epic status:** Phase 23 Active (E1 ✅ · E2 Ready) · Phase 22 ✅
+**Epic status:** Phase 23 Active (E1–E2 ✅ · E3 Ready) · Phase 22 ✅
 
-**Phase 23 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-024** ✅ · E2 Ready
+**Phase 23 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-024** ✅ · Feature + health→prompt shipped · E3 Ready
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -52,9 +52,9 @@
 
 ### Active assignment
 
-**Ready now:** **P23-E2-T1** — Ship first slice per ADR-024 (`DeskAwayPresence` primary; health→prompt secondary). Brief: `docs/handoffs/P23-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P23-E3-T1** — Dogfood notes + optional calm UI for Personal Context Layer. Brief: `docs/handoffs/P23-E3-T1-pm-brief.md`. Role: **Dev** (+ UX if UI).
 
-**Just closed:** **P23-E1-T1** (2026-08-11) — **ADR-024** locked Personal Context Layer (QA Pass).
+**Just closed:** **P23-E2-T1** (2026-08-11) — `DeskAwayPresence` + health→prompt shipped (QA Pass).
 
 **Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 23 on `phase/23-personal-context`.
 
@@ -72,13 +72,13 @@
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P23-E2-T1** ← Ready | Ship first slice per ADR-024 (`DeskAwayPresence` + health→prompt) | Dev | core crates + docs |
+| **P23-E2-T1** ✅ Done | Ship first slice per ADR-024 (`DeskAwayPresence` + health→prompt) | Dev | core crates + docs |
 
 ### Epic P23-E3 — Dogfood / surface (optional)
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P23-E3-T1** | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
+| **P23-E3-T1** ← Ready | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
 
 ---
 
@@ -126,10 +126,10 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 ## Queue (Phase 23)
 
 1. **P23-E1-T1** — ADR-024 Personal Context Layer ← **Done**  
-2. **P23-E2-T1** — First ship slice (`DeskAwayPresence` + health→prompt) ← **Ready**  
-3. **P23-E3-T1** — Dogfood / optional surface  
+2. **P23-E2-T1** — First ship slice (`DeskAwayPresence` + health→prompt) ← **Done**  
+3. **P23-E3-T1** — Dogfood / optional surface ← **Ready**  
 
 **Deferred:** IDE · weather · App Store · Companion polish-as-primary · CircadianOffset · TypingRhythm · precise GPS.
 
 **Git:** Phase 23 on `phase/23-personal-context` → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P23-E2-T1-pm-brief.md`.
+**Brief:** `docs/handoffs/P23-E3-T1-pm-brief.md`.
