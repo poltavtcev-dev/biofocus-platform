@@ -39,4 +39,20 @@ pub enum SpecError {
     /// Ambient light Observation payload failed contract validation (ADR-015).
     #[error("invalid ambient light payload: {reason}")]
     InvalidAmbientLightPayload { reason: String },
+
+    /// Step count Observation payload failed contract validation (ADR-018).
+    #[error("invalid step_count payload: {reason}")]
+    InvalidStepCountPayload { reason: String },
+
+    /// Active energy Observation payload failed contract validation (ADR-018).
+    #[error("invalid active_energy payload: {reason}")]
+    InvalidActiveEnergyPayload { reason: String },
+
+    /// Sleep interval Observation payload failed contract validation (ADR-018).
+    #[error("invalid sleep_interval payload: {reason}")]
+    InvalidSleepIntervalPayload { reason: String },
+
+    /// Oxygen saturation Observation payload failed contract validation (ADR-018).
+    #[error("invalid oxygen_saturation payload: {reason}")]
+    InvalidOxygenSaturationPayload { reason: String },
 }

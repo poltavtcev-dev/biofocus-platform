@@ -306,6 +306,21 @@ Validation: `bio_spec::validate_ambient_light_payload` (also via `validate_obser
 
 **OS probe (P16-E1 shipped):** `SystemAmbientLightProbe` soft-fails when OS mapping unavailable (no camera / scene / screen / geo / mic capture in v1 — idle, no emit). `ScriptedAmbientLightProbe` for tests. Emit on light-band change or rare poll ≥5s; `stop_stream` joins. Host arms only when `BIOFOCUS_AMBIENT_LIGHT=1`. **No** migration.
 
+### Wearable depth payloads (ADR-018 / P17-E2 shipped)
+
+Companion HealthKit path keeps existing `heart_rate` + soft-optional `hrv` (ADR-016). Phase 17 emits Observation families Mi Fitness typically writes into Apple Health. **Companion emit shipped (P17-E2)**; chart ranges + Features → **P17-E3**. Existing `observations` store — **no** migration in v1.
+
+| `data_type` | Required payload | Optional | Notes |
+| :--- | :--- | :--- | :--- |
+| `step_count` | `count` (≥ 0 integer) | `window_secs` (≥ 1) | Interval or sample step sum |
+| `active_energy` | `kcal` (≥ 0 number) | — | Active energy kilocalories |
+| `sleep_interval` | `start`, `end` (Unix s; `end` ≥ `start`) | `stage`: `asleep` \| `in_bed` \| `awake` \| `unknown` | Coarse sleep interval |
+| `oxygen_saturation` | `spo2_percent` (0–100) | — | **Soft-optional** — emit only when HK has samples; non-clinical |
+
+**Deferred:** parallel `workout` Observation family (use Life Event `workout` + steps/energy). **Forbidden:** Mi Cloud payloads; inventing SpO2/sleep when absent; clinical framing.
+
+Validation: `bio_spec::validate_*_payload` / `validate_observation_payload`. Ingest reject codes: `invalid_step_count` / `invalid_active_energy` / `invalid_sleep_interval` / `invalid_oxygen_saturation`. Pipeline normalize strips aliases / out-of-range known types.
+
 ## Companion → ingest (P2-E3-T1)
 
 Same Observation JSON; companion posts a **JSON array** to `POST /v1/ingest`.

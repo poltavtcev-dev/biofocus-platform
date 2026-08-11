@@ -33,6 +33,9 @@ Token remains a **local secret**: no cloud account; UI receives the value only v
 ### Companion client (P2-E3-T1)
 `apps/companion` posts Observations with Bearer auth. Wrong token → explicit unauthorized (CLI exit `3` / Swift `IngestClientError.unauthorized`). Sample path is local-only; no cloud.
 
+### Wearable depth + chart ranges (ADR-018 / Phase 17)
+Phase 17 expands Companion HealthKit Observations Mi Fitness writes into Apple Health (`step_count` / `active_energy` / `sleep_interval`; soft-optional `oxygen_saturation`; keep `heart_rate` + soft-optional `hrv`). **HealthKit only** — no Mi Cloud / unofficial API. Same local queue → Desktop ingest (ADR-016); no busy-loop HK poll; no clinical SpO2/sleep claims. Dashboard long ranges use **recompute-on-read** Feature series (`get_feature_series`) — **no** Feature-history SQLite in v1; UI ↛ SQLite; Snapshot lists show **latest** Features. Contracts locked; Companion/UI implementation → E2/E3.
+
 ## 3. Context collector privacy
 
 ### Active window (P2-E2-T1)

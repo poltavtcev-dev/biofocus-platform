@@ -19,6 +19,7 @@
 | ADR-015 | 2026-08-11 | Phase 15 v1 **primary** = ambient **light** Observation (exactly one ambient source this phase — **not** weather); `data_type: "ambient_light"` coarse `light_kind` (+ optional bounded `level`) → existing `observations` store; opt-in `BIOFOCUS_AMBIENT_LIGHT` default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `AmbientLightShare` | ADR-012 deferred weather/light after Now Playing; PM-GATE-POST-P14 chose weather/light track and locks **ambient light** for Local-First on-device dogfood (no cloud weather API / precise geo). Complements `AmbientMediaShare` without overlapping media inputs. Personal self-tracking only | Weather as P15 primary when cloud/geo implied; IDE as P15 primary; App Store packaging product as P15 primary; NotificationPressure without notification Observations; always-on capture; cloud light telemetry; parallel marketplace crate; parallel SQLite ambient registry; PR during freeze; applying migration without user approve; camera frames / screen contents / precise geo / always-on mic in payload |
 | ADR-016 | 2026-08-11 | **Phase 15 execution supersedes ambient-light collector:** companion **HRV + autonomy** — HealthKit `heartRateVariabilitySDNN` → `hrv` Observation (`sdnn_ms`); keep `heart_rate`; event → local queue → Desktop ingest flush; Core accepts **`rmssd_ms` OR `sdnn_ms`** (prefer rmssd); **no** new SQLite; ADR-015 ambient light contract remains but E2/E3 deferred | Phase 5 companion was one-shot; dogfood needs autonomous HR+HRV without button. Apple HK exposes SDNN not RMSSD — Features must accept SDNN as HRV-proxy (non-clinical). User Priority A 2026-08-11 | Ambient light collector as active P15; sleep/steps/SpO2/ECG in same wave; always-on TCP socket; cloud relay; inventing RMSSD from SDNN without documenting proxy; clinical HRV claims; busy-loop HealthKit poll; new Observation SQLite schema; PR during freeze |
 | ADR-017 | 2026-08-11 | **Sequencing:** finish **Phase 16 ambient light** first; **Phase 17** = Mi Fitness / HealthKit depth + Dashboard chart ranges (parked intent — payload contracts in follow-up ADR before build) | User chose option B (2026-08-11): do not preempt P16 again; remember wearable-max + long-range chart UI for next phase. Dogfood still needs ambient light shipped; bracelet depth + 1h/8h/12h/1d/1w charts are committed backlog, not abandoned | Preempt P16 again for wearable (option A); Mi Cloud / unofficial API; Feature history SQLite; LLM as source of chart/Features; clinical claims |
+| ADR-018 | 2026-08-11 | **Phase 17 contracts:** HealthKit Observation `data_type`s (`step_count`, `active_energy`, `sleep_interval`; soft-optional `oxygen_saturation`) + keep `heart_rate`/`hrv`; Dashboard chart ranges **1h/8h/12h/1d/1w** via **recompute-on-read** IPC (`get_feature_series`); Snapshot = **latest** Features; existing `observations` store; **no** migration v1 | ADR-017 sequenced Phase 17 after P16; dogfood needs locked payloads/IPC before Companion/UI. Mi writes via Apple Health only. ADR-008 stance for long series. Personal self-tracking; L5 interpret-only | Mi Cloud / unofficial API; Feature-history SQLite for charts; UI→SQLite; clinical SpO2/sleep claims; busy-loop HK poll; workout as parallel Observation family (use Life Event); ECG/clinical labs; applying migration without approve; PR during freeze |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -900,19 +901,197 @@ HealthKit sample / HKObserver wake
 7. **New Observation SQLite schema / migration** — unnecessary; `hrv` already contracted.
 8. **Opening a PR during freeze** — local branch only until 2026-09-01.
 
-### ADR-017 detail — After P16: wearable depth + chart ranges (parked)
+### ADR-017 detail — After P16: wearable depth + chart ranges (sequencing)
 
 **Sequencing (locked 2026-08-11):** Complete **Phase 16** (ADR-015 ambient light plugin → `AmbientLightShare`). Do **not** reopen Priority-A preemption of ambient light.
 
-**Phase 17 parked intent** (shape contracts in a dedicated ADR before coding; this ADR only parks priority):
+**Status (2026-08-11):** Phase 16 **Done**. Phase 17 **opened**. Payload / chart-range **contracts locked in ADR-018** (this ADR remains sequencing SoT only).
 
-1. **Wearable depth (Mi Fitness via HealthKit / Companion)** — maximize Observations Mi actually writes into Apple Health (typical: HR already; target candidates steps / active energy / sleep intervals; SpO2/workout only if present). Soft-optional HRV SDNN (often absent on Mi). Same autonomy path: observer → queue → Desktop ingest. **No** Mi Cloud / unofficial API. Existing `observations` store preferred; **no** new SQLite schema without a follow-up ADR + approve.
-2. **Dashboard chart range UI** — picker **1h / 8h / 12h / 1d / 1w**. Today charts are ~15m because `CatalogAlertHook` keeps ~`WINDOW_SECS+120` in memory. Longer ranges = **recompute-on-read** from Observations (ADR-008 stance), coarser step for longer spans; Snapshot list should show **latest** (not raw series dump). UI ↛ SQLite.
-3. **Analysis ladder** — Features / Insights / Recommendations **without LLM** first; L5 report/LLM remains interpret-only over already-computed Evidence.
+**Phase 17 intent** (contracts → **ADR-018**; implement E2/E3):
+
+1. **Wearable depth (Mi Fitness via HealthKit / Companion)** — maximize Observations Mi actually writes into Apple Health. Soft-optional HRV SDNN. Same autonomy path: observer → queue → Desktop ingest. **No** Mi Cloud / unofficial API.
+2. **Dashboard chart range UI** — picker **1h / 8h / 12h / 1d / 1w**; longer ranges = **recompute-on-read** (ADR-008); Snapshot list = **latest**. UI ↛ SQLite.
+3. **Analysis ladder** — Features / Insights / Recommendations **without LLM** first; L5 report/LLM remains interpret-only.
 
 **Rejected now**
 
 1. Option A — start wearable Phase before finishing P16.
 2. Persisting Feature time-series SQLite for chart history in v1.
 3. LLM inventing bracelet metrics or chart values.
+
+### ADR-018 detail — Phase 17 contracts: HealthKit depth + chart ranges (v1)
+
+> **Relationship:** ADR-017 = sequencing unlock. **ADR-018** = buildable Observation + IPC lock for Phase 17. Implement Companion emits in **P17-E2**; chart ranges + Features in **P17-E3**.
+
+| Layer | Role in Phase 17 v1 |
+| :--- | :--- |
+| iOS Companion | HealthKit samples Mi Fitness writes → local queue → `POST /v1/ingest` (ADR-016 autonomy path) |
+| Observation | Existing `heart_rate` + soft-optional `hrv`; **new** `step_count` / `active_energy` / `sleep_interval`; soft-optional `oxygen_saturation` when present |
+| Storage | Existing `observations` table only — **no** SQLite migration in v1 |
+| Charts / IPC | Range picker → `get_feature_series` recompute-on-read; `get_feature_snapshot` stays **latest**-oriented for lists |
+| Features | Deterministic catalog from new + existing Observations (E3); no LLM required |
+| LLM | L5 interpret-only — must **not** invent bracelet values, SpO2 clinical meaning, or chart points |
+
+#### A. Wearable Observation contracts (locked names)
+
+**Keep (unchanged):**
+
+| `data_type` | Notes |
+| :--- | :--- |
+| `heart_rate` | Required `bpm`; existing companion path |
+| `hrv` | Soft-optional; `rmssd_ms` **or** `sdnn_ms` (ADR-016); Mi often omits |
+
+**New required family (E2 must emit when HK samples exist):**
+
+##### `step_count`
+
+| Field | Rule |
+| :--- | :--- |
+| `data_type` | always `"step_count"` |
+| `provider_id` | e.g. `com.biofocus.applehealth` (Companion) |
+| `payload.count` | **Required.** Non-negative integer step count for the sample / interval |
+| `payload.window_secs` | **Optional.** Aggregation window length in seconds when the sample is an interval sum (≥ 1) |
+
+```json
+{
+  "provider_id": "com.biofocus.applehealth",
+  "data_type": "step_count",
+  "payload": { "count": 2400, "window_secs": 3600 },
+  "confidence": 0.9
+}
+```
+
+##### `active_energy`
+
+| Field | Rule |
+| :--- | :--- |
+| `data_type` | always `"active_energy"` |
+| `payload.kcal` | **Required.** Non-negative active energy in **kilocalories** (canonicalize aliases in E2 normalize) |
+
+```json
+{
+  "provider_id": "com.biofocus.applehealth",
+  "data_type": "active_energy",
+  "payload": { "kcal": 185.5 },
+  "confidence": 0.9
+}
+```
+
+##### `sleep_interval`
+
+| Field | Rule |
+| :--- | :--- |
+| `data_type` | always `"sleep_interval"` |
+| `payload.start` | **Required.** Unix seconds UTC — interval start |
+| `payload.end` | **Required.** Unix seconds UTC — interval end (`end` ≥ `start`) |
+| `payload.stage` | **Optional.** Closed set: `asleep` \| `in_bed` \| `awake` \| `unknown` |
+
+```json
+{
+  "provider_id": "com.biofocus.applehealth",
+  "data_type": "sleep_interval",
+  "payload": {
+    "start": 1721952000,
+    "end": 1721977200,
+    "stage": "asleep"
+  },
+  "confidence": 0.85
+}
+```
+
+**Soft-optional (emit only when HealthKit has samples; never invent):**
+
+##### `oxygen_saturation`
+
+| Field | Rule |
+| :--- | :--- |
+| `data_type` | always `"oxygen_saturation"` |
+| `payload.spo2_percent` | **Required when emitted.** Integer/float **0–100** (percent SpO2). Calm non-clinical framing only |
+
+**Explicitly deferred / rejected as Phase 17 Observation families**
+
+- **Workout session Observation** — use existing Life Event `workout` + `step_count` / `active_energy`; avoid a parallel workout store.
+- ECG / clinical labs / blood pressure as v1 required types.
+- Mi Cloud / unofficial Xiaomi API payloads.
+- Inventing SpO2 or sleep stages when HK has none.
+
+**Privacy / idle**
+
+- Personal self-tracking only — not employer wearable monitoring.
+- HealthKit event / observer → queue → flush; **no** busy-loop HK poll.
+- No raw HK sample dumps in default logs; prefer Observation `id` / `data_type` counts.
+- No clinical diagnosis copy (“hypoxia”, “sleep apnea”, “you are unhealthy”).
+
+**Schema**
+
+- Prefer existing `observations` store only.
+- **No new SQLite tables/columns** for wearable depth or chart history.
+- **Do not apply** any migration for this ADR.
+- Future Feature-history rollup or wearable registry → **new ADR + user approve**.
+
+#### B. Dashboard chart ranges (locked IPC stance)
+
+| Item | Value |
+| :--- | :--- |
+| Ranges | Closed set: `1h` \| `8h` \| `12h` \| `1d` \| `1w` |
+| Analysis path | **Recompute-on-read** Feature series from local Observations (ADR-008); optional in-process memo OK |
+| Snapshot list | Show **latest** Feature per `featureId` (not every window end) |
+| Chart | Holds the **series** for the selected range |
+| UI | IPC only — **UI ↛ SQLite** |
+| LLM | Must not invent series points |
+
+**Default recompute step (v1 sketch — E3 may tune within same ranges):**
+
+| Range | Approx span | Default `stepSecs` |
+| :--- | :--- | :--- |
+| `1h` | 3600 | 60 (1m — align catalog `STEP_SECS`) |
+| `8h` | 28800 | 300 (5m) |
+| `12h` | 43200 | 300 (5m) |
+| `1d` | 86400 | 900 (15m) |
+| `1w` | 604800 | 3600 (1h) |
+
+**IPC sketches (implement P17-E3)**
+
+1. Keep `get_feature_snapshot` as **latest-oriented** cache read for lists / Menubar-adjacent surfaces (host may collapse to latest-per-id in E3).
+2. Add `get_feature_series`:
+
+```text
+invoke("get_feature_series", { range: "1h"|"8h"|"12h"|"1d"|"1w", featureIds?: string[] })
+→ {
+    range: string,
+    stepSecs: number,
+    window: { start: number, end: number },
+    features: Feature[]   // multi-window series for chart; same Feature wire shape
+  }
+```
+
+- Empty / thin history → `{ features: [] }` (calm).
+- Never returns raw Observation biometric payloads or filesystem paths.
+- Host loads Observations for the span, runs `FeatureEngine` with the chosen step, returns series — **no** Feature-history SQLite.
+
+#### C. Epic split (names locked)
+
+```text
+P17-E1 — Contracts (this ADR + docs) ← Done 2026-08-11 (QA Pass)
+P17-E2 — Companion HealthKit expand (emit locked data_types via queue→ingest) ← Ready
+P17-E3 — Dashboard ranges IPC/UI + catalog Features from new Observations
+```
+
+#### D. Analysis ladder
+
+1. Deterministic Features / Insights / Recommendations from Observations (no LLM required).
+2. Optional L5 report / local LLM = interpret-only over Evidence.
+
+#### Rejected alternatives
+
+1. **Mi Cloud / unofficial bracelet API** — privacy + ToS; HealthKit only.
+2. **Feature history SQLite for chart ranges in v1** — ADR-008 / ADR-017 reject; recompute-on-read.
+3. **UI reading SQLite for charts** — Core / IPC only.
+4. **Clinical SpO2 / sleep / recovery claims** — Non-Goals.
+5. **Busy-loop HealthKit polling** — Global DoD idle footprint.
+6. **Required workout Observation family** — Life Event + steps/energy cover dogfood.
+7. **ECG / BP as Phase 17 required types** — clinical risk; deferred.
+8. **Opening a PR during freeze** — local branch only until 2026-09-01.
+9. **Applying a migration without user approve** — this ADR chooses no migration.
+10. **LLM inventing bracelet metrics or chart values** — L5 interpret-only.
 

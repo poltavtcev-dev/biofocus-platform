@@ -41,8 +41,9 @@ pub use error::{PipelineError, PipelineResult};
 pub use intake::{accept_iter, accept_observations, accept_owned, AcceptedBatch};
 pub use normalize::{
     normalize_deduped, normalize_observations, normalize_owned, NormalizedBatch,
-    DATA_TYPE_AMBIENT_LIGHT, DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV,
-    DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING,
+    DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_AMBIENT_LIGHT, DATA_TYPE_CONTEXT_WINDOW,
+    DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING,
+    DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
 };
 pub use quality::run_quality_pipeline;
 

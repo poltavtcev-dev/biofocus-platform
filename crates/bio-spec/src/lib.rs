@@ -12,6 +12,7 @@
 
 #![forbid(unsafe_code)]
 
+mod active_energy;
 mod ambient_light;
 mod browser_category;
 mod calendar_event;
@@ -22,10 +23,14 @@ mod insight;
 mod life_event;
 mod now_playing;
 mod observation;
+mod oxygen_saturation;
 mod recommendation;
 mod signal;
+mod sleep_interval;
+mod step_count;
 mod time;
 
+pub use active_energy::{validate_active_energy_payload, DATA_TYPE_ACTIVE_ENERGY};
 pub use ambient_light::{
     is_v1_light_kind, validate_ambient_light_payload, DATA_TYPE_AMBIENT_LIGHT, LEVEL_MAX,
     LIGHT_KIND_BRIGHT, LIGHT_KIND_DARK, LIGHT_KIND_DIM, LIGHT_KIND_MODERATE, LIGHT_KIND_UNKNOWN,
@@ -58,8 +63,16 @@ pub use now_playing::{
     MEDIA_KIND_NONE, MEDIA_KIND_OTHER, MEDIA_KIND_PODCAST, MEDIA_KIND_UNKNOWN, V1_MEDIA_KINDS,
 };
 pub use observation::{Confidence, DataType, Observation, ObservationId, ProviderId};
+pub use oxygen_saturation::{
+    validate_oxygen_saturation_payload, DATA_TYPE_OXYGEN_SATURATION, SPO2_PERCENT_MAX,
+};
 pub use recommendation::{Recommendation, RecommendationId};
 pub use signal::{Severity, Signal, SignalId, SignalType};
+pub use sleep_interval::{
+    is_v1_sleep_stage, validate_sleep_interval_payload, DATA_TYPE_SLEEP_INTERVAL,
+    SLEEP_STAGE_ASLEEP, SLEEP_STAGE_AWAKE, SLEEP_STAGE_IN_BED, SLEEP_STAGE_UNKNOWN, V1_SLEEP_STAGES,
+};
+pub use step_count::{validate_step_count_payload, DATA_TYPE_STEP_COUNT};
 pub use time::{TimeWindow, UnixTimestamp};
 
 /// Crate identity used by dependents and IPC status payloads.

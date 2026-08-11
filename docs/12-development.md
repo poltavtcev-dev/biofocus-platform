@@ -101,7 +101,8 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Git live probe + allowlist (P14-E2-T1):** `SystemGitActivityProbe` loads allowlist (file SoT; `BIOFOCUS_GIT_WATCHED_ROOTS` only if file absent); discovers nested repos under roots; emits coarse `git_activity` on HEAD/reflog/FETCH_HEAD/index change; empty allowlist → idle. Still opt-in `BIOFOCUS_GIT_ACTIVITY`. Feature `GitActivityRate` unchanged. Tests: empty allowlist no emit; fixture root commit → channel → persist; `stop_stream` freezes. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md` / `docs/10-security.md`.
 - **Git allowlist Settings + dogfood (P14-E3-T1):** Menubar **Git folders** — `invoke("get_git_watched_roots")` / `invoke("set_git_watched_roots")` read/write ADR-014 TOML (`BIOFOCUS_HOME` for tests). UI ↛ SQLite. No `GitActivityRate` rewrite. Browser QA: `?mockGitRoots=empty|ready|error`. Dogfood runbook: below § Git activity dogfood.
 - **Phase 15 companion HRV + autonomy (P15-E1–E3 / ADR-016):** iOS Auto-sync — HealthKit HR + HRV SDNN → local queue → Desktop ingest; Core `normalize_hrv` / Features accept **rmssd_ms OR sdnn_ms**. ADR-015 ambient light resumed in **Phase 16**. Dogfood: below § Companion autonomy.
-- **Phase 16 ambient light (ADR-015 / P16-E1–E2):** Opt-in `AmbientLightPlugin` (`com.biofocus.macos.ambient_light`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_AMBIENT_LIGHT=1`. Emit on light-band change / poll ≥5s; `stop_stream` joins. System probe soft-fails idle (no camera / screen / geo / mic). Validation: `bio_spec::validate_ambient_light_payload`. Tests: `collector_integration` + bio-spec contracts. Feature: `AmbientLightShare` via `register_ambient_light_v1` / `register_catalog_v1` (P16-E2) — closed-set sample share 0–100; omit empty / only-`unknown`. Branch `phase/16-ambient-light`.
+- **Phase 16 ambient light (ADR-015 / P16-E1–E2):** Opt-in `AmbientLightPlugin` (`com.biofocus.macos.ambient_light`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_AMBIENT_LIGHT=1`. Emit on light-band change / poll ≥5s; `stop_stream` joins. System probe soft-fails idle (no camera / screen / geo / mic). Validation: `bio_spec::validate_ambient_light_payload`. Tests: `collector_integration` + bio-spec contracts. Feature: `AmbientLightShare` via `register_ambient_light_v1` / `register_catalog_v1` (P16-E2) — closed-set sample share 0–100; omit empty / only-`unknown`. Branch `phase/16-ambient-light`. **Phase 16 Done** (2026-08-11).
+- **Phase 17 wearable + charts (ADR-017 · ADR-018):** Contracts locked (E1). **P17-E2 Companion emit shipped** — HealthKit → queue → ingest for `step_count` / `active_energy` / `sleep_interval` (+ soft-optional `oxygen_saturation`); keep HR/HRV; bio-spec validators + pipeline normalize + ingest reject codes. Chart ranges (`get_feature_series`) + Features → **P17-E3**. Branch `phase/17-wearable-charts`. Dogfood: § Companion autonomy (wearable depth).
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -216,19 +217,19 @@ IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; U
 - Share path: Desktop Companion UI (copy / QR) — do not commit the token
 - Details: `docs/10-security.md`
 
-### Companion autonomy dogfood (P15-E3 / ADR-016)
+### Companion autonomy dogfood (P15-E3 / ADR-016 · P17-E2 / ADR-018)
 
 1. Desktop LAN: `export BIOFOCUS_INGEST_LAN=1` (and `BIOFOCUS_INGEST_BIND_HOST` if needed) → `pnpm tauri dev`.
 2. Confirm `curl -s http://<lan-ip>:8787/v1/status` shows `"bind_mode":"lan"`.
 3. Rebuild/run iOS companion from Xcode; paste Base URL + token; leave **Auto-sync** on.
-4. Tap **Send latest HR + HRV now** once (authorizes HealthKit).
+4. Tap **Send latest wearable samples now** once (authorizes HealthKit reads for HR/HRV/steps/energy/sleep/SpO2).
 5. Verify rows:
 ```bash
 sqlite3 ~/.biofocus/data/biofocus_main.db \
   "SELECT data_type, COUNT(*) FROM observations
    WHERE provider_id='com.biofocus.applehealth' GROUP BY 1;"
 ```
-6. HRV may be empty for hours on some wearables (e.g. Mi Band via Apple Health) — calm/expected; Stress/Recovery wait for `hrv` Observations. Not clinical.
+6. Expect `heart_rate` always when present; `hrv` / `oxygen_saturation` / sleep may be sparse (Mi via Apple Health) — soft-omit, calm/expected; never invent SpO2. Chart ranges + Features → P17-E3. Not clinical.
 
 ### Git activity dogfood (P14-E3-T1 / ADR-014)
 

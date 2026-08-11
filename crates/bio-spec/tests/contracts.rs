@@ -234,6 +234,39 @@ fn ambient_light_contract_json_round_trip() {
 }
 
 #[test]
+fn adr018_wearable_payloads_validate_via_router() {
+    use bio_spec::{
+        DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL,
+        DATA_TYPE_STEP_COUNT,
+    };
+
+    let cases = [
+        (
+            DATA_TYPE_STEP_COUNT,
+            json!({ "count": 100, "window_secs": 60 }),
+        ),
+        (DATA_TYPE_ACTIVE_ENERGY, json!({ "kcal": 12.5 })),
+        (
+            DATA_TYPE_SLEEP_INTERVAL,
+            json!({ "start": 1, "end": 2, "stage": "in_bed" }),
+        ),
+        (DATA_TYPE_OXYGEN_SATURATION, json!({ "spo2_percent": 98 })),
+    ];
+    for (data_type, payload) in cases {
+        let obs = Observation::try_new(
+            Uuid::nil(),
+            UnixTimestamp::from_secs(0),
+            "com.biofocus.applehealth",
+            data_type,
+            payload,
+            1.0,
+        )
+        .expect("obs");
+        validate_observation_payload(&obs).expect(data_type);
+    }
+}
+
+#[test]
 fn life_event_rejects_malformed_payloads() {
     let cases = [
         json!("not-an-object"),

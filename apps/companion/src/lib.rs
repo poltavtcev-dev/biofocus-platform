@@ -1,13 +1,16 @@
 //! Companion client: post `Observation` batches to desktop ingest.
 //!
-//! Minimal Phase 2 path for HealthKit-shaped `heart_rate` samples. No Feature
-//! math, no cloud. Pairing UX (QR/copy) is **P2-E3-T2**.
+//! HealthKit-shaped samples for Desktop ingest dogfood (HR + ADR-018 wearable
+//! types). No Feature math, no cloud. Pairing UX is Desktop IPC.
 
 #![forbid(unsafe_code)]
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bio_spec::{Observation, UnixTimestamp};
+use bio_spec::{
+    Observation, UnixTimestamp, DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_OXYGEN_SATURATION,
+    DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
+};
 use ingest::{IngestResponse, DEFAULT_INGEST_PORT};
 use serde_json::json;
 use thiserror::Error;
@@ -52,16 +55,18 @@ pub enum CompanionError {
 /// Result alias for companion operations.
 pub type CompanionResult<T> = Result<T, CompanionError>;
 
+fn now_ts() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
 /// Builds a privacy-safe sample `heart_rate` Observation (bpm only + optional source).
 pub fn sample_heart_rate_observation(
     bpm: f64,
     source: Option<&str>,
 ) -> CompanionResult<Observation> {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0);
-
     let mut payload = json!({ "bpm": bpm });
     if let Some(src) = source {
         payload["source"] = json!(src);
@@ -69,11 +74,78 @@ pub fn sample_heart_rate_observation(
 
     Observation::try_new(
         Uuid::now_v7(),
-        UnixTimestamp(timestamp),
+        UnixTimestamp(now_ts()),
         APPLE_HEALTH_PROVIDER_ID,
         HEART_RATE_DATA_TYPE,
         payload,
         0.98,
+    )
+    .map_err(Into::into)
+}
+
+/// Builds a scripted `step_count` Observation (ADR-018).
+pub fn sample_step_count_observation(
+    count: u64,
+    window_secs: Option<u64>,
+) -> CompanionResult<Observation> {
+    let mut payload = json!({ "count": count });
+    if let Some(w) = window_secs {
+        payload["window_secs"] = json!(w);
+    }
+    Observation::try_new(
+        Uuid::now_v7(),
+        UnixTimestamp(now_ts()),
+        APPLE_HEALTH_PROVIDER_ID,
+        DATA_TYPE_STEP_COUNT,
+        payload,
+        0.9,
+    )
+    .map_err(Into::into)
+}
+
+/// Builds a scripted `active_energy` Observation (ADR-018).
+pub fn sample_active_energy_observation(kcal: f64) -> CompanionResult<Observation> {
+    Observation::try_new(
+        Uuid::now_v7(),
+        UnixTimestamp(now_ts()),
+        APPLE_HEALTH_PROVIDER_ID,
+        DATA_TYPE_ACTIVE_ENERGY,
+        json!({ "kcal": kcal }),
+        0.9,
+    )
+    .map_err(Into::into)
+}
+
+/// Builds a scripted `sleep_interval` Observation (ADR-018).
+pub fn sample_sleep_interval_observation(
+    start: i64,
+    end: i64,
+    stage: Option<&str>,
+) -> CompanionResult<Observation> {
+    let mut payload = json!({ "start": start, "end": end });
+    if let Some(s) = stage {
+        payload["stage"] = json!(s);
+    }
+    Observation::try_new(
+        Uuid::now_v7(),
+        UnixTimestamp(now_ts()),
+        APPLE_HEALTH_PROVIDER_ID,
+        DATA_TYPE_SLEEP_INTERVAL,
+        payload,
+        0.85,
+    )
+    .map_err(Into::into)
+}
+
+/// Builds a scripted soft-optional `oxygen_saturation` Observation (ADR-018).
+pub fn sample_oxygen_saturation_observation(spo2_percent: f64) -> CompanionResult<Observation> {
+    Observation::try_new(
+        Uuid::now_v7(),
+        UnixTimestamp(now_ts()),
+        APPLE_HEALTH_PROVIDER_ID,
+        DATA_TYPE_OXYGEN_SATURATION,
+        json!({ "spo2_percent": spo2_percent }),
+        0.85,
     )
     .map_err(Into::into)
 }

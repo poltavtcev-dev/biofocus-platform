@@ -156,16 +156,18 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `EnergyScore` | Subjective energy proxy from bio + activity | HR, activity, sleep | P7 |
+| `EnergyScore` | Subjective energy proxy from bio + activity | HR, `active_energy`, sleep | **P17** (ADR-018 inputs) |
 | `DeepWorkScore` | Sustained focus windows | FocusScore, CSR, idle | P7 |
 | `AttentionStability` | Variance of focus / switches | FocusScore, CSR | P7 |
 | `CognitiveLoad` | Combined demand proxy | MeetingDensity, CSR, notifications | P7–P8 |
-| `SleepDebt` | Sleep shortfall vs baseline | Sleep Observations | P7 |
-| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 |
+| `SleepDebt` | Sleep shortfall vs baseline | `sleep_interval` Observations | **P17** (ADR-018) |
+| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 / P17 |
 | `NotificationPressure` | Interruption intensity | notification Observations | P10 (deferred — not ADR-010 wave-1) |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
-| `ActivityBalance` | Movement vs sedentary | steps / workout Life Events | P6–P7 |
+| `ActivityBalance` | Movement vs sedentary | `step_count` / Life Event `workout` | **P17** (ADR-018) |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
+
+> **Phase 17 note (ADR-018):** Observation contracts for `step_count` / `active_energy` / `sleep_interval` (+ soft-optional `oxygen_saturation`) are **locked**. Feature **formulas** remain backlog until **P17-E3** (after Companion emits in E2). Prefer calm names above; no clinical SpO2/sleep Features in v1.
 
 **Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; others may omit until wired).

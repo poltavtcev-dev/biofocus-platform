@@ -1,6 +1,8 @@
-# iOS HealthKit companion (P5-E3 + P15 ADR-016)
+# iOS HealthKit companion (P5-E3 + P15 ADR-016 + P17 ADR-018)
 
-Runnable Xcode app that posts HealthKit **heart rate** and **HRV (SDNN)** Observations to Desktop ingest — with optional **Auto-sync** (queue + background delivery). Same HTTP contract as Rust `apps/companion`.
+Runnable Xcode app that posts HealthKit wearable Observations to Desktop ingest — with optional **Auto-sync** (queue + background delivery). Same HTTP contract as Rust `apps/companion`.
+
+**Emits (when samples exist):** `heart_rate`, soft-optional `hrv` (SDNN), `step_count`, `active_energy`, `sleep_interval`, soft-optional `oxygen_saturation`. No Mi Cloud. No busy-loop.
 
 ## Signing (physical iPhone)
 
@@ -33,53 +35,35 @@ xcrun --sdk iphonesimulator swiftc \
   -module-name BioFocusCompanion \
   -framework Foundation -framework HealthKit -framework SwiftUI \
   IngestClient.swift HeartRateSample.swift HrvSample.swift \
+  StepCountSample.swift ActiveEnergySample.swift SleepIntervalSample.swift \
+  OxygenSaturationSample.swift \
   ObservationQueue.swift HealthKitSyncCoordinator.swift SamplePost.swift \
   BioFocusCompanion/BioFocusCompanionApp.swift BioFocusCompanion/ContentView.swift \
   -o .derivedData/swiftc-check/BioFocusCompanion.swiftmodule
 ```
 
-## Files
+## Layout
 
-| Path | Role |
+| File | Role |
 | :--- | :--- |
-| `BioFocusCompanion/` | SwiftUI: pairing, Auto-sync toggle, send / flush, status |
-| `IngestClient.swift` | `POST /v1/ingest` + 401 / network errors |
 | `HeartRateSample.swift` | HealthKit HR → Observation DTO |
 | `HrvSample.swift` | HealthKit SDNN → `hrv` Observation (`sdnn_ms`) |
-| `ObservationQueue.swift` | Durable pending JSON (UserDefaults), dedupe |
+| `StepCountSample.swift` | Steps → `step_count` |
+| `ActiveEnergySample.swift` | Active energy → `active_energy` (`kcal`) |
+| `SleepIntervalSample.swift` | Sleep analysis → `sleep_interval` |
+| `OxygenSaturationSample.swift` | Soft-optional SpO2 → `oxygen_saturation` |
+| `ObservationQueue.swift` | Durable local queue |
 | `HealthKitSyncCoordinator.swift` | Observers + background delivery + flush |
-| `SamplePost.swift` | Thin wrapper → coordinator |
+| `IngestClient.swift` | `POST /v1/ingest` |
 
-## Pairing (Desktop → Companion)
+Contract: JSON array of Observations (`provider_id=com.biofocus.applehealth`) → `POST {baseURL}/v1/ingest` with Bearer token.
 
-1. Start Desktop ingest (`pnpm tauri dev`).
-2. **Simulator:** Base URL `http://127.0.0.1:8787`.
-3. **Physical phone:** `BIOFOCUS_INGEST_LAN=1` (+ optional `BIOFOCUS_INGEST_BIND_HOST=<lan-ip>`), copy **Base URL** from Desktop → Companion.
-4. Paste pairing token.
-5. Leave **Auto-sync** on (default), or tap **Send latest HR + HRV now**.
-
-Contract: JSON array of Observations (`provider_id=com.biofocus.applehealth`, `heart_rate` and/or `hrv`) → `POST {baseURL}/v1/ingest` with Bearer token.
-
-## Autonomy (ADR-016)
+## Autonomy
 
 - HealthKit **observer** + **background delivery** (hourly) enqueue new samples — **no** busy-loop poll.
-- Offline / Desktop down → stay in local queue; **Flush queue only** when reachable.
-- HRV from many bands is **sparse** (often overnight). Missing HRV is calm / soft — HR still syncs. Not a clinical claim.
-- Core accepts `sdnn_ms`-only `hrv` Observations (prefer `rmssd_ms` when present).
-
-## Verify on Desktop
-
-```bash
-sqlite3 ~/.biofocus/data/biofocus_main.db \
-  "SELECT datetime(timestamp,'unixepoch','localtime'), data_type, payload
-   FROM observations
-   WHERE provider_id='com.biofocus.applehealth'
-   ORDER BY timestamp DESC LIMIT 10;"
-```
-
-Expect `heart_rate` and (when HealthKit has SDNN) `hrv` with `{"sdnn_ms":…}`.
+- Soft-omit sparse types (HRV / SpO2 / sleep) — never invent.
+- Core validates ADR-018 payloads; reject codes `invalid_step_count` / `invalid_active_energy` / `invalid_sleep_interval` / `invalid_oxygen_saturation`.
 
 ## Privacy
 
-- HealthKit **read** HR + HRV SDNN only; local Desktop ingest; no BioFocus cloud.
-- Idle-safe: event / background-delivery driven.
+- HealthKit **read** only; local Desktop ingest; no BioFocus cloud; no clinical SpO2/sleep framing.

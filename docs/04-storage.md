@@ -66,3 +66,9 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 
 - **v1:** Ambient light facts are ordinary rows in `observations` (`data_type = 'ambient_light'`). **No** ambient-light table, weather mirror, or ambient registry. Collector **shipped** (P16-E1).
 - **No migration** under ADR-015. Weather Observation family / ambient calibration store require a **new ADR + user approve** — out of Phase 16 v1.
+
+### Wearable depth + chart ranges (ADR-018 / Phase 17)
+
+- **v1 Observations:** `step_count` / `active_energy` / `sleep_interval` (+ soft-optional `oxygen_saturation`) are ordinary rows in `observations` alongside `heart_rate` / `hrv`. **No** wearable mirror tables / SpO2 clinical store.
+- **Charts:** Long-range Feature series are **derived** (recompute-on-read) — **no** Feature-history SQLite table in v1.
+- **No migration** under ADR-018. Any future rollup / wearable registry requires a **new ADR + user approve**.

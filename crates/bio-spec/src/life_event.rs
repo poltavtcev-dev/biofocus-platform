@@ -61,6 +61,18 @@ pub fn validate_observation_payload(obs: &Observation) -> SpecResult<()> {
         crate::ambient_light::DATA_TYPE_AMBIENT_LIGHT => {
             crate::ambient_light::validate_ambient_light_payload(&obs.payload)
         }
+        crate::step_count::DATA_TYPE_STEP_COUNT => {
+            crate::step_count::validate_step_count_payload(&obs.payload)
+        }
+        crate::active_energy::DATA_TYPE_ACTIVE_ENERGY => {
+            crate::active_energy::validate_active_energy_payload(&obs.payload)
+        }
+        crate::sleep_interval::DATA_TYPE_SLEEP_INTERVAL => {
+            crate::sleep_interval::validate_sleep_interval_payload(&obs.payload)
+        }
+        crate::oxygen_saturation::DATA_TYPE_OXYGEN_SATURATION => {
+            crate::oxygen_saturation::validate_oxygen_saturation_payload(&obs.payload)
+        }
         _ => Ok(()),
     }
 }

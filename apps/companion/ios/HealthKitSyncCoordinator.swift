@@ -1,7 +1,7 @@
 import Foundation
 import HealthKit
 
-/// HealthKit observers → local queue → Desktop ingest flush (ADR-016).
+/// HealthKit observers → local queue → Desktop ingest flush (ADR-016 / ADR-018).
 /// Event / background-delivery driven — no busy-loop polling.
 @MainActor
 final class HealthKitSyncCoordinator: ObservableObject {
@@ -15,6 +15,10 @@ final class HealthKitSyncCoordinator: ObservableObject {
     private var observersStarted = false
     private let anchorHRKey = "biofocus.hk.anchor.hr"
     private let anchorHRVKey = "biofocus.hk.anchor.hrv"
+    private let anchorStepsKey = "biofocus.hk.anchor.steps"
+    private let anchorEnergyKey = "biofocus.hk.anchor.energy"
+    private let anchorSleepKey = "biofocus.hk.anchor.sleep"
+    private let anchorSpO2Key = "biofocus.hk.anchor.spo2"
 
     private init() {
         pendingCount = ObservationQueue.pendingCount
@@ -45,6 +49,18 @@ final class HealthKitSyncCoordinator: ObservableObject {
         if let hrv = HrvSample.hrvType {
             types.insert(hrv)
         }
+        if let steps = StepCountSample.quantityType {
+            types.insert(steps)
+        }
+        if let energy = ActiveEnergySample.quantityType {
+            types.insert(energy)
+        }
+        if let sleep = SleepIntervalSample.categoryType {
+            types.insert(sleep)
+        }
+        if let spo2 = OxygenSaturationSample.quantityType {
+            types.insert(spo2)
+        }
         try await store.requestAuthorization(toShare: [], read: types)
     }
 
@@ -61,34 +77,55 @@ final class HealthKitSyncCoordinator: ObservableObject {
         }
     }
 
-    /// Manual: enqueue latest HR (+ HRV if present) and flush.
+    /// Manual: enqueue latest wearable samples (soft-omit sparse types) and flush.
     func sendLatestNow(baseURL: URL, token: String) async {
         lastWasError = false
         lastStatus = "Reading HealthKit…"
         do {
             try await requestAuthorization()
             var enqueued = 0
+            var notes: [String] = []
+
             if let hr = try? await HeartRateSample.latestObservation(store: store) {
                 try ObservationQueue.enqueueEncodable(dedupeKey: "hr-\(hr.id)", hr)
                 enqueued += 1
             }
-            var hrvNote: String?
             do {
                 let hrv = try await HrvSample.latestObservation(store: store)
                 try ObservationQueue.enqueueEncodable(dedupeKey: "hrv-\(hrv.id)", hrv)
                 enqueued += 1
             } catch {
-                hrvNote = error.localizedDescription
+                notes.append(error.localizedDescription)
             }
+            if let steps = try? await StepCountSample.latestObservation(store: store) {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "steps-\(steps.id)", steps)
+                enqueued += 1
+            }
+            if let energy = try? await ActiveEnergySample.latestObservation(store: store) {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "energy-\(energy.id)", energy)
+                enqueued += 1
+            }
+            if let sleep = try? await SleepIntervalSample.latestObservation(store: store) {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "sleep-\(sleep.id)", sleep)
+                enqueued += 1
+            }
+            // Soft-optional SpO2 — never invent when absent.
+            if let spo2 = try? await OxygenSaturationSample.latestObservation(store: store) {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "spo2-\(spo2.id)", spo2)
+                enqueued += 1
+            }
+
             refreshPendingCount()
             guard enqueued > 0 else {
                 lastWasError = true
-                lastStatus = hrvNote ?? HeartRateSampleError.noSample.localizedDescription
+                lastStatus = notes.first ?? HeartRateSampleError.noSample.localizedDescription
                 return
             }
             try await flush(baseURL: baseURL, token: token)
-            if let hrvNote, !lastWasError {
-                lastStatus = "Sent. Note: \(hrvNote)"
+            if !notes.isEmpty, !lastWasError {
+                lastStatus = "Sent \(enqueued) sample(s). Note: \(notes.joined(separator: "; "))"
+            } else if !lastWasError {
+                lastStatus = "Sent \(enqueued) sample(s)."
             }
         } catch {
             lastWasError = true
@@ -133,11 +170,20 @@ final class HealthKitSyncCoordinator: ObservableObject {
     // MARK: - Background / observers
 
     private func enableBackgroundDelivery() async throws {
-        if let hr = HKQuantityType.quantityType(forIdentifier: .heartRate) {
-            try await store.enableBackgroundDelivery(for: hr, frequency: .hourly)
+        let quantityIds: [HKQuantityTypeIdentifier] = [
+            .heartRate,
+            .heartRateVariabilitySDNN,
+            .stepCount,
+            .activeEnergyBurned,
+            .oxygenSaturation,
+        ]
+        for id in quantityIds {
+            if let t = HKQuantityType.quantityType(forIdentifier: id) {
+                try await store.enableBackgroundDelivery(for: t, frequency: .hourly)
+            }
         }
-        if let hrv = HrvSample.hrvType {
-            try await store.enableBackgroundDelivery(for: hrv, frequency: .hourly)
+        if let sleep = SleepIntervalSample.categoryType {
+            try await store.enableBackgroundDelivery(for: sleep, frequency: .hourly)
         }
     }
 
@@ -145,35 +191,36 @@ final class HealthKitSyncCoordinator: ObservableObject {
         guard !observersStarted else { return }
         observersStarted = true
 
-        if let hr = HKQuantityType.quantityType(forIdentifier: .heartRate) {
-            let q = HKObserverQuery(sampleType: hr, predicate: nil) { [weak self] _, completion, error in
-                Task { @MainActor in
-                    if let error {
-                        self?.lastWasError = true
-                        self?.lastStatus = "HR observer: \(error.localizedDescription)"
-                    } else if self?.isAutoSyncEnabled == true {
-                        await self?.ingestNewSamplesAndFlush()
-                    }
-                    completion()
-                }
+        let quantityIds: [HKQuantityTypeIdentifier] = [
+            .heartRate,
+            .heartRateVariabilitySDNN,
+            .stepCount,
+            .activeEnergyBurned,
+            .oxygenSaturation,
+        ]
+        for id in quantityIds {
+            if let t = HKQuantityType.quantityType(forIdentifier: id) {
+                attachObserver(sampleType: t, label: id.rawValue)
             }
-            store.execute(q)
         }
+        if let sleep = SleepIntervalSample.categoryType {
+            attachObserver(sampleType: sleep, label: "sleepAnalysis")
+        }
+    }
 
-        if let hrv = HrvSample.hrvType {
-            let q = HKObserverQuery(sampleType: hrv, predicate: nil) { [weak self] _, completion, error in
-                Task { @MainActor in
-                    if let error {
-                        self?.lastWasError = true
-                        self?.lastStatus = "HRV observer: \(error.localizedDescription)"
-                    } else if self?.isAutoSyncEnabled == true {
-                        await self?.ingestNewSamplesAndFlush()
-                    }
-                    completion()
+    private func attachObserver(sampleType: HKSampleType, label: String) {
+        let q = HKObserverQuery(sampleType: sampleType, predicate: nil) { [weak self] _, completion, error in
+            Task { @MainActor in
+                if let error {
+                    self?.lastWasError = true
+                    self?.lastStatus = "\(label) observer: \(error.localizedDescription)"
+                } else if self?.isAutoSyncEnabled == true {
+                    await self?.ingestNewSamplesAndFlush()
                 }
+                completion()
             }
-            store.execute(q)
         }
+        store.execute(q)
     }
 
     private func ingestNewSamplesAndFlush() async {
@@ -185,20 +232,39 @@ final class HealthKitSyncCoordinator: ObservableObject {
             return
         }
 
-        let hrSince = anchorDate(anchorHRKey)
-        let hrvSince = anchorDate(anchorHRVKey)
-
         do {
-            let hrSamples = try await HeartRateSample.observations(since: hrSince, store: store)
+            let hrSamples = try await HeartRateSample.observations(since: anchorDate(anchorHRKey), store: store)
             for dto in hrSamples {
                 try ObservationQueue.enqueueEncodable(dedupeKey: "hr-\(dto.id)", dto)
                 setAnchor(anchorHRKey, date: Date(timeIntervalSince1970: TimeInterval(dto.timestamp)))
             }
-            let hrvSamples = try await HrvSample.observations(since: hrvSince, store: store)
+            let hrvSamples = try await HrvSample.observations(since: anchorDate(anchorHRVKey), store: store)
             for dto in hrvSamples {
                 try ObservationQueue.enqueueEncodable(dedupeKey: "hrv-\(dto.id)", dto)
                 setAnchor(anchorHRVKey, date: Date(timeIntervalSince1970: TimeInterval(dto.timestamp)))
             }
+            let stepSamples = try await StepCountSample.observations(since: anchorDate(anchorStepsKey), store: store)
+            for dto in stepSamples {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "steps-\(dto.id)", dto)
+                setAnchor(anchorStepsKey, date: Date(timeIntervalSince1970: TimeInterval(dto.timestamp)))
+            }
+            let energySamples = try await ActiveEnergySample.observations(since: anchorDate(anchorEnergyKey), store: store)
+            for dto in energySamples {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "energy-\(dto.id)", dto)
+                setAnchor(anchorEnergyKey, date: Date(timeIntervalSince1970: TimeInterval(dto.timestamp)))
+            }
+            let sleepSamples = try await SleepIntervalSample.observations(since: anchorDate(anchorSleepKey), store: store)
+            for dto in sleepSamples {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "sleep-\(dto.id)", dto)
+                setAnchor(anchorSleepKey, date: Date(timeIntervalSince1970: TimeInterval(dto.timestamp)))
+            }
+            // Soft-optional SpO2 — empty result is fine (no invent).
+            let spo2Samples = try await OxygenSaturationSample.observations(since: anchorDate(anchorSpO2Key), store: store)
+            for dto in spo2Samples {
+                try ObservationQueue.enqueueEncodable(dedupeKey: "spo2-\(dto.id)", dto)
+                setAnchor(anchorSpO2Key, date: Date(timeIntervalSince1970: TimeInterval(dto.timestamp)))
+            }
+
             refreshPendingCount()
             if ObservationQueue.pendingCount > 0 {
                 try await flush(baseURL: baseURL, token: token)

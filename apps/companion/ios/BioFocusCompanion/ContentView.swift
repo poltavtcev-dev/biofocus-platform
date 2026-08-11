@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Pairing + Auto-sync (ADR-016): HR + HRV → queue → Desktop ingest.
+/// Pairing + Auto-sync (ADR-016 / ADR-018): wearable HealthKit → queue → Desktop ingest.
 struct ContentView: View {
     @AppStorage("biofocus.ingestBaseURL") private var baseURLText = "http://127.0.0.1:8787"
     @AppStorage("biofocus.pairingToken") private var token = ""
@@ -43,7 +43,7 @@ struct ContentView: View {
                 } header: {
                     Text("Autonomy")
                 } footer: {
-                    Text("When on, new HealthKit heart rate / HRV (SDNN) samples enqueue and flush to Desktop when reachable. No busy-loop — HealthKit observers only. HRV may be sparse from some bands.")
+                    Text("When on, new HealthKit samples (HR, HRV SDNN, steps, active energy, sleep intervals; SpO2 only if present) enqueue and flush to Desktop when reachable. No busy-loop — HealthKit observers only. Sparse types soft-omit — never invented.")
                 }
 
                 Section {
@@ -54,7 +54,7 @@ struct ContentView: View {
                             ProgressView()
                                 .frame(maxWidth: .infinity)
                         } else {
-                            Text("Send latest HR + HRV now")
+                            Text("Send latest wearable samples now")
                                 .frame(maxWidth: .infinity)
                         }
                     }

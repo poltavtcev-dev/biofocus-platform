@@ -19,6 +19,10 @@
 //! | `now_playing` | `{ "media_kind": string, "is_playing": bool }` | closed-set kind; `title` / `artist` / `album` / `lyrics` / playlist ids stripped (ADR-012) |
 //! | `git_activity` | `{ "activity_kind": string, "event_count"?: u64 }` | closed-set kind; paths / remotes / branch / SHA / message / diff / author stripped (ADR-013) |
 //! | `ambient_light` | `{ "light_kind": string, "level"?: u64 }` | closed-set kind; optional level 0–100; camera / screen / geo / mic extras stripped (ADR-015) |
+//! | `step_count` | `{ "count": u64, "window_secs"?: u64 }` | non-neg count; optional window ≥ 1 (ADR-018) |
+//! | `active_energy` | `{ "kcal": f64 }` | kcal ≥ 0; aliases `active_energy_kcal` / `calories` (ADR-018) |
+//! | `sleep_interval` | `{ "start", "end", "stage"? }` | end ≥ start; stage closed-set (ADR-018) |
+//! | `oxygen_saturation` | `{ "spo2_percent": f64 }` | 0–100; fraction ≤1 → ×100 (ADR-018) |
 //!
 //! Known type with missing / non-finite required fields → **skipped** (dropped from
 //! the batch; counted in [`NormalizedBatch::skipped_count`]).
@@ -28,7 +32,9 @@
 //! **Pass-through** — Observation kept unchanged (forward-compatible). Not counted
 //! as skipped.
 
-use bio_spec::{is_v1_activity_kind, is_v1_light_kind, is_v1_media_kind, Observation};
+use bio_spec::{
+    is_v1_activity_kind, is_v1_light_kind, is_v1_media_kind, is_v1_sleep_stage, Observation,
+};
 use serde_json::{json, Map, Value as JsonValue};
 
 use crate::dedupe::DedupedBatch;
@@ -52,6 +58,14 @@ pub const DATA_TYPE_NOW_PLAYING: &str = "now_playing";
 pub const DATA_TYPE_GIT_ACTIVITY: &str = "git_activity";
 /// Ambient light (ADR-015 / P15-E2).
 pub const DATA_TYPE_AMBIENT_LIGHT: &str = "ambient_light";
+/// Step count (ADR-018 / P17-E2).
+pub const DATA_TYPE_STEP_COUNT: &str = "step_count";
+/// Active energy kcal (ADR-018 / P17-E2).
+pub const DATA_TYPE_ACTIVE_ENERGY: &str = "active_energy";
+/// Sleep interval (ADR-018 / P17-E2).
+pub const DATA_TYPE_SLEEP_INTERVAL: &str = "sleep_interval";
+/// Soft-optional SpO2 percent (ADR-018 / P17-E2).
+pub const DATA_TYPE_OXYGEN_SATURATION: &str = "oxygen_saturation";
 
 const V1_BROWSER_CATEGORIES: &[&str] = &[
     "work",
@@ -213,6 +227,34 @@ fn normalize_one(mut obs: Observation) -> NormalizeOutcome {
             None => NormalizeOutcome::Skip,
         },
         DATA_TYPE_AMBIENT_LIGHT => match normalize_ambient_light(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
+        DATA_TYPE_STEP_COUNT => match normalize_step_count(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
+        DATA_TYPE_ACTIVE_ENERGY => match normalize_active_energy(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
+        DATA_TYPE_SLEEP_INTERVAL => match normalize_sleep_interval(&obs.payload) {
+            Some(payload) => {
+                obs.payload = payload;
+                NormalizeOutcome::Keep(obs)
+            }
+            None => NormalizeOutcome::Skip,
+        },
+        DATA_TYPE_OXYGEN_SATURATION => match normalize_oxygen_saturation(&obs.payload) {
             Some(payload) => {
                 obs.payload = payload;
                 NormalizeOutcome::Keep(obs)
@@ -402,6 +444,64 @@ fn normalize_ambient_light(payload: &JsonValue) -> Option<JsonValue> {
     Some(JsonValue::Object(out))
 }
 
+fn normalize_step_count(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let count = first_u64(obj, &["count", "steps"])?;
+    let mut out = Map::new();
+    out.insert("count".to_string(), json!(count));
+    if let Some(window) = first_u64(obj, &["window_secs", "window_seconds"]) {
+        if window < 1 {
+            return None;
+        }
+        out.insert("window_secs".to_string(), json!(window));
+    }
+    Some(JsonValue::Object(out))
+}
+
+fn normalize_active_energy(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let kcal = first_f64(obj, &["kcal", "active_energy_kcal", "calories"])?;
+    if !kcal.is_finite() || kcal < 0.0 {
+        return None;
+    }
+    Some(json!({ "kcal": kcal }))
+}
+
+fn normalize_sleep_interval(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let start = first_i64(obj, &["start"])?;
+    let end = first_i64(obj, &["end"])?;
+    if end < start {
+        return None;
+    }
+    let mut out = Map::new();
+    out.insert("start".to_string(), json!(start));
+    out.insert("end".to_string(), json!(end));
+    if let Some(stage) = first_nonempty_str(obj, &["stage", "sleep_stage"]) {
+        if !is_v1_sleep_stage(stage) {
+            return None;
+        }
+        out.insert("stage".to_string(), json!(stage));
+    }
+    Some(JsonValue::Object(out))
+}
+
+fn normalize_oxygen_saturation(payload: &JsonValue) -> Option<JsonValue> {
+    let obj = payload.as_object()?;
+    let mut pct = first_f64(obj, &["spo2_percent", "spo2", "oxygen_saturation"])?;
+    if !pct.is_finite() || pct < 0.0 {
+        return None;
+    }
+    // HealthKit often stores SpO2 as a 0–1 fraction.
+    if pct <= 1.0 {
+        pct *= 100.0;
+    }
+    if pct > 100.0 {
+        return None;
+    }
+    Some(json!({ "spo2_percent": pct }))
+}
+
 fn first_i64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<i64> {
     for key in keys {
         if let Some(v) = obj.get(*key) {
@@ -503,10 +603,11 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        normalize_deduped, normalize_observations, DATA_TYPE_AMBIENT_LIGHT,
-        DATA_TYPE_BROWSER_CATEGORY, DATA_TYPE_CALENDAR_EVENT, DATA_TYPE_CONTEXT_WINDOW,
-        DATA_TYPE_GIT_ACTIVITY, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES,
-        DATA_TYPE_NOW_PLAYING,
+        normalize_deduped, normalize_observations, DATA_TYPE_ACTIVE_ENERGY,
+        DATA_TYPE_AMBIENT_LIGHT, DATA_TYPE_BROWSER_CATEGORY, DATA_TYPE_CALENDAR_EVENT,
+        DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_GIT_ACTIVITY, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV,
+        DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING, DATA_TYPE_OXYGEN_SATURATION,
+        DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
     };
     use crate::dedupe::DedupeState;
     use crate::intake::accept_observations;
@@ -840,6 +941,53 @@ mod tests {
         let out = normalize_observations(&[input]).expect("ok");
         assert_eq!(out.len(), 0);
         assert_eq!(out.skipped_count(), 1);
+    }
+
+    #[test]
+    fn step_count_canonicalizes() {
+        let input = obs(
+            DATA_TYPE_STEP_COUNT,
+            json!({ "steps": 100, "window_seconds": 60 }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        assert_eq!(
+            out.observations()[0].payload,
+            json!({ "count": 100, "window_secs": 60 })
+        );
+    }
+
+    #[test]
+    fn active_energy_rejects_negative() {
+        let input = obs(DATA_TYPE_ACTIVE_ENERGY, json!({ "kcal": -1.0 }));
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 0);
+        assert_eq!(out.skipped_count(), 1);
+    }
+
+    #[test]
+    fn sleep_interval_keeps_stage() {
+        let input = obs(
+            DATA_TYPE_SLEEP_INTERVAL,
+            json!({ "start": 100, "end": 200, "stage": "asleep" }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        assert_eq!(out.observations()[0].payload["stage"], json!("asleep"));
+    }
+
+    #[test]
+    fn oxygen_saturation_scales_fraction() {
+        let input = obs(
+            DATA_TYPE_OXYGEN_SATURATION,
+            json!({ "spo2": 0.97 }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let pct = out.observations()[0].payload["spo2_percent"]
+            .as_f64()
+            .expect("pct");
+        assert!((pct - 97.0).abs() < 1e-9);
     }
 
     #[test]

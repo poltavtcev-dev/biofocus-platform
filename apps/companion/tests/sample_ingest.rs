@@ -3,9 +3,12 @@
 use std::time::Duration;
 
 use companion::{
-    sample_heart_rate_observation, CompanionClient, CompanionError, APPLE_HEALTH_PROVIDER_ID,
+    sample_active_energy_observation, sample_heart_rate_observation,
+    sample_oxygen_saturation_observation, sample_sleep_interval_observation,
+    sample_step_count_observation, CompanionClient, CompanionError, APPLE_HEALTH_PROVIDER_ID,
     HEART_RATE_DATA_TYPE,
 };
+use bio_spec::validate_observation_payload;
 use ingest::{bind_loopback, ingest_router, IngestState};
 use runtime::observation_channel;
 
@@ -19,6 +22,30 @@ fn sample_heart_rate_matches_contract() {
     assert_eq!(obs.payload["bpm"], 74.0);
     assert_eq!(obs.payload["source"], "Apple Watch Series 9");
     assert!(obs.payload.get("rr_intervals").is_none());
+}
+
+#[test]
+fn adr018_scripted_samples_validate() {
+    let steps = sample_step_count_observation(2400, Some(3600)).expect("steps");
+    validate_observation_payload(&steps).expect("step_count");
+    let energy = sample_active_energy_observation(185.5).expect("energy");
+    validate_observation_payload(&energy).expect("active_energy");
+    let sleep = sample_sleep_interval_observation(100, 200, Some("asleep")).expect("sleep");
+    validate_observation_payload(&sleep).expect("sleep_interval");
+    let sleep_no_stage = sample_sleep_interval_observation(100, 200, None).expect("sleep2");
+    validate_observation_payload(&sleep_no_stage).expect("sleep without stage");
+    let spo2 = sample_oxygen_saturation_observation(97.0).expect("spo2");
+    validate_observation_payload(&spo2).expect("oxygen_saturation");
+}
+
+#[test]
+fn adr018_rejects_bad_spo2_and_sleep() {
+    assert!(sample_oxygen_saturation_observation(140.0).is_ok()); // construction ok
+    let bad = sample_oxygen_saturation_observation(140.0).expect("built");
+    // Observation builds; ingest validator rejects out-of-range
+    assert!(validate_observation_payload(&bad).is_err());
+    let bad_sleep = sample_sleep_interval_observation(200, 100, None).expect("built");
+    assert!(validate_observation_payload(&bad_sleep).is_err());
 }
 
 #[tokio::test]
