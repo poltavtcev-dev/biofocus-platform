@@ -2,11 +2,10 @@
 
 **From:** PM  
 **To:** Dev (+ UX if UI)  
-**Status:** Ready  
-**Date:** 2026-08-11  
-**Closed previous:** **P21-E2-T1** (`DeepWorkScore` shipped; QA Pass)  
-**Evidence:** `docs/handoffs/P21-E2-T1-qa-to-pm.md` · `docs/handoffs/P21-E2-T1-dev-to-qa.md`  
-**Contract:** ADR-022 — Feature math locked; E3 is dogfood / surface only
+**Status:** Done (QA Pass 2026-08-11)  
+**Closed:** Epic **P21-E3** ✅ · **Phase 21** ✅  
+**Evidence:** `docs/handoffs/P21-E3-T1-qa-to-pm.md` · `docs/handoffs/P21-E3-T1-dev-to-qa.md`  
+**Next:** **PM-GATE-POST-P21** — `docs/handoffs/PM-GATE-POST-P21-pm-brief.md`
 
 ## Task
 **P21-E3-T1 — Dogfood notes + optional calm Dashboard surface for `DeepWorkScore`**

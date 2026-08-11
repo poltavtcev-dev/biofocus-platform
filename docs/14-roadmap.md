@@ -95,12 +95,19 @@
 
 - [x] **PM-GATE-POST-P20** — chose **`DeepWorkScore`** (2026-08-11)
 
-- [ ] **Phase 21: DeepWorkScore** (Sprint 41–42) — opened 2026-08-11 (**PM-GATE-POST-P20**)
+- [x] **Phase 21: DeepWorkScore** (Sprint 41–42) — closed 2026-08-11 (**PM-GATE-POST-P20**)
   - Lock `DeepWorkScore` Feature scope (**ADR-022**) — **P21-E1 Done** (2026-08-11).
   - Ship catalog Feature `DeepWorkScore` — **P21-E2 Done** (2026-08-11).
-  - Dogfood / optional Dashboard surface — **P21-E3 Ready** (T1).
+  - Dogfood / optional Dashboard surface — **P21-E3 Done** (2026-08-11).
 
-**Deferred (later gates):** IDE · weather ambient · App Store packaging · Companion polish-as-primary · AttentionStability · CircadianOffset.
+- [x] **PM-GATE-POST-P21** — chose **`AttentionStability`** (2026-08-11)
+
+- [ ] **Phase 22: AttentionStability** (Sprint 43–44) — opened 2026-08-11 (**PM-GATE-POST-P21**)
+  - Lock `AttentionStability` Feature scope (**ADR-023**) — **P22-E1 Done** (2026-08-11).
+  - Ship catalog Feature `AttentionStability` — **P22-E2 Ready** (T1).
+  - Dogfood / optional Dashboard surface — **P22-E3** (after E2).
+
+**Deferred (gate leftovers):** IDE · weather ambient · App Store packaging · Companion polish-as-primary · CircadianOffset.
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)  
@@ -122,7 +129,8 @@
 **Phase 18:** Done 2026-08-11 — **ADR-019** → collector → `NotificationPressure` · branch `phase/18-notification-pressure` (PR after freeze)
 **Phase 19:** Done 2026-08-11 — **ADR-020** → usernoted live probe → dogfood · branch `phase/19-live-nc-mapping` (PR after freeze)
 **Phase 20:** Done 2026-08-11 — **ADR-021** → `CognitiveLoad` → dogfood + Combined demand · branch `phase/20-cognitive-load` (PR after freeze)
-**Phase 21:** Active — **ADR-022** ✅ · Feature shipped (**P21-E2 Done**) · Ready **P21-E3-T1** · branch `phase/21-deep-work-score` (PR after freeze)
-**Gate:** **PM-GATE-POST-P20** ✅ · **ADR-019** ✅ · **ADR-020** ✅ · **ADR-021** ✅ · **ADR-022** ✅ · **PR freeze until 2026-09-01**
+**Phase 21:** Done 2026-08-11 — **ADR-022** → `DeepWorkScore` → dogfood + Sustained focus · branch `phase/21-deep-work-score` (PR after freeze)
+**Phase 22:** Active — **ADR-023** ✅ · Ready **P22-E2-T1** · branch `phase/22-attention-stability` (PR after freeze)
+**Gate:** **PM-GATE-POST-P21** ✅ · **ADR-019** ✅ · **ADR-020** ✅ · **ADR-021** ✅ · **ADR-022** ✅ · **ADR-023** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

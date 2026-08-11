@@ -53,7 +53,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 18 (Done 2026-08-11):** Notification pressure — ADR-019 → collector → `NotificationPressure`.
 - **Phase 19 (Done 2026-08-11):** Live NC OS mapping — ADR-020 → usernoted live probe → dogfood.
 - **Phase 20 (Done 2026-08-11):** CognitiveLoad — **ADR-021** ✅; Feature + dogfood + Dashboard **Combined demand**.
-- **Phase 21 (Active):** DeepWorkScore — **ADR-022** ✅; Feature shipped (**P21-E2 Done**); Ready **P21-E3-T1** (dogfood / optional Dashboard). Deferred: IDE · weather · App Store · Companion polish · AttentionStability · CircadianOffset.
+- **Phase 21 (Done 2026-08-11):** DeepWorkScore — **ADR-022** ✅; Feature + dogfood + Dashboard **Sustained focus**.
+- **Next:** Phase 22 **AttentionStability** — Ready **P22-E2-T1** (ship Feature). **ADR-023** ✅. Gate **PM-GATE-POST-P21** ✅.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -125,7 +126,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P21-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–20 Done · Phase 21 Active (`DeepWorkScore` shipped in Core).
+Immediate Kanban = **P22-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–21 Done · Phase 22 Active (E1 ✅).
 
 | Phase | Focus |
 | :--- | :--- |
@@ -145,8 +146,8 @@ Immediate Kanban = **P21-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–20 Done 
 | **18** | Done — Notification pressure (ADR-019 → collector → NotificationPressure) |
 | **19** | Done — Live NC OS mapping (ADR-020 → usernoted probe → dogfood) |
 | **20** | Done — CognitiveLoad (**ADR-021** → Feature + dogfood + Combined demand) |
-| **21** | Active — DeepWorkScore (**ADR-022** ✅; Feature shipped; E3 dogfood / optional Dashboard) |
-| **22+** | Open via later PM gate — IDE · weather · App Store · AttentionStability · CircadianOffset |
+| **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
+| **22** | Active — AttentionStability (**ADR-023** ✅ · Ready P22-E2) |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

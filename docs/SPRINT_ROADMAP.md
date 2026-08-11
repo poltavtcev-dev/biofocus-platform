@@ -1,9 +1,9 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 21: DeepWorkScore** (Sprint 41–42) — **Active**.  
-> Phase 0–20 Done. Gate **PM-GATE-POST-P20** ✅ chose catalog Feature **`DeepWorkScore`** from FocusScore + ContextSwitchRate.
+> **Phase 22: AttentionStability** (Sprint 43–44) — **Active**.  
+> Phase 0–21 Done. Gate **PM-GATE-POST-P21** ✅ · **ADR-023** ✅ · Ready **P22-E2-T1**.
 
-**Phase 21 outcome (target):** **ADR-022** ✅ locks sustained-focus Feature scope → **`DeepWorkScore` shipped** in `feature-engine` → optional dogfood / calm Dashboard surface. No new Observation family; calm non-clinical framing.
+**Phase 22 outcome (target):** **ADR-023** ✅ locks focus-stability Feature scope → ship `AttentionStability` in `feature-engine` → optional dogfood / calm Dashboard surface. No new Observation family; calm non-clinical framing; distinct from DeepWorkScore.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -31,18 +31,18 @@
 
 ---
 
-## Kanban Overview (Phase 21)
+## Kanban Overview (Phase 22)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P21-E3-T1** |
+| **Ready** | **P22-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–20 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **PM-GATE-POST-P18** · **PM-GATE-POST-P19** · **PM-GATE-POST-P20** · **P20-E1-T1** · **P20-E2-T1** · **P20-E3-T1** · **P21-E1-T1** · **P21-E2-T1** |
+| **Done** | Phase 0–21 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **PM-GATE-POST-P18** · **PM-GATE-POST-P19** · **PM-GATE-POST-P20** · **PM-GATE-POST-P21** · **P22-E1-T1** · **P20–P21** epics (see archives) |
 
-**Epic status:** Phase 21 Active (E1–E2 ✅ · E3 Ready) · Phase 20 ✅
+**Epic status:** Phase 22 Active (E1 ✅ · E2 Ready) · Phase 21 ✅
 
-**Phase 21 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-022** ✅ · Feature shipped · E3 Ready
+**Phase 22 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-023** ✅ · E2 Ready
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -50,32 +50,48 @@
 
 ### Active assignment
 
-**Ready now:** **P21-E3-T1** — Dogfood notes + optional calm Dashboard surface for `DeepWorkScore`. Brief: `docs/handoffs/P21-E3-T1-pm-brief.md`. Role: **Dev** (+ UX if UI).
+**Ready now:** **P22-E2-T1** — Ship catalog Feature `AttentionStability` per ADR-023. Brief: `docs/handoffs/P22-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **P21-E2-T1** (2026-08-11) — `DeepWorkScore` shipped in `feature-engine` (`register_deep_work_v1`). Evidence: `docs/handoffs/P21-E2-T1-qa-to-pm.md`.
+**Just closed:** **P22-E1-T1** (2026-08-11) — **ADR-023** locked AttentionStability scope (QA Pass).
 
-**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 20 remains on `phase/20-cognitive-load`; Phase 21 on `phase/21-deep-work-score`.
+**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 22 on `phase/22-attention-stability`.
+
+---
+
+## Phase 22 — AttentionStability (Active)
+
+### Epic P22-E1 — Contracts ADR (**ADR-023**)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P22-E1-T1** ✅ Done | Lock `AttentionStability` Feature scope (**ADR-023**) | Dev | docs + decision-log |
+
+### Epic P22-E2 — Feature math
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P22-E2-T1** ← Ready | Ship catalog Feature `AttentionStability` per ADR-023 | Dev | feature-engine + docs |
+
+### Epic P22-E3 — Dogfood / surface (optional)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P22-E3-T1** | Dogfood notes + optional calm Dashboard surface | Dev | docs (+ optional UI) |
 
 ---
 
-## Phase 21 — DeepWorkScore (Active)
+## Phase 21 archive (Done)
 
-### Epic P21-E1 — Contracts ADR (**ADR-022**) ✅
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P21-E1-T1** ✅ | Lock `DeepWorkScore` Feature scope (**ADR-022**) | Dev | docs + decision-log |
+<details>
+<summary>Phase 21 Kanban & epics (closed 2026-08-11 — DeepWorkScore)</summary>
 
-### Epic P21-E2 — Feature ✅
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P21-E2-T1** ✅ | Ship catalog Feature `DeepWorkScore` per ADR-022 | Dev | feature-engine + docs |
+**Done:** P21-E1 (T1) · P21-E2 (T1) · P21-E3 (T1).  
+**ADR-022** · `DeepWorkScore` Feature · dogfood + calm Dashboard Sustained focus.  
+Branch: `phase/21-deep-work-score` (cluster PR after freeze).
 
-### Epic P21-E3 — Dogfood / surface
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P21-E3-T1** ← Ready | Dogfood notes + optional calm Dashboard surface | Dev | docs (+ optional UI) |
+Evidence: `docs/handoffs/P21-*-qa-to-pm.md`.
 
----
+</details>
 
 ## Phase 20 archive (Done)
 
@@ -103,27 +119,13 @@ Evidence: `docs/handoffs/P19-*-qa-to-pm.md`.
 
 </details>
 
-## Phase 18 archive (Done)
-
-<details>
-<summary>Phase 18 Kanban & epics (closed 2026-08-11 — notification pressure)</summary>
-
-**Done:** P18-E1 (T1) · P18-E2 (T1) · P18-E3 (T1).  
-**ADR-019** contracts · `notification_event` collector · `NotificationPressure`.  
-Branch: `phase/18-notification-pressure` (cluster PR after freeze).
-
-Evidence: `docs/handoffs/P18-*-qa-to-pm.md`.
-
-</details>
-
 ---
 
-## Queue (Phase 21)
+## Queue (Phase 22)
 
-1. **P21-E1-T1** — ADR-022 DeepWorkScore scope ← **Done**  
-2. **P21-E2-T1** — Ship `DeepWorkScore` Feature ← **Done**  
-3. **P21-E3-T1** — Dogfood / optional Dashboard surface ← **Ready**  
-4. Deferred (later gates): IDE · weather ambient · App Store packaging · Companion polish · AttentionStability · CircadianOffset  
+1. **P22-E1-T1** — ADR-023 AttentionStability scope ← **Done**  
+2. **P22-E2-T1** — Ship `AttentionStability` Feature ← **Ready**  
+3. **P22-E3-T1** — Dogfood / optional Dashboard  
 
-**Git:** `phase/21-deep-work-score` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P21-E3-T1-pm-brief.md`.
+**Git:** Phase 22 on `phase/22-attention-stability` → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P22-E2-T1-pm-brief.md`.

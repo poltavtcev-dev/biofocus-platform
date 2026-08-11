@@ -1,6 +1,6 @@
 //! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3 + Phase 10 E3 +
 //! Phase 12 E3 + Phase 13 E3 + Phase 16 E2 + Phase 17 E3 + Phase 18 E3 +
-//! Phase 20 E2 + Phase 21 E2) — deterministic v1 formulas.
+//! Phase 20 E2 + Phase 21 E2 + Phase 22 E2) — deterministic v1 formulas.
 //!
 //! | Node | Feature id | Task |
 //! | :--- | :--- | :--- |
@@ -21,6 +21,7 @@
 //! | [`NotificationPressureNode`] | `NotificationPressure` | P18-E3-T1 |
 //! | [`CognitiveLoadNode`] | `CognitiveLoad` | P20-E2-T1 |
 //! | [`DeepWorkScoreNode`] | `DeepWorkScore` | P21-E2-T1 |
+//! | [`AttentionStabilityNode`] | `AttentionStability` | P22-E2-T1 |
 //!
 //! Register Focus pair via [`register_focus_v1`]; Stress/Fatigue via
 //! [`register_stress_v1`] (requires FocusScore already registered for Fatigue);
@@ -30,11 +31,13 @@
 //! Ambient light via [`register_ambient_light_v1`]; Wearable via [`register_wearable_v1`];
 //! Notification via [`register_notification_v1`]; CognitiveLoad via
 //! [`register_cognitive_v1`] (requires MeetingDensity + CSR + NotificationPressure);
-//! DeepWorkScore via [`register_deep_work_v1`] (requires FocusScore + CSR).
+//! DeepWorkScore via [`register_deep_work_v1`] (requires FocusScore + CSR);
+//! AttentionStability via [`register_attention_stability_v1`] (requires FocusScore + CSR).
 
 mod activity_balance;
 mod ambient_light_share;
 mod ambient_media_share;
+mod attention_stability;
 mod calendar_meeting;
 mod cognitive_load;
 mod confidence;
@@ -62,6 +65,7 @@ pub use confidence::{
 pub use activity_balance::{ActivityBalanceNode, FEATURE_ID as ACTIVITY_BALANCE_ID};
 pub use ambient_light_share::{AmbientLightShareNode, FEATURE_ID as AMBIENT_LIGHT_SHARE_ID};
 pub use ambient_media_share::{AmbientMediaShareNode, FEATURE_ID as AMBIENT_MEDIA_SHARE_ID};
+pub use attention_stability::{AttentionStabilityNode, FEATURE_ID as ATTENTION_STABILITY_ID};
 pub use cognitive_load::{CognitiveLoadNode, FEATURE_ID as COGNITIVE_LOAD_ID};
 pub use context_switch_rate::{ContextSwitchRateNode, FEATURE_ID as CONTEXT_SWITCH_RATE_ID};
 pub use deep_work_score::{DeepWorkScoreNode, FEATURE_ID as DEEP_WORK_SCORE_ID};
@@ -179,9 +183,18 @@ pub fn register_deep_work_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<
     Ok(())
 }
 
+/// Registers `AttentionStability` (Feature-level composite; ADR-023).
+///
+/// Depends on `FocusScore` and `ContextSwitchRate` — call [`register_focus_v1`]
+/// first (or otherwise register those nodes) before [`FeatureEngine::run`].
+pub fn register_attention_stability_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(AttentionStabilityNode::new())?;
+    Ok(())
+}
+
 /// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery,
 /// Distraction, Ambient media, Git activity, Ambient light, Wearable,
-/// Notification pressure, CognitiveLoad, DeepWorkScore.
+/// Notification pressure, CognitiveLoad, DeepWorkScore, AttentionStability.
 pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
     register_focus_v1(engine)?;
     register_stress_v1(engine)?;
@@ -195,5 +208,6 @@ pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()
     register_notification_v1(engine)?;
     register_cognitive_v1(engine)?;
     register_deep_work_v1(engine)?;
+    register_attention_stability_v1(engine)?;
     Ok(())
 }

@@ -24,6 +24,7 @@
 | ADR-020 | 2026-08-11 | **Phase 19:** unlock live `SystemNotificationEventProbe` via **hybrid** privacy-safe OS mapping (prefer public surfaces; private/undocumented OK only under hard **non-content field allowlist** + soft-fail); ADR-019 `notification_event` payload **unchanged**; **no** migration; opt-in `BIOFOCUS_NOTIFICATION_EVENTS` unchanged; existing `NotificationPressure` (no formula rewrite) | ADR-019 left production probe soft-fail idle until privacy-safe NC mapping; PM-GATE-POST-P18 chose Live NC OS mapping to dogfood shipped Feature. Pattern mirrors ADR-014 after Git soft-fail. Personal self-tracking only | Content capture / Accessibility UI text scrape; workplace monitoring; always-on busy-loop; rewriting NotificationPressure; IDE / weather / App Store / CognitiveLoad as P19 primary; parallel notification SQLite store; PR during freeze; applying migration without approve; widening payload with bundle_id / titles |
 | ADR-021 | 2026-08-11 | **Phase 20:** catalog Feature **`CognitiveLoad`** = Feature-level composite of **`MeetingDensity` + `ContextSwitchRate` + `NotificationPressure`**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “combined demand in this window” framing | PM-GATE-POST-P19 chose CognitiveLoad; all three input Features shipped (incl. live NC). Prefer Feature-level composition over Observation mix so catalog math stays stable and privacy bars stay with leaf Features. Personal self-tracking only | Clinical “cognitive overload” / burnout; workplace surveillance scoring; new Observation families; rewriting MeetingDensity / CSR / NotificationPressure; Observation-level mix as v1; IDE / weather / App Store as P20 primary; PR during freeze; migration without approve |
 | ADR-022 | 2026-08-11 | **Phase 21:** catalog Feature **`DeepWorkScore`** = Feature-level composite of **`FocusScore` + `ContextSwitchRate`** (idle **dropped** for v1); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “sustained focus in this window” framing | PM-GATE-POST-P20 chose DeepWorkScore after CognitiveLoad; FocusScore + CSR long shipped. Compose high Focus + low CSR — do not invent parallel FocusScore. Personal self-tracking only | Clinical “flow state” / burnout / ADHD; workplace surveillance; new Observation families; rewriting FocusScore / CSR; idle Observation invent; IDE / weather / App Store / AttentionStability / CircadianOffset as P21 primary; PR during freeze; migration without approve |
+| ADR-023 | 2026-08-11 | **Phase 22:** catalog Feature **`AttentionStability`** = Feature-level **variance/stability** composite of **`FocusScore` + `ContextSwitchRate`** (distinct from DeepWorkScore intensity); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; Focus term from **in-window Focus range** (not Focus level); ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “focus stability in this window” framing | PM-GATE-POST-P21 chose AttentionStability after DeepWorkScore; same leaves, different question (consistency vs intensity). Personal self-tracking only | Clinical ADHD / “you can’t focus”; workplace surveillance; new Observation families; rewriting FocusScore / CSR / DeepWorkScore; using Focus level as intensity (DeepWorkScore); IDE / weather / App Store / CircadianOffset as P22 primary; PR during freeze; migration without approve |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1539,4 +1540,120 @@ E3 (optional)
 10. **Applying a migration without user approve** — this ADR chooses no migration.
 11. **LLM inventing DeepWorkScore scores or flow diagnoses** — L5 interpret-only.
 12. **Parallel “Deep Work Engine” crate** — extend `feature-engine` catalog only.
+
+### ADR-023 detail — Phase 22: AttentionStability Feature scope (v1)
+
+> **Relationship:** Catalog backlog named **`AttentionStability`** (P7-era) as variance of focus / switches from **FocusScore** + **ContextSwitchRate**. Phase 21 shipped sibling **`DeepWorkScore`** — sustained-focus **intensity** on the same leaves. **PM-GATE-POST-P21** chose AttentionStability as Phase 22 primary (complement: consistency/stability vs intensity). **ADR-023** = lock Feature-level inputs, formula stance, omit policy, and framing **before** math lands in `feature-engine`. Implement in **P22-E2**; optional dogfood / calm Dashboard surface in **P22-E3**. Epic split: `docs/SPRINT_ROADMAP.md` Phase 22.
+
+| Layer | Role in Phase 22 v1 |
+| :--- | :--- |
+| Inputs (Feature-level) | Upstream catalog Features: **`FocusScore`** (required) + **`ContextSwitchRate`** (optional switch-stability term) for the **same** window |
+| Feature (`feature-engine`) | E2: new catalog node **`AttentionStability`** — focus/switch stability 0–100; ADR-007 confidence; optional explanation factors |
+| Observation (SQLite) | **Unchanged** — reuse existing keystrokes / context / HRV via FocusScore + CSR; **no** new `data_type` |
+| Leaf Features | **Do not** rewrite FocusScore / ContextSwitchRate / DeepWorkScore formulas; **do not** invent a parallel FocusScore |
+| Sibling | **Distinct from DeepWorkScore:** stability/variance ≠ sustained-focus intensity |
+| LLM | L5 interpret-only — must **not** invent AttentionStability scores or ADHD / “can’t focus” claims |
+
+#### Chosen v1 input set: Feature-level Focus + CSR (variance framing)
+
+Exactly **one** input stance for Phase 22 v1:
+
+1. **Prefer Feature-level:** `AttentionStability(window)` reads upstream **`FocusScore`** sample(s) and (when present) **`ContextSwitchRate`** for that window (DAG depends on both nodes).
+2. **Distinct from DeepWorkScore:** DeepWorkScore composes **Focus level** + low CSR into intensity. AttentionStability composes **Focus consistency** (low in-window Focus **range**) + low CSR into stability — **do not** reuse DeepWorkScore’s Focus-level × CSR intensity math.
+3. **Why not Observation-level mix:** FocusScore / CSR already own leaf math + ADR-007. Re-deriving from Observations would duplicate Focus math — Non-Goal.
+4. **Hard gap check:** FocusScore + CSR already ship. **Zero** new Observation `data_type` in v1.
+
+#### Formula stance sketch (for P22-E2)
+
+```text
+Window / step: 15 minutes / 1 minute (align Focus / CSR; series may coarsen)
+
+Compose LOW variance / HIGH stability (0–100) — not Focus intensity:
+  # Focus consistency from in-window FocusScore samples (Feature ends in window)
+  focus_samples = FocusScore values with ends in [window_start, window_end]
+  if |focus_samples| >= 2:
+    focus_range = max(focus_samples) - min(focus_samples)   # 0–100 scale
+    focus_stability = clamp(100 - focus_range, 0, 100)      # low range → high stability
+  else:  # exactly one Focus sample in window
+    focus_stability = 100   # no swing observed yet — not a DeepWorkScore Focus-level term
+
+  # Switch stability (same CSR map as FocusScore stability / DeepWorkScore CSR term)
+  switch_stability = clamp(100 - ContextSwitchRate × 50, 0, 100)
+
+Catalog weights:
+  w_focus_stab = 0.50, w_switch_stab = 0.50
+  (Equal thirds avoided — two slots; neither is DeepWorkScore intensity.)
+
+Missing-input policy (LOCKED):
+  • If FocusScore is ABSENT for the step → OMIT AttentionStability
+  • If FocusScore present and CSR absent → EMIT with RENORMALIZED weights (Focus-stability only)
+  • If both present → EMIT with catalog weights
+  (Do NOT invent Focus from Observations; do NOT emit CSR-only as “attention stability”;
+   do NOT copy DeepWorkScore Focus-level intensity formula.)
+
+Confidence (ADR-007 sketch):
+  expected_slots = 2   # Focus / CSR
+  present_slots  = 1 if Focus-only; 2 if Focus+CSR
+  coverage       = present_slots / 2
+  mean_evidence  = mean(upstream Feature.confidence of present inputs)
+  Feature.confidence = clamp(coverage × mean_evidence, 0.0, 1.0)
+
+Provenance: union of Observation IDs from present upstream Features
+  (follow existing composite patterns, e.g. DeepWorkScore / CognitiveLoad).
+
+Optional explanation factors (when emitted):
+  focus_stability (“Focus consistency”), switch_stability (“Switch steadiness”) when CSR present;
+  share = catalog_weight / sum(present weights). Calm composition only — not clinical.
+
+Framing / copy:
+  “focus stability in this window” — NOT “you have ADHD” / “you can’t focus” / burnout /
+  attention-deficit diagnosis. Distinct from DeepWorkScore “sustained focus in this window”.
+```
+
+#### Schema (v1)
+
+- Prefer existing `observations` store + existing Feature DAG only.
+- **No new SQLite tables/columns**; **no** Feature-history store (in-window Focus samples come from the same DAG batch / recompute-on-read Feature set — not a new persistence model).
+- **Do not apply** any migration for this ADR.
+- Future Observation-level / longer-horizon variance store → **new ADR + user approve**.
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 22)
+
+```text
+E1 (P22-E1-T1) — THIS ADR
+  Lock AttentionStability Feature scope: Focus required + optional CSR;
+  Focus range (not level) + CSR switch stability; 15m/1m;
+  omit-without-Focus / renormalize-without-CSR; ADR-007 slots=2;
+  distinct from DeepWorkScore; calm framing; rejected alts; no migration
+
+E2 (P22-E2-T1)
+  Ship AttentionStability in feature-engine + catalog §1 finalize
+  register_* / register_catalog_v1 after focus / DeepWork nodes as appropriate
+  Unit tests: rich Focus+CSR / Focus-only / single-vs-multi Focus range /
+  omit without Focus / confidence / factors
+  Do NOT rewrite FocusScore / ContextSwitchRate / DeepWorkScore
+
+E3 (optional)
+  Dogfood / calm Dashboard surface (snapshot series) — still non-clinical copy
+```
+
+#### Docs policy for this ADR
+
+- Planned → ADR sketch notes land now in `docs/06-feature-catalog.md`, `docs/12-development.md`, `docs/16-glossary.md`.
+- Full §1 formula finalize + DAG registration names → **P22-E2** (must still obey this ADR).
+
+#### Rejected alternatives
+
+1. **Clinical ADHD / attention-deficit / “you can’t focus” claims** — Non-Goal; calm personal observation only.
+2. **Workplace / employer surveillance scoring** or manager dashboards — personal self-tracking only.
+3. **Inventing new Observation families** this phase — Focus + CSR already ship.
+4. **Rewriting FocusScore / ContextSwitchRate / DeepWorkScore** formulas or inventing a parallel FocusScore — compose, do not reopen leaf / sibling math.
+5. **Using FocusScore level as intensity** (DeepWorkScore math) — rejected for this Feature; AttentionStability is variance/stability.
+6. **CSR-only emit as AttentionStability** — without Focus there is no focus-consistency signal under this ADR.
+7. **IDE plugin / weather ambient / App Store packaging as Phase 22 primary** — deferred (PM-GATE-POST-P21).
+8. **CircadianOffset as this-phase primary** — deferred (PM-GATE-POST-P21).
+9. **Opening a PR during freeze** — local branch `phase/22-attention-stability` until 2026-09-01.
+10. **Applying a migration without user approve** — this ADR chooses no migration.
+11. **LLM inventing AttentionStability scores or ADHD diagnoses** — L5 interpret-only.
+12. **Parallel “Attention Engine” crate** — extend `feature-engine` catalog only.
 

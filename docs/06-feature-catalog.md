@@ -232,13 +232,28 @@
 - **Explanation factors:** when emitted — `focus` (“Focus depth”), `stability` (“App stability”) when CSR present; `share = catalog_weight / sum(present weights)` (shares sum to 1.0). Calm composition only.
 - **DAG:** depends on FocusScore + ContextSwitchRate; `feature_engine::register_deep_work_v1` / `register_catalog_v1` (after focus nodes).
 - **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite leaf Feature formulas.
+
+### 1.18 `AttentionStability` (P22-E2 / ADR-023 — shipped)
+
+- **Goal:** Calm **focus stability** proxy for a window from Focus consistency (low in-window Focus range) + low app-switching. “Focus stability in this window” — **not** ADHD / “you can’t focus” / burnout diagnosis; **not** workplace productivity scoring; **not** DeepWorkScore “sustained focus” intensity.
+- **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR; series may coarsen.
+- **Inputs (Feature-level):** upstream **`FocusScore`** (**required**) + **`ContextSwitchRate`** (**optional**) for the same window (ADR-023). **Not** a raw Observation mix; **not** a parallel FocusScore; **do not** redefine DeepWorkScore.
+- **Formula Strategy (v1):** `focus_samples` = FocusScore scalars whose Feature ends lie in `[window_start, window_end]`. If ≥2 samples: `focus_stability = clamp(100 - (max−min), 0, 100)`; if exactly one: `focus_stability = 100` (no swing — **not** Focus-level intensity). `switch_stability = clamp(100 - CSR × 50, 0, 100)`. Weights focus_stability 0.50 / switch_stability 0.50. **Missing-input policy:** omit without FocusScore; if Focus present and CSR absent → **renormalize** (Focus-stability only). Output clamped 0–100.
+- **Omit policy:** no FocusScore for the step → omit (windows driven from FocusScore ends — CSR-only cannot emit). Focus-only windows emit with lower ADR-007 confidence.
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless focus-stability score.
+- **Provenance:** union of Observation IDs from present upstream Features (all in-window Focus samples + CSR when present).
+- **Confidence (ADR-007):** expected slots = 2; `confidence = coverage × mean(upstream Feature.confidence)` (Focus-slot conf = mean of in-window Focus samples).
+- **Explanation factors:** when emitted — `focus_stability` (“Focus consistency”), `switch_stability` (“Switch steadiness”) when CSR present; `share = catalog_weight / sum(present weights)` (shares sum to 1.0). Calm composition only.
+- **DAG:** depends on FocusScore + ContextSwitchRate; `feature_engine::register_attention_stability_v1` / `register_catalog_v1` (after focus / DeepWork nodes).
+- **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite leaf / DeepWorkScore formulas.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `AttentionStability` | Variance of focus / switches | FocusScore, CSR | P7 |
 | `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 / later |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
@@ -249,5 +264,7 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 > **Phase 20 note (ADR-021 / P20-E2):** Catalog Feature **`CognitiveLoad`** **shipped** — Feature-level composite of MeetingDensity + CSR + NotificationPressure; §1.16 above.
 >
 > **Phase 21 note (ADR-022 / P21-E2):** Catalog Feature **`DeepWorkScore`** **shipped** — Feature-level FocusScore + optional CSR (idle dropped); §1.17 above.
+>
+> **Phase 22 note (ADR-023 / P22-E2):** Catalog Feature **`AttentionStability`** **shipped** — Feature-level Focus range + optional CSR; distinct from DeepWorkScore; §1.18 above.
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; others may omit until wired).
