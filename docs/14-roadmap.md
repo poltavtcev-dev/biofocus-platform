@@ -70,8 +70,8 @@
   - Dogfood runbook + Companion UI — **P15-E3 Done** (2026-08-11).
 
 - [ ] **Phase 16: Ambient light** (Sprint 31–32) — opened 2026-08-11 (PM-GATE-POST-P15)
-  - Ambient light collector plugin (ADR-015) — **P16-E1 Ready** (T1).
-  - AmbientLightShare catalog Feature — **P16-E2** (after E1).
+  - Ambient light collector plugin (ADR-015) — **P16-E1 Done** (2026-08-11).
+  - AmbientLightShare catalog Feature — **P16-E2 Ready** (T1).
 
 - [ ] **Phase 17: Wearable depth + chart ranges** (parked — ADR-017) — after P16 Done
   - Mi Fitness / HealthKit max Observations via Companion (contracts TBD in follow-up ADR).
@@ -93,7 +93,7 @@
 **Phase 13:** Done 2026-08-10 — ADR-013 → Git plugin → `GitActivityRate` · branch `phase/13-plugin-wave-2` (PR after freeze)
 **Phase 14:** Done 2026-08-10 — ADR-014 → live probe → dogfood + Menubar **Git folders** · branch `phase/14-git-allowlist` (PR after freeze)
 **Phase 15:** Done 2026-08-11 — ADR-016 companion HRV + autonomy · branch `phase/15-companion-hrv-autonomy` (PR after freeze)
-**Phase 16:** Opened 2026-08-11 — ambient light resume (ADR-015) · Ready **P16-E1-T1** · branch `phase/16-ambient-light` (PR after freeze)
+**Phase 16:** Opened 2026-08-11 — ambient light (ADR-015) · **P16-E1 Done** · Ready **P16-E2-T1** · branch `phase/16-ambient-light` (PR after freeze)
 **Phase 17 (parked):** ADR-017 — after P16: Mi/HealthKit depth + chart ranges 1h/8h/12h/1d/1w · `PARKED-P17-wearable-dashboard-intent.md`
 **Gate:** **PM-GATE-POST-P15** ✅ chose resume ambient light · **ADR-017** ✅ finish P16 then P17 wearable/charts · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  

@@ -48,7 +48,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 13 (Done 2026-08-10):** Plugin wave-2 — ADR-013 → Git plugin → `GitActivityRate`.
 - **Phase 14 (Done 2026-08-10):** Git path-allowlist — ADR-014 → live probe → dogfood + Menubar **Git folders** IPC.
 - **Phase 15 (Done 2026-08-11):** Companion HRV + autonomy — ADR-016.
-- **Phase 16 (Active):** Ambient light resume — ADR-015; Ready **P16-E1-T1** (plugin). Deferred: IDE · weather · App Store · NotificationPressure.
+- **Phase 16 (Active):** Ambient light — ADR-015; **P16-E1 Done** (plugin); Ready **P16-E2-T1** (`AmbientLightShare`). Deferred: IDE · weather · App Store · NotificationPressure.
 - **Phase 17 (Parked — ADR-017):** After P16 — Mi Fitness/HealthKit depth + Dashboard chart ranges (1h/8h/12h/1d/1w) + deterministic analysis first. See `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md`.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.

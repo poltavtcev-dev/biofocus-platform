@@ -32,17 +32,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P16-E1-T1** |
+| **Ready** | **P16-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–15 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **P15-E1-T1** · **P15-E2-T1** · **P15-E3-T1** |
+| **Done** | Phase 0–15 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **P15-E1–E3** · **P16-E1-T1** |
 
-**Epic status:** P16-E1 ○ · P16-E2 ○ · Phase 15 ✅ · **PM-GATE-POST-P15** ✅
+**Epic status:** P16-E1 ✅ · P16-E2 ○ · Phase 15 ✅ · **PM-GATE-POST-P15** ✅
 
-**Phase 16 on `/docs/14-roadmap.md`:** opened 2026-08-11 · Ambient light resume (ADR-015) · Ready plugin
+**Phase 16 on `/docs/14-roadmap.md`:** opened 2026-08-11 · Ambient light resume (ADR-015) · collector **Done** · Ready Feature
 
 **Рекомендуемый порядок (Phase 16):**  
-P16-E1-T1 → P16-E2-T1
+~~P16-E1-T1~~ → **P16-E2-T1**
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -50,33 +50,33 @@ P16-E1-T1 → P16-E2-T1
 
 ### Active assignment
 
-**Ready now:** **P16-E1-T1** — Implement ambient light plugin (`macos-collector` + host) per ADR-015. Brief: `docs/handoffs/P16-E1-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P16-E2-T1** — Catalog Feature `AmbientLightShare` (`feature-engine` + docs) per ADR-015 / catalog §1.11. Brief: `docs/handoffs/P16-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Closed gate:** PM-GATE-POST-P15 (2026-08-11) — chose **resume ambient light** (ADR-015) over IDE / weather / App Store / NotificationPressure. Evidence: `docs/handoffs/PM-GATE-POST-P15-pm-brief.md`.
+**Just closed:** **P16-E1-T1** (2026-08-11) — QA Pass. Ambient light plugin opt-in `BIOFOCUS_AMBIENT_LIGHT`. Evidence: `docs/handoffs/P16-E1-T1-qa-to-pm.md`. Branch: `phase/16-ambient-light`.
 
-**Closed:** Phase 15 companion (2026-08-11) — ADR-016 → Core SDNN-or-RMSSD + iOS Auto-sync → dogfood. Branch: `phase/15-companion-hrv-autonomy`.
+**Closed gate:** PM-GATE-POST-P15 (2026-08-11) — chose **resume ambient light** (ADR-015).
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 15 cluster on `phase/15-companion-hrv-autonomy`; Phase 16 on `phase/16-ambient-light`; local commits OK; cluster PRs **after** freeze.
+**Ops note:** **PR freeze until 2026-09-01** — Phase 16 cluster on `phase/16-ambient-light`; local commits OK; cluster PRs **after** freeze. **Do not** start Phase 17 (ADR-017 parked) until Phase 16 Done.
 
 ---
 
 ## Phase 16 — Ambient light (Active)
 
-### Epic P16-E1 — Ambient light plugin
-**Goal:** Opt-in collector → existing Observation channel (payload per ADR-015). Contract already locked — no new ADR unless contract changes.
+### Epic P16-E1 — Ambient light plugin ✅
+**Goal:** Opt-in collector → existing Observation channel (payload per ADR-015).
 
-| ID | Task | Role | Modules | AC | Depends |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **P16-E1-T1** | Implement ambient light plugin | Dev | macos-collector + host | See `P16-E1-T1-pm-brief.md` | PM-GATE-POST-P15 |
+| ID | Task | Role | Modules | AC | Depends | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **P16-E1-T1** | Implement ambient light plugin | Dev | macos-collector + host | `P16-E1-T1-pm-brief.md` | PM-GATE-POST-P15 | **Done** (2026-08-11) |
 
 ### Epic P16-E2 — Ambient light Feature
 **Goal:** Catalog Feature from ambient light Observations (ADR-007; calm framing).
 
 | ID | Task | Role | Modules | AC | Depends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P16-E2-T1** | AmbientLightShare catalog Feature | Dev | feature-engine + docs | Shaped by ADR-015 | P16-E1-T1 |
+| **P16-E2-T1** | AmbientLightShare catalog Feature | Dev | feature-engine + docs | See `P16-E2-T1-pm-brief.md` | P16-E1-T1 |
 
-**Out of scope:** weather ambient; IDE; App Store packaging product; NotificationPressure; camera/scene capture; new SQLite migration; PR during freeze.
+**Out of scope:** weather ambient; IDE; App Store packaging product; NotificationPressure; camera/scene capture; Phase 17 wearable/charts; new SQLite migration; PR during freeze.
 
 ---
 
@@ -96,11 +96,11 @@ Evidence: `docs/handoffs/P15-*-qa-to-pm.md` · branch `phase/15-companion-hrv-au
 
 ## Queue (Phase 16)
 
-1. **P16-E1-T1** — Ambient light plugin ← **Ready**  
-2. P16-E2-T1 — AmbientLightShare catalog Feature  
+1. ~~P16-E1-T1 — Ambient light plugin~~ ✅  
+2. **P16-E2-T1** — AmbientLightShare catalog Feature ← **Ready**
 
 **Git:** `phase/16-ambient-light` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P16-E1-T1-pm-brief.md`.  
+**Brief:** `docs/handoffs/P16-E2-T1-pm-brief.md`.  
 **Deferred (later / other tracks):** IDE · weather ambient · App Store packaging · NotificationPressure.
 
 ### Parked after Phase 16 — Phase 17 intent (ADR-017)

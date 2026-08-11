@@ -275,7 +275,7 @@ Validation: `bio_spec::validate_git_activity_payload` (also via `validate_observ
 
 ### `ambient_light` payload (ADR-015 / P16-E1 shipped)
 
-Ambient light facts are **ordinary Observations** in the existing store. ADR-015 locked the contract; collector **shipped** (P16-E1). Feature `AmbientLightShare` → **P16-E2**. Weather remains deferred.
+Ambient light facts are **ordinary Observations** in the existing store. ADR-015 locked the contract; collector **shipped** (P16-E1); Feature `AmbientLightShare` **shipped** (P16-E2). Weather remains deferred.
 
 | Field | Value |
 | :--- | :--- |

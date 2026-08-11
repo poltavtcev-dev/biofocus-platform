@@ -145,7 +145,7 @@ IDE collectors remain **deferred** (no additive privacy-safe session kind beyond
 
 | Item | Value |
 | :--- | :--- |
-| Status | **Shipped** (collector P16-E1); Feature `AmbientLightShare` → **P16-E2** |
+| Status | **Shipped** (collector P16-E1; Feature `AmbientLightShare` P16-E2) |
 | Crate | `crates/macos-collector` |
 | Plugin id | `com.biofocus.macos.ambient_light` |
 | `data_type` | `ambient_light` |
@@ -155,7 +155,7 @@ IDE collectors remain **deferred** (no additive privacy-safe session kind beyond
 | Poll | On light-band change or rare ≥5s; no busy-loop; `stop_stream` joins |
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
 | Validation | `bio_spec::validate_ambient_light_payload`; ingest `invalid_ambient_light` |
-| Feature | `AmbientLightShare` (catalog — planned P16-E2) |
+| Feature | `AmbientLightShare` (catalog §1.11; `register_ambient_light_v1` / `register_catalog_v1`) |
 
 Weather ambient collector remains **deferred**. Personal self-tracking only — not workplace light surveillance.
 
