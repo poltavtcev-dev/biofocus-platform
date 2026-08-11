@@ -1,10 +1,15 @@
-//! Optional opt-in local LLM interpret path (Ollama / OpenAI-compatible).
+//! Optional opt-in LLM interpret path (Ollama / OpenAI-compatible).
 //!
 //! Default **OFF**. Never call from app startup — hosts must invoke only on
 //! explicit user action (Dashboard wiring → P4-E3-T3). Consumes
 //! [`crate::ReportDocument::llm_prompt`] only; does **not** compute Features.
+//!
+//! Optional Bearer token via [`LOCAL_LLM_API_KEY_ENV`] for remote OpenAI-compatible
+//! providers (incl. Gemini OpenAI-compat gateways). Prefer localhost; remote URL
+//! + key is the operator’s choice. Never log or surface the key in UI/status.
 
 use std::env;
+use std::fmt;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -20,13 +25,17 @@ pub const LOCAL_LLM_BASE_URL_ENV: &str = "BIOFOCUS_LOCAL_LLM_BASE_URL";
 pub const LOCAL_LLM_MODEL_ENV: &str = "BIOFOCUS_LOCAL_LLM_MODEL";
 /// Env: HTTP timeout in seconds (default 30).
 pub const LOCAL_LLM_TIMEOUT_SECS_ENV: &str = "BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS";
+/// Env: optional Bearer API key for OpenAI-compatible endpoints that require auth.
+///
+/// Empty / missing → no `Authorization` header (typical for local Ollama).
+pub const LOCAL_LLM_API_KEY_ENV: &str = "BIOFOCUS_LOCAL_LLM_API_KEY";
 
 const DEFAULT_BASE_URL: &str = "http://127.0.0.1:11434/v1";
 const DEFAULT_MODEL: &str = "llama3.2";
 const DEFAULT_TIMEOUT_SECS: u64 = 30;
 
 /// Configuration for the optional local LLM adapter.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct LocalLlmConfig {
     /// When false, [`interpret_llm_prompt`] returns [`ReportEngineError::LocalLlmDisabled`]
     /// without opening a network connection.
@@ -37,6 +46,23 @@ pub struct LocalLlmConfig {
     pub model: String,
     /// Per-request HTTP timeout.
     pub timeout: Duration,
+    /// Optional Bearer token. Never include in UI/status DTOs or logs.
+    pub api_key: Option<String>,
+}
+
+impl fmt::Debug for LocalLlmConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LocalLlmConfig")
+            .field("enabled", &self.enabled)
+            .field("base_url", &self.base_url)
+            .field("model", &self.model)
+            .field("timeout", &self.timeout)
+            .field(
+                "api_key",
+                &self.api_key.as_ref().map(|_| "<redacted>"),
+            )
+            .finish()
+    }
 }
 
 impl LocalLlmConfig {
@@ -47,6 +73,7 @@ impl LocalLlmConfig {
             base_url: DEFAULT_BASE_URL.into(),
             model: DEFAULT_MODEL.into(),
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
+            api_key: None,
         }
     }
 
@@ -72,12 +99,16 @@ impl LocalLlmConfig {
             .and_then(|s| s.trim().parse::<u64>().ok())
             .filter(|&n| n > 0)
             .unwrap_or(DEFAULT_TIMEOUT_SECS);
+        let api_key = lookup(LOCAL_LLM_API_KEY_ENV)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
 
         Self {
             enabled,
             base_url,
             model,
             timeout: Duration::from_secs(timeout_secs),
+            api_key,
         }
     }
 }
@@ -125,7 +156,12 @@ pub async fn interpret_llm_prompt(
         stream: false,
     };
 
-    let response = client.post(&url).json(&body).send().await.map_err(|err| {
+    let mut request = client.post(&url).json(&body);
+    if let Some(key) = config.api_key.as_deref() {
+        request = request.bearer_auth(key);
+    }
+
+    let response = request.send().await.map_err(|err| {
         if err.is_timeout() {
             ReportEngineError::LocalLlmTimeout {
                 timeout_ms: u64::try_from(config.timeout.as_millis()).unwrap_or(u64::MAX),
@@ -237,6 +273,7 @@ mod tests {
         assert_eq!(cfg.base_url, DEFAULT_BASE_URL);
         assert_eq!(cfg.model, DEFAULT_MODEL);
         assert_eq!(cfg.timeout, Duration::from_secs(DEFAULT_TIMEOUT_SECS));
+        assert!(cfg.api_key.is_none());
     }
 
     #[test]
@@ -246,12 +283,27 @@ mod tests {
             LOCAL_LLM_BASE_URL_ENV => Some("http://127.0.0.1:9999/v1".into()),
             LOCAL_LLM_MODEL_ENV => Some("mistral".into()),
             LOCAL_LLM_TIMEOUT_SECS_ENV => Some("12".into()),
+            LOCAL_LLM_API_KEY_ENV => Some(" sk-test-secret ".into()),
             _ => None,
         });
         assert!(cfg.enabled);
         assert_eq!(cfg.base_url, "http://127.0.0.1:9999/v1");
         assert_eq!(cfg.model, "mistral");
         assert_eq!(cfg.timeout, Duration::from_secs(12));
+        assert_eq!(cfg.api_key.as_deref(), Some("sk-test-secret"));
+        let dbg = format!("{cfg:?}");
+        assert!(dbg.contains("<redacted>"));
+        assert!(!dbg.contains("sk-test-secret"));
+    }
+
+    #[test]
+    fn from_env_lookup_ignores_blank_api_key() {
+        let cfg = LocalLlmConfig::from_env_lookup(|key| match key {
+            LOCAL_LLM_ENV => Some("1".into()),
+            LOCAL_LLM_API_KEY_ENV => Some("   ".into()),
+            _ => None,
+        });
+        assert!(cfg.api_key.is_none());
     }
 
     #[test]
@@ -297,12 +349,33 @@ mod tests {
             base_url: base,
             model: "test-model".into(),
             timeout: Duration::from_secs(5),
+            api_key: None,
         };
 
         let text = interpret_report(&doc, &config).await.expect("interpret");
         assert_eq!(text, "Calm local summary.");
         assert_eq!(hits.load(Ordering::SeqCst), 1);
         assert!(doc.llm_prompt.contains("Do not invent metrics"));
+    }
+
+    #[tokio::test]
+    async fn enabled_sends_bearer_when_api_key_set() {
+        let hits = Arc::new(AtomicUsize::new(0));
+        let (base, _shutdown) = spawn_mock(hits.clone(), MockMode::RequireBearer).await;
+
+        let config = LocalLlmConfig {
+            enabled: true,
+            base_url: base,
+            model: "test-model".into(),
+            timeout: Duration::from_secs(5),
+            api_key: Some("test-api-key".into()),
+        };
+
+        let text = interpret_llm_prompt("prompt only", &config)
+            .await
+            .expect("interpret with bearer");
+        assert_eq!(text, "Calm local summary.");
+        assert_eq!(hits.load(Ordering::SeqCst), 1);
     }
 
     #[tokio::test]
@@ -315,6 +388,7 @@ mod tests {
             base_url: base,
             model: "test-model".into(),
             timeout: Duration::from_millis(80),
+            api_key: None,
         };
 
         let err = interpret_llm_prompt("prompt only", &config)
@@ -333,6 +407,7 @@ mod tests {
             base_url: base,
             model: "test-model".into(),
             timeout: Duration::from_secs(5),
+            api_key: None,
         };
 
         let err = interpret_llm_prompt("x", &config)
@@ -351,6 +426,7 @@ mod tests {
             base_url: base,
             model: "test-model".into(),
             timeout: Duration::from_secs(5),
+            api_key: None,
         };
 
         let err = interpret_llm_prompt("x", &config).await.expect_err("http");
@@ -362,12 +438,15 @@ mod tests {
         Slow,
         EmptyChoices,
         Fail,
+        RequireBearer,
     }
 
     async fn spawn_mock(
         hits: Arc<AtomicUsize>,
         mode: MockMode,
     ) -> (String, oneshot::Sender<()>) {
+        use axum::http::HeaderMap;
+
         #[derive(Clone)]
         struct AppState {
             hits: Arc<AtomicUsize>,
@@ -380,6 +459,7 @@ mod tests {
             Slow,
             EmptyChoices,
             Fail,
+            RequireBearer,
         }
 
         let mode = match mode {
@@ -387,6 +467,7 @@ mod tests {
             MockMode::Slow => MockModeKind::Slow,
             MockMode::EmptyChoices => MockModeKind::EmptyChoices,
             MockMode::Fail => MockModeKind::Fail,
+            MockMode::RequireBearer => MockModeKind::RequireBearer,
         };
 
         let state = AppState { hits, mode };
@@ -394,14 +475,28 @@ mod tests {
             .route(
                 "/v1/chat/completions",
                 post(
-                    |State(state): State<AppState>, Json(body): Json<Value>| async move {
+                    |State(state): State<AppState>,
+                     headers: HeaderMap,
+                     Json(body): Json<Value>| async move {
                         state.hits.fetch_add(1, Ordering::SeqCst);
                         // Prompt-only contract: user messages only; no Feature payload.
                         assert!(body.get("messages").is_some());
                         assert!(body.get("features").is_none());
 
+                        if matches!(state.mode, MockModeKind::RequireBearer) {
+                            let auth = headers
+                                .get(axum::http::header::AUTHORIZATION)
+                                .and_then(|v| v.to_str().ok());
+                            if auth != Some("Bearer test-api-key") {
+                                return (
+                                    StatusCode::UNAUTHORIZED,
+                                    Json(json!({ "error": "missing bearer" })),
+                                );
+                            }
+                        }
+
                         match state.mode {
-                            MockModeKind::Ok => (
+                            MockModeKind::Ok | MockModeKind::RequireBearer => (
                                 StatusCode::OK,
                                 Json(json!({
                                     "choices": [{

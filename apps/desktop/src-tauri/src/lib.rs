@@ -1720,10 +1720,15 @@ mod tests {
             base_url: "http://127.0.0.1:11434/v1".into(),
             model: "llama3.2".into(),
             timeout: std::time::Duration::from_secs(30),
+            api_key: Some("must-not-leak".into()),
         };
         let dto = local_llm_provider_status(&cfg);
         assert_eq!(dto.status, "ready");
         assert_eq!(dto.model.as_deref(), Some("llama3.2"));
+        let wire = serde_json::to_string(&dto).expect("s");
+        assert!(!wire.contains("must-not-leak"));
+        assert!(!wire.contains("api_key"));
+        assert!(!wire.contains("Bearer"));
     }
 
     #[test]
@@ -1733,6 +1738,7 @@ mod tests {
             base_url: "not-a-url".into(),
             model: "llama3.2".into(),
             timeout: std::time::Duration::from_secs(30),
+            api_key: None,
         };
         let dto = local_llm_provider_status(&cfg);
         assert_eq!(dto.status, "error");

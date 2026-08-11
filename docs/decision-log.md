@@ -26,6 +26,7 @@
 | ADR-022 | 2026-08-11 | **Phase 21:** catalog Feature **`DeepWorkScore`** = Feature-level composite of **`FocusScore` + `ContextSwitchRate`** (idle **dropped** for v1); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “sustained focus in this window” framing | PM-GATE-POST-P20 chose DeepWorkScore after CognitiveLoad; FocusScore + CSR long shipped. Compose high Focus + low CSR — do not invent parallel FocusScore. Personal self-tracking only | Clinical “flow state” / burnout / ADHD; workplace surveillance; new Observation families; rewriting FocusScore / CSR; idle Observation invent; IDE / weather / App Store / AttentionStability / CircadianOffset as P21 primary; PR during freeze; migration without approve |
 | ADR-023 | 2026-08-11 | **Phase 22:** catalog Feature **`AttentionStability`** = Feature-level **variance/stability** composite of **`FocusScore` + `ContextSwitchRate`** (distinct from DeepWorkScore intensity); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; Focus term from **in-window Focus range** (not Focus level); ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “focus stability in this window” framing | PM-GATE-POST-P21 chose AttentionStability after DeepWorkScore; same leaves, different question (consistency vs intensity). Personal self-tracking only | Clinical ADHD / “you can’t focus”; workplace surveillance; new Observation families; rewriting FocusScore / CSR / DeepWorkScore; using Focus level as intensity (DeepWorkScore); IDE / weather / App Store / CircadianOffset as P22 primary; PR during freeze; migration without approve |
 | ADR-024 | 2026-08-11 | **Phase 23:** **Personal Context Layer** — three pillars: (**1**) reference bands **Variant B** (personal baseline primary; literature secondary, cited calm orienting ranges); (**2**) opt-in **user-declared** health context → prompt packs / report (L5); (**3**) **desk-away** from secondary signals (**no** precise GPS). Prefer local config (`~/.biofocus/…`); **no** migration v1; Features stay provider-agnostic | PM-GATE-POST-P22 chose Personal Context Layer (supersedes CircadianOffset draft). Focus-ladder Features shipped — next gap is interpretation + presence context without medical/GPS product | Precise GPS / continuous geo; clinical diagnosis engine; LLM inventing conditions; cloud health sync by default; workplace presence monitoring; rewriting Focus/Stress from disease tags; CircadianOffset / IDE / weather / App Store as P23 primary; PR during freeze; migration without approve |
+| ADR-025 | 2026-08-12 | **Phase 24:** catalog Feature **`CircadianOffset`** = **Observation-level timing** composite of **sleep timing** (`sleep_interval`) vs **work/activity timing** (`keystrokes` / `context_window`, optional `step_count` / `active_energy` / workout `life_event`); Feature cadence **15m / 1m** with **24h lookback**; output **0–100** alignment (not signed hours); **omit** unless both sleep + work/activity timing present; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “schedule alignment in this window” framing | PM-GATE-POST-P23 chose CircadianOffset after Personal Context; sleep + activity Observations already shipped (P17+). Timing alignment ≠ SleepDebt magnitude ≠ DeskAwayPresence. Personal self-tracking only | Clinical chronotype / circadian-disorder / “night owl so you fail”; workplace schedule surveillance; new Observation families; rewriting SleepDebt / EnergyScore / ActivityBalance / FocusScore; Feature-level SleepDebt/EnergyScore as timing; signed chronotype hours as primary units; IDE / weather / App Store / TypingRhythm as P24 primary; precise GPS; PR during freeze; migration without approve |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1802,3 +1803,139 @@ E3 (optional)
 10. **Hard-coding Apple-only APIs into Features** — contracts stay provider-agnostic.
 11. **One mega Insight rule** for all reference bands — case catalog only.
 12. **Large literature library as E2 primary** — deferred behind desk-away + health→prompt.
+
+
+### ADR-025 detail — Phase 24: CircadianOffset Feature scope (v1)
+
+> **Relationship:** Catalog backlog named **`CircadianOffset`** as alignment of work vs chronotype proxy from **sleep + activity timing**, deferred until after Personal Context. Phase 23 shipped presence/context (`DeskAwayPresence` + health→prompt); P17 shipped `SleepDebt` / `EnergyScore` / `ActivityBalance` and sleep/activity Observations. **PM-GATE-POST-P23** chose CircadianOffset as Phase 24 primary. **ADR-025** locks Observation-level timing inputs, formula stance, omit policy, and calm framing **before** math lands in `feature-engine`. Implement in **P24-E2**; optional dogfood / calm Dashboard surface in **P24-E3**. Epic split: `docs/SPRINT_ROADMAP.md` Phase 24.
+
+| Layer | Role in Phase 24 v1 |
+| :--- | :--- |
+| Inputs (Observation-level timing) | Already-shipped families: **`sleep_interval`** (sleep timing) + **work/activity timing** from **`keystrokes` / `context_window`** (preferred) with optional reinforcement **`step_count` / `active_energy` / workout `life_event`** |
+| Feature (`feature-engine`) | E2: new catalog node **`CircadianOffset`** — schedule-alignment score 0–100; ADR-007 confidence; optional explanation factors |
+| Observation (SQLite) | **Unchanged** — reuse existing sleep + desktop/wearable families; **no** new `data_type` |
+| Leaf / sibling Features | **Do not** rewrite SleepDebt / EnergyScore / ActivityBalance / FocusScore / DeskAwayPresence; **do not** treat those magnitudes as timing proxies |
+| Siblings | **Distinct from SleepDebt** (debt magnitude ≠ timing alignment) and **DeskAwayPresence** (away-from-desk ≠ circadian offset) |
+| LLM | L5 interpret-only — must **not** invent CircadianOffset scores or chronotype / sleep-disorder claims |
+
+#### Chosen v1 input set: Observation-level sleep timing + work/activity timing
+
+Exactly **one** input stance for Phase 24 v1:
+
+1. **Prefer Observation-level timing** (not Feature-level SleepDebt / EnergyScore / ActivityBalance): those Features measure **magnitude / volume / sufficiency**, not clock alignment of sleep midpoint vs work/activity midpoint.
+2. **Sleep timing:** qualifying `sleep_interval` Observations (same rest stages as SleepDebt: `asleep` / `in_bed` / missing stage; `awake` / `unknown` do not contribute). Derive a lookback **sleep midpoint** from overlapping intervals.
+3. **Work/activity timing:** preferred desktop work evidence — timestamps of active **`keystrokes`** and/or **`context_window`** in the lookback. Optional reinforcement when desk signals are thin: **`step_count`**, **`active_energy`**, or workout **`life_event`** as activity timing (still timing centroids — not ActivityBalance volume math).
+4. **Why not Feature-level composite:** no shipped Feature exposes sleep midpoint or work midpoint; composing SleepDebt×ActivityBalance would invent a false “alignment” from debt × steps.
+5. **Hard gap check:** sleep + keystrokes / context / steps / energy already ship (P3 / P17). **Zero** new Observation `data_type` in v1.
+
+#### Formula stance sketch (for P24-E2)
+
+```text
+Feature cadence (window / step): 15 minutes / 1 minute (align catalog DAG; series may coarsen)
+Lookback for timing math: 24 hours ending at window end
+  (Longer lookback preferred — sleep + work schedule needs a day; mirrors SleepDebt rest lookback.
+   Do NOT invent multi-day chronotype profiling in v1.)
+
+Compose HIGH alignment (0–100) — NOT signed chronotype hours; NOT clinical labels:
+
+  sleep_intervals = qualifying sleep_interval overlaps in [end−24h, end]
+  if empty → OMIT
+
+  sleep_mid = midpoint of union(sleep_intervals)   # UTC instant
+
+  work_evidence = active keystrokes and/or context_window timestamps in lookback
+  if work_evidence thin:
+    may reinforce with step_count / active_energy / workout life_event timestamps
+  if still empty → OMIT
+
+  work_mid = centroid (time-weighted midpoint) of work/activity evidence
+
+  # Expected mid-wake relative to recent sleep (calm schedule heuristic — not chronotype class)
+  expected_wake_mid = sleep_mid + 12h   (circular day)
+  offset_hours = circular_hours(|work_mid − expected_wake_mid|)   # 0..12
+
+  # Map offset → alignment: 0h → 100; saturates toward 0 by ~6h
+  value = clamp(100 × (1 − offset_hours / 6.0), 0, 100)
+
+Units (LOCKED): dimensionless 0–100 alignment score.
+  Rejected as primary units: signed hours / “owl vs lark” labels —
+  signed offsets invite clinical / judgmental chronotype copy; 0–100 matches catalog Features.
+
+Missing-input policy (LOCKED):
+  • If sleep timing ABSENT → OMIT CircadianOffset
+  • If work/activity timing ABSENT → OMIT CircadianOffset
+  • Do NOT renormalize a single slot into “alignment”
+  • Do NOT invent sleep from SleepDebt Feature or work from FocusScore level
+  (Optional reinforcement inside the work/activity slot is OK when desk signals thin —
+   that is within-slot evidence, not cross-slot renormalize.)
+
+Confidence (ADR-007 sketch):
+  expected_slots = 2   # sleep_timing / work_activity_timing
+  present_slots  = 2 only when both present (else omit — no 1-slot emit)
+  coverage       = present_slots / 2   # = 1.0 when emitted
+  mean_evidence  = mean(Observation.confidence of contributing evidence)
+  Feature.confidence = clamp(coverage × mean_evidence, 0.0, 1.0)
+  (If E2 distinguishes rich desk work vs activity-only reinforcement, may down-weight
+   mean_evidence — still obey omit-without-both-slots.)
+
+Provenance: union of Observation IDs from present sleep + work/activity evidence.
+
+Optional explanation factors (when emitted):
+  sleep_timing (“Sleep timing”), work_timing (“Work timing”);
+  optional activity_timing (“Activity timing”) when reinforcement used;
+  shares sum to 1.0. Calm composition only — not clinical.
+
+Framing / copy:
+  “schedule alignment in this window” — NOT “wrong chronotype” / “you are a night owl
+  so you fail” / circadian-disorder / sleep-disorder / burnout diagnosis.
+  Distinct from SleepDebt (“rest shortfall”) and DeskAwayPresence (“away from desk”).
+```
+
+#### Schema (v1)
+
+- Prefer existing `observations` store + existing Feature DAG only.
+- **No new SQLite tables/columns**; **no** Feature-history store (24h lookback recompute-on-read from Observations — ADR-008 stance).
+- **Do not apply** any migration for this ADR.
+- Future multi-day chronotype profile / new Observation family → **new ADR + user approve**.
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 24)
+
+```text
+E1 (P24-E1-T1) — THIS ADR
+  Lock CircadianOffset Feature scope: Observation-level sleep + work/activity timing;
+  15m/1m cadence + 24h lookback; 0–100 alignment (not signed hours);
+  omit unless both slots present; ADR-007 slots=2;
+  distinct from SleepDebt / DeskAwayPresence; calm framing; rejected alts; no migration
+
+E2 (P24-E2-T1)
+  Ship CircadianOffset in feature-engine + catalog §1 finalize
+  register_* / register_catalog_v1 after wearable / focus nodes as appropriate
+  Unit tests: rich sleep+work / sleep+activity-only / omit without sleep /
+  omit without work/activity / confidence / factors
+  Do NOT rewrite SleepDebt / EnergyScore / ActivityBalance / FocusScore / DeskAwayPresence
+
+E3 (optional)
+  Dogfood / calm Dashboard surface (snapshot series) — still non-clinical copy
+  Suggested calm chart label: Schedule alignment
+```
+
+#### Docs policy for this ADR
+
+- Planned → ADR sketch notes land now in `docs/06-feature-catalog.md`, `docs/12-development.md`, `docs/16-glossary.md`.
+- Full §1 formula finalize + DAG registration names → **P24-E2** (must still obey this ADR).
+
+#### Rejected alternatives
+
+1. **Clinical chronotype / circadian-disorder / “you are a night owl so you fail” claims** — Non-Goal; calm personal schedule alignment only.
+2. **Workplace / employer schedule surveillance** or manager dashboards — personal self-tracking only.
+3. **Inventing new Observation families** this phase — sleep + work/activity inputs already ship.
+4. **Rewriting SleepDebt / EnergyScore / ActivityBalance / FocusScore / DeskAwayPresence** leaf or sibling formulas — compose timing from Observations; do not reopen magnitude Features.
+5. **Using SleepDebt / EnergyScore / ActivityBalance as timing proxies** (Feature-level composite) — rejected; those are not clock alignment.
+6. **Signed offset hours / owl-lark labels as primary Feature units** — rejected; 0–100 alignment score only.
+7. **Renormalize / emit with only sleep or only work** — without both slots there is no alignment signal under this ADR.
+8. **IDE plugin / weather ambient / App Store packaging / TypingRhythm as Phase 24 primary** — deferred (PM-GATE-POST-P23).
+9. **Precise GPS** for schedule / location chronobiology — rejected (ADR-024 bar; no reopen).
+10. **Opening a PR during freeze** — local branch `phase/24-circadian-offset` until 2026-09-01.
+11. **Applying a migration without user approve** — this ADR chooses no migration.
+12. **LLM inventing CircadianOffset scores or chronotype diagnoses** — L5 interpret-only.
+13. **Parallel “Circadian Engine” crate** — extend `feature-engine` catalog only.

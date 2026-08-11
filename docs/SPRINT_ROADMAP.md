@@ -1,10 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 23: Personal Context Layer** (Sprint 45–46) — **Active**.  
-> Phase 0–22 Done. Gate **PM-GATE-POST-P22** ✅ · **ADR-024** ✅ · `DeskAwayPresence` + health→prompt shipped · Ready **P23-E3-T1**.  
-> **Supersedes** same-day CircadianOffset gate draft.
+> **Phase 24: CircadianOffset** (Sprint 47–48) — **Active**.  
+> Phase 0–23 Done. Gate **PM-GATE-POST-P23** ✅ · chose **`CircadianOffset`** · Ready **P24-E1-T1**.  
+> Deferred: IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · precise GPS.
 
-**Phase 23 outcome (target):** **ADR-024** ✅ locks Personal Context Layer → **`DeskAwayPresence` + health→prompt shipped** → optional dogfood / calm surface. Reference bands = Variant B. No precise GPS. Calm non-clinical framing.
+**Phase 24 outcome (target):** **ADR-025** locks `CircadianOffset` → ship catalog Feature from existing sleep/activity timing inputs → optional dogfood / calm surface. Calm non-clinical framing (“schedule alignment in this window”). No chronotype diagnosis. No new Observation family unless ADR proves a hard gap.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -30,21 +30,22 @@
 - [ ] **Chart ranges:** recompute-on-read; UI ↛ SQLite; Snapshot = latest (series on chart)
 - [ ] **Notifications:** opt-in; coarse counts/cadence only — **no** notification body/title/content; personal self-tracking only
 - [ ] **Personal context:** Variant B framing; user-declared health only; no precise GPS desk-away; no diagnosis from biometrics
+- [ ] **Circadian:** schedule-alignment framing only — no chronotype / sleep-disorder diagnosis
 
 ---
 
-## Kanban Overview (Phase 23)
+## Kanban Overview (Phase 24)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P23-E3-T1** |
+| **Ready** | **P24-E1-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–22 · **PM-GATE-POST-P14…P22** · **P23-E1-T1** · **P23-E2-T1** · **P22-E1–E3** (see archives) |
+| **Done** | Phase 0–23 · **PM-GATE-POST-P14…P23** · **P23-E1–E3** · **P22-E1–E3** (see archives) |
 
-**Epic status:** Phase 23 Active (E1–E2 ✅ · E3 Ready) · Phase 22 ✅
+**Epic status:** Phase 24 Active (E1 Ready) · Phase 23 ✅
 
-**Phase 23 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-024** ✅ · Feature + health→prompt shipped · E3 Ready
+**Phase 24 on `/docs/14-roadmap.md`:** opened 2026-08-11 · gate **PM-GATE-POST-P23** ✅ · Ready E1 ADR-025
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -52,35 +53,48 @@
 
 ### Active assignment
 
-**Ready now:** **P23-E3-T1** — Dogfood notes + optional calm UI for Personal Context Layer. Brief: `docs/handoffs/P23-E3-T1-pm-brief.md`. Role: **Dev** (+ UX if UI).
+**Ready now:** **P24-E1-T1** — ADR-025 lock `CircadianOffset` Feature scope. Brief: `docs/handoffs/P24-E1-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **P23-E2-T1** (2026-08-11) — `DeskAwayPresence` + health→prompt shipped (QA Pass).
+**Just closed:** **PM-GATE-POST-P23** (2026-08-11) — chose **`CircadianOffset`** → Phase 24 opened.
 
-**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 23 on `phase/23-personal-context`.
+**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 24 on `phase/24-circadian-offset`.
+
+---
+
+## Phase 24 — CircadianOffset (Active)
+
+### Epic P24-E1 — Contracts ADR (**ADR-025**)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P24-E1-T1** ← Ready | Lock `CircadianOffset` Feature scope (**ADR-025**) | Dev | docs + decision-log |
+
+### Epic P24-E2 — First ship slice
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P24-E2-T1** | Ship catalog Feature `CircadianOffset` | Dev | `feature-engine` + docs |
+
+### Epic P24-E3 — Dogfood / surface (optional)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P24-E3-T1** | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
 
 ---
 
-## Phase 23 — Personal Context Layer (Active)
+## Phase 23 archive (Done)
 
-### Epic P23-E1 — Contracts ADR (**ADR-024**)
+<details>
+<summary>Phase 23 Kanban & epics (closed 2026-08-11 — Personal Context Layer)</summary>
 
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P23-E1-T1** ✅ Done | Lock Personal Context Layer (**ADR-024**) | Dev | docs + decision-log |
+**Done:** P23-E1 (T1) · P23-E2 (T1) · P23-E3 (T1).  
+**ADR-024** · `DeskAwayPresence` Feature · health→prompt · dogfood + calm Dashboard **Away from desk**.  
+Branch: `phase/23-personal-context` (cluster PR after freeze).
 
-### Epic P23-E2 — First ship slice
+Evidence: `docs/handoffs/P23-*-qa-to-pm.md`.
 
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P23-E2-T1** ✅ Done | Ship first slice per ADR-024 (`DeskAwayPresence` + health→prompt) | Dev | core crates + docs |
-
-### Epic P23-E3 — Dogfood / surface (optional)
-
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P23-E3-T1** ← Ready | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
-
----
+</details>
 
 ## Phase 22 archive (Done)
 
@@ -123,13 +137,13 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 
 ---
 
-## Queue (Phase 23)
+## Queue (Phase 24)
 
-1. **P23-E1-T1** — ADR-024 Personal Context Layer ← **Done**  
-2. **P23-E2-T1** — First ship slice (`DeskAwayPresence` + health→prompt) ← **Done**  
-3. **P23-E3-T1** — Dogfood / optional surface ← **Ready**  
+1. **P24-E1-T1** — ADR-025 CircadianOffset ← **Ready**  
+2. **P24-E2-T1** — Ship catalog Feature  
+3. **P24-E3-T1** — Dogfood / optional surface  
 
-**Deferred:** IDE · weather · App Store · Companion polish-as-primary · CircadianOffset · TypingRhythm · precise GPS.
+**Deferred:** IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · precise GPS.
 
-**Git:** Phase 23 on `phase/23-personal-context` → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P23-E3-T1-pm-brief.md`.
+**Git:** Phase 24 on `phase/24-circadian-offset` → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P24-E1-T1-pm-brief.md`.

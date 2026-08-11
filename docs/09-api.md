@@ -315,7 +315,7 @@ let interpreted = interpret_report(&doc, &config).await?; // Err(LocalLlmDisable
 | `llm_prompt` | Same markdown wrapped with interpret-only instructions (no Feature math, non-clinical). |
 | `interpret_report` / `interpret_llm_prompt` | Opt-in HTTP to OpenAI-compatible `/chat/completions` (default Ollama `http://127.0.0.1:11434/v1`). Sends prompt string only. Timeout + `thiserror`. |
 
-Env: `BIOFOCUS_LOCAL_LLM=1`, optional `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL`, `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS`. Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite. Builder path has no HTTP; LLM path is explicit + disabled by default.
+Env: `BIOFOCUS_LOCAL_LLM=1`, optional `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL`, `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS`, optional `BIOFOCUS_LOCAL_LLM_API_KEY` (Bearer when set; omit header when empty — typical for local Ollama). **Never** return the API key from `get_local_llm_status` / report DTOs. Scalars render as fixed 4-decimal strings; object Feature values as compact JSON. Does not open SQLite. Builder path has no HTTP; LLM path is explicit + disabled by default.
 
 ### Prompt packs (P11-E2-T1 / ADR-011)
 

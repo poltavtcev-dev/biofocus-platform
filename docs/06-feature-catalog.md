@@ -269,7 +269,7 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | deferred (after Personal Context) |
+| `CircadianOffset` | Alignment of work vs sleep/activity timing (calm schedule alignment) | sleep + activity timing | **Phase 24** (ADR-025 / P24-E1 Ready) |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
@@ -283,4 +283,6 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 > **Phase 22 note (ADR-023 / P22-E2):** Catalog Feature **`AttentionStability`** **shipped** — Feature-level Focus range + optional CSR; distinct from DeepWorkScore; §1.18 above.
 >
 > **Phase 23 note (ADR-024 / P23-E2):** **Personal Context Layer** — **`DeskAwayPresence` shipped** (§1.19); health-context local config + prompt-pack injection shipped (L5 consume-only). Variant B large literature library deferred. Provider-agnostic Observation contracts.
+>
+> **Phase 24 note (PM-GATE-POST-P23):** Primary track = catalog Feature **`CircadianOffset`** — lock via **ADR-025** (P24-E1 Ready). Calm schedule-alignment framing; no chronotype diagnosis.
 **Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; others may omit until wired).

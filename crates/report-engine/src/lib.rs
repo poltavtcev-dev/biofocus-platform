@@ -45,8 +45,8 @@ pub use health_context::{
     BIOFOCUS_HOME_ENV, HEALTH_CONTEXT_FILE_NAME, V1_HEALTH_CONDITION_IDS,
 };
 pub use llm::{
-    interpret_llm_prompt, interpret_report, LocalLlmConfig, LOCAL_LLM_BASE_URL_ENV, LOCAL_LLM_ENV,
-    LOCAL_LLM_MODEL_ENV, LOCAL_LLM_TIMEOUT_SECS_ENV,
+    interpret_llm_prompt, interpret_report, LocalLlmConfig, LOCAL_LLM_API_KEY_ENV,
+    LOCAL_LLM_BASE_URL_ENV, LOCAL_LLM_ENV, LOCAL_LLM_MODEL_ENV, LOCAL_LLM_TIMEOUT_SECS_ENV,
 };
 pub use packs::{
     build_report_with_pack, build_report_with_pack_and_health, default_prompt_pack,

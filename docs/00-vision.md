@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P23-E3-T1** (Personal Context dogfood). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P24-E1-T1** (CircadianOffset ADR). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -84,7 +84,8 @@ Immediate Kanban = **P23-E3-T1** (Personal Context dogfood). Below is the accept
 | **20** | Done — CognitiveLoad (**ADR-021** → Feature + dogfood + Combined demand) |
 | **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
 | **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
-| **23** | Active — Personal Context Layer (**ADR-024** ✅ · Feature + health→prompt shipped · Ready P23-E3); deferred IDE · weather · App Store · CircadianOffset |
-| **24+** | Open via later PM gate — IDE · weather · App Store · Companion polish · CircadianOffset |
+| **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
+| **24** | Active — CircadianOffset (**PM-GATE-POST-P23** ✅ · Ready P24-E1); deferred IDE · weather · App Store · TypingRhythm |
+| **25+** | Open via later PM gate — IDE · weather · App Store · Companion polish · TypingRhythm |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

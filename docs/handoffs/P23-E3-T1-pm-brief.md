@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev (+ UX if UI)  
-**Status:** Ready  
+**Status:** Done (2026-08-11) — QA Pass · Phase 23 closed · next **PM-GATE-POST-P23**  
 **Date:** 2026-08-11  
 **Closed previous:** P23-E2-T1 (`DeskAwayPresence` + health→prompt shipped; QA Pass)  
 **Evidence:** `docs/handoffs/P23-E2-T1-qa-to-pm.md` · `docs/handoffs/P23-E2-T1-dev-to-qa.md`  
