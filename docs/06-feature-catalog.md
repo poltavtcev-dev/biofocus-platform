@@ -187,23 +187,21 @@
 - **Explanation factors:** `rest` / `shortfall` renormalized shares.
 - **DAG:** независимый узел; `register_wearable_v1` / `register_catalog_v1`.
 
-### 1.15 `NotificationPressure` (P18 — ADR-019 lock → E3 formula)
-
-> **Status:** Observation contract **locked** (ADR-019 / P18-E1). Collector → **P18-E2**. **Formula / catalog node → P18-E3** (stub below is scope only — not shipped math).
-
-- **Goal:** Calm **interruption intensity** proxy from notification cadence — personal observation of how often alerts arrived in a window. **Not** clinical ADHD / anxiety diagnosis; **not** workplace productivity scoring; **not** “you should mute everything.”
-- **Window:** 15 minutes (sliding; default 1m step; series may coarsen) — align with Focus catalog when E3 ships.
-- **Inputs (required to emit):** `notification_event` Observations (`count` ≥ 1; optional closed-set `category` / `interruption_level` / `app_kind`).
-- **Formula Strategy (v1 sketch for E3):** Sum `count` in-window → map to 0–100 intensity (exact anchors in E3). Optional factors from present closed-set labels (renormalized shares).
-- **Omit policy:** empty window / no `notification_event` → **omit** Feature.
-- **Output (planned):** Float (0.0 — 100.0).
+### 1.15 `NotificationPressure` (P18-E3 / ADR-019 — shipped)
+- **Goal:** Calm **interruption intensity** proxy from notification cadence — personal observation of how often alerts arrived in a window. “Interruption intensity in this window” — **not** clinical ADHD / anxiety diagnosis; **not** workplace productivity scoring; **not** “you are overloaded” / “you should mute everything.”
+- **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR / AmbientLightShare; series may coarsen.
+- **Inputs (required):** `notification_event` Observations with usable `count` ≥ 1 (`count` required; optional closed-set `category` / `interruption_level` / `app_kind`). **No** body / title / message content (Observation contract forbids storing them).
+- **Formula Strategy (v1):** Sum `count` over usable in-window events → intensity map:
+  - `value = clamp(100 × sum / 20, 0, 100)` with saturation **20** deliveries in the 15m window → 100.
+  - Optional explanation factors: prefer `category` count-shares; else `interruption_level`; else `app_kind` when present (shares sum to 1.0). Count-only windows emit without factors.
+- **Omit policy:** empty window / no usable `notification_event` → **omit** Feature (soft-fail OS probe often emits nothing — Feature works on scripted / HTTP-ingest fixtures).
+- **Output:** Float (0.0 — 100.0).
 - **Units:** dimensionless interruption-intensity score.
-- **Provenance:** Observation IDs of `notification_event` in the window.
+- **Provenance:** Observation IDs of usable `notification_event` in the window.
 - **Confidence (ADR-007):** single family (`notification_event`); when emitted `confidence = mean(evidence Observation.confidence)`.
-- **Explanation factors (planned):** optional shares for present `category` / `interruption_level` / `app_kind` labels.
-- **DAG (planned):** независимый узел; `register_notification_v1` / `register_catalog_v1` in E3.
-- **Privacy:** Feature must never surface notification body/title text (Observation contract forbids storing them).
-
+- **Explanation factors:** optional closed-set label shares as above (calm labels only).
+- **DAG:** независимый узел; `feature_engine::register_notification_v1` / `register_catalog_v1`.
+- **Privacy:** Feature must never surface notification body/title text.
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
@@ -218,6 +216,6 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-> **Phase 18 note (ADR-019):** `notification_event` Observation family + `NotificationPressure` scope are **locked**. Collector → **P18-E2**; Feature formula → **P18-E3**. No body/title content; personal self-tracking only. `CognitiveLoad` remains later (needs more inputs).
+> **Phase 18 note (ADR-019):** `notification_event` Observation family + collector + catalog Feature **`NotificationPressure`** are **shipped** (P18-E1–E3). No body/title content; personal self-tracking only. `CognitiveLoad` remains later (needs more inputs).
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure` planned; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; others may omit until wired).

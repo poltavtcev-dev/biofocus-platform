@@ -35,17 +35,17 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P18-E2-T1** |
+| **Ready** | **P18-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–17 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** · **P17-E2-T1** · **P17-E3-T1** · **P18-E1-T1** |
+| **Done** | Phase 0–17 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** · **P17-E2-T1** · **P17-E3-T1** · **P18-E1-T1** · **P18-E2-T1** |
 
-**Epic status:** P18-E1 ✅ · P18-E2 ○ · P18-E3 ○ · Phase 17 ✅
+**Epic status:** P18-E1 ✅ · P18-E2 ✅ · P18-E3 ○ · Phase 17 ✅
 
-**Phase 18 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-019** ✅ · Ready E2 collector
+**Phase 18 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-019** ✅ · E1+E2 Done · Ready E3 Feature
 
 **Рекомендуемый порядок (Phase 18):**  
-P18-E1-T1 (ADR-019) ✅ → P18-E2-T1 (collector) → P18-E3-T1 (`NotificationPressure`)
+P18-E1-T1 (ADR-019) ✅ → P18-E2-T1 (collector) ✅ → P18-E3-T1 (`NotificationPressure`)
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -53,9 +53,9 @@ P18-E1-T1 (ADR-019) ✅ → P18-E2-T1 (collector) → P18-E3-T1 (`NotificationPr
 
 ### Active assignment
 
-**Ready now:** **P18-E2-T1** — Implement notification collector plugin per **ADR-019**. Brief: `docs/handoffs/P18-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P18-E3-T1** — Ship catalog Feature **`NotificationPressure`** per **ADR-019**. Brief: `docs/handoffs/P18-E3-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **P18-E1-T1** (2026-08-11) — **ADR-019** locks `notification_event` + `NotificationPressure` scope (QA Pass). Branch: `phase/18-notification-pressure`. Evidence: `docs/handoffs/P18-E1-T1-qa-to-pm.md`.
+**Just closed:** **P18-E2-T1** (2026-08-11) — notification collector plugin (QA Pass). Branch: `phase/18-notification-pressure`. Evidence: `docs/handoffs/P18-E2-T1-qa-to-pm.md`. Note: live Notification Center OS mapping still soft-fail idle; Feature works on scripted / fixture / ingest evidence.
 
 **Ops note:** **PR freeze until 2026-09-01** — Phase 18 on `phase/18-notification-pressure`; local commits OK; no PR.
 
@@ -71,19 +71,20 @@ P18-E1-T1 (ADR-019) ✅ → P18-E2-T1 (collector) → P18-E3-T1 (`NotificationPr
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **P18-E1-T1** ✅ | Lock notification Observation + `NotificationPressure` scope (**ADR-019**) | Dev | docs + decision-log | See `P18-E1-T1-pm-brief.md` | PM-GATE-POST-P17 |
 
-### Epic P18-E2 — Notification collector
-**Goal:** Opt-in macOS plugin (`com.biofocus.macos.notifications`, `BIOFOCUS_NOTIFICATION_EVENTS`) emits locked `notification_event` Observations via existing ingest channel (no body/title content).
+### Epic P18-E2 — Notification collector ✅
+**Goal:** Opt-in macOS plugin (`com.biofocus.macos.notifications`, `BIOFOCUS_NOTIFICATION_EVENTS`) emits locked `notification_event` Observations via existing ingest channel (no body/title content).  
+**Status:** Done 2026-08-11 (QA Pass). Evidence: `docs/handoffs/P18-E2-T1-qa-to-pm.md`. System probe soft-fails idle until privacy-safe OS mapping exists.
 
 | ID | Task | Role | Modules | AC | Depends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P18-E2-T1** | Implement notification collector plugin per ADR-019 | Dev | macos-collector + bio-spec/pipeline | See `P18-E2-T1-pm-brief.md` | P18-E1-T1 ✅ |
+| **P18-E2-T1** ✅ | Implement notification collector plugin per ADR-019 | Dev | macos-collector + bio-spec/pipeline | See `P18-E2-T1-pm-brief.md` | P18-E1-T1 ✅ |
 
 ### Epic P18-E3 — NotificationPressure Feature
 **Goal:** Catalog Feature `NotificationPressure` from `notification_event` Observations (omit empty; ADR-007 confidence + factors where practical).
 
 | ID | Task | Role | Modules | AC | Depends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P18-E3-T1** | Ship `NotificationPressure` catalog Feature | Dev | feature-engine + docs | Shaped by ADR-019 | P18-E2-T1 |
+| **P18-E3-T1** | Ship `NotificationPressure` catalog Feature | Dev | feature-engine + docs | See `P18-E3-T1-pm-brief.md` | P18-E2-T1 ✅ |
 
 **Out of scope:** IDE plugin; weather ambient; App Store product; notification content capture; workplace surveillance framing; `CognitiveLoad` (later — needs more inputs); PR during freeze.
 
@@ -131,11 +132,11 @@ Evidence: `docs/handoffs/P15-*-qa-to-pm.md`.
 ## Queue (Phase 18)
 
 1. P18-E1-T1 — Lock notification Observation + `NotificationPressure` (**ADR-019**) ← **Done**  
-2. **P18-E2-T1** — Notification collector plugin ← **Ready**  
-3. P18-E3-T1 — `NotificationPressure` Feature  
+2. P18-E2-T1 — Notification collector plugin ← **Done**  
+3. **P18-E3-T1** — `NotificationPressure` Feature ← **Ready**  
 
 **Git:** `phase/18-notification-pressure` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P18-E2-T1-pm-brief.md`.  
-**Deferred (later / other tracks):** IDE · weather ambient · App Store packaging · Companion dogfood polish (parallel OK) · `CognitiveLoad`.
+**Brief:** `docs/handoffs/P18-E3-T1-pm-brief.md`.  
+**Deferred (later / other tracks):** IDE · weather ambient · App Store packaging · Companion dogfood polish (parallel OK) · `CognitiveLoad` · live NC OS mapping (soft-fail until future probe).
 
 **Gate evidence:** `docs/handoffs/PM-GATE-POST-P17-pm-brief.md` — **Done** (chose NotificationPressure).

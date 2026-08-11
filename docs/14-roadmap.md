@@ -80,8 +80,8 @@
 
 - [ ] **Phase 18: Notification pressure** (Sprint 35–36) — opened 2026-08-11 (**PM-GATE-POST-P17**)
   - Lock notification Observation + `NotificationPressure` scope (**ADR-019**) — **P18-E1 Done** (2026-08-11).
-  - Notification collector plugin — **P18-E2 Ready** (T1).
-  - `NotificationPressure` catalog Feature — **P18-E3** (after E2).
+  - Notification collector plugin — **P18-E2 Done** (2026-08-11).
+  - `NotificationPressure` catalog Feature — **P18-E3 Ready** (T1).
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)  
@@ -100,7 +100,7 @@
 **Phase 15:** Done 2026-08-11 — ADR-016 companion HRV + autonomy · branch `phase/15-companion-hrv-autonomy` (PR after freeze)
 **Phase 16:** Done 2026-08-11 — ADR-015 collector + `AmbientLightShare` · branch `phase/16-ambient-light` (PR after freeze)
 **Phase 17:** Done 2026-08-11 — ADR-017 · **ADR-018** → Companion emit → chart ranges + wearable Features · branch `phase/17-wearable-charts` (PR after freeze)
-**Phase 18:** Active — **ADR-019** ✅ (E1 Done 2026-08-11) · Ready **P18-E2-T1** · branch `phase/18-notification-pressure` (PR after freeze)
+**Phase 18:** Active — **ADR-019** ✅ · E1+E2 Done · Ready **P18-E3-T1** · branch `phase/18-notification-pressure` (PR after freeze)
 **Gate:** **PM-GATE-POST-P17** ✅ · **ADR-019** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

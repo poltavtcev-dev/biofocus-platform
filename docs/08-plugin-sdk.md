@@ -163,7 +163,7 @@ Weather ambient collector remains **deferred**. Personal self-tracking only — 
 
 | Item | Value |
 | :--- | :--- |
-| Status | **Collector shipped** (P18-E2); Feature `NotificationPressure` → **P18-E3** |
+| Status | **Collector shipped** (P18-E2); Feature **`NotificationPressure` shipped** (P18-E3) |
 | Crate | `crates/macos-collector` |
 | Plugin id | `com.biofocus.macos.notifications` |
 | `data_type` | `notification_event` |
@@ -173,6 +173,6 @@ Weather ambient collector remains **deferred**. Personal self-tracking only — 
 | Poll | On change / coalesced identity or rare ≥5s; no busy-loop; `stop_stream` joins |
 | Host wire | Desktop `ingest_host` starts only when env set; same Observation channel → persist |
 | Validation | `bio_spec::validate_notification_event_payload`; ingest `invalid_notification_event` |
-| Feature | `NotificationPressure` (catalog stub → P18-E3) |
+| Feature | `NotificationPressure` via `register_notification_v1` / `register_catalog_v1` (P18-E3) |
 
 Personal self-tracking only — not workplace / employer notification monitoring.

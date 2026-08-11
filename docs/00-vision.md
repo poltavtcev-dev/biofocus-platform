@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P18-E2-T1** (notification collector · ADR-019). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P18-E3-T1** (`NotificationPressure` Feature · ADR-019). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |

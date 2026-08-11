@@ -50,7 +50,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 15 (Done 2026-08-11):** Companion HRV + autonomy — ADR-016.
 - **Phase 16 (Done 2026-08-11):** Ambient light — ADR-015; collector + `AmbientLightShare`.
 - **Phase 17 (Done 2026-08-11):** Wearable depth + chart ranges — ADR-017 · ADR-018 → Companion emit → `get_feature_series` + wearable Features.
-- **Phase 18 (Active):** Notification pressure — **ADR-019** ✅; Ready **P18-E2-T1** (collector). Deferred: IDE · weather · App Store.
+- **Phase 18 (Active):** Notification pressure — **ADR-019** ✅ · collector ✅; Ready **P18-E3-T1** (`NotificationPressure`). Deferred: IDE · weather · App Store.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -122,7 +122,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P18-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–17 Done · Phase 18 Active (ADR-019 ✅; collector next).
+Immediate Kanban = **P18-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–17 Done · Phase 18 Active (collector shipped; Feature next).
 
 | Phase | Focus |
 | :--- | :--- |

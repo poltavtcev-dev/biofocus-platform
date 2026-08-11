@@ -21,7 +21,7 @@
 - **Phase 15:** **Done** (2026-08-11) — Companion HRV + autonomy; **ADR-016**. Branch: `phase/15-companion-hrv-autonomy` (PR after freeze).
 - **Phase 16:** **Done** (2026-08-11) — Ambient light (**ADR-015**); collector + `AmbientLightShare`. Branch: `phase/16-ambient-light` (PR after freeze).
 - **Phase 17:** **Done** (2026-08-11) — Wearable depth + chart ranges (**ADR-017** · **ADR-018**); E1–E3. Branch: `phase/17-wearable-charts` (PR after freeze).
-- **Phase 18:** **Active** (2026-08-11) — Notification pressure (**ADR-019** ✅ E1); Ready **P18-E2-T1** (collector). Branch: `phase/18-notification-pressure` (PR after freeze). Deferred: IDE · weather · App Store.
+- **Phase 18:** **Active** (2026-08-11) — Notification pressure (**ADR-019** ✅); E1+E2 Done; Ready **P18-E3-T1** (`NotificationPressure`). Branch: `phase/18-notification-pressure` (PR after freeze). Deferred: IDE · weather · App Store.
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)

@@ -1189,16 +1189,17 @@ UI ↛ SQLite (unchanged)
 E1 (P18-E1-T1) — THIS ADR ← Done 2026-08-11 (QA Pass)
   Lock data_type + privacy bar + NotificationPressure scope in docs
 
-E2 (P18-E2-T1) ← Ready
+E2 (P18-E2-T1) ← Done 2026-08-11 (QA Pass)
   macos-collector plugin + mock/scripted probe
   bio-spec validate_notification_event_payload (+ ingest reject code)
   pipeline normalize strips any accidental content keys
   Host wire: BIOFOCUS_NOTIFICATION_EVENTS=1 only
+  System probe soft-fails idle until privacy-safe OS mapping
 
-E3 (P18-E3-T1):
-  Catalog Feature NotificationPressure
+E3 (P18-E3-T1) ← Feature shipped
+  Catalog Feature NotificationPressure — sum count → 0–100 (saturation 20/15m)
   Window / step aligned with Focus catalog (15m / 1m default; series may coarsen)
-  Inputs: notification_event in window (sum count → intensity map 0–100)
+  Inputs: notification_event in window
   Omit when empty / no usable events
   ADR-007: single family (notification_event); confidence = mean evidence when emitted
   Optional explanation factors: category / interruption_level / app_kind shares when present
