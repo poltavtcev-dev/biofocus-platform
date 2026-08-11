@@ -106,7 +106,7 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Phase 18 notification pressure (ADR-019) ✅ Done 2026-08-11:** Observation `data_type: "notification_event"` (coarse `count` + optional closed-set labels; **no** body/title content) → existing `observations` store; opt-in `BIOFOCUS_NOTIFICATION_EVENTS` default **off**; `NotificationPlugin` (`com.biofocus.macos.notifications`) in `macos-collector`; Desktop `ingest_host` arms only when env set. Soft-fail system probe idle; scripted probe for tests. Validation: `bio_spec::validate_notification_event_payload`; ingest `invalid_notification_event`; pipeline strips content keys. Catalog Feature **`NotificationPressure`** via `register_notification_v1` / `register_catalog_v1` — sum `count` → 0–100 (saturation 20/15m); omit empty; ADR-007 confidence. Branch `phase/18-notification-pressure` (cluster PR after freeze). **PM-GATE-POST-P18** ✅ chose Live NC OS mapping for Phase 19.
 - **Phase 19 live NC OS mapping (ADR-020) ✅ Done 2026-08-11:** Live `SystemNotificationEventProbe` → **usernoted** SQLite allowlist (`delivered_date` + `app.identifier` only). Soft-fail when missing / TCC denied. ADR-019 payload unchanged; **no** Feature rewrite. Dogfood runbook: below § Notification events dogfood. Branch `phase/19-live-nc-mapping` (cluster PR after freeze). **PM-GATE-POST-P19** ✅ chose `CognitiveLoad` for Phase 20.
 - **Phase 20 CognitiveLoad (ADR-021 ✅ Done 2026-08-11):** Catalog Feature **`CognitiveLoad`** via `register_cognitive_v1` / `register_catalog_v1` — Feature-level composite of **MeetingDensity + ContextSwitchRate + NotificationPressure**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; explanation factors. Calm framing: “combined demand in this window”. Dashboard chart series label **Combined demand** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.16. Dogfood: below § CognitiveLoad dogfood. Branch `phase/20-cognitive-load` (cluster PR after freeze). **PM-GATE-POST-P20** ✅ chose `DeepWorkScore` for Phase 21.
-- **Phase 21 DeepWorkScore (ADR-022 ✅ / P21-E2 shipped):** Catalog Feature **`DeepWorkScore`** via `register_deep_work_v1` / `register_catalog_v1` — Feature-level composite of **FocusScore (required) + ContextSwitchRate (optional)**; idle **dropped** for v1; window **15m / 1m**; output 0–100; omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “sustained focus in this window”. **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.17. Branch `phase/21-deep-work-score` (cluster PR after freeze). Optional dogfood / Dashboard → **P21-E3**. Deferred: IDE · weather · App Store · Companion polish · AttentionStability · CircadianOffset.
+- **Phase 21 DeepWorkScore (ADR-022 ✅ / P21-E2–E3):** Catalog Feature **`DeepWorkScore`** via `register_deep_work_v1` / `register_catalog_v1` — Feature-level composite of **FocusScore (required) + ContextSwitchRate (optional)**; idle **dropped** for v1; window **15m / 1m**; output 0–100; omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “sustained focus in this window”. Dashboard chart series label **Sustained focus** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.17. Dogfood: below § DeepWorkScore dogfood. Branch `phase/21-deep-work-score` (cluster PR after freeze). Deferred: IDE · weather · App Store · Companion polish · AttentionStability · CircadianOffset.
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -295,6 +295,28 @@ Personal self-tracking only — **not** workplace / employer demand scoring. Cal
 5. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic CognitiveLoad series for chart layout QA; `mockSnapshot=empty` stays calm empty.
 6. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
 7. Contracts / catalog: `docs/06-feature-catalog.md` §1.16 · ADR-021 in `docs/decision-log.md`.
+
+### DeepWorkScore dogfood (P21-E3-T1 / ADR-022)
+
+Personal self-tracking only — **not** workplace / employer focus scoring. Calm framing: **“sustained focus in this window”** — never “you are in flow”, burnout, ADHD, or clinical flow-state diagnosis.
+
+1. **Prerequisite:** Phase 21 E2 shipped `DeepWorkScore` in `feature-engine` (`register_deep_work_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf formulas (`FocusScore` / `ContextSwitchRate`) unchanged; idle remains dropped for v1.
+2. **Inputs (Feature-level):** the composite reads upstream Features for the same window:
+   - **FocusScore** (**required**) — usual Desktop path (keystrokes / context / HRV as Focus already uses). Without Focus → DeepWorkScore **omits**.
+   - **ContextSwitchRate** (**optional**) — live `context_window`. When CSR is absent for the window, DeepWorkScore still **emits Focus-only** (renormalize) with lower ADR-007 confidence.
+3. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine deep_work_score
+   ```
+   Covers Focus+CSR emit, Focus-only renormalize, omit without Focus, confidence, factors, and `register_catalog_v1`.
+4. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure FocusScore evidence exists (typing and/or context and/or HRV); CSR optional.
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`DeepWorkScore`**. Chart calm label: **Sustained focus** (0–100). Empty / omit → quiet (no error row).
+5. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic DeepWorkScore series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+6. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+7. Contracts / catalog: `docs/06-feature-catalog.md` §1.17 · ADR-022 in `docs/decision-log.md`.
 
 ## CI
 

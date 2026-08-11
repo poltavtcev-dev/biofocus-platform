@@ -2,11 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
-**Date:** 2026-08-11  
-**Closed previous:** **P21-E1-T1** (ADR-022 locked; QA Pass)  
-**Evidence:** `docs/handoffs/P21-E1-T1-qa-to-pm.md` · `docs/handoffs/P21-E1-T1-dev-to-qa.md`  
-**Contract:** ADR-022 detail in `docs/decision-log.md`
+**Status:** Done (QA Pass 2026-08-11)  
+**Closed:** Epic **P21-E2** ✅ · `DeepWorkScore` shipped  
+**Evidence:** `docs/handoffs/P21-E2-T1-qa-to-pm.md` · `docs/handoffs/P21-E2-T1-dev-to-qa.md`  
+**Next:** **P21-E3-T1** — `docs/handoffs/P21-E3-T1-pm-brief.md`
 
 ## Task
 **P21-E2-T1 — Ship catalog Feature `DeepWorkScore` per ADR-022**

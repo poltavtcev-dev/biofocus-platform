@@ -3,7 +3,7 @@
 > **Phase 21: DeepWorkScore** (Sprint 41–42) — **Active**.  
 > Phase 0–20 Done. Gate **PM-GATE-POST-P20** ✅ chose catalog Feature **`DeepWorkScore`** from FocusScore + ContextSwitchRate.
 
-**Phase 21 outcome (target):** **ADR-022** ✅ locks sustained-focus Feature scope → ship `DeepWorkScore` in `feature-engine` → optional dogfood / calm Dashboard surface. No new Observation family; calm non-clinical framing.
+**Phase 21 outcome (target):** **ADR-022** ✅ locks sustained-focus Feature scope → **`DeepWorkScore` shipped** in `feature-engine` → optional dogfood / calm Dashboard surface. No new Observation family; calm non-clinical framing.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -35,14 +35,14 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P21-E2-T1** |
+| **Ready** | **P21-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–20 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **PM-GATE-POST-P18** · **PM-GATE-POST-P19** · **PM-GATE-POST-P20** · **P20-E1-T1** · **P20-E2-T1** · **P20-E3-T1** · **P21-E1-T1** |
+| **Done** | Phase 0–20 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **PM-GATE-POST-P18** · **PM-GATE-POST-P19** · **PM-GATE-POST-P20** · **P20-E1-T1** · **P20-E2-T1** · **P20-E3-T1** · **P21-E1-T1** · **P21-E2-T1** |
 
-**Epic status:** Phase 21 Active (E1 ✅ · E2 Ready) · Phase 20 ✅
+**Epic status:** Phase 21 Active (E1–E2 ✅ · E3 Ready) · Phase 20 ✅
 
-**Phase 21 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-022** ✅ · E1 Done · E2 Ready
+**Phase 21 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-022** ✅ · Feature shipped · E3 Ready
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -50,9 +50,9 @@
 
 ### Active assignment
 
-**Ready now:** **P21-E2-T1** — Ship catalog Feature `DeepWorkScore` per ADR-022. Brief: `docs/handoffs/P21-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P21-E3-T1** — Dogfood notes + optional calm Dashboard surface for `DeepWorkScore`. Brief: `docs/handoffs/P21-E3-T1-pm-brief.md`. Role: **Dev** (+ UX if UI).
 
-**Just closed:** **P21-E1-T1** (2026-08-11) — ADR-022 locked Focus required + CSR optional; idle dropped; omit-without-Focus / renormalize-without-CSR. Evidence: `docs/handoffs/P21-E1-T1-qa-to-pm.md`.
+**Just closed:** **P21-E2-T1** (2026-08-11) — `DeepWorkScore` shipped in `feature-engine` (`register_deep_work_v1`). Evidence: `docs/handoffs/P21-E2-T1-qa-to-pm.md`.
 
 **Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 20 remains on `phase/20-cognitive-load`; Phase 21 on `phase/21-deep-work-score`.
 
@@ -65,15 +65,15 @@
 | :--- | :--- | :--- | :--- |
 | **P21-E1-T1** ✅ | Lock `DeepWorkScore` Feature scope (**ADR-022**) | Dev | docs + decision-log |
 
-### Epic P21-E2 — Feature
+### Epic P21-E2 — Feature ✅
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P21-E2-T1** ← Ready | Ship catalog Feature `DeepWorkScore` per ADR-022 | Dev | feature-engine + docs |
+| **P21-E2-T1** ✅ | Ship catalog Feature `DeepWorkScore` per ADR-022 | Dev | feature-engine + docs |
 
 ### Epic P21-E3 — Dogfood / surface
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P21-E3-T1** | Dogfood notes + optional calm Dashboard surface | Dev | docs (+ optional UI) |
+| **P21-E3-T1** ← Ready | Dogfood notes + optional calm Dashboard surface | Dev | docs (+ optional UI) |
 
 ---
 
@@ -121,9 +121,9 @@ Evidence: `docs/handoffs/P18-*-qa-to-pm.md`.
 ## Queue (Phase 21)
 
 1. **P21-E1-T1** — ADR-022 DeepWorkScore scope ← **Done**  
-2. **P21-E2-T1** — Ship `DeepWorkScore` Feature ← **Ready**  
-3. **P21-E3-T1** — Dogfood / optional Dashboard surface  
+2. **P21-E2-T1** — Ship `DeepWorkScore` Feature ← **Done**  
+3. **P21-E3-T1** — Dogfood / optional Dashboard surface ← **Ready**  
 4. Deferred (later gates): IDE · weather ambient · App Store packaging · Companion polish · AttentionStability · CircadianOffset  
 
 **Git:** `phase/21-deep-work-score` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P21-E2-T1-pm-brief.md`.
+**Brief:** `docs/handoffs/P21-E3-T1-pm-brief.md`.

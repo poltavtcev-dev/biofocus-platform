@@ -97,8 +97,8 @@
 
 - [ ] **Phase 21: DeepWorkScore** (Sprint 41–42) — opened 2026-08-11 (**PM-GATE-POST-P20**)
   - Lock `DeepWorkScore` Feature scope (**ADR-022**) — **P21-E1 Done** (2026-08-11).
-  - Ship catalog Feature `DeepWorkScore` — **P21-E2 Ready** (T1).
-  - Dogfood / optional Dashboard surface — **P21-E3** (after E2).
+  - Ship catalog Feature `DeepWorkScore` — **P21-E2 Done** (2026-08-11).
+  - Dogfood / optional Dashboard surface — **P21-E3 Ready** (T1).
 
 **Deferred (later gates):** IDE · weather ambient · App Store packaging · Companion polish-as-primary · AttentionStability · CircadianOffset.
 
@@ -122,7 +122,7 @@
 **Phase 18:** Done 2026-08-11 — **ADR-019** → collector → `NotificationPressure` · branch `phase/18-notification-pressure` (PR after freeze)
 **Phase 19:** Done 2026-08-11 — **ADR-020** → usernoted live probe → dogfood · branch `phase/19-live-nc-mapping` (PR after freeze)
 **Phase 20:** Done 2026-08-11 — **ADR-021** → `CognitiveLoad` → dogfood + Combined demand · branch `phase/20-cognitive-load` (PR after freeze)
-**Phase 21:** Active — **ADR-022** ✅ · **P21-E1 Done** · Ready **P21-E2-T1** · branch `phase/21-deep-work-score` (PR after freeze)
+**Phase 21:** Active — **ADR-022** ✅ · Feature shipped (**P21-E2 Done**) · Ready **P21-E3-T1** · branch `phase/21-deep-work-score` (PR after freeze)
 **Gate:** **PM-GATE-POST-P20** ✅ · **ADR-019** ✅ · **ADR-020** ✅ · **ADR-021** ✅ · **ADR-022** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

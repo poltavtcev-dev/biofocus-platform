@@ -101,6 +101,7 @@ export function mockSnapshotFromLocation(
     const fatigue = [28, 30, 33, 35, 36];
     const csr = [0.8, 1.1, 0.9, 1.2, 1.0];
     const cognitive = [42, 45, 48, 46, 44];
+    const deepWork = [70, 72, 75, 73, 74];
     const features: FeatureDto[] = [];
     for (let i = 0; i < windows.length; i += 1) {
       const tw = windows[i];
@@ -134,6 +135,12 @@ export function mockSnapshotFromLocation(
           timeWindow: tw,
           value: cognitive[i],
           provenance: ["00000000-0000-0000-0000-00000000000a"],
+        },
+        {
+          featureId: "DeepWorkScore",
+          timeWindow: tw,
+          value: deepWork[i],
+          provenance: ["00000000-0000-0000-0000-00000000000b"],
         },
       );
     }
