@@ -22,7 +22,8 @@
 - **Phase 16:** **Done** (2026-08-11) — Ambient light (**ADR-015**); collector + `AmbientLightShare`. Branch: `phase/16-ambient-light` (PR after freeze).
 - **Phase 17:** **Done** (2026-08-11) — Wearable depth + chart ranges (**ADR-017** · **ADR-018**); E1–E3. Branch: `phase/17-wearable-charts` (PR after freeze).
 - **Phase 18:** **Done** (2026-08-11) — Notification pressure (**ADR-019**); E1–E3. Branch: `phase/18-notification-pressure` (PR after freeze).
-- **Phase 19:** **Active** (2026-08-11) — Live NC OS mapping (**ADR-020** ✅); E1 Done; Ready **P19-E2-T1** (live probe). Branch: `phase/19-live-nc-mapping` (PR after freeze). Deferred: IDE · weather · App Store · `CognitiveLoad`.
+- **Phase 19:** **Done** (2026-08-11) — Live NC OS mapping (**ADR-020**); E1–E3. Branch: `phase/19-live-nc-mapping` (PR after freeze).
+- **Phase 20:** **Active** (2026-08-11) — CognitiveLoad; **ADR-021** ✅ (**P20-E1 Done**); Ready **P20-E2-T1** (ship Feature). Branch: `phase/20-cognitive-load` (PR after freeze). Deferred: IDE · weather · App Store.
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)

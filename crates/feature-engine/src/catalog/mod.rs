@@ -1,6 +1,6 @@
 //! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3 + Phase 10 E3 +
-//! Phase 12 E3 + Phase 13 E3 + Phase 16 E2 + Phase 17 E3 + Phase 18 E3) —
-//! deterministic v1 formulas.
+//! Phase 12 E3 + Phase 13 E3 + Phase 16 E2 + Phase 17 E3 + Phase 18 E3 +
+//! Phase 20 E2) — deterministic v1 formulas.
 //!
 //! | Node | Feature id | Task |
 //! | :--- | :--- | :--- |
@@ -19,6 +19,7 @@
 //! | [`EnergyScoreNode`] | `EnergyScore` | P17-E3-T1 |
 //! | [`SleepDebtNode`] | `SleepDebt` | P17-E3-T1 |
 //! | [`NotificationPressureNode`] | `NotificationPressure` | P18-E3-T1 |
+//! | [`CognitiveLoadNode`] | `CognitiveLoad` | P20-E2-T1 |
 //!
 //! Register Focus pair via [`register_focus_v1`]; Stress/Fatigue via
 //! [`register_stress_v1`] (requires FocusScore already registered for Fatigue);
@@ -26,12 +27,14 @@
 //! Distraction via [`register_distraction_v1`] (requires `ContextSwitchRate`);
 //! Ambient media via [`register_ambient_v1`]; Git activity via [`register_git_v1`];
 //! Ambient light via [`register_ambient_light_v1`]; Wearable via [`register_wearable_v1`];
-//! Notification via [`register_notification_v1`].
+//! Notification via [`register_notification_v1`]; CognitiveLoad via
+//! [`register_cognitive_v1`] (requires MeetingDensity + CSR + NotificationPressure).
 
 mod activity_balance;
 mod ambient_light_share;
 mod ambient_media_share;
 mod calendar_meeting;
+mod cognitive_load;
 mod confidence;
 mod context_switch_rate;
 mod distraction_score;
@@ -56,6 +59,7 @@ pub use confidence::{
 pub use activity_balance::{ActivityBalanceNode, FEATURE_ID as ACTIVITY_BALANCE_ID};
 pub use ambient_light_share::{AmbientLightShareNode, FEATURE_ID as AMBIENT_LIGHT_SHARE_ID};
 pub use ambient_media_share::{AmbientMediaShareNode, FEATURE_ID as AMBIENT_MEDIA_SHARE_ID};
+pub use cognitive_load::{CognitiveLoadNode, FEATURE_ID as COGNITIVE_LOAD_ID};
 pub use context_switch_rate::{ContextSwitchRateNode, FEATURE_ID as CONTEXT_SWITCH_RATE_ID};
 pub use distraction_score::{DistractionScoreNode, FEATURE_ID as DISTRACTION_SCORE_ID};
 pub use energy_score::{EnergyScoreNode, FEATURE_ID as ENERGY_SCORE_ID};
@@ -151,9 +155,20 @@ pub fn register_notification_v1(engine: &mut FeatureEngine) -> FeatureEngineResu
     Ok(())
 }
 
+/// Registers `CognitiveLoad` (Feature-level composite; ADR-021).
+///
+/// Depends on `MeetingDensity`, `ContextSwitchRate`, and `NotificationPressure` —
+/// call [`register_focus_v1`], [`register_calendar_v1`], and
+/// [`register_notification_v1`] first (or otherwise register those nodes) before
+/// [`FeatureEngine::run`].
+pub fn register_cognitive_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(CognitiveLoadNode::new())?;
+    Ok(())
+}
+
 /// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery,
 /// Distraction, Ambient media, Git activity, Ambient light, Wearable,
-/// Notification pressure.
+/// Notification pressure, CognitiveLoad.
 pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
     register_focus_v1(engine)?;
     register_stress_v1(engine)?;
@@ -165,5 +180,6 @@ pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()
     register_ambient_light_v1(engine)?;
     register_wearable_v1(engine)?;
     register_notification_v1(engine)?;
+    register_cognitive_v1(engine)?;
     Ok(())
 }

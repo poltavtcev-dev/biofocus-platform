@@ -83,12 +83,17 @@
   - Notification collector plugin — **P18-E2 Done** (2026-08-11).
   - `NotificationPressure` catalog Feature — **P18-E3 Done** (2026-08-11).
 
-- [ ] **Phase 19: Live NC OS mapping** (Sprint 37–38) — opened 2026-08-11 (**PM-GATE-POST-P18**)
+- [x] **Phase 19: Live NC OS mapping** (Sprint 37–38) — closed 2026-08-11 (E1–E3 Done; cluster PR after freeze)
   - Lock privacy-safe Notification Center OS mapping (**ADR-020**) — **P19-E1 Done** (2026-08-11).
-  - Live `SystemNotificationEventProbe` — **P19-E2 Ready** (T1).
-  - Dogfood runbook + verify `NotificationPressure` — **P19-E3** (after E2).
+  - Live `SystemNotificationEventProbe` — **P19-E2 Done** (2026-08-11).
+  - Dogfood runbook + verify `NotificationPressure` — **P19-E3 Done** (2026-08-11).
 
-**Deferred (later gates):** IDE · weather ambient · App Store packaging · `CognitiveLoad` · Companion polish-as-primary.
+- [ ] **Phase 20: CognitiveLoad** (Sprint 39–40) — opened 2026-08-11 (**PM-GATE-POST-P19**)
+  - Lock `CognitiveLoad` Feature scope (**ADR-021**) — **P20-E1 Done** (2026-08-11).
+  - Ship catalog Feature `CognitiveLoad` — **P20-E2 Ready** (T1).
+  - Dogfood / optional Dashboard surface — **P20-E3** (after E2).
+
+**Deferred (later gates):** IDE · weather ambient · App Store packaging · Companion polish-as-primary.
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)  
@@ -108,7 +113,8 @@
 **Phase 16:** Done 2026-08-11 — ADR-015 collector + `AmbientLightShare` · branch `phase/16-ambient-light` (PR after freeze)
 **Phase 17:** Done 2026-08-11 — ADR-017 · **ADR-018** → Companion emit → chart ranges + wearable Features · branch `phase/17-wearable-charts` (PR after freeze)
 **Phase 18:** Done 2026-08-11 — **ADR-019** → collector → `NotificationPressure` · branch `phase/18-notification-pressure` (PR after freeze)
-**Phase 19:** Active — **ADR-020** ✅ · E1 Done · Ready **P19-E2-T1** · branch `phase/19-live-nc-mapping` (PR after freeze)
-**Gate:** **PM-GATE-POST-P18** ✅ · **ADR-019** ✅ · **ADR-020** ✅ · **PR freeze until 2026-09-01**
+**Phase 19:** Done 2026-08-11 — **ADR-020** → usernoted live probe → dogfood · branch `phase/19-live-nc-mapping` (PR after freeze)
+**Phase 20:** Active — **ADR-021** ✅ · **P20-E1 Done** · Ready **P20-E2-T1** · branch `phase/20-cognitive-load` (PR after freeze)
+**Gate:** **PM-GATE-POST-P19** ✅ · **ADR-019** ✅ · **ADR-020** ✅ · **ADR-021** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

@@ -176,3 +176,5 @@ Weather ambient collector remains **deferred**. Personal self-tracking only — 
 | Feature | `NotificationPressure` via `register_notification_v1` / `register_catalog_v1` (P18-E3) — **no** formula rewrite in P19 |
 
 Personal self-tracking only — not workplace / employer notification monitoring. Full Disk Access may be required for the usernoted Group Container; without it the probe soft-fails idle.
+
+**Dogfood:** `docs/12-development.md` § Notification events dogfood (enable env · FDA · verify `NotificationPressure` via snapshot IPC / fixture tests · calm soft-fail).

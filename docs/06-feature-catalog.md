@@ -202,6 +202,21 @@
 - **Explanation factors:** optional closed-set label shares as above (calm labels only).
 - **DAG:** независимый узел; `feature_engine::register_notification_v1` / `register_catalog_v1`.
 - **Privacy:** Feature must never surface notification body/title text.
+
+### 1.16 `CognitiveLoad` (P20-E2 / ADR-021 — shipped)
+
+- **Goal:** Calm **combined demand** proxy for a window from schedule density + app switching + interruption intensity. “Combined demand in this window” — **not** clinical cognitive overload / ADHD / burnout diagnosis; **not** workplace productivity scoring; **not** “you are overloaded.”
+- **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR / NotificationPressure; series may coarsen.
+- **Inputs (Feature-level):** upstream **`MeetingDensity`**, **`ContextSwitchRate`**, **`NotificationPressure`** for the same window (ADR-021). **Not** a raw Observation mix in v1.
+- **Formula Strategy (v1):** Normalize present inputs to 0–100 (`MeetingDensity × 100`; `clamp(CSR × 50, 0, 100)`; `NotificationPressure` as-is). Equal weights (⅓ each). **Missing-input policy:** if **none** present → **omit**; if **one or more** present → **renormalize** weights over present components (not omit-unless-all-three). Output clamped 0–100.
+- **Omit policy:** empty step (no upstream Features) → omit. Partial windows emit with lower ADR-007 confidence.
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless combined-demand score.
+- **Provenance:** union of Observation IDs from present upstream Features.
+- **Confidence (ADR-007):** expected slots = 3; `confidence = coverage × mean(upstream Feature.confidence)`.
+- **Explanation factors:** when emitted — `meeting` (“Schedule demand”), `switches` (“App switching”), `notifications` (“Interruption intensity”); `share = catalog_weight / sum(present weights)` (shares sum to 1.0). Calm composition only.
+- **DAG:** depends on MeetingDensity + ContextSwitchRate + NotificationPressure; `feature_engine::register_cognitive_v1` / `register_catalog_v1` (after calendar / focus / notification nodes).
+- **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite leaf Feature formulas.
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
@@ -210,12 +225,13 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 | :--- | :--- | :--- | :--- |
 | `DeepWorkScore` | Sustained focus windows | FocusScore, CSR, idle | P7 |
 | `AttentionStability` | Variance of focus / switches | FocusScore, CSR | P7 |
-| `CognitiveLoad` | Combined demand proxy | MeetingDensity, CSR, notifications | later (after NotificationPressure dogfood) |
 | `CircadianOffset` | Alignment of work vs chronotype proxy | sleep + activity timing | P8 / later |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
 
-> **Phase 18 note (ADR-019):** `notification_event` Observation family + collector + catalog Feature **`NotificationPressure`** are **shipped** (P18-E1–E3). No body/title content; personal self-tracking only. `CognitiveLoad` remains later (needs more inputs).
+> **Phase 18 note (ADR-019):** `notification_event` Observation family + collector + catalog Feature **`NotificationPressure`** are **shipped** (P18-E1–E3). No body/title content; personal self-tracking only.
+>
+> **Phase 20 note (ADR-021 / P20-E2):** Catalog Feature **`CognitiveLoad`** **shipped** — Feature-level composite of MeetingDensity + CSR + NotificationPressure; §1.16 above.
 
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; others may omit until wired).
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; others may omit until wired).

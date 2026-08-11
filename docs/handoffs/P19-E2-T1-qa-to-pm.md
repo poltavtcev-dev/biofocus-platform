@@ -37,12 +37,12 @@ cargo test -p macos-collector --test collector_integration notification_event
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — P19-E2-T1 → Done; Ready **P19-E3-T1**
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE / todos / stats / callout / DAG
-- [ ] Optional: fold remaining Phase 19 open docs on branch when clustering
+- [x] `/docs/SPRINT_ROADMAP.md` — P19-E2-T1 → Done; Ready **P19-E3-T1**
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE / todos / stats / callout / DAG
+- [x] Status docs + `P19-E3-T1-pm-brief.md`
 
 ## Suggested next Ready task
-- **P19-E3-T1** — Dogfood runbook / optional calm status when NC mapping unavailable (FDA note)
+- **P19-E3-T1** — Dogfood runbook / optional calm status when NC mapping unavailable (FDA note) · `docs/handoffs/P19-E3-T1-pm-brief.md`
 
 ## Notes for PM
 - Branch: `phase/19-live-nc-mapping`

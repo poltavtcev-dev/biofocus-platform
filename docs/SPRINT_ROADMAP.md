@@ -1,9 +1,9 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 19: Live NC OS mapping** (Sprint 37–38) — **Active**.  
-> Phase 0–18 Done. Gate **PM-GATE-POST-P18** ✅ · **ADR-020** ✅ · Ready **P19-E2-T1**.
+> **Phase 20: CognitiveLoad** (Sprint 39–40) — **Active**.  
+> Phase 0–19 Done. Gate **PM-GATE-POST-P19** ✅ chose catalog Feature **`CognitiveLoad`** from MeetingDensity + CSR + NotificationPressure.
 
-**Phase 19 outcome (target):** **ADR-020** locks privacy-safe OS mapping → live `SystemNotificationEventProbe` emits → existing `NotificationPressure` dogfoods. No body/title content; soft-fail still OK when mapping unavailable.
+**Phase 20 outcome (target):** **ADR-021** ✅ locks composite demand Feature scope → ship `CognitiveLoad` in `feature-engine` → optional dogfood / calm Dashboard surface. No new Observation family; calm non-clinical framing.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -31,18 +31,18 @@
 
 ---
 
-## Kanban Overview (Phase 19)
+## Kanban Overview (Phase 20)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P19-E2-T1** |
+| **Ready** | **P20-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–18 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **PM-GATE-POST-P18** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** · **P17-E2-T1** · **P17-E3-T1** · **P18-E1-T1** · **P18-E2-T1** · **P18-E3-T1** · **P19-E1-T1** |
+| **Done** | Phase 0–19 · **PM-GATE-POST-P14** · **PM-GATE-POST-P15** · **PM-GATE-POST-P17** · **PM-GATE-POST-P18** · **PM-GATE-POST-P19** · **P16-E1-T1** · **P16-E2-T1** · **P17-E1-T1** · **P17-E2-T1** · **P17-E3-T1** · **P18-E1-T1** · **P18-E2-T1** · **P18-E3-T1** · **P19-E1-T1** · **P19-E2-T1** · **P19-E3-T1** · **P20-E1-T1** |
 
-**Epic status:** Phase 19 Active (E1 ✅ · E2 Ready) · Phase 18 ✅
+**Epic status:** Phase 20 Active (E1 ✅ · E2 Ready) · Phase 19 ✅
 
-**Phase 19 on `/docs/14-roadmap.md`:** **ADR-020** ✅ · E1 Done · Ready **P19-E2-T1**
+**Phase 20 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-021** ✅ · E1 Done · E2 Ready
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -50,32 +50,45 @@
 
 ### Active assignment
 
-**Ready now:** **P19-E2-T1** — Implement live `SystemNotificationEventProbe` mapping per ADR-020. Brief: `docs/handoffs/P19-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P20-E2-T1** — Ship catalog Feature `CognitiveLoad` per ADR-021. Brief: `docs/handoffs/P20-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **P19-E1-T1** (2026-08-11) — **ADR-020** hybrid NC OS mapping + field allowlist (QA Pass). Evidence: `docs/handoffs/P19-E1-T1-qa-to-pm.md`.
+**Just closed:** **P20-E1-T1** (2026-08-11) — ADR-021 locked Feature-level inputs, 15m/1m, renormalize-partial / omit-none. Evidence: `docs/handoffs/P20-E1-T1-qa-to-pm.md`.
 
-**Ops note:** **PR freeze until 2026-09-01** — no PR. Branch: `phase/19-live-nc-mapping`. No schema approve for E2.
+**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 19 remains on `phase/19-live-nc-mapping`; Phase 20 on `phase/20-cognitive-load`.
+
+---
+
+## Phase 20 — CognitiveLoad (Active)
+
+### Epic P20-E1 — Contracts ADR (**ADR-021**) ✅
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P20-E1-T1** ✅ | Lock `CognitiveLoad` Feature scope (**ADR-021**) | Dev | docs + decision-log |
+
+### Epic P20-E2 — Feature
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P20-E2-T1** ← Ready | Ship catalog Feature `CognitiveLoad` per ADR-021 | Dev | feature-engine + docs |
+
+### Epic P20-E3 — Dogfood / surface
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P20-E3-T1** | Dogfood notes + optional calm Dashboard surface | Dev | docs (+ optional UI) |
 
 ---
 
-## Phase 19 — Live NC OS mapping (Active)
+## Phase 19 archive (Done)
 
-### Epic P19-E1 — Contracts ADR (**ADR-020**) ✅
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P19-E1-T1** ✅ | Lock privacy-safe NC OS mapping + live probe boundaries (**ADR-020**) | Dev | docs + decision-log |
+<details>
+<summary>Phase 19 Kanban & epics (closed 2026-08-11 — live NC OS mapping)</summary>
 
-### Epic P19-E2 — Live probe
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P19-E2-T1** ← Ready | Implement live `SystemNotificationEventProbe` mapping per ADR-020 | Dev | macos-collector + bio-spec/pipeline |
+**Done:** P19-E1 (T1) · P19-E2 (T1) · P19-E3 (T1).  
+**ADR-020** · usernoted live probe · dogfood runbook for `NotificationPressure`.  
+Branch: `phase/19-live-nc-mapping` (cluster PR after freeze).
 
-### Epic P19-E3 — Dogfood
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P19-E3-T1** | Dogfood runbook + verify `NotificationPressure` on live emits | Dev | docs (+ optional calm status) |
+Evidence: `docs/handoffs/P19-*-qa-to-pm.md`.
 
----
+</details>
 
 ## Phase 18 archive (Done)
 
@@ -117,12 +130,12 @@ Evidence: `docs/handoffs/P16-*-qa-to-pm.md`.
 
 ---
 
-## Queue (Phase 19)
+## Queue (Phase 20)
 
-1. **P19-E1-T1** — ADR-020 NC OS mapping ← **Done**  
-2. **P19-E2-T1** — Live SystemNotificationEventProbe ← **Ready**  
-3. **P19-E3-T1** — Dogfood runbook / Feature verify  
-4. Deferred (later gates): IDE · weather ambient · App Store packaging · `CognitiveLoad` · Companion polish  
+1. **P20-E1-T1** — ADR-021 CognitiveLoad scope ← **Done**  
+2. **P20-E2-T1** — Ship `CognitiveLoad` Feature ← **Ready**  
+3. **P20-E3-T1** — Dogfood / optional Dashboard surface  
+4. Deferred (later gates): IDE · weather ambient · App Store packaging · Companion polish  
 
-**Git:** `phase/19-live-nc-mapping` → local commits → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P19-E2-T1-pm-brief.md`.
+**Git:** `phase/20-cognitive-load` → local commits → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P20-E2-T1-pm-brief.md`.

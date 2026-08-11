@@ -22,6 +22,7 @@
 | ADR-018 | 2026-08-11 | **Phase 17 contracts:** HealthKit Observation `data_type`s (`step_count`, `active_energy`, `sleep_interval`; soft-optional `oxygen_saturation`) + keep `heart_rate`/`hrv`; Dashboard chart ranges **1h/8h/12h/1d/1w** via **recompute-on-read** IPC (`get_feature_series`); Snapshot = **latest** Features; existing `observations` store; **no** migration v1 | ADR-017 sequenced Phase 17 after P16; dogfood needs locked payloads/IPC before Companion/UI. Mi writes via Apple Health only. ADR-008 stance for long series. Personal self-tracking; L5 interpret-only | Mi Cloud / unofficial API; Feature-history SQLite for charts; UI→SQLite; clinical SpO2/sleep claims; busy-loop HK poll; workout as parallel Observation family (use Life Event); ECG/clinical labs; applying migration without approve; PR during freeze |
 | ADR-019 | 2026-08-11 | **Phase 18 contracts:** opt-in notification Observation `data_type: "notification_event"` (coarse `count` + optional closed-set `category` / `interruption_level` / `app_kind` only) → existing `observations` store; **no** migration v1; Capability Plugin via `plugin-sdk` + `macos-collector`; E3 Feature = **`NotificationPressure`** | PM-GATE-POST-P17 chose interruption intensity after wearable charts; catalog named `NotificationPressure` for years without an Observation family. Local-First + privacy bar (no body/title/content). Personal self-tracking only | IDE as Phase 18 primary; weather ambient; App Store product; content capture “for accuracy”; workplace surveillance framing; `CognitiveLoad` as E3; always-on / busy-loop; parallel notification SQLite store; PR during freeze; applying migration without approve |
 | ADR-020 | 2026-08-11 | **Phase 19:** unlock live `SystemNotificationEventProbe` via **hybrid** privacy-safe OS mapping (prefer public surfaces; private/undocumented OK only under hard **non-content field allowlist** + soft-fail); ADR-019 `notification_event` payload **unchanged**; **no** migration; opt-in `BIOFOCUS_NOTIFICATION_EVENTS` unchanged; existing `NotificationPressure` (no formula rewrite) | ADR-019 left production probe soft-fail idle until privacy-safe NC mapping; PM-GATE-POST-P18 chose Live NC OS mapping to dogfood shipped Feature. Pattern mirrors ADR-014 after Git soft-fail. Personal self-tracking only | Content capture / Accessibility UI text scrape; workplace monitoring; always-on busy-loop; rewriting NotificationPressure; IDE / weather / App Store / CognitiveLoad as P19 primary; parallel notification SQLite store; PR during freeze; applying migration without approve; widening payload with bundle_id / titles |
+| ADR-021 | 2026-08-11 | **Phase 20:** catalog Feature **`CognitiveLoad`** = Feature-level composite of **`MeetingDensity` + `ContextSwitchRate` + `NotificationPressure`**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “combined demand in this window” framing | PM-GATE-POST-P19 chose CognitiveLoad; all three input Features shipped (incl. live NC). Prefer Feature-level composition over Observation mix so catalog math stays stable and privacy bars stay with leaf Features. Personal self-tracking only | Clinical “cognitive overload” / burnout; workplace surveillance scoring; new Observation families; rewriting MeetingDensity / CSR / NotificationPressure; Observation-level mix as v1; IDE / weather / App Store as P20 primary; PR during freeze; migration without approve |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1298,17 +1299,19 @@ E1 (P19-E1-T1) — THIS ADR ← Done 2026-08-11 (QA Pass)
   Lock hybrid OS stance + privacy field allowlist + soft-fail boundaries
   ADR-019 payload unchanged; no migration
 
-E2 (P19-E2-T1) — Live probe ← shipped
+E2 (P19-E2-T1) — Live probe ← Done 2026-08-11 (QA Pass)
   SystemNotificationEventProbe → usernoted NC SQLite (allowlisted columns only)
   → existing Observation channel → persist
   Keep ScriptedNotificationEventProbe for tests
   No Feature formula rewrite; no SQLite migration
   Soft-fail idle remains OK when mapping truly unavailable
 
-E3 (P19-E3-T1) — optional companion:
-  Dogfood runbook and/or calm status note when mapping unavailable
+E3 (P19-E3-T1) — companion ← Done 2026-08-11 (QA Pass)
+  Dogfood runbook in docs/12-development.md (§ Notification events dogfood)
+  Calm soft-fail / FDA note; verify NotificationPressure via snapshot IPC / fixtures
   Still no Observation payload widening; still no NotificationPressure math rewrite
 ```
+**Phase 19 closed.** Next slice → **PM-GATE-POST-P19**.
 
 #### Docs policy for this ADR
 
@@ -1330,4 +1333,104 @@ E3 (P19-E3-T1) — optional companion:
 11. **Opening a PR during freeze** — local branch `phase/19-live-nc-mapping` until 2026-09-01.
 12. **Applying a migration without user approve** — this ADR chooses no migration.
 13. **LLM inventing notification payloads or Features** — L5 interpret-only.
+
+### ADR-021 detail — Phase 20: CognitiveLoad Feature scope (v1)
+
+> **Relationship:** Catalog backlog named **`CognitiveLoad`** for years as a combined demand proxy from meetings + context switches + notifications. **ADR-019 / ADR-020** shipped `notification_event` + live NC mapping + **`NotificationPressure`**. **MeetingDensity** and **ContextSwitchRate** already ship. **PM-GATE-POST-P19** chose CognitiveLoad as Phase 20 primary. **ADR-021** = lock Feature-level inputs, formula stance, omit policy, and framing **before** math lands in `feature-engine`. Implement in **P20-E2**; optional dogfood / calm Dashboard surface in **P20-E3**. Epic split: `docs/SPRINT_ROADMAP.md` Phase 20.
+
+| Layer | Role in Phase 20 v1 |
+| :--- | :--- |
+| Inputs (Feature-level) | Upstream catalog Features: **`MeetingDensity`**, **`ContextSwitchRate`**, **`NotificationPressure`** for the **same** window |
+| Feature (`feature-engine`) | E2: new catalog node **`CognitiveLoad`** — composite demand proxy 0–100; ADR-007 confidence; optional explanation factors |
+| Observation (SQLite) | **Unchanged** — reuse existing calendar / context / notification families via the three leaf Features; **no** new `data_type` |
+| Leaf Features | **Do not** rewrite MeetingDensity / CSR / NotificationPressure formulas in this phase |
+| LLM | L5 interpret-only — must **not** invent CognitiveLoad scores or clinical overload claims |
+
+#### Chosen v1 input set: Feature-level (not Observation mix)
+
+Exactly **one** input stance for Phase 20 v1:
+
+1. **Prefer Feature-level:** `CognitiveLoad(window)` reads the three already-computed Features for that window (DAG depends on them).
+2. **Why not Observation-level mix:** leaf Features already own omit policy, provenance, ADR-007 confidence, and privacy stripping (especially notifications — no body/title). Re-deriving from raw Observations would duplicate catalog math and risk bypassing leaf omit/privacy rules.
+3. **Hard gap check:** no missing Observation family for this composite — calendar, context_window, and notification_event already feed the three leaves. **Zero** new Observation `data_type` in v1.
+
+#### Formula stance sketch (for P20-E2)
+
+```text
+Window / step: 15 minutes / 1 minute (align Focus / CSR / NotificationPressure; series may coarsen)
+
+Normalize each present input to [0, 100]:
+  meeting   = MeetingDensity × 100                    # fraction → intensity
+  switches  = clamp(ContextSwitchRate × 50, 0, 100)   # same CSR map as DistractionScore optional term
+  notify    = NotificationPressure                    # already 0–100
+
+Catalog weights (equal thirds):
+  w_meeting = 1/3, w_switches = 1/3, w_notify = 1/3
+
+Missing-input policy (LOCKED — pick one):
+  • If NONE of the three Features are present for the step → OMIT CognitiveLoad
+  • If ONE OR MORE present → EMIT with RENORMALIZED weights over present components
+    value = Σ (component × w_i) / Σ w_present ; clamp to [0, 100]
+  (Do NOT force all-three-required omit — NotificationPressure is often empty when opt-in is off.)
+
+Confidence (ADR-007 sketch):
+  expected_slots = 3
+  present_slots  = count of present input Features
+  coverage       = present_slots / 3
+  mean_evidence  = mean(upstream Feature.confidence of present inputs)
+  Feature.confidence = clamp(coverage × mean_evidence, 0.0, 1.0)
+
+Provenance: union of Observation IDs from present upstream Features (or Feature ids if IPC already carries them — E2 follows existing composite patterns, e.g. FatigueIndex / DistractionScore).
+
+Optional explanation factors (when emitted):
+  id/label for present components — meeting (“Schedule demand”), switches (“App switching”),
+  notifications (“Interruption intensity”); share = catalog_weight / sum(present weights).
+  Calm composition only — not clinical.
+
+Framing / copy:
+  “combined demand in this window” — NOT “you are overloaded” / ADHD / burnout / cognitive overload diagnosis.
+```
+
+#### Schema (v1)
+
+- Prefer existing `observations` store + existing Feature DAG only.
+- **No new SQLite tables/columns**; **no** Feature-history store.
+- **Do not apply** any migration for this ADR.
+- Future alternate inputs / Observation-level variants → **new ADR + user approve**.
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 20)
+
+```text
+E1 (P20-E1-T1) — THIS ADR
+  Lock CognitiveLoad Feature scope: Feature-level inputs, 15m/1m, renormalize-partial / omit-none,
+  ADR-007 slots=3, calm framing, rejected alts; no migration
+
+E2 (P20-E2-T1)
+  Ship CognitiveLoad in feature-engine + catalog §1 finalize
+  register_* / register_catalog_v1 after calendar + focus + notification nodes
+  Unit tests: rich emit (all three) / partial renormalize / omit empty / confidence / factors
+  Do NOT rewrite MeetingDensity / CSR / NotificationPressure
+
+E3 (optional)
+  Dogfood / calm Dashboard surface (snapshot series) — still non-clinical copy
+```
+
+#### Docs policy for this ADR
+
+- Planned → ADR sketch notes land now in `docs/06-feature-catalog.md`, `docs/12-development.md`, `docs/16-glossary.md`.
+- Full §1 formula finalize + DAG registration names → **P20-E2** (must still obey this ADR).
+
+#### Rejected alternatives
+
+1. **Clinical “cognitive overload” / burnout / ADHD diagnosis claims** — Non-Goal; calm personal observation only.
+2. **Workplace / employer surveillance scoring** or manager dashboards — personal self-tracking only.
+3. **Inventing new Observation families** this phase — all required inputs already ship via leaf Features.
+4. **Rewriting MeetingDensity / ContextSwitchRate / NotificationPressure** formulas — compose, do not reopen leaf math.
+5. **Observation-level mix as v1 primary** — rejected in favor of Feature-level composition (see above); revisit only with a new ADR if a hard gap appears.
+6. **Omit-unless-all-three** as the missing-input policy — too sparse when notifications opt-in is off; renormalize-partial is locked instead.
+7. **IDE plugin / weather ambient / App Store packaging as Phase 20 primary** — deferred (PM-GATE-POST-P19).
+8. **Opening a PR during freeze** — local branch `phase/20-cognitive-load` until 2026-09-01.
+9. **Applying a migration without user approve** — this ADR chooses no migration.
+10. **LLM inventing CognitiveLoad scores or overload diagnoses** — L5 interpret-only.
+11. **Parallel “Load Engine” crate** — extend `feature-engine` catalog only.
 
