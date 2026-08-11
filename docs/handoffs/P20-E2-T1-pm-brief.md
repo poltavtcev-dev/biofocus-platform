@@ -2,11 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
-**Date:** 2026-08-11  
-**Closed previous:** **P20-E1-T1** (ADR-021 locked; QA Pass)  
-**Evidence:** `docs/handoffs/P20-E1-T1-qa-to-pm.md` · `docs/handoffs/P20-E1-T1-dev-to-qa.md`  
-**Contract:** ADR-021 detail in `docs/decision-log.md`
+**Status:** Done (QA Pass 2026-08-11)  
+**Closed:** Epic **P20-E2** ✅ · `CognitiveLoad` shipped  
+**Evidence:** `docs/handoffs/P20-E2-T1-qa-to-pm.md` · `docs/handoffs/P20-E2-T1-dev-to-qa.md`  
+**Next:** **P20-E3-T1** — `docs/handoffs/P20-E3-T1-pm-brief.md`
 
 ## Task
 **P20-E2-T1 — Ship catalog Feature `CognitiveLoad` per ADR-021**

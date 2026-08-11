@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P20-E2-T1** (ship `CognitiveLoad` per ADR-021). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P20-E3-T1** (dogfood / optional Dashboard for `CognitiveLoad`). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -81,7 +81,7 @@ Immediate Kanban = **P20-E2-T1** (ship `CognitiveLoad` per ADR-021). Below is th
 | **17** | Done — Wearable depth + chart ranges (ADR-017 · ADR-018 → Companion emit → `get_feature_series` + wearable Features) |
 | **18** | Done — Notification pressure (ADR-019 → collector → `NotificationPressure`) |
 | **19** | Done — Live NC OS mapping (ADR-020 → usernoted probe → dogfood for `NotificationPressure`) |
-| **20** | Active — CognitiveLoad (**ADR-021** ✅ scope; E2 ships Feature from MeetingDensity + CSR + NotificationPressure) |
+| **20** | Active — CognitiveLoad (**ADR-021** ✅; Feature shipped; E3 dogfood / optional Dashboard) |
 | **21+** | Open via later PM gate — IDE · weather · App Store packaging · dogfood polish |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

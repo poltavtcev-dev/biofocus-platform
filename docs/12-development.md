@@ -105,7 +105,7 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Phase 17 wearable + charts (ADR-017 · ADR-018) ✅ Done 2026-08-11:** Contracts (E1) · Companion emit (E2) · Chart path live (E3) — Desktop `invoke("get_feature_series")` recompute-on-read (ranges `1h`/`8h`/`12h`/`1d`/`1w`; default steps 60/300/300/900/3600); Snapshot = latest-per-id; catalog `register_wearable_v1` — `ActivityBalance` / `EnergyScore` / `SleepDebt` (omit when inputs absent; no clinical SpO2 Features). `FeatureEngine::run_with_step` for coarser series. Optional in-process series memo — **no** Feature-history SQLite. Branch `phase/17-wearable-charts` (cluster PR after freeze). Dogfood: § Companion autonomy (wearable depth); physical-device check recommended.
 - **Phase 18 notification pressure (ADR-019) ✅ Done 2026-08-11:** Observation `data_type: "notification_event"` (coarse `count` + optional closed-set labels; **no** body/title content) → existing `observations` store; opt-in `BIOFOCUS_NOTIFICATION_EVENTS` default **off**; `NotificationPlugin` (`com.biofocus.macos.notifications`) in `macos-collector`; Desktop `ingest_host` arms only when env set. Soft-fail system probe idle; scripted probe for tests. Validation: `bio_spec::validate_notification_event_payload`; ingest `invalid_notification_event`; pipeline strips content keys. Catalog Feature **`NotificationPressure`** via `register_notification_v1` / `register_catalog_v1` — sum `count` → 0–100 (saturation 20/15m); omit empty; ADR-007 confidence. Branch `phase/18-notification-pressure` (cluster PR after freeze). **PM-GATE-POST-P18** ✅ chose Live NC OS mapping for Phase 19.
 - **Phase 19 live NC OS mapping (ADR-020) ✅ Done 2026-08-11:** Live `SystemNotificationEventProbe` → **usernoted** SQLite allowlist (`delivered_date` + `app.identifier` only). Soft-fail when missing / TCC denied. ADR-019 payload unchanged; **no** Feature rewrite. Dogfood runbook: below § Notification events dogfood. Branch `phase/19-live-nc-mapping` (cluster PR after freeze). **PM-GATE-POST-P19** ✅ chose `CognitiveLoad` for Phase 20.
-- **Phase 20 CognitiveLoad (ADR-021 ✅ / P20-E2 shipped):** Catalog Feature **`CognitiveLoad`** via `register_cognitive_v1` / `register_catalog_v1` — Feature-level composite of **MeetingDensity + ContextSwitchRate + NotificationPressure**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; explanation factors. Calm framing: “combined demand in this window”. **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.16. Branch `phase/20-cognitive-load` (cluster PR after freeze). Optional dogfood / Dashboard → **P20-E3**. Deferred: IDE · weather · App Store.
+- **Phase 20 CognitiveLoad (ADR-021 ✅ / P20-E2–E3):** Catalog Feature **`CognitiveLoad`** via `register_cognitive_v1` / `register_catalog_v1` — Feature-level composite of **MeetingDensity + ContextSwitchRate + NotificationPressure**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; explanation factors. Calm framing: “combined demand in this window”. Dashboard chart series label **Combined demand** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.16. Dogfood: below § CognitiveLoad dogfood. Branch `phase/20-cognitive-load` (cluster PR after freeze). Deferred: IDE · weather · App Store.
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -271,6 +271,29 @@ Personal self-tracking only — **not** workplace / employer notification monito
    - **Fixture / CI path:** scripted probe / `write_fixture_nc_db` + `SystemNotificationEventProbe::with_db_path` in `macos-collector` tests — proves emit→channel→persist and Feature registration without FDA.
 6. **Calm soft-fail note:** if the env is on but no `notification_event` rows appear, treat mapping as **unavailable** (FDA / missing DB / schema) — idle is correct. Re-check Full Disk Access; keep personal framing (“interruption intensity in this window”), never clinical / workplace copy.
 7. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md` / `docs/10-security.md`.
+
+### CognitiveLoad dogfood (P20-E3-T1 / ADR-021)
+
+Personal self-tracking only — **not** workplace / employer demand scoring. Calm framing: **“combined demand in this window”** — never “you are overloaded”, burnout, ADHD, or clinical cognitive-load diagnosis.
+
+1. **Prerequisite:** Phase 20 E2 shipped `CognitiveLoad` in `feature-engine` (`register_cognitive_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf formulas (`MeetingDensity` / `ContextSwitchRate` / `NotificationPressure`) unchanged.
+2. **Inputs (Feature-level):** the composite reads upstream Features for the same window:
+   - **MeetingDensity** — opt-in calendar (`BIOFOCUS_CALENDAR` / ICS dogfood as elsewhere).
+   - **ContextSwitchRate** — live `context_window` from macOS context collector (usual Desktop path).
+   - **NotificationPressure** — optional; enable `BIOFOCUS_NOTIFICATION_EVENTS=1` (+ FDA for live NC — § Notification events dogfood). When notifications opt-in is **off**, CognitiveLoad still **emits from present leaves** (renormalize) with lower ADR-007 confidence.
+3. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine cognitive_load
+   ```
+   Covers rich all-three emit, partial (notifications-only / meeting-only), empty omit, confidence, and `register_catalog_v1`.
+4. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure at least one leaf input family has data (calendar busy meetings and/or app switches; notifications optional).
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`CognitiveLoad`**. Chart calm label: **Combined demand** (0–100). Empty / omit → quiet (no error row).
+5. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic CognitiveLoad series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+6. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+7. Contracts / catalog: `docs/06-feature-catalog.md` §1.16 · ADR-021 in `docs/decision-log.md`.
 
 ## CI
 

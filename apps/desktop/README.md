@@ -31,9 +31,9 @@ QA mock (no DB): open with `?mockStatus=idle|ready|error` to force a state.
 Separate Tauri window (`label: dashboard`, `?view=dashboard`). Open from Menubar
 via **Open Dashboard** (`invoke("open_dashboard")`). Snapshot via
 `get_feature_snapshot` only — loading / empty / error / ready. Chart slot shows
-Recharts series for `FocusScore`, `StressIndex`, `FatigueIndex`, and
-`ContextSwitchRate` when present (calm labels; scores 0–100; CSR on secondary
-axis). Insights list via `get_insights` (evaluate-on-read over the same Feature
+Recharts series for `FocusScore`, `StressIndex`, `FatigueIndex`,
+`ContextSwitchRate`, wearable scores, and **`CognitiveLoad`** when present
+(calm label **Combined demand**; scores 0–100; CSR on secondary axis). Insights list via `get_insights` (evaluate-on-read over the same Feature
 cache; Pattern Discovery baseline rules included when history supports them;
 calm empty state when none / thin history). Suggestions (Recommendations)
 via `get_recommendations` — evaluate-on-read after Insights on the same
