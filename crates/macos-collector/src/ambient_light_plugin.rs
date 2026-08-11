@@ -100,3 +100,23 @@ impl BioFocusPlugin for AmbientLightPlugin {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_poll_interval_is_at_least_five_seconds() {
+        assert!(DEFAULT_AMBIENT_LIGHT_POLL_INTERVAL >= Duration::from_secs(5));
+    }
+
+    #[test]
+    fn plugin_id_and_capability_match_contract() {
+        let plugin = AmbientLightPlugin::system_default();
+        assert_eq!(plugin.id(), crate::payload::MACOS_AMBIENT_LIGHT_PROVIDER_ID);
+        let caps = plugin.capabilities();
+        assert_eq!(caps.len(), 1);
+        assert_eq!(caps[0].name, "ambient_light");
+        assert_eq!(caps[0].data_types, vec![AMBIENT_LIGHT_DATA_TYPE.to_string()]);
+    }
+}

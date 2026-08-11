@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P15-E1-T1** (ADR-015 ambient light). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P16-E1-T1** (ambient light plugin · ADR-015). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -76,7 +76,8 @@ Immediate Kanban = **P15-E1-T1** (ADR-015 ambient light). Below is the accepted 
 | **12** | Done — Ambient + commercial packaging (ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook) |
 | **13** | Done — Plugin wave-2 (ADR-013 → Git plugin → `GitActivityRate`) |
 | **14** | Done — Git path-allowlist (ADR-014 → live probe → dogfood / Menubar Git folders) |
-| **15** | Active — Ambient light (ADR-015 → collector → Feature); weather deferred |
-| **16+** | Open via later PM gate — IDE · weather · App Store packaging · NotificationPressure |
+| **15** | Done — Companion HRV + autonomy (ADR-016) |
+| **16** | Active — Ambient light resume (ADR-015 → collector → `AmbientLightShare`); weather deferred |
+| **17+** | Open via later PM gate — IDE · weather · App Store packaging · NotificationPressure |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

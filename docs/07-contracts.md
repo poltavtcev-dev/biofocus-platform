@@ -273,9 +273,9 @@ Validation: `bio_spec::validate_git_activity_payload` (also via `validate_observ
 
 **OS probe (ADR-014 / P14-E2 shipped):** `SystemGitActivityProbe` loads user-chosen absolute roots from `~/.biofocus/git-watched-roots.toml`. Empty / missing / unreadable file → soft-fail idle (no emit, no whole-disk scan). When the config file is **absent**, optional `BIOFOCUS_GIT_WATCHED_ROOTS` (colon- or comma-separated absolute paths) may supply roots for tests/CI; **file is SoT when present** (no env merge). Probe considers nested repos under listed roots only. Observation **payload contract unchanged** (`activity_kind` + optional `event_count` — never persist allowlist/repo paths). Logs prefer Observation `id` / root_count / repo_count; do not dump roots or discovered repo paths at default log levels. Scripted/mock probes remain for tests. **No** SQLite allowlist table / **no** migration.
 
-### `ambient_light` payload (ADR-015 — parked / deferred)
+### `ambient_light` payload (ADR-015 / P16-E1 shipped)
 
-Ambient light facts are **ordinary Observations** in the existing store. ADR-015 locked the contract; **Phase 15 execution** is companion HRV (ADR-016) — ambient light **collector / Feature deferred** to a later PM gate. Weather remains deferred.
+Ambient light facts are **ordinary Observations** in the existing store. ADR-015 locked the contract; collector **shipped** (P16-E1). Feature `AmbientLightShare` → **P16-E2**. Weather remains deferred.
 
 | Field | Value |
 | :--- | :--- |
@@ -304,7 +304,7 @@ Enable: `BIOFOCUS_AMBIENT_LIGHT=1` (default **off**). Emit on light-band change 
 
 Validation: `bio_spec::validate_ambient_light_payload` (also via `validate_observation_payload`). Ingest reject code: `invalid_ambient_light`.
 
-**OS probe (planned when collector resumes):** Soft-fail when OS mapping unavailable (no camera / scene capture in v1). Scripted/mock probes for tests. **No** migration. Collector **not** shipped in Phase 15 companion wave.
+**OS probe (P16-E1 shipped):** `SystemAmbientLightProbe` soft-fails when OS mapping unavailable (no camera / scene / screen / geo / mic capture in v1 — idle, no emit). `ScriptedAmbientLightProbe` for tests. Emit on light-band change or rare poll ≥5s; `stop_stream` joins. Host arms only when `BIOFOCUS_AMBIENT_LIGHT=1`. **No** migration.
 
 ## Companion → ingest (P2-E3-T1)
 

@@ -47,7 +47,9 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 12 (Done 2026-08-10):** Ambient + packaging — ADR-012 → Now Playing → `AmbientMediaShare` + `docs/18-packaging-runbook.md`.
 - **Phase 13 (Done 2026-08-10):** Plugin wave-2 — ADR-013 → Git plugin → `GitActivityRate`.
 - **Phase 14 (Done 2026-08-10):** Git path-allowlist — ADR-014 → live probe → dogfood + Menubar **Git folders** IPC.
-- **Phase 15 (Active):** Companion HRV + autonomy — ADR-016; E1–E2 Done; Ready **P15-E3-T1** (dogfood). ADR-015 ambient light parked. Deferred: IDE · weather · ambient light collector · App Store · NotificationPressure.
+- **Phase 15 (Done 2026-08-11):** Companion HRV + autonomy — ADR-016.
+- **Phase 16 (Active):** Ambient light resume — ADR-015; Ready **P16-E1-T1** (plugin). Deferred: IDE · weather · App Store · NotificationPressure.
+- **Phase 17 (Parked — ADR-017):** After P16 — Mi Fitness/HealthKit depth + Dashboard chart ranges (1h/8h/12h/1d/1w) + deterministic analysis first. See `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md`.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -119,7 +121,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P15-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–14 Done · Phase 15 Active (companion HRV; ADR-016; E2 Done).
+Immediate Kanban = **P16-E1-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–15 Done · Phase 16 Active (ambient light resume; ADR-015).
 
 | Phase | Focus |
 | :--- | :--- |
@@ -133,8 +135,9 @@ Immediate Kanban = **P15-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–14 Done 
 | **12** | Ambient + packaging (ADR-012 → Now Playing → AmbientMediaShare) — **done** |
 | **13** | Plugin wave-2 (Git → GitActivityRate) — **done** |
 | **14** | Git path-allowlist (ADR-014 → live probe → dogfood/UX) — **done** |
-| **15** | Active — Companion HRV (ADR-016; E3 dogfood next); ambient light parked |
-| **16+** | Open via later PM gate — IDE · weather · App Store · NotificationPressure |
+| **15** | Done — Companion HRV + autonomy (ADR-016) |
+| **16** | Active — Ambient light resume (ADR-015 → plugin → AmbientLightShare); weather deferred |
+| **17+** | Open via later PM gate — IDE · weather · App Store · NotificationPressure |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

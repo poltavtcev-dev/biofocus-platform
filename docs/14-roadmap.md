@@ -63,14 +63,23 @@
   - Allowlist + live `SystemGitActivityProbe` — **P14-E2 Done** (2026-08-10).
   - Dogfood gate / allowlist UX — **P14-E3 Done** (2026-08-10).
 
-- [ ] **Phase 15: Companion HRV + autonomy** (Sprint 29–30) — opened 2026-08-11 (reprioritized from ambient light)
-  - ADR-015 ambient light contract — **recorded / parked** (collector deferred).
+- [x] **Phase 15: Companion HRV + autonomy** (Sprint 29–30) — closed 2026-08-11 (reprioritized from ambient light)
+  - ADR-015 ambient light contract — **recorded / parked** during P15 → **resumed Phase 16**.
   - ADR-016 companion HRV + autonomy — **P15-E1 Done** (2026-08-11).
   - Core SDNN-or-RMSSD + iOS Auto-sync — **P15-E2 Done** (2026-08-11).
-  - Dogfood runbook + Companion UI — **P15-E3 Ready** (T1).
+  - Dogfood runbook + Companion UI — **P15-E3 Done** (2026-08-11).
+
+- [ ] **Phase 16: Ambient light** (Sprint 31–32) — opened 2026-08-11 (PM-GATE-POST-P15)
+  - Ambient light collector plugin (ADR-015) — **P16-E1 Ready** (T1).
+  - AmbientLightShare catalog Feature — **P16-E2** (after E1).
+
+- [ ] **Phase 17: Wearable depth + chart ranges** (parked — ADR-017) — after P16 Done
+  - Mi Fitness / HealthKit max Observations via Companion (contracts TBD in follow-up ADR).
+  - Dashboard chart picker **1h / 8h / 12h / 1d / 1w** (recompute-on-read) + Snapshot latest UX.
+  - Deterministic analysis first; LLM interpret-only. Detail: `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md`.
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
-**Phase 2:** merged [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)  
+**Phase 2:** merged [PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)  
 **Phase 3:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` archive · handoffs `P3-*-qa-to-pm.md`  
 **Phase 4:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR when ready)  
 **Phase 5:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P5-*-qa-to-pm.md` · branch `phase/5-wearable-dogfood` (cluster PR when ready)  
@@ -83,7 +92,9 @@
 **Phase 12:** Done 2026-08-10 — ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook · branch `phase/12-ambient-packaging` (PR after freeze)
 **Phase 13:** Done 2026-08-10 — ADR-013 → Git plugin → `GitActivityRate` · branch `phase/13-plugin-wave-2` (PR after freeze)
 **Phase 14:** Done 2026-08-10 — ADR-014 → live probe → dogfood + Menubar **Git folders** · branch `phase/14-git-allowlist` (PR after freeze)
-**Phase 15:** Active — ADR-016 companion HRV + autonomy · E1–E2 Done · Ready **P15-E3-T1** · ADR-015 ambient light deferred · branch `phase/15-companion-hrv-autonomy` (PR after freeze)
-**Gate:** **PM-GATE-POST-P14** chose ambient light → **user Priority A** superseded to companion · **PR freeze until 2026-09-01**
+**Phase 15:** Done 2026-08-11 — ADR-016 companion HRV + autonomy · branch `phase/15-companion-hrv-autonomy` (PR after freeze)
+**Phase 16:** Opened 2026-08-11 — ambient light resume (ADR-015) · Ready **P16-E1-T1** · branch `phase/16-ambient-light` (PR after freeze)
+**Phase 17 (parked):** ADR-017 — after P16: Mi/HealthKit depth + chart ranges 1h/8h/12h/1d/1w · `PARKED-P17-wearable-dashboard-intent.md`
+**Gate:** **PM-GATE-POST-P15** ✅ chose resume ambient light · **ADR-017** ✅ finish P16 then P17 wearable/charts · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

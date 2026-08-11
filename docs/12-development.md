@@ -100,8 +100,8 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Git watched-roots allowlist (P14-E1-T1 / ADR-014):** v1 durable store = local file `~/.biofocus/git-watched-roots.toml` (absolute roots only). Observation payload unchanged (ADR-013). **No** SQLite allowlist table / **no** migration. Optional Settings/IPC / dogfood gate = **P14-E3**.
 - **Git live probe + allowlist (P14-E2-T1):** `SystemGitActivityProbe` loads allowlist (file SoT; `BIOFOCUS_GIT_WATCHED_ROOTS` only if file absent); discovers nested repos under roots; emits coarse `git_activity` on HEAD/reflog/FETCH_HEAD/index change; empty allowlist → idle. Still opt-in `BIOFOCUS_GIT_ACTIVITY`. Feature `GitActivityRate` unchanged. Tests: empty allowlist no emit; fixture root commit → channel → persist; `stop_stream` freezes. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md` / `docs/10-security.md`.
 - **Git allowlist Settings + dogfood (P14-E3-T1):** Menubar **Git folders** — `invoke("get_git_watched_roots")` / `invoke("set_git_watched_roots")` read/write ADR-014 TOML (`BIOFOCUS_HOME` for tests). UI ↛ SQLite. No `GitActivityRate` rewrite. Browser QA: `?mockGitRoots=empty|ready|error`. Dogfood runbook: below § Git activity dogfood.
-- **Phase 15 companion HRV + autonomy (P15-E1–E2 Done / ADR-016):** iOS Auto-sync — HealthKit HR + HRV SDNN → local queue → Desktop ingest; Core `normalize_hrv` / Features accept **rmssd_ms OR sdnn_ms**. Ready **P15-E3** dogfood. ADR-015 ambient light contract **parked** (collector deferred). Dogfood: below § Companion autonomy.
-- **Phase 15 ambient light (ADR-015 — parked):** Contract recorded; collector / `AmbientLightShare` deferred until a later PM gate. Do not treat as active Sprint work while companion autonomy is shipping.
+- **Phase 15 companion HRV + autonomy (P15-E1–E3 / ADR-016):** iOS Auto-sync — HealthKit HR + HRV SDNN → local queue → Desktop ingest; Core `normalize_hrv` / Features accept **rmssd_ms OR sdnn_ms**. ADR-015 ambient light resumed in **Phase 16**. Dogfood: below § Companion autonomy.
+- **Phase 16 ambient light (ADR-015 / P16-E1):** Opt-in `AmbientLightPlugin` (`com.biofocus.macos.ambient_light`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_AMBIENT_LIGHT=1`. Emit on light-band change / poll ≥5s; `stop_stream` joins. System probe soft-fails idle (no camera / screen / geo / mic). Validation: `bio_spec::validate_ambient_light_payload`. Tests: `collector_integration` + bio-spec contracts. Feature companion: `AmbientLightShare` → **P16-E2**. Branch `phase/16-ambient-light`.
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -162,6 +162,13 @@ export BIOFOCUS_NOW_PLAYING=1
 ```
 Arms `NowPlayingPlugin` (poll ≥5s; emit on change). System probe soft-fails idle without titles; use scripted probes in tests. Default off. Catalog Feature: `AmbientMediaShare` (see packaging bullet above / `docs/06-feature-catalog.md` §1.9).
 
+**Ambient light (P16-E1-T1, opt-in):**
+```bash
+export BIOFOCUS_AMBIENT_LIGHT=1
+# restart Desktop
+```
+Arms `AmbientLightPlugin` (poll ≥5s; emit on light-band change). System probe soft-fails idle without camera/screen/geo/mic; use scripted probes in tests. Default off. Catalog Feature: `AmbientLightShare` → P16-E2 (`docs/06-feature-catalog.md` §1.11).
+
 ### Collector test suite (P2-E2-T3)
 
 ```bash
@@ -175,7 +182,7 @@ cargo test -p macos-collector --test collector_integration
 cargo test -p ingest
 ```
 
-Integration coverage (`tests/collector_integration.rs`): `context_window`, `keystrokes`, synthetic / ICS `calendar_event`, and mock `browser_category` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
+Integration coverage (`tests/collector_integration.rs`): `context_window`, `keystrokes`, synthetic / ICS `calendar_event`, mock `browser_category` / `now_playing` / `git_activity` / `ambient_light` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
 
 ### Companion sample path (P2-E3-T1)
 

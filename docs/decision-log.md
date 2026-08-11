@@ -18,6 +18,7 @@
 | ADR-014 | 2026-08-10 | Git watched-roots allowlist v1 = **local config file** under `~/.biofocus/git-watched-roots.toml` (user-chosen absolute roots only); unlocks live `SystemGitActivityProbe` in Phase 14 E2; ADR-013 Observation payload unchanged (`activity_kind` + optional `event_count`); **no** SQLite allowlist table / **no** migration; opt-in `BIOFOCUS_GIT_ACTIVITY` remains the enable switch; empty/missing file → soft-fail idle | ADR-013 deferred persisted allowlist → production probe soft-fails idle; dogfood needs privacy-scoped roots without widening Observation payloads. Config file is durable for dogfood, editable by hand / future Settings without schema approve. Personal self-tracking only | Always-on whole-disk scan; env-only allowlist as sole store; SQLite allowlist table in v1; workplace / manager dashboards; cloud git history sync; IDE as Phase 14 primary while allowlist unfinished; weather/light or App Store as this phase primary; NotificationPressure without notification Observations; PR during freeze; applying migration without user approve; persisting repo paths/remotes/branch/SHA/message/diff/author into Observations |
 | ADR-015 | 2026-08-11 | Phase 15 v1 **primary** = ambient **light** Observation (exactly one ambient source this phase — **not** weather); `data_type: "ambient_light"` coarse `light_kind` (+ optional bounded `level`) → existing `observations` store; opt-in `BIOFOCUS_AMBIENT_LIGHT` default **off**; Capability Plugin Model via `plugin-sdk` + `macos-collector` (or thin adapter); E3 Feature = `AmbientLightShare` | ADR-012 deferred weather/light after Now Playing; PM-GATE-POST-P14 chose weather/light track and locks **ambient light** for Local-First on-device dogfood (no cloud weather API / precise geo). Complements `AmbientMediaShare` without overlapping media inputs. Personal self-tracking only | Weather as P15 primary when cloud/geo implied; IDE as P15 primary; App Store packaging product as P15 primary; NotificationPressure without notification Observations; always-on capture; cloud light telemetry; parallel marketplace crate; parallel SQLite ambient registry; PR during freeze; applying migration without user approve; camera frames / screen contents / precise geo / always-on mic in payload |
 | ADR-016 | 2026-08-11 | **Phase 15 execution supersedes ambient-light collector:** companion **HRV + autonomy** — HealthKit `heartRateVariabilitySDNN` → `hrv` Observation (`sdnn_ms`); keep `heart_rate`; event → local queue → Desktop ingest flush; Core accepts **`rmssd_ms` OR `sdnn_ms`** (prefer rmssd); **no** new SQLite; ADR-015 ambient light contract remains but E2/E3 deferred | Phase 5 companion was one-shot; dogfood needs autonomous HR+HRV without button. Apple HK exposes SDNN not RMSSD — Features must accept SDNN as HRV-proxy (non-clinical). User Priority A 2026-08-11 | Ambient light collector as active P15; sleep/steps/SpO2/ECG in same wave; always-on TCP socket; cloud relay; inventing RMSSD from SDNN without documenting proxy; clinical HRV claims; busy-loop HealthKit poll; new Observation SQLite schema; PR during freeze |
+| ADR-017 | 2026-08-11 | **Sequencing:** finish **Phase 16 ambient light** first; **Phase 17** = Mi Fitness / HealthKit depth + Dashboard chart ranges (parked intent — payload contracts in follow-up ADR before build) | User chose option B (2026-08-11): do not preempt P16 again; remember wearable-max + long-range chart UI for next phase. Dogfood still needs ambient light shipped; bracelet depth + 1h/8h/12h/1d/1w charts are committed backlog, not abandoned | Preempt P16 again for wearable (option A); Mi Cloud / unofficial API; Feature history SQLite; LLM as source of chart/Features; clinical claims |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -726,7 +727,8 @@ E3 (P14-E3-T1) — optional companion:
 
 ### ADR-015 detail — Phase 15 scope: ambient light Observation contract (v1)
 
-> **Supersession (2026-08-11):** Phase **execution** moved to **ADR-016** (companion HRV + autonomy). ADR-015 contract remains valid; ambient light **collector / Feature deferred** to a later PM gate. Do not treat ambient light E2/E3 as active Phase 15 work.
+> **Supersession (2026-08-11):** Phase **15 execution** moved to **ADR-016** (companion HRV + autonomy). ADR-015 contract remains valid.  
+> **Resume (2026-08-11 / PM-GATE-POST-P15):** Phase **16** resumes ambient light collector + `AmbientLightShare` under ADR-015 SoT (no contract change). Implement in **P16-E1** / Feature in **P16-E2**.
 
 **Chosen Phase 15 v1 primary track (original):** **Ambient light** — exactly **one** ambient Observation source this phase (Capability Plugin Model).  
 **Not in this wave:** weather ambient (deferred again — cloud / geo implications), IDE plugin, App Store packaging product, NotificationPressure.
@@ -897,4 +899,20 @@ HealthKit sample / HKObserver wake
 6. **Busy-loop polling HealthKit** — Global DoD idle footprint.
 7. **New Observation SQLite schema / migration** — unnecessary; `hrv` already contracted.
 8. **Opening a PR during freeze** — local branch only until 2026-09-01.
+
+### ADR-017 detail — After P16: wearable depth + chart ranges (parked)
+
+**Sequencing (locked 2026-08-11):** Complete **Phase 16** (ADR-015 ambient light plugin → `AmbientLightShare`). Do **not** reopen Priority-A preemption of ambient light.
+
+**Phase 17 parked intent** (shape contracts in a dedicated ADR before coding; this ADR only parks priority):
+
+1. **Wearable depth (Mi Fitness via HealthKit / Companion)** — maximize Observations Mi actually writes into Apple Health (typical: HR already; target candidates steps / active energy / sleep intervals; SpO2/workout only if present). Soft-optional HRV SDNN (often absent on Mi). Same autonomy path: observer → queue → Desktop ingest. **No** Mi Cloud / unofficial API. Existing `observations` store preferred; **no** new SQLite schema without a follow-up ADR + approve.
+2. **Dashboard chart range UI** — picker **1h / 8h / 12h / 1d / 1w**. Today charts are ~15m because `CatalogAlertHook` keeps ~`WINDOW_SECS+120` in memory. Longer ranges = **recompute-on-read** from Observations (ADR-008 stance), coarser step for longer spans; Snapshot list should show **latest** (not raw series dump). UI ↛ SQLite.
+3. **Analysis ladder** — Features / Insights / Recommendations **without LLM** first; L5 report/LLM remains interpret-only over already-computed Evidence.
+
+**Rejected now**
+
+1. Option A — start wearable Phase before finishing P16.
+2. Persisting Feature time-series SQLite for chart history in v1.
+3. LLM inventing bracelet metrics or chart values.
 

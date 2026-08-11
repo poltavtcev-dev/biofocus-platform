@@ -62,7 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_obs_type_ts ON observations(data_type, timestamp)
 - **No migration** under ADR-014. Observations remain the only durable git **facts** store.
 - Future SQLite allowlist table (if ever needed for CRUD) requires a **new ADR + user approve** — not Phase 14 v1.
 
-### Ambient light (ADR-015 / Phase 15)
+### Ambient light (ADR-015 / P16-E1 shipped)
 
-- **v1:** Ambient light facts are ordinary rows in `observations` (`data_type = 'ambient_light'`). **No** ambient-light table, weather mirror, or ambient registry.
-- **No migration** under ADR-015. Weather Observation family / ambient calibration store require a **new ADR + user approve** — out of Phase 15 v1.
+- **v1:** Ambient light facts are ordinary rows in `observations` (`data_type = 'ambient_light'`). **No** ambient-light table, weather mirror, or ambient registry. Collector **shipped** (P16-E1).
+- **No migration** under ADR-015. Weather Observation family / ambient calibration store require a **new ADR + user approve** — out of Phase 16 v1.

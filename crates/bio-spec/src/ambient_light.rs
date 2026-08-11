@@ -1,4 +1,4 @@
-//! Ambient light Observation kinds (P15-E2-T1 / ADR-015).
+//! Ambient light Observation kinds (ADR-015 / P16-E1 shipped).
 //!
 //! Ambient light facts are ordinary [`Observation`] values with
 //! `data_type == "ambient_light"`. Persistence uses the existing Observation

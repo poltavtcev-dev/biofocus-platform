@@ -18,7 +18,9 @@
 - **Phase 12:** **Done** (2026-08-10) — Ambient + commercial packaging; ADR-012 → Now Playing (`BIOFOCUS_NOW_PLAYING`) → `AmbientMediaShare` (`register_ambient_v1`) + `docs/18-packaging-runbook.md`. Branch: `phase/12-ambient-packaging` (PR after freeze).
 - **Phase 13:** **Done** (2026-08-10) — Plugin wave-2 = **Git activity**; ADR-013 → `GitActivityPlugin` (`BIOFOCUS_GIT_ACTIVITY`) → `GitActivityRate` (`register_git_v1`). Branch: `phase/13-plugin-wave-2` (PR after freeze).
 - **Phase 14:** **Done** (2026-08-10) — Git path-allowlist / live probe; ADR-014 → live `SystemGitActivityProbe` → dogfood + Menubar **Git folders** IPC. Branch: `phase/14-git-allowlist` (PR after freeze).
-- **Phase 15:** **Active** (2026-08-11) — Companion HRV + autonomy; **ADR-016**; E1–E2 Done; Ready **P15-E3-T1** (dogfood). ADR-015 ambient light parked. Branch: `phase/15-companion-hrv-autonomy` (PR after freeze). IDE / weather / App Store packaging / NotificationPressure / ambient light collector remain deferred.
+- **Phase 15:** **Done** (2026-08-11) — Companion HRV + autonomy; **ADR-016**. Branch: `phase/15-companion-hrv-autonomy` (PR after freeze).
+- **Phase 16:** **Opened** (2026-08-11) — Ambient light resume (**ADR-015**); Ready **P16-E1-T1** (collector plugin). Branch: `phase/16-ambient-light` (PR after freeze). IDE / weather / App Store packaging / NotificationPressure remain deferred.
+- **Phase 17:** **Parked** (2026-08-11, **ADR-017**) — after P16: Mi Fitness / HealthKit depth + Dashboard chart ranges (1h/8h/12h/1d/1w); deterministic analysis first. Intent: `docs/handoffs/PARKED-P17-wearable-dashboard-intent.md` (contracts ADR before build).
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)
