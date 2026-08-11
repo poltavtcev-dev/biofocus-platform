@@ -25,8 +25,8 @@
 - **Phase 19:** **Done** (2026-08-11) — Live NC OS mapping (**ADR-020**); E1–E3. Branch: `phase/19-live-nc-mapping` (PR after freeze).
 - **Phase 20:** **Done** (2026-08-11) — CognitiveLoad; **ADR-021** ✅; Feature + dogfood + Combined demand chart. Branch: `phase/20-cognitive-load` (PR after freeze).
 - **Phase 21:** **Done** (2026-08-11) — DeepWorkScore; **ADR-022** ✅; Feature + dogfood + Sustained focus chart. Branch: `phase/21-deep-work-score` (PR after freeze).
-- **Phase 22:** **Active** (2026-08-11) — AttentionStability; **ADR-023** ✅; Feature shipped; Ready **P22-E3-T1**. Branch: `phase/22-attention-stability` (PR after freeze). Deferred: IDE · weather · App Store · Companion polish · CircadianOffset.
-- **Gate:** **PM-GATE-POST-P21** ✅ chose `AttentionStability`. **ADR-023** ✅.
+- **Phase 22:** **Done** (2026-08-11) — AttentionStability; **ADR-023** ✅; Feature + dogfood + Focus stability chart. Branch: `phase/22-attention-stability` (PR after freeze).
+- **Gate:** **PM-GATE-POST-P22** ← Ready (IDE · weather · App Store · Companion polish · CircadianOffset · other). Deferred until gate decides.
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)

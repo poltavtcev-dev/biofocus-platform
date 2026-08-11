@@ -64,7 +64,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P22-E3-T1** (AttentionStability dogfood). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **PM-GATE-POST-P22** (choose Phase 23+). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -83,6 +83,7 @@ Immediate Kanban = **P22-E3-T1** (AttentionStability dogfood). Below is the acce
 | **19** | Done — Live NC OS mapping (ADR-020 → usernoted probe → dogfood for `NotificationPressure`) |
 | **20** | Done — CognitiveLoad (**ADR-021** → Feature + dogfood + Combined demand) |
 | **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
-| **22** | Active — AttentionStability (**ADR-023** ✅ · Feature shipped · Ready P22-E3); deferred IDE · weather · App Store · Companion polish · CircadianOffset |
+| **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
+| **23+** | Open via **PM-GATE-POST-P22** — IDE · weather · App Store packaging · Companion polish · CircadianOffset |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

@@ -12,6 +12,7 @@ export const CHART_FEATURE_IDS = [
   "RecoveryScore",
   "CognitiveLoad",
   "DeepWorkScore",
+  "AttentionStability",
 ] as const;
 
 export type ChartFeatureId = (typeof CHART_FEATURE_IDS)[number];
@@ -27,6 +28,7 @@ export const SCORE_SERIES_IDS: ChartFeatureId[] = [
   "RecoveryScore",
   "CognitiveLoad",
   "DeepWorkScore",
+  "AttentionStability",
 ];
 
 /** Calm UI labels — Feature names only, no evaluative / medical claims. */
@@ -84,6 +86,11 @@ export const CHART_SERIES_META: Record<
     unit: "0–100",
     color: "#5c7a6b",
   },
+  AttentionStability: {
+    label: "Focus stability",
+    unit: "0–100",
+    color: "#5b7a8c",
+  },
 };
 
 export type ChartPoint = {
@@ -99,6 +106,7 @@ export type ChartPoint = {
   RecoveryScore?: number;
   CognitiveLoad?: number;
   DeepWorkScore?: number;
+  AttentionStability?: number;
 };
 
 function scalarValue(value: FeatureDto["value"]): number | null {

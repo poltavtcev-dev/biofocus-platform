@@ -107,7 +107,7 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Phase 19 live NC OS mapping (ADR-020) ✅ Done 2026-08-11:** Live `SystemNotificationEventProbe` → **usernoted** SQLite allowlist (`delivered_date` + `app.identifier` only). Soft-fail when missing / TCC denied. ADR-019 payload unchanged; **no** Feature rewrite. Dogfood runbook: below § Notification events dogfood. Branch `phase/19-live-nc-mapping` (cluster PR after freeze). **PM-GATE-POST-P19** ✅ chose `CognitiveLoad` for Phase 20.
 - **Phase 20 CognitiveLoad (ADR-021 ✅ Done 2026-08-11):** Catalog Feature **`CognitiveLoad`** via `register_cognitive_v1` / `register_catalog_v1` — Feature-level composite of **MeetingDensity + ContextSwitchRate + NotificationPressure**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; explanation factors. Calm framing: “combined demand in this window”. Dashboard chart series label **Combined demand** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.16. Dogfood: below § CognitiveLoad dogfood. Branch `phase/20-cognitive-load` (cluster PR after freeze). **PM-GATE-POST-P20** ✅ chose `DeepWorkScore` for Phase 21.
 - **Phase 21 DeepWorkScore (ADR-022 ✅ Done 2026-08-11):** Catalog Feature **`DeepWorkScore`** via `register_deep_work_v1` / `register_catalog_v1` — Feature-level composite of **FocusScore (required) + ContextSwitchRate (optional)**; idle **dropped** for v1; window **15m / 1m**; output 0–100; omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “sustained focus in this window”. Dashboard chart series label **Sustained focus** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.17. Dogfood: below § DeepWorkScore dogfood. Branch `phase/21-deep-work-score` (cluster PR after freeze).
-- **Phase 22 AttentionStability (ADR-023 ✅ / P22-E2 Done):** Catalog Feature **`AttentionStability`** via `register_attention_stability_v1` / `register_catalog_v1` — Feature-level **variance/stability** composite of **FocusScore (required) + ContextSwitchRate (optional)**; window **15m / 1m**; output 0–100; Focus term from **in-window Focus range** (not Focus level); omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “focus stability in this window” — not ADHD / “you can’t focus”. **Distinct from DeepWorkScore** (intensity). **No** new Observation family / **no** migration; **do not** rewrite FocusScore / CSR / DeepWorkScore. Catalog: `docs/06-feature-catalog.md` §1.18. Branch `phase/22-attention-stability` (cluster PR after freeze). Deferred: IDE · weather · App Store · Companion polish · CircadianOffset. Dogfood / Dashboard → **P22-E3 Ready**.
+- **Phase 22 AttentionStability (ADR-023 ✅ Done 2026-08-11):** Catalog Feature **`AttentionStability`** via `register_attention_stability_v1` / `register_catalog_v1` — Feature-level **variance/stability** composite of **FocusScore (required) + ContextSwitchRate (optional)**; window **15m / 1m**; output 0–100; Focus term from **in-window Focus range** (not Focus level); omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “focus stability in this window” — not ADHD / “you can’t focus”. **Distinct from DeepWorkScore** (intensity). Dashboard chart series label **Focus stability** when present (omit stays quiet). **No** new Observation family / **no** migration; **do not** rewrite FocusScore / CSR / DeepWorkScore. Catalog: `docs/06-feature-catalog.md` §1.18. Dogfood: below § AttentionStability dogfood. Branch `phase/22-attention-stability` (cluster PR after freeze). **Next:** **PM-GATE-POST-P22**.
 - **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
 - **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
@@ -318,6 +318,31 @@ Personal self-tracking only — **not** workplace / employer focus scoring. Calm
 5. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic DeepWorkScore series for chart layout QA; `mockSnapshot=empty` stays calm empty.
 6. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
 7. Contracts / catalog: `docs/06-feature-catalog.md` §1.17 · ADR-022 in `docs/decision-log.md`.
+
+### AttentionStability dogfood (P22-E3-T1 / ADR-023)
+
+Personal self-tracking only — **not** workplace / employer attention scoring. Calm framing: **“focus stability in this window”** — never ADHD, “you can’t focus”, burnout, or attention-deficit diagnosis. **Distinct from DeepWorkScore** (“sustained focus in this window” = intensity; this Feature = consistency / low Focus range).
+
+1. **Prerequisite:** Phase 22 E2 shipped `AttentionStability` in `feature-engine` (`register_attention_stability_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf / DeepWorkScore formulas unchanged.
+2. **Inputs (Feature-level):** the composite reads upstream Features:
+   - **FocusScore** (**required**) — usual Desktop path (keystrokes / context / HRV). Without Focus → AttentionStability **omits**.
+   - **ContextSwitchRate** (**optional**) — live `context_window`. When CSR is absent, AttentionStability still **emits Focus-stability-only** (renormalize) with lower ADR-007 confidence.
+3. **Focus sample behavior (ADR-023):**
+   - Exactly **one** FocusScore sample with end in the window → `focus_stability = 100` (no swing observed — **not** DeepWorkScore Focus-level intensity).
+   - **≥2** FocusScore samples with ends in the window → `focus_stability = clamp(100 − (max−min), 0, 100)` (low range → high stability).
+4. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine attention_stability
+   ```
+   Covers Focus+CSR emit, Focus-only renormalize, single-vs-multi Focus range, omit without Focus, confidence, factors, sibling distinctness vs DeepWorkScore, and `register_catalog_v1`.
+5. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure FocusScore evidence exists (typing and/or context and/or HRV); CSR optional.
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`AttentionStability`**. Chart calm label: **Focus stability** (0–100). Empty / omit → quiet (no error row). Do not confuse with **Sustained focus** (`DeepWorkScore`).
+6. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic AttentionStability series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+7. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+8. Contracts / catalog: `docs/06-feature-catalog.md` §1.18 · ADR-023 in `docs/decision-log.md`.
 
 ## CI
 
