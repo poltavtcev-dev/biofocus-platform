@@ -128,9 +128,22 @@
   - Ship catalog Feature `SustainedLoadIndicator` — **P25-E2 Done** (2026-08-12).
   - Dogfood / optional surface — **P25-E3 Done** (2026-08-12).
 
-- [ ] **PM-GATE-POST-P25** — choose Phase 26+ primary (IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · other)
+- [x] **PM-GATE-POST-P25** — chose **OSS Public Launch Hygiene** (2026-08-12)
 
-**Deferred (gate leftovers):** IDE · weather ambient · App Store packaging · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
+- [x] **Phase 26: OSS Public Launch Hygiene** (Sprint 51–52) — closed 2026-08-12 (**PM-GATE-POST-P25**)
+  - Lock OSS public-launch scope (**ADR-027**) — **P26-E1 Done** (2026-08-12).
+  - Author `docs/19-oss-public-launch.md` + hygiene touchpoints — **P26-E2 Done** (2026-08-12).
+  - Dry-run release checklist — **P26-E3 Done** (2026-08-12).
+  - **Public launch not Done** — layers 2–3 after PR freeze.
+
+- [x] **PM-GATE-POST-P26** — chose **Pattern Discovery rule expansion** (2026-08-12)
+
+- [ ] **Phase 27: Pattern Discovery rule expansion** (Sprint 53–54) — opened 2026-08-12 (**PM-GATE-POST-P26**)
+  - Lock Pattern / Recommendations expansion scope (**ADR-028**) — **P27-E1 Done** (2026-08-12).
+  - Ship locked Insight/Recommendation rules — **P27-E2 Ready** (T1).
+  - Dogfood / optional Insights·Suggestions surface — **P27-E3**.
+
+**Deferred (gate leftovers):** OSS layers 2–3 (after freeze) · IDE · weather ambient · App Store listing · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math expansion.
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
 **Phase 2:** merged [PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)  
@@ -157,6 +170,8 @@
 **Phase 23:** Done 2026-08-11 — **ADR-024** → `DeskAwayPresence` → health→prompt → dogfood + Away from desk · branch `phase/23-personal-context` (PR after freeze)
 **Phase 24:** Done 2026-08-12 — **ADR-025** → `CircadianOffset` → dogfood + Schedule alignment · branch `phase/24-circadian-offset` (PR after freeze)
 **Phase 25:** Done 2026-08-12 — **ADR-026** → `SustainedLoadIndicator` → dogfood + Prolonged load · branch `phase/25-sustained-load` (PR after freeze)
-**Gate:** **PM-GATE-POST-P24** ✅ · Ready **PM-GATE-POST-P25** · **ADR-019…026** ✅ · **PR freeze until 2026-09-01**
+**Phase 26:** Done 2026-08-12 — **ADR-027** → SoT `19-oss…` → dry-run · **public launch not Done** · branch `phase/26-oss-public-launch` (PR after freeze)
+**Phase 27:** Active — **ADR-028** ✅ · Ready **P27-E2-T1** (ship locked rules) · branch `phase/27-pattern-rules` (PR after freeze)
+**Gate:** **PM-GATE-POST-P26** ✅ chose Pattern Discovery rule expansion · **ADR-019…028** ✅ · **PR freeze until 2026-09-01** · **public launch not Done**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

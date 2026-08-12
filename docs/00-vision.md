@@ -56,7 +56,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 | **Power users (OSS)** | Build from source, plugins, custom Features/rules, local LLM, editable prompts (later), full data control |
 | **Everyday users (commercial apps, later)** | Packaged installers, guided device setup, calm UI/reports — same open Core, no secret metric math |
 
-**OSS public launch (maintainers):** polished public beta gates — hygiene now, `main` catch-up after PR freeze, then notarized GitHub Release before flipping visibility — [`docs/19-oss-public-launch.md`](19-oss-public-launch.md). App Store listing stays deferred.
+**OSS public launch (maintainers):** polished public beta gates — hygiene now, `main` catch-up after PR freeze, then notarized GitHub Release before flipping visibility — [`docs/19-oss-public-launch.md`](19-oss-public-launch.md) (**ADR-027**; SoT + **§ Dry-run release checklist** — **public launch not Done** until layers 2–3 after freeze; packaging ops stay in [`docs/18-packaging-runbook.md`](18-packaging-runbook.md)). App Store listing stays deferred.
 
 ## 6. Non-Goals (Scope Limits)
 - Платформа **не является** медицинским диагностическим средством / clinical diagnosis.
@@ -66,7 +66,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P25-E2-T1** (ship SustainedLoadIndicator). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P27-E2-T1** (ADR-028 ship locked Insight/Recommendation rules). Phase 26 hygiene Done — **public launch not Done** until layers 2–3 after freeze. Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -89,6 +89,8 @@ Immediate Kanban = **P25-E2-T1** (ship SustainedLoadIndicator). Below is the acc
 | **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
 | **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
 | **25** | Done — SustainedLoadIndicator (**ADR-026** → Feature + dogfood + Prolonged load) |
-| **26+** | Open via **PM-GATE-POST-P25** — IDE · weather · App Store · Companion polish · TypingRhythm |
+| **26** | Done — OSS Public Launch Hygiene (**ADR-027** · SoT · dry-run); **public launch not Done** |
+| **27** | Active — Pattern Discovery rule expansion (**ADR-028** ✅ · Ready P27-E2); deferred IDE · weather · App Store · TypingRhythm |
+| **28+** | Open via later PM gate — IDE · weather · App Store · Companion polish · TypingRhythm · Feature math · OSS layers 2–3 ops |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

@@ -28,8 +28,10 @@
 - **Phase 22:** **Done** (2026-08-11) — AttentionStability; **ADR-023** ✅; Feature + dogfood + Focus stability chart. Branch: `phase/22-attention-stability` (PR after freeze).
 - **Phase 23:** **Done** (2026-08-11) — Personal Context Layer; **ADR-024** ✅; `DeskAwayPresence` + health→prompt + dogfood / Away from desk. Branch: `phase/23-personal-context` (PR after freeze).
 - **Phase 24:** **Done** (2026-08-12) — CircadianOffset; **ADR-025** ✅; Feature + dogfood / Schedule alignment. Branch: `phase/24-circadian-offset` (PR after freeze).
-- **Phase 25:** **Done** (2026-08-12) — SustainedLoadIndicator; **ADR-026** ✅; Feature + dogfood / Dashboard **Prolonged load**. Branch: `phase/25-sustained-load` (PR after freeze). Deferred: IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · precise GPS.
-- **Gate:** **PM-GATE-POST-P24** ✅ chose **`SustainedLoadIndicator`**. **ADR-026** ✅. Ready **PM-GATE-POST-P25** (choose Phase 26+).
+- **Phase 25:** **Done** (2026-08-12) — SustainedLoadIndicator; **ADR-026** ✅; Feature + dogfood / Dashboard **Prolonged load**. Branch: `phase/25-sustained-load` (PR after freeze).
+- **Phase 26:** **Done** (2026-08-12) — OSS Public Launch Hygiene; **ADR-027** ✅; SoT `docs/19-oss-public-launch.md` ✅; dry-run checklist ✅. **Public launch not Done** (layers 2–3 after freeze). Branch: `phase/26-oss-public-launch` (PR after freeze).
+- **Phase 27:** **Active** (2026-08-12) — Pattern Discovery rule expansion; **ADR-028** ✅; Ready **P27-E2-T1** (ship locked rules). Branch: `phase/27-pattern-rules` (PR after freeze). Deferred: IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math · park-until-freeze as primary.
+- **Gate:** **PM-GATE-POST-P26** ✅ chose **Pattern Discovery rule expansion**. **ADR-026** ✅ · **ADR-027** ✅ · **ADR-028** ✅.
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)

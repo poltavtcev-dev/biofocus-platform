@@ -28,6 +28,8 @@
 | ADR-024 | 2026-08-11 | **Phase 23:** **Personal Context Layer** — three pillars: (**1**) reference bands **Variant B** (personal baseline primary; literature secondary, cited calm orienting ranges); (**2**) opt-in **user-declared** health context → prompt packs / report (L5); (**3**) **desk-away** from secondary signals (**no** precise GPS). Prefer local config (`~/.biofocus/…`); **no** migration v1; Features stay provider-agnostic | PM-GATE-POST-P22 chose Personal Context Layer (supersedes CircadianOffset draft). Focus-ladder Features shipped — next gap is interpretation + presence context without medical/GPS product | Precise GPS / continuous geo; clinical diagnosis engine; LLM inventing conditions; cloud health sync by default; workplace presence monitoring; rewriting Focus/Stress from disease tags; CircadianOffset / IDE / weather / App Store as P23 primary; PR during freeze; migration without approve |
 | ADR-025 | 2026-08-12 | **Phase 24:** catalog Feature **`CircadianOffset`** = **Observation-level timing** composite of **sleep timing** (`sleep_interval`) vs **work/activity timing** (`keystrokes` / `context_window`, optional `step_count` / `active_energy` / workout `life_event`); Feature cadence **15m / 1m** with **24h lookback**; output **0–100** alignment (not signed hours); **omit** unless both sleep + work/activity timing present; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “schedule alignment in this window” framing | PM-GATE-POST-P23 chose CircadianOffset after Personal Context; sleep + activity Observations already shipped (P17+). Timing alignment ≠ SleepDebt magnitude ≠ DeskAwayPresence. Personal self-tracking only | Clinical chronotype / circadian-disorder / “night owl so you fail”; workplace schedule surveillance; new Observation families; rewriting SleepDebt / EnergyScore / ActivityBalance / FocusScore; Feature-level SleepDebt/EnergyScore as timing; signed chronotype hours as primary units; IDE / weather / App Store / TypingRhythm as P24 primary; precise GPS; PR during freeze; migration without approve |
 | ADR-026 | 2026-08-12 | **Phase 25:** catalog Feature **`SustainedLoadIndicator`** = Feature-level **persistence** composite of **`StressIndex` + `FatigueIndex` + `MeetingDensity`** (schedule proxy); Feature cadence **15m / 1m** with **4h lookback** for prolonged-load math; output **0–100**; omit when both Stress and Fatigue absent; **renormalize** present slots (MeetingDensity optional); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “prolonged load in this window” framing | PM-GATE-POST-P24 chose SustainedLoadIndicator; Stress / Fatigue / MeetingDensity long shipped. Prolonged persistence ≠ CognitiveLoad current demand. Personal self-tracking only | Clinical burnout / “you are burned out”; workplace surveillance scoring; new Observation families; rewriting Stress / Fatigue / MeetingDensity / CognitiveLoad; using CognitiveLoad as input; TypingRhythm / DeepFocusLikelihood / IDE / weather / App Store as P25 primary; PR during freeze; migration without approve |
+| ADR-027 | 2026-08-12 | **Phase 26:** **OSS Public Launch Hygiene** — SoT **`docs/19-oss-public-launch.md`**; packaging ops stay in **`docs/18-packaging-runbook.md`**; three launch layers (repo/docs hygiene → post–freeze `main` catch-up → notarized GitHub Release before public visibility); AGPLv3 Core open; personal self-tracking framing in public copy; **no** migration / **no** Feature math | PM-GATE-POST-P25; vision already links missing `19-oss…`; catalog math backlog empty of safe distinct Features; packaging runbook exists (ADR-012) | IDE plugin; weather ambient; App Store listing as primary; Companion polish-as-primary; TypingRhythm; DeepFocusLikelihood; precise GPS; new Observation/Feature math; Pattern Discovery expansion as primary; PR during freeze; cloud accounts/telemetry by default; secret/proprietary Feature formulas |
+| ADR-028 | 2026-08-12 | **Phase 27:** **Pattern Discovery rule expansion** — add deterministic **InsightRule** / **RecommendationRule**s in `knowledge-engine` on **shipped** Features only; evaluate-on-read (ADR-008/009); **no** Insight/Recommendation SQLite store; E2 slate: `cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1`; **no** migration / **no** new Feature formulas | PM-GATE-POST-P26; north star Pattern Discovery; Phases 10–25 Features under-used by Knowledge; Feature-math backlog empty of safe nodes | New Feature catalog math; TypingRhythm; DeepFocusLikelihood; IDE; weather; App Store; Companion polish-as-primary; precise GPS; LLM-authored Insights/Recommendations; workplace surveillance framing; PR during freeze; migration / new Observation; claiming public launch Done / flipping visibility |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -2070,4 +2072,235 @@ E3 (optional)
 10. **Applying a migration without user approve** — this ADR chooses no migration.
 11. **LLM inventing SustainedLoadIndicator scores or burnout diagnoses** — L5 interpret-only.
 12. **Parallel “Burnout Engine” crate** — extend `feature-engine` catalog only.
+
+
+### ADR-027 detail — Phase 26: OSS Public Launch Hygiene (v1)
+
+> **Relationship:** Vision already points maintainers at **`docs/19-oss-public-launch.md`**, but the file is **missing**. Phase 12 shipped **`docs/18-packaging-runbook.md`** (signed / notarized distribution ops; ADR-012). Catalog Feature backlog has no safe distinct math left (`TypingRhythm` / `DeepFocusLikelihood` barred). **PM-GATE-POST-P25** chose **OSS Public Launch Hygiene** as Phase 26 primary. **ADR-027** locks SoT path, packaging vs OSS boundaries, freeze-vs-post-freeze gates, and rejected alts **before** E2 authors the launch doc. Epic split: `docs/SPRINT_ROADMAP.md` Phase 26.
+
+| Layer | Role in Phase 26 v1 |
+| :--- | :--- |
+| OSS launch SoT | **`docs/19-oss-public-launch.md`** — public-beta / visibility gates, contributor honesty, license & framing (E2 authors body) |
+| Packaging ops | **`docs/18-packaging-runbook.md`** — signed / notarized macOS distribution + update stance (already shipped); **do not** duplicate signing secrets into the repo |
+| Schema / Features | **None** — no migration; no new Observation `data_type`; no Feature / Pattern Discovery math this phase |
+| License | **AGPLv3 Core stays open** (ADR-004) — commercial packaging ≠ closed / secret Feature formulas |
+| Framing | Personal self-tracking only in public copy — not workplace / employer monitoring |
+
+#### Relationship: `19-oss-public-launch` vs `18-packaging-runbook`
+
+Exactly **one** split for Phase 26 v1:
+
+1. **`docs/19-oss-public-launch.md` (OSS / source / visibility)** — maintainer checklist for making the project honestly public: repo & docs hygiene, contributor path, AGPLv3 notice, GitHub Release **visibility** policy, personal self-tracking framing in README/vision-facing copy. Answers: “when and how do we flip public visibility without lying about status?”
+2. **`docs/18-packaging-runbook.md` (distribution ops)** — how to **build / codesign / notarize / staple** a macOS `.app`/`.dmg` and update-channel stance. Answers: “how do operators ship a Gatekeeper-acceptable binary?”
+3. **Do not merge the two files** — packaging ops stay in 18; launch/visibility/contributor honesty stay in 19. E3 dry-run **references** 18 (unsigned local OK; notarized public Release only after freeze + merge policy) without copying secrets or credential material into git.
+4. **App Store listing** remains **deferred** (not Phase 26 primary; beyond P12 runbook productization).
+
+#### Checklist layers (LOCKED for E2 / E3)
+
+```text
+(1) Repo / docs honesty & hygiene
+    - Fix missing SoT link target (author 19-oss-public-launch.md)
+    - Align README / CONTRIBUTING / vision pointers with actual repo state
+    - Personal self-tracking framing; no workplace-surveillance marketing copy
+    - No secret Feature formulas; AGPLv3 Core called out honestly
+
+(2) Post–2026-09-01 main catch-up / related cluster merges
+    - AFTER PR freeze ends (2026-09-01 inclusive freeze still active today)
+    - Merge related phase clusters to main via normal PR flow (not during freeze)
+    - Docs honesty: do not claim “public release ready” while clusters sit only on feature branches
+
+(3) Notarized GitHub Release BEFORE flipping public visibility
+    - Cut a notarized Release artifact using 18-packaging-runbook.md
+    - Only then flip repo / release visibility to public (or widen audience)
+    - Unsigned / local dry-runs do NOT satisfy this gate
+```
+
+#### Freeze vs after-freeze (LOCKED)
+
+| When | Allowed in Phase 26 | Not allowed |
+| :--- | :--- | :--- |
+| **During PR freeze** (through **2026-09-01** inclusive) | Docs / ADR / handoffs; author `19-oss…` (E2); local unsigned dry-run **notes** + checklist text (E3); local branch commits on `phase/26-oss-public-launch` | Opening a PR; merging to `main` via PR; cutting a **public** notarized GitHub Release as the visibility flip; claiming public launch Done |
+| **After freeze** (from **2026-09-02**, or earlier if user lifts freeze) | Cluster PRs → `main` catch-up (layer 2); notarized Release + then visibility flip (layer 3) per launch doc | Skipping notarization before public visibility; inventing cloud accounts / default telemetry; App Store productization without a new ADR |
+
+#### Schema (v1)
+
+- **No** SQLite migration.
+- **No** new Observation `data_type`.
+- **No** Feature formula work / catalog math / Pattern Discovery rule expansion as Phase 26 primary.
+- Future Feature-math or App Store productization → **new ADR + user approve** (or later PM gate).
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 26)
+
+```text
+E1 (P26-E1-T1) — THIS ADR
+  Lock OSS Public Launch Hygiene: SoT path 19-oss…; vs 18-packaging;
+  three checklist layers; freeze vs after-freeze; rejected alts;
+  schema none; personal self-tracking public framing; AGPLv3 open
+
+E2 (P26-E2-T1)
+  Author docs/19-oss-public-launch.md body + hygiene touchpoints
+  (vision / README / 12-development links as needed — must obey this ADR)
+  Still no Feature math; still no public Release flip
+
+E3 (P26-E3-T1)
+  Dry-run checklist vs packaging runbook:
+    unsigned / local dry-run OK during freeze (notes only)
+    notarized public GitHub Release only after freeze + merge policy (layer 2→3)
+```
+
+#### Docs policy for this ADR
+
+- Planned / ADR sketch notes land **now** in `docs/12-development.md`, `docs/00-vision.md` (pointer + ADR-027), `docs/16-glossary.md`.
+- Full body of **`docs/19-oss-public-launch.md`** → **P26-E2** (must still obey this ADR).
+- Do **not** invent the launch doc content in E1 beyond the locks above.
+
+#### Rejected alternatives
+
+1. **IDE plugin as Phase 26 primary** — deferred (still no additive privacy-safe signal beyond `context_window`; ADR-013 bar).
+2. **Weather ambient as Phase 26 primary** — deferred (cloud / geo vs Local-First; ADR-015 bar).
+3. **App Store listing / productization as Phase 26 primary** — deferred (vision keeps App Store deferred; beyond P12 runbook).
+4. **Companion polish-as-primary** — not Phase 26 theme (parallel OK later; no crisp unfinished Companion UX epic as this gate’s choice).
+5. **TypingRhythm** — deferred (keystroke content / surveillance framing risk; FocusScore already uses typing rate).
+6. **DeepFocusLikelihood** — deferred (overlaps shipped `DeepWorkScore`).
+7. **Precise GPS** — rejected (ADR-024 bar; no reopen without new ADR + approve).
+8. **New Observation / Feature catalog math this phase** — rejected; Phase 26 is docs/process hygiene, not math.
+9. **Pattern Discovery rule expansion as this phase primary** — deferred (strong runner-up; park for later gate after OSS hygiene).
+10. **Opening a PR during freeze** — local branch `phase/26-oss-public-launch` until 2026-09-01.
+11. **Cloud accounts / telemetry by default** — rejected; Local-First / zero telemetry by default stays.
+12. **Secret / proprietary Feature formulas** as commercial edge — rejected; AGPLv3 Core stays open; packaging ≠ closed metric math (ADR-004 / ADR-012).
+13. **Applying a migration / inventing Observation families** — this ADR chooses schema **none**.
+14. **Cutting a public notarized Release or flipping visibility during freeze** — waits until freeze ends + layer 2 catch-up policy.
+15. **LLM inventing launch status or public-marketing clinical/workplace claims** — L5 interpret-only; public copy stays calm personal self-tracking.
+
+
+### ADR-028 detail — Phase 27: Pattern Discovery / Recommendations rule expansion (v1)
+
+> **Relationship:** North star is **Personal Pattern Discovery**. ADR-008 / ADR-009 shipped evaluate-on-read Insights + Recommendations with a thin v1 slate: InsightRules `high_stress_period_v1`, `context_switch_elevated_v1`, `focus_vs_recent_baseline_v1` + RecommendationRule `focus_dip_pace_hint_v1`. Phases 10–25 shipped many catalog Features that Knowledge barely uses. Feature-math backlog has no safe distinct nodes left. **PM-GATE-POST-P26** chose **Pattern Discovery rule expansion** as Phase 27 primary. **ADR-028** locks which **new** deterministic rules E2 may add — **shipped Features only** — before coding. Epic split: `docs/SPRINT_ROADMAP.md` Phase 27.
+
+| Layer | Role in Phase 27 v1 |
+| :--- | :--- |
+| Knowledge (`knowledge-engine`) | E2: register additive InsightRule / RecommendationRule on existing evaluate-on-read path |
+| Features | **Read-only inputs** from already-shipped catalog Features — **do not** rewrite Feature formulas / DAG |
+| Observation (SQLite) | **Unchanged** — no new `data_type`; no Insight/Recommendation persistence |
+| LLM | L5 interpret-only — must **not** author Insights / Recommendations / Evidence |
+| Framing | Personal self-tracking only — not workplace / clinical |
+
+#### Locked mechanics (ADR-008 / ADR-009)
+
+1. **Evaluate-on-read** — idle-safe; no busy-loop recompute worker.
+2. **No** SQLite Insight / Recommendation / Feature-history store in v1.
+3. Extend existing `register_insights_v1` / `register_recommendations_v1` (or thin additive helpers called from those) — **no** parallel Coach / Correlation Engine crate.
+4. Evidence refs stay Feature / Signal / Insight ids (ADR-009).
+5. Calm non-clinical copy; omit when required Feature(s) absent.
+
+#### Existing v1 rules (unchanged — do not rewrite)
+
+| Rule id | Kind | Primary inputs |
+| :--- | :--- | :--- |
+| `high_stress_period_v1` | Insight | Signal `High_Stress` (+ optional `StressIndex`) |
+| `context_switch_elevated_v1` | Insight | `ContextSwitchRate` (+ optional `FocusScore`) |
+| `focus_vs_recent_baseline_v1` | Insight | `FocusScore` + pattern baseline series |
+| `focus_dip_pace_hint_v1` | Recommendation | Focus-below-baseline Insight + `FocusScore` |
+
+#### Chosen E2 rule slate (LOCKED — exactly these three)
+
+Prefer a **small** expansion: **2 Insights + 1 Recommendation** = 3 new rules total.
+
+##### 1. Insight — `cognitive_load_elevated_v1`
+
+| Field | Lock |
+| :--- | :--- |
+| Kind | `InsightRule` |
+| Primary Feature | **`CognitiveLoad`** (required) |
+| Optional Evidence | `MeetingDensity` / `ContextSwitchRate` / `NotificationPressure` when present in snapshot (do not require) |
+| Trigger sketch | Latest scalar `CognitiveLoad` ≥ **60** (0–100; E2 may tune ±10 within calm non-spam bounds) |
+| Omit | When `CognitiveLoad` absent / non-scalar / below threshold |
+| Calm copy stance | “Combined demand looked elevated in this window” — **not** cognitive overload / burnout / workplace productivity scoring |
+| Category sketch | `demand` or reuse calm `focus`/`stress` only if needed — prefer distinct calm category; E2 picks one consistent with Dashboard labels |
+| Why this Feature | CognitiveLoad shipped (P20) and is unused by Knowledge; asks **current combined demand** |
+
+##### 2. Insight — `sustained_load_elevated_v1`
+
+| Field | Lock |
+| :--- | :--- |
+| Kind | `InsightRule` |
+| Primary Feature | **`SustainedLoadIndicator`** (required) |
+| Optional Evidence | `StressIndex` / `FatigueIndex` / `MeetingDensity` when present |
+| Trigger sketch | Latest scalar `SustainedLoadIndicator` ≥ **60** (0–100; E2 may tune ±10) |
+| Omit | When `SustainedLoadIndicator` absent / non-scalar / below threshold |
+| Calm copy stance | “Prolonged load looked elevated in this window” — **not** “you are burned out” / clinical exhaustion / manager surveillance |
+| Distinct from | `high_stress_period_v1` (Signal burst) and `cognitive_load_elevated_v1` (current demand ≠ 4h persistence) |
+| Why this Feature | SustainedLoadIndicator shipped (P25); persistence is core Pattern Discovery; unused by Knowledge |
+
+##### 3. Recommendation — `combined_demand_pace_hint_v1`
+
+| Field | Lock |
+| :--- | :--- |
+| Kind | `RecommendationRule` |
+| Primary inputs | Pattern Insight **`cognitive_load_elevated_v1`** (required, same ADR-009 style as `focus_dip_pace_hint_v1`) + optional latest `CognitiveLoad` Feature |
+| Trigger sketch | Emit when the elevated-combined-demand Insight is present in the Insights list just evaluated |
+| Omit | When that Insight is absent |
+| Calm copy stance | Gentle pace / pause / fewer parallel demands hint — **not** prescription, clinical advice, or employer coaching |
+| Evidence | Insight id (+ `CognitiveLoad` Feature id when present) |
+| Why | Mirrors the proven Insight→Recommendation pairing; gives L4 coverage for the new demand Insight without inventing LLM text |
+
+#### Features considered but **omitted** from this E2 slate
+
+| Feature | Why omit now |
+| :--- | :--- |
+| `DistractionScore` / `NotificationPressure` | Valuable; NotificationPressure already feeds CognitiveLoad; DistractionScore reserved for a later gate/wave to avoid 4+ rules in one E2 |
+| `DeepWorkScore` / `AttentionStability` | Focus-quality path already has CSR + Focus baseline + pace hint; avoid overlapping “focus good/bad” spam |
+| `DeskAwayPresence` / `CircadianOffset` | Presence / schedule-alignment — different product question; park for later |
+| `RecoveryScore` | Wearable-thin without companion dogfood in Knowledge path |
+| `MeetingDensity` alone | Already inside CognitiveLoad / SustainedLoad composites |
+| `EnergyScore` / `ActivityBalance` / `SleepDebt` | Wearable magnitude Features — not selected for this demand/persistence wave |
+
+#### Schema (v1)
+
+- **No** SQLite migration.
+- **No** new Observation `data_type`.
+- **No** new Feature formulas / DAG nodes / `register_*` Feature helpers this phase.
+- Future rule waves or Feature math → **new ADR or later PM gate + approve** as appropriate.
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 27)
+
+```text
+E1 (P27-E1-T1) — THIS ADR
+  Lock Pattern Discovery rule expansion; slate of 3 rules;
+  Feature inputs; omit policies; rejected alts; schema none
+
+E2 (P27-E2-T1)
+  Implement + register the three locked rules via
+  register_insights_v1 / register_recommendations_v1 (or additive helpers)
+  Unit tests: emit / omit / evidence / calm copy / no Feature rewrite
+  Do NOT add rules outside this slate without ADR amend + approve
+
+E3 (optional)
+  Dogfood notes + optional calm Dashboard Insights/Suggestions surface
+  (existing IPC paths — prefer reuse; omit stays quiet)
+```
+
+#### Docs policy for this ADR
+
+- Planned / ADR sketch notes land **now** in `docs/12-development.md`, `docs/16-glossary.md` (and knowledge touch if present).
+- Rule implementation + exact threshold tuning within locked bands → **P27-E2**.
+
+#### Rejected alternatives
+
+1. **New Feature catalog math / DAG nodes** this phase — rejected; Knowledge-only expansion.
+2. **TypingRhythm** — deferred (surveillance / keystroke-content framing risk).
+3. **DeepFocusLikelihood** — deferred (overlaps shipped `DeepWorkScore`).
+4. **IDE plugin** as Phase 27 primary — deferred (ADR-013 bar).
+5. **Weather ambient** as Phase 27 primary — deferred (ADR-015 bar).
+6. **App Store listing / productization** as Phase 27 primary — deferred.
+7. **Companion polish-as-primary** — not Phase 27 theme.
+8. **Precise GPS** — rejected (ADR-024 bar).
+9. **LLM-authored Insights / Recommendations / Evidence** — rejected; L5 interpret-only.
+10. **Workplace / employer surveillance framing** — rejected; personal self-tracking only.
+11. **Opening a PR during freeze** — local branch `phase/27-pattern-rules` until 2026-09-01.
+12. **Migration / new Observation `data_type`** — this ADR chooses schema **none**.
+13. **Claiming public launch Done / flipping visibility / notarized public Release** — OSS layers 2–3 remain parked; **public launch not Done**.
+14. **Parallel Coach / Correlation Engine crate** — extend `knowledge-engine` only.
+15. **Persisted Insight/Recommendation SQLite store** — rejected for v1 (ADR-008/009 stance).
+16. **Shipping more than the locked three rules in E2** without ADR amend — rejected (keep slate small).
 

@@ -215,7 +215,7 @@ Success shape:
 - **Empty:** `{ "insights": [] }` when idle / no matching rules / thin baseline history / evaluate soft-fail / engine not managed. An empty/`new()` engine without registration also yields `[]`. Dashboard shows a calm empty state (no error noise).
 - **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM text. No SQLite on the command path (UI ↛ DB).
 
-**Pattern Discovery v1 (ADR-008):** Baseline / multi-day rules stay on this IPC. Core may recompute a **bounded** Feature series from local Observations for comparison (recompute-on-read); optional in-process memo only — **no** Feature-history SQLite table and **no** UI→DB. Thin history or low confidence → omit the Insight. Copy remains calm personal observation (not clinical). Shipped rule: `focus_vs_recent_baseline_v1` (current `FocusScore` vs mean of ≤7 prior UTC afternoon windows; category `pattern`). Dashboard lists Insights as returned and shows a calm category affordance (`Pattern` / `Focus` / `Stress`).
+**Pattern Discovery v1 (ADR-008 + ADR-028):** Baseline / multi-day rules stay on this IPC. Core may recompute a **bounded** Feature series from local Observations for comparison (recompute-on-read); optional in-process memo only — **no** Feature-history SQLite table and **no** UI→DB. Thin history or low confidence → omit the Insight. Copy remains calm personal observation (not clinical). Shipped rules include: `focus_vs_recent_baseline_v1` (current `FocusScore` vs mean of ≤7 prior UTC afternoon windows; category `pattern`); `cognitive_load_elevated_v1` (latest `CognitiveLoad` ≥ 60; category `demand`); `sustained_load_elevated_v1` (latest `SustainedLoadIndicator` ≥ 60; category `prolonged_load`). Dashboard lists Insights as returned and shows a calm category affordance (`Pattern` / `Focus` / `Stress` / demand & prolonged-load labels as surfaced).
 
 Example (non-empty):
 
@@ -263,7 +263,7 @@ let insights = engine.evaluate_with_pattern(&features, &signals, &pattern)?;
 - **Purpose:** Calm Evidence-backed Recommendations for Dashboard / Insights-adjacent surface (L4).
 - **Source:** Evaluate-on-read in `knowledge-engine` after Insights on the same in-memory Feature snapshot (+ pattern baseline inputs as `get_insights`). Host registers `register_insights_v1` + `register_recommendations_v1` at startup. Empty / no-match / low confidence / soft-fail → `{ "recommendations": [] }`.
 - **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM-invented actions. No SQLite on the command path (UI ↛ DB). No Recommendation persistence (ADR-009).
-- **Shipped rule:** `focus_dip_pace_hint_v1` — when pattern Insight `focus_vs_recent_baseline_v1` indicates Focus lower than recent average (and FocusScore confidence gate passes), emit a pace/pause hint with Evidence `Feature FocusScore` + `Insight <id>`.
+- **Shipped rules:** `focus_dip_pace_hint_v1` — when pattern Insight `focus_vs_recent_baseline_v1` indicates Focus lower than recent average (and FocusScore confidence gate passes), emit a pace/pause hint with Evidence `Feature FocusScore` + `Insight <id>`. `combined_demand_pace_hint_v1` (ADR-028) — when Insight from `cognitive_load_elevated_v1` is present, emit a gentle pace/pause hint with Evidence `Insight <id>` (+ optional `Feature CognitiveLoad`).
 - **Dashboard:** Suggestions section (Insights-adjacent); title/suggestion as Core returns. QA mocks: `?mockRecommendations=empty|ready|pace|error` (see `apps/desktop/README.md`).
 
 Example (non-empty, illustrative):

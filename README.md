@@ -10,11 +10,15 @@ Local-First open-source platform for productivity, physiological stress, and rec
 
 - **Contributing / how to extend:** [`CONTRIBUTING.md`](./CONTRIBUTING.md) (plugins, pipeline, Features, PRs)
 - Vision & scope: `docs/00-vision.md`
+- **OSS public launch (maintainers):** [`docs/19-oss-public-launch.md`](./docs/19-oss-public-launch.md) — checklist SoT; **not** “public launch Done” until post-freeze notarized Release (ADR-027)
+- Packaging / signed builds: [`docs/18-packaging-runbook.md`](./docs/18-packaging-runbook.md)
 - Project canvas: `docs/PROJECT_CANVAS.md`
 - Sprint plan: `docs/SPRINT_ROADMAP.md`
 - Agent team workflow: `docs/17-agent-workflow.md` / `AGENTS.md`
 - Architecture freeze: `docs/ARCHITECTURE_STATUS.md`
 - Local setup: `docs/12-development.md`
+
+BioFocus is a **personal self-tracking** Local-First tool (AGPLv3 Core). It is **not** workplace employee monitoring and **not** a clinical diagnosis product. Zero telemetry by default; packaging ≠ secret Feature math.
 
 ## Quick start (Core)
 

@@ -1,10 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 25: SustainedLoadIndicator** — **Done** (2026-08-12).  
-> Phase 0–25 Done. Gate **PM-GATE-POST-P24** ✅ · **ADR-026** ✅ · Ready **PM-GATE-POST-P25**.  
-> Deferred: IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
+> **Phase 27: Pattern Discovery rule expansion** (Sprint 53–54) — **Active**.  
+> Phase 0–26 Done. Gate **PM-GATE-POST-P26** ✅ · **ADR-028** ✅ · Ready **P27-E2-T1**.  
+> **Public launch not Done** (OSS layers 2–3 after PR freeze). Deferred: park-until-freeze-lift as primary · IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math expansion.
 
-**Phase 25 outcome (shipped):** **ADR-026** ✅ · **`SustainedLoadIndicator` Feature** (Stress / Fatigue / MeetingDensity) · dogfood + calm Dashboard **Prolonged load**. Calm non-clinical framing (“prolonged load in this window”). No burnout diagnosis. No new Observation family.
+**Phase 27 outcome (target):** **ADR-028** locks Insight/Recommendation rule slate on **shipped** Features → register rules in `knowledge-engine` → optional dogfood / Dashboard Insights·Suggestions. Extend ADR-008 / ADR-009. **No** new Observation / Feature math. **Not** App Store. **Not** public launch Done.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -32,21 +32,23 @@
 - [ ] **Personal context:** Variant B framing; user-declared health only; no precise GPS desk-away; no diagnosis from biometrics
 - [ ] **Circadian:** schedule-alignment framing only — no chronotype / sleep-disorder diagnosis
 - [ ] **Sustained load:** prolonged-load framing only — no burnout / clinical diagnosis
+- [ ] **OSS launch:** AGPLv3 Core open; no App Store productization as Phase 26 primary; no cloud accounts / telemetry by default; packaging ≠ secret Feature math
+- [ ] **Pattern rules:** evaluate-on-read only; Evidence-backed; no LLM-authored Insights/Recommendations; no new Feature math this phase
 
 ---
 
-## Kanban Overview (post–Phase 25)
+## Kanban Overview (Phase 27)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **PM-GATE-POST-P25** |
+| **Ready** | **P27-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–25 · **PM-GATE-POST-P14…P24** · **P25-E1–E3** · **P24-E1–E3** · **P23-E1–E3** (see archives) |
+| **Done** | Phase 0–26 · **PM-GATE-POST-P14…P26** · **P26-E1–E3** · **P25-E1–E3** · **P27-E1-T1** (see archives) |
 
-**Epic status:** Phase 25 ✅ · Phase 24 ✅ · Gate Ready
+**Epic status:** Phase 27 Active (E1 ✅ · E2 Ready) · Phase 26 ✅
 
-**Phase 25 on `/docs/14-roadmap.md`:** closed 2026-08-12 · **ADR-026** ✅ · Feature + dogfood / **Prolonged load**
+**Phase 27 on `/docs/14-roadmap.md`:** opened 2026-08-12 · **ADR-028** locked · Ready E2 ship rules
 
 **Live board (maintainers):** Cursor canvas `biofocus-execution-board.canvas.tsx` in the local Cursor projects `canvases/` directory (not required for external contributors).
 
@@ -54,13 +56,49 @@
 
 ### Active assignment
 
-**Ready now:** **PM-GATE-POST-P25** — Choose next Phase 26+ primary track (IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · other). Brief: `docs/handoffs/PM-GATE-POST-P25-pm-brief.md`. Role: **PM**.
+**Ready now:** **P27-E2-T1** — Ship locked Insight/Recommendation rules per **ADR-028** (`cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1`). Brief: `docs/handoffs/P27-E2-T1-pm-brief.md`. Role: **Dev** (`knowledge-engine` + tests).
 
-**Just closed:** **P25-E3-T1** (2026-08-12) — dogfood + Dashboard **Prolonged load** (QA Pass). Phase 25 closed.
+**Just closed:** **P27-E1-T1** (2026-08-12) — **ADR-028** locked Pattern Discovery / Recommendations expansion scope (QA Pass).
 
-**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 25 cluster on `phase/25-sustained-load`.
+**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 27 on `phase/27-pattern-rules`. Phase 26 cluster stays on `phase/26-oss-public-launch`. **Public launch not Done** (OSS layers 2–3 parked after freeze).
 
 ---
+
+## Phase 27 — Pattern Discovery rule expansion (Active)
+
+### Epic P27-E1 — Contracts ADR (**ADR-028**) ✅
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P27-E1-T1** ✅ | Lock Pattern Discovery / Recommendations expansion (**ADR-028**) | Dev | docs + decision-log (+ knowledge-engine contracts) |
+
+### Epic P27-E2 — Rules ship
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P27-E2-T1** ← Ready | Ship locked Insight/Recommendation rules | Dev | knowledge-engine (+ tests) |
+
+### Epic P27-E3 — Dogfood / surface
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P27-E3-T1** | Dogfood notes + optional calm Insights/Suggestions surface | Dev\|UX | docs (+ optional Dashboard) |
+
+---
+
+## Phase 26 archive (Done)
+
+<details>
+<summary>Phase 26 Kanban & epics (closed 2026-08-12 — OSS Public Launch Hygiene)</summary>
+
+**Done:** P26-E1 (T1) · P26-E2 (T1) · P26-E3 (T1).  
+**ADR-027** · SoT `docs/19-oss-public-launch.md` · dry-run checklist vs `docs/18-packaging-runbook.md`.  
+**Public launch not Done** — layers (2)–(3) after freeze.  
+Branch: `phase/26-oss-public-launch` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P26-*-qa-to-pm.md`.
+
+</details>
 
 ## Phase 25 archive (Done)
 
@@ -142,14 +180,15 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 
 ---
 
-## Queue (post–Phase 25)
+## Queue (Phase 27)
 
-1. **P25-E1-T1** — ADR-026 SustainedLoadIndicator ← **Done**  
-2. **P25-E2-T1** — Ship catalog Feature ← **Done**  
-3. **P25-E3-T1** — Dogfood / Prolonged load ← **Done**  
-4. **PM-GATE-POST-P25** — Choose Phase 26+ track ← **Ready**  
+1. **P27-E1-T1** — ADR-028 Pattern Discovery / Recommendations expansion ← **Done** (2026-08-12)  
+2. **P27-E2-T1** — Ship locked Insight/Recommendation rules ← **Ready**  
+3. **P27-E3-T1** — Dogfood + optional Insights/Suggestions surface  
 
-**Deferred:** IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
+**Deferred / parked:** OSS layers 2–3 (after freeze) · IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math.
 
-**Git:** Phase 25 on `phase/25-sustained-load` → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/PM-GATE-POST-P25-pm-brief.md`.
+**Git:** Phase 27 on `phase/27-pattern-rules` → **PR after 2026-09-01**. Phase 26 remains on `phase/26-oss-public-launch`.  
+**Brief:** `docs/handoffs/P27-E2-T1-pm-brief.md`.  
+**Evidence E1:** `docs/handoffs/P27-E1-T1-qa-to-pm.md`.  
+**Note:** **Public launch not Done**.

@@ -107,3 +107,4 @@ cd apps/desktop && pnpm tauri build
 - Ambient Feature: `docs/06-feature-catalog.md` §1.9 `AmbientMediaShare`
 - Security / privacy: `docs/10-security.md`
 - Dev commands: `docs/12-development.md`
+- OSS public launch / visibility gates (ADR-027): [`docs/19-oss-public-launch.md`](19-oss-public-launch.md) — see **§ Dry-run release checklist**; packaging **ops** stay **here**; do not duplicate secrets into 19
