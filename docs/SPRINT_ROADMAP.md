@@ -1,10 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 24: CircadianOffset** (Sprint 47–48) — **Active**.  
-> Phase 0–23 Done. Gate **PM-GATE-POST-P23** ✅ · **ADR-025** ✅ · `CircadianOffset` shipped · Ready **P24-E3-T1**.  
-> Deferred: IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · precise GPS.
+> **Phase 25: SustainedLoadIndicator** (Sprint 49–50) — **Active**.  
+> Phase 0–24 Done. Gate **PM-GATE-POST-P24** ✅ · **ADR-026** ✅ · Ready **P25-E2-T1**.  
+> Deferred: IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
 
-**Phase 24 outcome (target):** **ADR-025** ✅ locks `CircadianOffset` → **Feature shipped** → optional dogfood / calm surface. Calm non-clinical framing (“schedule alignment in this window”). No chronotype diagnosis. No new Observation family.
+**Phase 25 outcome (target):** **ADR-026** ✅ locks `SustainedLoadIndicator` → ship catalog Feature from Stress / Fatigue / MeetingDensity → optional dogfood / calm surface. Calm non-clinical framing (“prolonged load in this window”). No burnout diagnosis. No new Observation family.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -31,57 +31,71 @@
 - [ ] **Notifications:** opt-in; coarse counts/cadence only — **no** notification body/title/content; personal self-tracking only
 - [ ] **Personal context:** Variant B framing; user-declared health only; no precise GPS desk-away; no diagnosis from biometrics
 - [ ] **Circadian:** schedule-alignment framing only — no chronotype / sleep-disorder diagnosis
+- [ ] **Sustained load:** prolonged-load framing only — no burnout / clinical diagnosis
 
 ---
 
-## Kanban Overview (Phase 24)
+## Kanban Overview (Phase 25)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P24-E3-T1** |
+| **Ready** | **P25-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–23 · **PM-GATE-POST-P14…P23** · **P24-E1-T1** · **P24-E2-T1** · **P23-E1–E3** · **P22-E1–E3** (see archives) |
+| **Done** | Phase 0–24 · **PM-GATE-POST-P14…P24** · **P25-E1-T1** · **P24-E1–E3** · **P23-E1–E3** (see archives) |
 
-**Epic status:** Phase 24 Active (E1–E2 ✅ · E3 Ready) · Phase 23 ✅
+**Epic status:** Phase 25 Active (E1 ✅ · E2 Ready) · Phase 24 ✅
 
-**Phase 24 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-025** ✅ · Feature shipped · E3 Ready
+**Phase 25 on `/docs/14-roadmap.md`:** opened 2026-08-12 · **ADR-026** ✅ · Ready E2 ship
 
-**Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
+**Live board (maintainers):** Cursor canvas `biofocus-execution-board.canvas.tsx` in the local Cursor projects `canvases/` directory (not required for external contributors).
 
 **Agent pipeline:** Dev|UX → QA → PM. Git: **PR freeze до 2026-09-01**.
 
 ### Active assignment
 
-**Ready now:** **P24-E3-T1** — Dogfood notes + optional calm UI for CircadianOffset. Brief: `docs/handoffs/P24-E3-T1-pm-brief.md`. Role: **Dev** (+ UX if UI).
+**Ready now:** **P25-E2-T1** — Ship catalog Feature `SustainedLoadIndicator` per ADR-026. Brief: `docs/handoffs/P25-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **P24-E2-T1** (2026-08-12) — `CircadianOffset` Feature shipped (QA Pass).
+**Just closed:** **P25-E1-T1** (2026-08-12) — **ADR-026** locked (QA Pass).
 
-**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 24 on `phase/24-circadian-offset`.
+**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 25 on `phase/25-sustained-load`.
+
+---
+
+## Phase 25 — SustainedLoadIndicator (Active)
+
+### Epic P25-E1 — Contracts ADR (**ADR-026**)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P25-E1-T1** ✅ Done | Lock `SustainedLoadIndicator` Feature scope (**ADR-026**) | Dev | docs + decision-log |
+
+### Epic P25-E2 — First ship slice
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P25-E2-T1** ← Ready | Ship catalog Feature `SustainedLoadIndicator` | Dev | `feature-engine` + docs |
+
+### Epic P25-E3 — Dogfood / surface (optional)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P25-E3-T1** | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
 
 ---
 
-## Phase 24 — CircadianOffset (Active)
+## Phase 24 archive (Done)
 
-### Epic P24-E1 — Contracts ADR (**ADR-025**)
+<details>
+<summary>Phase 24 Kanban & epics (closed 2026-08-12 — CircadianOffset)</summary>
 
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P24-E1-T1** ✅ Done | Lock `CircadianOffset` Feature scope (**ADR-025**) | Dev | docs + decision-log |
+**Done:** P24-E1 (T1) · P24-E2 (T1) · P24-E3 (T1).  
+**ADR-025** · `CircadianOffset` Feature · dogfood + calm Dashboard **Schedule alignment**.  
+Branch: `phase/24-circadian-offset` (cluster PR after freeze).
 
-### Epic P24-E2 — First ship slice
+Evidence: `docs/handoffs/P24-*-qa-to-pm.md`.
 
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P24-E2-T1** ✅ Done | Ship catalog Feature `CircadianOffset` | Dev | `feature-engine` + docs |
-
-### Epic P24-E3 — Dogfood / surface (optional)
-
-| ID | Task | Role | Modules |
-| :--- | :--- | :--- | :--- |
-| **P24-E3-T1** ← Ready | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
-
----
+</details>
 
 ## Phase 23 archive (Done)
 
@@ -137,13 +151,13 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 
 ---
 
-## Queue (Phase 24)
+## Queue (Phase 25)
 
-1. **P24-E1-T1** — ADR-025 CircadianOffset ← **Done**  
-2. **P24-E2-T1** — Ship catalog Feature ← **Done**  
-3. **P24-E3-T1** — Dogfood / optional surface ← **Ready**  
+1. **P25-E1-T1** — ADR-026 SustainedLoadIndicator ← **Done**  
+2. **P25-E2-T1** — Ship catalog Feature ← **Ready**  
+3. **P25-E3-T1** — Dogfood / optional surface  
 
-**Deferred:** IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · precise GPS.
+**Deferred:** IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
 
-**Git:** Phase 24 on `phase/24-circadian-offset` → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P24-E3-T1-pm-brief.md`.
+**Git:** Phase 25 on `phase/25-sustained-load` → **one cluster PR after 2026-09-01**.  
+**Brief:** `docs/handoffs/P25-E2-T1-pm-brief.md`.

@@ -282,15 +282,31 @@
 - **Suggested calm chart label:** Schedule alignment (Dashboard series when present; omit stays quiet).
 - **Dogfood:** `docs/12-development.md` § CircadianOffset dogfood.
 
+### 1.21 `SustainedLoadIndicator` (ADR-026 / P25-E1 — planned; math → P25-E2)
+
+- **Goal:** Calm **prolonged / persistence** load from elevated Stress + Fatigue (+ optional schedule density). “Prolonged load in this window” — **not** clinical burnout / “you are burned out”; **not** workplace surveillance scoring; **not** CognitiveLoad “combined demand” (current window).
+- **Window:** Feature cadence **15m / 1m** (align catalog); persistence math uses **4h lookback** ending at window end (multi-window evidence — not multi-day burnout profiling).
+- **Inputs (Feature-level, existing only):** upstream **`StressIndex`**, **`FatigueIndex`**, **`MeetingDensity`** (schedule proxy). **Not** CognitiveLoad as input. **No** new `data_type`.
+- **Not inputs:** CognitiveLoad / FocusScore / CircadianOffset / raw Observation mix in v1.
+- **Formula Strategy (v1 sketch):** mean Stress / Fatigue / (MeetingDensity→0–100) over lookback → weighted renormalize (sketch weights 0.40 / 0.40 / 0.20) → **0–100**. **Omit** when both Stress and Fatigue absent; **renormalize** when MeetingDensity absent.
+- **Omit policy:** omit if neither StressIndex nor FatigueIndex present in lookback — do **not** emit from meetings alone.
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless prolonged-load score.
+- **Confidence (ADR-007 sketch):** expected slots = 3 (`stress` / `fatigue` / `meeting`); coverage × mean(upstream Feature.confidence).
+- **Explanation factors (sketch):** `stress` / `fatigue` / `meeting` when present; shares sum to 1.0.
+- **DAG:** E2 — `register_*` / `register_catalog_v1` after stress / calendar nodes (exact helper name in E2).
+- **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite StressIndex / FatigueIndex / MeetingDensity / CognitiveLoad.
+- **Sibling:** distinct from **CognitiveLoad** (current combined demand).
+- **Suggested calm chart label (E3):** Prolonged load.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
-| `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
-| `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
+| `TypingRhythm` | Input cadence stability | keystrokes | deferred (surveillance bar) |
+| `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | deferred (overlaps DeepWorkScore) |
 
 > **Phase 18 note (ADR-019):** `notification_event` Observation family + collector + catalog Feature **`NotificationPressure`** are **shipped** (P18-E1–E3). No body/title content; personal self-tracking only.
 >
@@ -303,4 +319,6 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 > **Phase 23 note (ADR-024 / P23-E2):** **Personal Context Layer** — **`DeskAwayPresence` shipped** (§1.19); health-context local config + prompt-pack injection shipped (L5 consume-only). Variant B large literature library deferred. Provider-agnostic Observation contracts.
 >
 > **Phase 24 note (ADR-025 / P24-E2–E3):** Catalog Feature **`CircadianOffset` shipped** — Observation-level sleep + work/activity timing; 15m/1m + 24h lookback; 0–100 alignment; omit unless both slots; §1.20 above. Calm “schedule alignment in this window”; Dashboard chart **Schedule alignment**; no chronotype diagnosis.
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; P24-E2 — `CircadianOffset` when shipped; others may omit until wired).
+>
+> **Phase 25 note (ADR-026 / P25-E1):** Catalog Feature **`SustainedLoadIndicator`** scope **locked** — Feature-level Stress + Fatigue + MeetingDensity; 15m/1m + 4h lookback; 0–100 prolonged load; omit when both Stress and Fatigue absent; §1.21 stub above. Math + DAG → **P25-E2**. Calm “prolonged load in this window”; no burnout diagnosis. Distinct from CognitiveLoad.
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; P24-E2 — `CircadianOffset`; P25-E2 — `SustainedLoadIndicator` when shipped; others may omit until wired).

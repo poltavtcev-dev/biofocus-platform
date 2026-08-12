@@ -37,10 +37,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — mark **P24-E3-T1** Done; close Epic **P24-E3** and **Phase 24** if no further P24 tasks
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` / `00-vision` — Phase 24 closed with dogfood + **Schedule alignment**
-- [ ] Next Ready: **PM-GATE-POST-P24** (IDE · weather · App Store · Companion polish · TypingRhythm · other) — brief without opening a PR during freeze
+- [x] `/docs/SPRINT_ROADMAP.md` — mark **P24-E3-T1** Done; close Epic **P24-E3** and **Phase 24** if no further P24 tasks
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` / `00-vision` — Phase 24 closed with dogfood + **Schedule alignment**
+- [x] Next Ready: **PM-GATE-POST-P24** (IDE · weather · App Store · Companion polish · TypingRhythm · other) — brief without opening a PR during freeze
 
 ## Suggested next Ready task
 - **PM-GATE-POST-P24** — choose next primary among deferred tracks (IDE / weather / App Store / Companion polish / TypingRhythm / other); **no PR** during freeze.

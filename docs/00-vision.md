@@ -56,6 +56,8 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 | **Power users (OSS)** | Build from source, plugins, custom Features/rules, local LLM, editable prompts (later), full data control |
 | **Everyday users (commercial apps, later)** | Packaged installers, guided device setup, calm UI/reports — same open Core, no secret metric math |
 
+**OSS public launch (maintainers):** polished public beta gates — hygiene now, `main` catch-up after PR freeze, then notarized GitHub Release before flipping visibility — [`docs/19-oss-public-launch.md`](19-oss-public-launch.md). App Store listing stays deferred.
+
 ## 6. Non-Goals (Scope Limits)
 - Платформа **не является** медицинским диагностическим средством / clinical diagnosis.
 - Платформа **не предоставляет** централизованное облачное хранилище по умолчанию.
@@ -64,7 +66,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P24-E3-T1** (CircadianOffset dogfood). Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P25-E2-T1** (ship SustainedLoadIndicator). Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -85,7 +87,8 @@ Immediate Kanban = **P24-E3-T1** (CircadianOffset dogfood). Below is the accepte
 | **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
 | **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
 | **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
-| **24** | Active — CircadianOffset (**ADR-025** ✅ · Feature shipped · Ready P24-E3); deferred IDE · weather · App Store · TypingRhythm |
-| **25+** | Open via later PM gate — IDE · weather · App Store · Companion polish · TypingRhythm |
+| **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
+| **25** | Active — SustainedLoadIndicator (**ADR-026** ✅ · Ready P25-E2); deferred IDE · weather · App Store · TypingRhythm |
+| **26+** | Open via later PM gate — IDE · weather · App Store · Companion polish · TypingRhythm |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

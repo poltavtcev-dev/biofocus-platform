@@ -27,6 +27,7 @@
 | ADR-023 | 2026-08-11 | **Phase 22:** catalog Feature **`AttentionStability`** = Feature-level **variance/stability** composite of **`FocusScore` + `ContextSwitchRate`** (distinct from DeepWorkScore intensity); window **15m / 1m**; output 0–100; **omit** without FocusScore; **renormalize** when CSR absent; Focus term from **in-window Focus range** (not Focus level); ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “focus stability in this window” framing | PM-GATE-POST-P21 chose AttentionStability after DeepWorkScore; same leaves, different question (consistency vs intensity). Personal self-tracking only | Clinical ADHD / “you can’t focus”; workplace surveillance; new Observation families; rewriting FocusScore / CSR / DeepWorkScore; using Focus level as intensity (DeepWorkScore); IDE / weather / App Store / CircadianOffset as P22 primary; PR during freeze; migration without approve |
 | ADR-024 | 2026-08-11 | **Phase 23:** **Personal Context Layer** — three pillars: (**1**) reference bands **Variant B** (personal baseline primary; literature secondary, cited calm orienting ranges); (**2**) opt-in **user-declared** health context → prompt packs / report (L5); (**3**) **desk-away** from secondary signals (**no** precise GPS). Prefer local config (`~/.biofocus/…`); **no** migration v1; Features stay provider-agnostic | PM-GATE-POST-P22 chose Personal Context Layer (supersedes CircadianOffset draft). Focus-ladder Features shipped — next gap is interpretation + presence context without medical/GPS product | Precise GPS / continuous geo; clinical diagnosis engine; LLM inventing conditions; cloud health sync by default; workplace presence monitoring; rewriting Focus/Stress from disease tags; CircadianOffset / IDE / weather / App Store as P23 primary; PR during freeze; migration without approve |
 | ADR-025 | 2026-08-12 | **Phase 24:** catalog Feature **`CircadianOffset`** = **Observation-level timing** composite of **sleep timing** (`sleep_interval`) vs **work/activity timing** (`keystrokes` / `context_window`, optional `step_count` / `active_energy` / workout `life_event`); Feature cadence **15m / 1m** with **24h lookback**; output **0–100** alignment (not signed hours); **omit** unless both sleep + work/activity timing present; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “schedule alignment in this window” framing | PM-GATE-POST-P23 chose CircadianOffset after Personal Context; sleep + activity Observations already shipped (P17+). Timing alignment ≠ SleepDebt magnitude ≠ DeskAwayPresence. Personal self-tracking only | Clinical chronotype / circadian-disorder / “night owl so you fail”; workplace schedule surveillance; new Observation families; rewriting SleepDebt / EnergyScore / ActivityBalance / FocusScore; Feature-level SleepDebt/EnergyScore as timing; signed chronotype hours as primary units; IDE / weather / App Store / TypingRhythm as P24 primary; precise GPS; PR during freeze; migration without approve |
+| ADR-026 | 2026-08-12 | **Phase 25:** catalog Feature **`SustainedLoadIndicator`** = Feature-level **persistence** composite of **`StressIndex` + `FatigueIndex` + `MeetingDensity`** (schedule proxy); Feature cadence **15m / 1m** with **4h lookback** for prolonged-load math; output **0–100**; omit when both Stress and Fatigue absent; **renormalize** present slots (MeetingDensity optional); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “prolonged load in this window” framing | PM-GATE-POST-P24 chose SustainedLoadIndicator; Stress / Fatigue / MeetingDensity long shipped. Prolonged persistence ≠ CognitiveLoad current demand. Personal self-tracking only | Clinical burnout / “you are burned out”; workplace surveillance scoring; new Observation families; rewriting Stress / Fatigue / MeetingDensity / CognitiveLoad; using CognitiveLoad as input; TypingRhythm / DeepFocusLikelihood / IDE / weather / App Store as P25 primary; PR during freeze; migration without approve |
 
 ### ADR-007 detail — Feature confidence (v1)
 
@@ -1939,3 +1940,134 @@ E3 (optional)
 11. **Applying a migration without user approve** — this ADR chooses no migration.
 12. **LLM inventing CircadianOffset scores or chronotype diagnoses** — L5 interpret-only.
 13. **Parallel “Circadian Engine” crate** — extend `feature-engine` catalog only.
+
+
+### ADR-026 detail — Phase 25: SustainedLoadIndicator Feature scope (v1)
+
+> **Relationship:** Catalog backlog named **`SustainedLoadIndicator`** as calm rename of “burnout risk” from **Stress, Fatigue, schedule**. Phase 20 shipped **`CognitiveLoad`** (current combined demand from MeetingDensity + CSR + NotificationPressure). **StressIndex**, **FatigueIndex**, and **MeetingDensity** have long shipped. **PM-GATE-POST-P24** chose SustainedLoadIndicator as Phase 25 primary. **ADR-026** locks Feature-level inputs, longer-horizon persistence stance, omit policy, and calm framing **before** math lands in `feature-engine`. Implement in **P25-E2**; optional dogfood / calm Dashboard surface in **P25-E3**. Epic split: `docs/SPRINT_ROADMAP.md` Phase 25.
+
+| Layer | Role in Phase 25 v1 |
+| :--- | :--- |
+| Inputs (Feature-level) | Already-shipped Features: **`StressIndex`** + **`FatigueIndex`** + **`MeetingDensity`** (schedule proxy) |
+| Feature (`feature-engine`) | E2: new catalog node **`SustainedLoadIndicator`** — prolonged-load score 0–100; ADR-007 confidence; optional explanation factors |
+| Observation (SQLite) | **Unchanged** — no new `data_type`; leaf Observations stay behind Stress / Fatigue / MeetingDensity |
+| Leaf / sibling Features | **Do not** rewrite StressIndex / FatigueIndex / MeetingDensity / CognitiveLoad; **do not** use CognitiveLoad as an input |
+| Sibling | **Distinct from CognitiveLoad** (current combined demand ≠ prolonged / persistence load) |
+| LLM | L5 interpret-only — must **not** invent SustainedLoadIndicator scores or burnout / clinical claims |
+
+#### Chosen v1 input set: Feature-level Stress + Fatigue + MeetingDensity
+
+Exactly **one** input stance for Phase 25 v1:
+
+1. **Prefer Feature-level composition** (not raw Observation mix): Stress / Fatigue / MeetingDensity already encode their privacy and unit bars; SustainedLoadIndicator asks a **persistence** question over those scores.
+2. **StressIndex** — elevated load signal over the lookback (mean of samples with Feature ends in lookback).
+3. **FatigueIndex** — sustained fatigue signal over the same lookback.
+4. **MeetingDensity** — schedule / meeting-pressure reinforcement (schedule proxy named in catalog backlog). Optional when thin — still contributes when present.
+5. **Why not CognitiveLoad as input:** CognitiveLoad already mixes MeetingDensity with CSR + NotificationPressure for **current** demand. Feeding it into SustainedLoad would invent “prolonged burnout” from a different question and couple two composites. Persistence uses Stress + Fatigue (+ MeetingDensity) directly.
+6. **Hard gap check:** StressIndex, FatigueIndex, MeetingDensity already ship (P3 / P6). **Zero** new Observation `data_type` in v1.
+
+#### Formula stance sketch (for P25-E2)
+
+```text
+Feature cadence (window / step): 15 minutes / 1 minute (align catalog DAG; series may coarsen)
+Lookback for persistence math: 4 hours ending at window end
+  (Longer than CognitiveLoad’s single 15m snapshot — “prolonged” needs multi-window evidence.
+   Do NOT invent multi-day clinical burnout profiling in v1.)
+
+Compose HIGH prolonged load (0–100) — NOT clinical burnout labels:
+
+  stress_samples  = StressIndex Features with end in [end−4h, end]
+  fatigue_samples = FatigueIndex Features with end in [end−4h, end]
+  meeting_samples = MeetingDensity Features with end in [end−4h, end]
+
+  if stress_samples empty AND fatigue_samples empty → OMIT
+    (meetings-alone is schedule density, not sustained load under this ADR)
+
+  stress_term  = mean(stress_samples)                         # already 0–100
+  fatigue_term = mean(fatigue_samples)                        # already 0–100
+  meeting_term = mean(meeting_samples) × 100                  # density → 0–100
+    (exact MeetingDensity scale normalization OK in E2 if catalog unit differs —
+     still map into 0–100; do not rewrite MeetingDensity Feature)
+
+  Catalog weights (sketch): stress 0.40 / fatigue 0.40 / meeting 0.20
+  value = weighted renormalize over PRESENT terms → clamp 0–100
+
+Units (LOCKED): dimensionless 0–100 prolonged-load score.
+  Rejected as primary units: clinical burnout index / “days until crash” —
+  those invite diagnosis copy; 0–100 matches catalog Features.
+
+Missing-input policy (LOCKED):
+  • If BOTH StressIndex and FatigueIndex ABSENT in lookback → OMIT
+  • If Stress and/or Fatigue present and MeetingDensity ABSENT → EMIT with renormalize
+    (MeetingDensity is optional schedule reinforcement — not a third hard gate)
+  • Do NOT invent Stress from CognitiveLoad or Fatigue from SleepDebt
+  • Do NOT use CognitiveLoad / FocusScore / CircadianOffset as SustainedLoad inputs
+
+Confidence (ADR-007 sketch):
+  expected_slots = 3   # stress / fatigue / meeting
+  present_slots  = count of present input families in lookback (1..3 when emitted)
+  coverage       = present_slots / 3
+  mean_evidence  = mean(upstream Feature.confidence of contributing samples)
+  Feature.confidence = clamp(coverage × mean_evidence, 0.0, 1.0)
+
+Provenance: union of Observation IDs from present upstream Features’ provenance
+  (or Feature ids if E2 follows existing composite provenance pattern — prefer Observation IDs).
+
+Optional explanation factors (when emitted):
+  stress (“Stress load”), fatigue (“Fatigue load”), meeting (“Schedule density”) when present;
+  shares sum to 1.0. Calm composition only — not clinical.
+
+Framing / copy:
+  “prolonged load in this window” — NOT “you are burned out” / clinical burnout /
+  workplace productivity scoring / manager surveillance.
+  Distinct from CognitiveLoad (“combined demand in this window”).
+```
+
+#### Schema (v1)
+
+- Prefer existing Feature DAG only (recompute-on-read lookback over already-computed Features / Observations — ADR-008 stance).
+- **No new SQLite tables/columns**; **no** Feature-history store required for v1.
+- **Do not apply** any migration for this ADR.
+- Future multi-day burnout profile / new Observation family → **new ADR + user approve**.
+
+#### E2 / E3 sketch (aligned with SPRINT_ROADMAP Phase 25)
+
+```text
+E1 (P25-E1-T1) — THIS ADR
+  Lock SustainedLoadIndicator Feature scope: Feature-level Stress + Fatigue + MeetingDensity;
+  15m/1m cadence + 4h lookback; 0–100; omit when both Stress and Fatigue absent;
+  renormalize present (MeetingDensity optional); ADR-007 slots=3;
+  distinct from CognitiveLoad; calm framing; rejected alts; no migration
+
+E2 (P25-E2-T1)
+  Ship SustainedLoadIndicator in feature-engine + catalog §1 finalize
+  register_* / register_catalog_v1 after stress / calendar nodes as appropriate
+  Unit tests: all-three / Stress+Fatigue without Meeting / omit without Stress&Fatigue /
+  confidence / factors / distinct from CognitiveLoad
+  Do NOT rewrite StressIndex / FatigueIndex / MeetingDensity / CognitiveLoad
+
+E3 (optional)
+  Dogfood / calm Dashboard surface (snapshot series) — still non-clinical copy
+  Suggested calm chart label: Prolonged load
+```
+
+#### Docs policy for this ADR
+
+- Planned → ADR sketch notes land now in `docs/06-feature-catalog.md`, `docs/12-development.md`, `docs/16-glossary.md`.
+- Full §1 formula finalize + DAG registration names → **P25-E2** (must still obey this ADR).
+
+#### Rejected alternatives
+
+1. **Clinical burnout / “you are burned out” claims** — Non-Goal; calm personal prolonged-load framing only.
+2. **Workplace / employer surveillance scoring** or manager dashboards — personal self-tracking only.
+3. **Inventing new Observation families** this phase — Stress / Fatigue / MeetingDensity already ship.
+4. **Rewriting StressIndex / FatigueIndex / MeetingDensity / CognitiveLoad** leaf or sibling formulas — compose persistence; do not reopen those Features.
+5. **Using CognitiveLoad as a SustainedLoad input** — rejected; different question (current demand vs prolonged persistence).
+6. **Emit from MeetingDensity alone** (no Stress and no Fatigue) — rejected; schedule density ≠ sustained load under this ADR.
+7. **Multi-day clinical burnout profiling / “days until crash” units** — rejected; 4h lookback + 0–100 only.
+8. **IDE plugin / weather ambient / App Store packaging / TypingRhythm / DeepFocusLikelihood as Phase 25 primary** — deferred (PM-GATE-POST-P24).
+9. **Opening a PR during freeze** — local branch `phase/25-sustained-load` until 2026-09-01.
+10. **Applying a migration without user approve** — this ADR chooses no migration.
+11. **LLM inventing SustainedLoadIndicator scores or burnout diagnoses** — L5 interpret-only.
+12. **Parallel “Burnout Engine” crate** — extend `feature-engine` catalog only.
+

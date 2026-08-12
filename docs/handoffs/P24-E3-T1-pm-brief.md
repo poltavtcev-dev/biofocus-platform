@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev (+ UX if UI)  
-**Status:** Ready  
+**Status:** Done (2026-08-12) — QA Pass · Phase 24 closed · next **PM-GATE-POST-P24**  
 **Date:** 2026-08-12  
 **Closed previous:** P24-E2-T1 (`CircadianOffset` Feature shipped; QA Pass)  
 **Evidence:** `docs/handoffs/P24-E2-T1-qa-to-pm.md` · `docs/handoffs/P24-E2-T1-dev-to-qa.md`  
