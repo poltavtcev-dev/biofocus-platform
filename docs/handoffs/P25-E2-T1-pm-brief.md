@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (2026-08-12) — QA Pass · next **P25-E3-T1**  
 **Date:** 2026-08-12  
 **Closed previous:** P25-E1-T1 (**ADR-026** locked; QA Pass)  
 **Evidence:** `docs/handoffs/P25-E1-T1-qa-to-pm.md` · `docs/handoffs/P25-E1-T1-dev-to-qa.md`  

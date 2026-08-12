@@ -1,6 +1,6 @@
 //! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3 + Phase 10 E3 +
 //! Phase 12 E3 + Phase 13 E3 + Phase 16 E2 + Phase 17 E3 + Phase 18 E3 +
-//! Phase 20 E2 + Phase 21 E2 + Phase 22 E2 + Phase 23 E2 + Phase 24 E2) — deterministic v1 formulas.
+//! Phase 20 E2 + Phase 21 E2 + Phase 22 E2 + Phase 23 E2 + Phase 24 E2 + Phase 25 E2) — deterministic v1 formulas.
 //!
 //! | Node | Feature id | Task |
 //! | :--- | :--- | :--- |
@@ -24,6 +24,7 @@
 //! | [`AttentionStabilityNode`] | `AttentionStability` | P22-E2-T1 |
 //! | [`DeskAwayPresenceNode`] | `DeskAwayPresence` | P23-E2-T1 |
 //! | [`CircadianOffsetNode`] | `CircadianOffset` | P24-E2-T1 |
+//! | [`SustainedLoadIndicatorNode`] | `SustainedLoadIndicator` | P25-E2-T1 |
 //!
 //! Register Focus pair via [`register_focus_v1`]; Stress/Fatigue via
 //! [`register_stress_v1`] (requires FocusScore already registered for Fatigue);
@@ -36,7 +37,8 @@
 //! DeepWorkScore via [`register_deep_work_v1`] (requires FocusScore + CSR);
 //! AttentionStability via [`register_attention_stability_v1`] (requires FocusScore + CSR);
 //! DeskAwayPresence via [`register_desk_away_v1`] (Observation-level; independent);
-//! CircadianOffset via [`register_circadian_v1`] (Observation-level timing; independent).
+//! CircadianOffset via [`register_circadian_v1`] (Observation-level timing; independent);
+//! SustainedLoadIndicator via [`register_sustained_load_v1`] (Feature-level; Stress + Fatigue + MeetingDensity).
 
 mod activity_balance;
 mod ambient_light_share;
@@ -61,6 +63,7 @@ mod recovery_between_meetings;
 mod recovery_score;
 mod sleep_debt;
 mod stress_index;
+mod sustained_load_indicator;
 mod window;
 
 pub use confidence::{
@@ -94,6 +97,9 @@ pub use sleep_debt::{SleepDebtNode, FEATURE_ID as SLEEP_DEBT_ID};
 pub use stress_index::{
     StressIndexNode, FEATURE_ID as STRESS_INDEX_ID, HIGH_STRESS_MIN_DURATION_SECS,
     HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD,
+};
+pub use sustained_load_indicator::{
+    SustainedLoadIndicatorNode, FEATURE_ID as SUSTAINED_LOAD_INDICATOR_ID,
 };
 pub use window::{STEP_SECS, WINDOW_SECS};
 
@@ -219,10 +225,21 @@ pub fn register_circadian_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<
     Ok(())
 }
 
+/// Registers `SustainedLoadIndicator` (Feature-level persistence; ADR-026 / P25-E2).
+///
+/// Depends on `StressIndex`, `FatigueIndex`, and `MeetingDensity` — call
+/// [`register_focus_v1`], [`register_stress_v1`], and [`register_calendar_v1`]
+/// first (or otherwise register those nodes) before [`FeatureEngine::run`].
+/// Does **not** depend on CognitiveLoad.
+pub fn register_sustained_load_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(SustainedLoadIndicatorNode::new())?;
+    Ok(())
+}
+
 /// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery,
 /// Distraction, Ambient media, Git activity, Ambient light, Wearable,
 /// Notification pressure, CognitiveLoad, DeepWorkScore, AttentionStability,
-/// DeskAwayPresence, CircadianOffset.
+/// DeskAwayPresence, CircadianOffset, SustainedLoadIndicator.
 pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
     register_focus_v1(engine)?;
     register_stress_v1(engine)?;
@@ -239,5 +256,6 @@ pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()
     register_attention_stability_v1(engine)?;
     register_desk_away_v1(engine)?;
     register_circadian_v1(engine)?;
+    register_sustained_load_v1(engine)?;
     Ok(())
 }

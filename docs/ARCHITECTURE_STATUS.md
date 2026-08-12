@@ -28,7 +28,7 @@
 - **Phase 22:** **Done** (2026-08-11) — AttentionStability; **ADR-023** ✅; Feature + dogfood + Focus stability chart. Branch: `phase/22-attention-stability` (PR after freeze).
 - **Phase 23:** **Done** (2026-08-11) — Personal Context Layer; **ADR-024** ✅; `DeskAwayPresence` + health→prompt + dogfood / Away from desk. Branch: `phase/23-personal-context` (PR after freeze).
 - **Phase 24:** **Done** (2026-08-12) — CircadianOffset; **ADR-025** ✅; Feature + dogfood / Schedule alignment. Branch: `phase/24-circadian-offset` (PR after freeze).
-- **Phase 25:** **Active** (2026-08-12) — SustainedLoadIndicator; **ADR-026** ✅; Ready **P25-E2-T1**. Branch: `phase/25-sustained-load` (PR after freeze). Deferred: IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · precise GPS.
+- **Phase 25:** **Active** (2026-08-12) — SustainedLoadIndicator; **ADR-026** ✅; Feature **shipped** (`register_sustained_load_v1`); Ready **P25-E3-T1** (dogfood / optional **Prolonged load** surface). Branch: `phase/25-sustained-load` (PR after freeze). Deferred: IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · precise GPS.
 - **Gate:** **PM-GATE-POST-P24** ✅ chose **`SustainedLoadIndicator`**. **ADR-026** ✅.
 ## Core Decisions
 - Local First Architecture

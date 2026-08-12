@@ -1,10 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
 > **Phase 25: SustainedLoadIndicator** (Sprint 49–50) — **Active**.  
-> Phase 0–24 Done. Gate **PM-GATE-POST-P24** ✅ · **ADR-026** ✅ · Ready **P25-E2-T1**.  
+> Phase 0–24 Done. Gate **PM-GATE-POST-P24** ✅ · **ADR-026** ✅ · Feature **shipped** · Ready **P25-E3-T1**.  
 > Deferred: IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
 
-**Phase 25 outcome (target):** **ADR-026** ✅ locks `SustainedLoadIndicator` → ship catalog Feature from Stress / Fatigue / MeetingDensity → optional dogfood / calm surface. Calm non-clinical framing (“prolonged load in this window”). No burnout diagnosis. No new Observation family.
+**Phase 25 outcome (target):** **ADR-026** ✅ · **`SustainedLoadIndicator` Feature shipped** (Stress / Fatigue / MeetingDensity) → optional dogfood / calm surface. Calm non-clinical framing (“prolonged load in this window”). No burnout diagnosis. No new Observation family.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -39,14 +39,14 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P25-E2-T1** |
+| **Ready** | **P25-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–24 · **PM-GATE-POST-P14…P24** · **P25-E1-T1** · **P24-E1–E3** · **P23-E1–E3** (see archives) |
+| **Done** | Phase 0–24 · **PM-GATE-POST-P14…P24** · **P25-E1-T1** · **P25-E2-T1** · **P24-E1–E3** · **P23-E1–E3** (see archives) |
 
-**Epic status:** Phase 25 Active (E1 ✅ · E2 Ready) · Phase 24 ✅
+**Epic status:** Phase 25 Active (E1 ✅ · E2 ✅ · E3 Ready) · Phase 24 ✅
 
-**Phase 25 on `/docs/14-roadmap.md`:** opened 2026-08-12 · **ADR-026** ✅ · Ready E2 ship
+**Phase 25 on `/docs/14-roadmap.md`:** opened 2026-08-12 · **ADR-026** ✅ · Feature shipped · Ready E3 dogfood
 
 **Live board (maintainers):** Cursor canvas `biofocus-execution-board.canvas.tsx` in the local Cursor projects `canvases/` directory (not required for external contributors).
 
@@ -54,9 +54,9 @@
 
 ### Active assignment
 
-**Ready now:** **P25-E2-T1** — Ship catalog Feature `SustainedLoadIndicator` per ADR-026. Brief: `docs/handoffs/P25-E2-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P25-E3-T1** — Dogfood notes + optional calm Dashboard surface for `SustainedLoadIndicator` (chart label **Prolonged load**). Brief: `docs/handoffs/P25-E3-T1-pm-brief.md`. Role: **Dev** (+ UX if UI).
 
-**Just closed:** **P25-E1-T1** (2026-08-12) — **ADR-026** locked (QA Pass).
+**Just closed:** **P25-E2-T1** (2026-08-12) — `SustainedLoadIndicator` catalog Feature shipped (QA Pass).
 
 **Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 25 on `phase/25-sustained-load`.
 
@@ -74,13 +74,13 @@
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P25-E2-T1** ← Ready | Ship catalog Feature `SustainedLoadIndicator` | Dev | `feature-engine` + docs |
+| **P25-E2-T1** ✅ Done | Ship catalog Feature `SustainedLoadIndicator` | Dev | `feature-engine` + docs |
 
 ### Epic P25-E3 — Dogfood / surface (optional)
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P25-E3-T1** | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
+| **P25-E3-T1** ← Ready | Dogfood notes + optional calm UI surface | Dev | docs (+ optional UI) |
 
 ---
 
@@ -154,10 +154,10 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 ## Queue (Phase 25)
 
 1. **P25-E1-T1** — ADR-026 SustainedLoadIndicator ← **Done**  
-2. **P25-E2-T1** — Ship catalog Feature ← **Ready**  
-3. **P25-E3-T1** — Dogfood / optional surface  
+2. **P25-E2-T1** — Ship catalog Feature ← **Done**  
+3. **P25-E3-T1** — Dogfood / optional surface ← **Ready**  
 
 **Deferred:** IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
 
 **Git:** Phase 25 on `phase/25-sustained-load` → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P25-E2-T1-pm-brief.md`.
+**Brief:** `docs/handoffs/P25-E3-T1-pm-brief.md`.
