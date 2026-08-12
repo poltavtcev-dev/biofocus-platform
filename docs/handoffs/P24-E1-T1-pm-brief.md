@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (2026-08-12) — QA Pass · **ADR-025** locked · next **P24-E2-T1**  
 **Date:** 2026-08-11  
 **Closed previous:** **PM-GATE-POST-P23** (chose **`CircadianOffset`**); Phase 23 Personal Context Layer complete  
 **Evidence:** `docs/handoffs/PM-GATE-POST-P23-pm-brief.md` · `docs/handoffs/P23-E3-T1-qa-to-pm.md`  

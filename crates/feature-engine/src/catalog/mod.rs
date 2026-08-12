@@ -1,6 +1,6 @@
 //! Catalog Feature nodes (Phase 3 E2 + Phase 6 E3 + Phase 7 E3 + Phase 10 E3 +
 //! Phase 12 E3 + Phase 13 E3 + Phase 16 E2 + Phase 17 E3 + Phase 18 E3 +
-//! Phase 20 E2 + Phase 21 E2 + Phase 22 E2 + Phase 23 E2) — deterministic v1 formulas.
+//! Phase 20 E2 + Phase 21 E2 + Phase 22 E2 + Phase 23 E2 + Phase 24 E2) — deterministic v1 formulas.
 //!
 //! | Node | Feature id | Task |
 //! | :--- | :--- | :--- |
@@ -23,6 +23,7 @@
 //! | [`DeepWorkScoreNode`] | `DeepWorkScore` | P21-E2-T1 |
 //! | [`AttentionStabilityNode`] | `AttentionStability` | P22-E2-T1 |
 //! | [`DeskAwayPresenceNode`] | `DeskAwayPresence` | P23-E2-T1 |
+//! | [`CircadianOffsetNode`] | `CircadianOffset` | P24-E2-T1 |
 //!
 //! Register Focus pair via [`register_focus_v1`]; Stress/Fatigue via
 //! [`register_stress_v1`] (requires FocusScore already registered for Fatigue);
@@ -34,13 +35,15 @@
 //! [`register_cognitive_v1`] (requires MeetingDensity + CSR + NotificationPressure);
 //! DeepWorkScore via [`register_deep_work_v1`] (requires FocusScore + CSR);
 //! AttentionStability via [`register_attention_stability_v1`] (requires FocusScore + CSR);
-//! DeskAwayPresence via [`register_desk_away_v1`] (Observation-level; independent).
+//! DeskAwayPresence via [`register_desk_away_v1`] (Observation-level; independent);
+//! CircadianOffset via [`register_circadian_v1`] (Observation-level timing; independent).
 
 mod activity_balance;
 mod ambient_light_share;
 mod ambient_media_share;
 mod attention_stability;
 mod calendar_meeting;
+mod circadian_offset;
 mod cognitive_load;
 mod confidence;
 mod context_switch_rate;
@@ -69,6 +72,7 @@ pub use activity_balance::{ActivityBalanceNode, FEATURE_ID as ACTIVITY_BALANCE_I
 pub use ambient_light_share::{AmbientLightShareNode, FEATURE_ID as AMBIENT_LIGHT_SHARE_ID};
 pub use ambient_media_share::{AmbientMediaShareNode, FEATURE_ID as AMBIENT_MEDIA_SHARE_ID};
 pub use attention_stability::{AttentionStabilityNode, FEATURE_ID as ATTENTION_STABILITY_ID};
+pub use circadian_offset::{CircadianOffsetNode, FEATURE_ID as CIRCADIAN_OFFSET_ID};
 pub use cognitive_load::{CognitiveLoadNode, FEATURE_ID as COGNITIVE_LOAD_ID};
 pub use context_switch_rate::{ContextSwitchRateNode, FEATURE_ID as CONTEXT_SWITCH_RATE_ID};
 pub use deep_work_score::{DeepWorkScoreNode, FEATURE_ID as DEEP_WORK_SCORE_ID};
@@ -205,10 +209,20 @@ pub fn register_desk_away_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<
     Ok(())
 }
 
+/// Registers `CircadianOffset` (Observation-level timing; ADR-025 / P24-E2).
+///
+/// Independent of other Feature nodes — sleep_interval + keystrokes /
+/// context_window (optional steps / active_energy / workout). No Feature-level
+/// magnitude proxies.
+pub fn register_circadian_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(CircadianOffsetNode::new())?;
+    Ok(())
+}
+
 /// Registers the full v1 catalog: Focus, Stress/Fatigue, Calendar, Recovery,
 /// Distraction, Ambient media, Git activity, Ambient light, Wearable,
 /// Notification pressure, CognitiveLoad, DeepWorkScore, AttentionStability,
-/// DeskAwayPresence.
+/// DeskAwayPresence, CircadianOffset.
 pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
     register_focus_v1(engine)?;
     register_stress_v1(engine)?;
@@ -224,5 +238,6 @@ pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()
     register_deep_work_v1(engine)?;
     register_attention_stability_v1(engine)?;
     register_desk_away_v1(engine)?;
+    register_circadian_v1(engine)?;
     Ok(())
 }

@@ -1,10 +1,10 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
 > **Phase 24: CircadianOffset** (Sprint 47–48) — **Active**.  
-> Phase 0–23 Done. Gate **PM-GATE-POST-P23** ✅ · chose **`CircadianOffset`** · Ready **P24-E1-T1**.  
+> Phase 0–23 Done. Gate **PM-GATE-POST-P23** ✅ · **ADR-025** ✅ · Ready **P24-E2-T1**.  
 > Deferred: IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · precise GPS.
 
-**Phase 24 outcome (target):** **ADR-025** locks `CircadianOffset` → ship catalog Feature from existing sleep/activity timing inputs → optional dogfood / calm surface. Calm non-clinical framing (“schedule alignment in this window”). No chronotype diagnosis. No new Observation family unless ADR proves a hard gap.
+**Phase 24 outcome (target):** **ADR-025** ✅ locks `CircadianOffset` → ship catalog Feature from Observation-level sleep + work/activity timing → optional dogfood / calm surface. Calm non-clinical framing (“schedule alignment in this window”). No chronotype diagnosis. No new Observation family.
 
 **Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
@@ -38,14 +38,14 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P24-E1-T1** |
+| **Ready** | **P24-E2-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–23 · **PM-GATE-POST-P14…P23** · **P23-E1–E3** · **P22-E1–E3** (see archives) |
+| **Done** | Phase 0–23 · **PM-GATE-POST-P14…P23** · **P24-E1-T1** · **P23-E1–E3** · **P22-E1–E3** (see archives) |
 
-**Epic status:** Phase 24 Active (E1 Ready) · Phase 23 ✅
+**Epic status:** Phase 24 Active (E1 ✅ · E2 Ready) · Phase 23 ✅
 
-**Phase 24 on `/docs/14-roadmap.md`:** opened 2026-08-11 · gate **PM-GATE-POST-P23** ✅ · Ready E1 ADR-025
+**Phase 24 on `/docs/14-roadmap.md`:** opened 2026-08-11 · **ADR-025** ✅ · Ready E2 ship
 
 **Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
 
@@ -53,9 +53,9 @@
 
 ### Active assignment
 
-**Ready now:** **P24-E1-T1** — ADR-025 lock `CircadianOffset` Feature scope. Brief: `docs/handoffs/P24-E1-T1-pm-brief.md`. Role: **Dev**.
+**Ready now:** **P24-E2-T1** — Ship catalog Feature `CircadianOffset` per ADR-025. Brief: `docs/handoffs/P24-E2-T1-pm-brief.md`. Role: **Dev**.
 
-**Just closed:** **PM-GATE-POST-P23** (2026-08-11) — chose **`CircadianOffset`** → Phase 24 opened.
+**Just closed:** **P24-E1-T1** (2026-08-12) — **ADR-025** locked (QA Pass).
 
 **Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 24 on `phase/24-circadian-offset`.
 
@@ -67,13 +67,13 @@
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P24-E1-T1** ← Ready | Lock `CircadianOffset` Feature scope (**ADR-025**) | Dev | docs + decision-log |
+| **P24-E1-T1** ✅ Done | Lock `CircadianOffset` Feature scope (**ADR-025**) | Dev | docs + decision-log |
 
 ### Epic P24-E2 — First ship slice
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P24-E2-T1** | Ship catalog Feature `CircadianOffset` | Dev | `feature-engine` + docs |
+| **P24-E2-T1** ← Ready | Ship catalog Feature `CircadianOffset` | Dev | `feature-engine` + docs |
 
 ### Epic P24-E3 — Dogfood / surface (optional)
 
@@ -139,11 +139,11 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 
 ## Queue (Phase 24)
 
-1. **P24-E1-T1** — ADR-025 CircadianOffset ← **Ready**  
-2. **P24-E2-T1** — Ship catalog Feature  
+1. **P24-E1-T1** — ADR-025 CircadianOffset ← **Done**  
+2. **P24-E2-T1** — Ship catalog Feature ← **Ready**  
 3. **P24-E3-T1** — Dogfood / optional surface  
 
 **Deferred:** IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · precise GPS.
 
 **Git:** Phase 24 on `phase/24-circadian-offset` → **one cluster PR after 2026-09-01**.  
-**Brief:** `docs/handoffs/P24-E1-T1-pm-brief.md`.
+**Brief:** `docs/handoffs/P24-E2-T1-pm-brief.md`.

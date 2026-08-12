@@ -263,13 +263,30 @@
 - **DAG:** independent; `feature_engine::register_desk_away_v1` / `register_catalog_v1`.
 - **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite Focus / Stress formulas; Feature math **does not** branch on health-context labels.
 
+### 1.20 `CircadianOffset` (ADR-025 / P24-E2 — shipped)
+
+- **Goal:** Calm **schedule alignment** of work/activity timing vs recent sleep timing. “Schedule alignment in this window” — **not** chronotype diagnosis; **not** circadian-disorder / “night owl so you fail”; **not** workplace schedule surveillance.
+- **Window:** Feature cadence **15m / 1m** (align catalog); timing math uses **24h lookback** ending at window end (sleep + work schedule needs a day).
+- **Inputs (Observation-level timing, existing only):** qualifying `sleep_interval` (sleep midpoint — same rest stages as SleepDebt: `asleep` / `in_bed` / missing stage; `awake` / `unknown` excluded); work/activity timing from `keystrokes` / `context_window` (preferred), optional reinforcement `step_count` / `active_energy` / workout `life_event` when desk signals thin. **No** new `data_type`.
+- **Not inputs:** SleepDebt / EnergyScore / ActivityBalance / FocusScore / DeskAwayPresence magnitudes (timing ≠ debt / volume / intensity / away-from-desk).
+- **Formula (v1):** sleep midpoint of union(lookback overlaps) + work/activity time-weighted centroid → circular hours from expected mid-wake (`sleep_mid + 12h`) → **0–100** alignment `clamp(100 × (1 − offset_hours / 6), 0, 100)`. **Not** signed chronotype hours as primary units.
+- **Omit policy:** omit unless **both** sleep timing and work/activity timing present — **do not** renormalize a single slot into “alignment”.
+- **Output:** Float (0.0 — 100.0).
+- **Units:** dimensionless schedule-alignment score.
+- **Confidence (ADR-007):** expected slots = 2 (`sleep_timing` / `work_activity_timing`); emit only when both present → coverage = 1.0; `coverage × mean(evidence Observation.confidence)`.
+- **Explanation factors:** when emitted — `sleep_timing` (“Sleep timing”), `work_timing` (“Work timing”); optional `activity_timing` (“Activity timing”) when reinforcement used; shares sum to 1.0.
+- **Provenance:** Observation IDs of contributing sleep + work/activity evidence.
+- **DAG:** independent; `feature_engine::register_circadian_v1` / `register_catalog_v1`.
+- **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite SleepDebt / EnergyScore / ActivityBalance / FocusScore / DeskAwayPresence.
+- **Siblings:** distinct from **SleepDebt** (debt magnitude) and **DeskAwayPresence** (away-from-desk).
+- **Suggested calm chart label (E3):** Schedule alignment.
+
 ## 2. Planned backlog (not sprint-Ready)
 
 Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only when Observation inputs exist**. Calm, non-clinical names (Global DoD). No burnout/clinical diagnosis claims.
 
 | Working name | Intent | Likely inputs (later) | Earliest phase |
 | :--- | :--- | :--- | :--- |
-| `CircadianOffset` | Alignment of work vs sleep/activity timing (calm schedule alignment) | sleep + activity timing | **Phase 24** (ADR-025 / P24-E1 Ready) |
 | `TypingRhythm` | Input cadence stability | keystrokes | P7+ |
 | `SustainedLoadIndicator` | Prolonged high load (calm rename of “burnout risk”) | Stress, Fatigue, schedule | P8 |
 | `DeepFocusLikelihood` | Probable deep-focus window (calm rename of “flow”) | Focus, CSR, calendar gaps | P8 |
@@ -284,5 +301,5 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 >
 > **Phase 23 note (ADR-024 / P23-E2):** **Personal Context Layer** — **`DeskAwayPresence` shipped** (§1.19); health-context local config + prompt-pack injection shipped (L5 consume-only). Variant B large literature library deferred. Provider-agnostic Observation contracts.
 >
-> **Phase 24 note (PM-GATE-POST-P23):** Primary track = catalog Feature **`CircadianOffset`** — lock via **ADR-025** (P24-E1 Ready). Calm schedule-alignment framing; no chronotype diagnosis.
-**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; others may omit until wired).
+> **Phase 24 note (ADR-025 / P24-E2):** Catalog Feature **`CircadianOffset` shipped** — Observation-level sleep + work/activity timing; 15m/1m + 24h lookback; 0–100 alignment; omit unless both slots; §1.20 above. Calm “schedule alignment in this window”; no chronotype diagnosis. Optional dogfood / Dashboard → **P24-E3**.
+**Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; P24-E2 — `CircadianOffset` when shipped; others may omit until wired).

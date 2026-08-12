@@ -56,7 +56,7 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 21 (Done 2026-08-11):** DeepWorkScore — **ADR-022** ✅; Feature + dogfood + Dashboard **Sustained focus**.
 - **Phase 22 (Done 2026-08-11):** AttentionStability — **ADR-023** ✅; Feature + dogfood + Dashboard **Focus stability**.
 - **Phase 23 (Done 2026-08-11):** Personal Context Layer — **ADR-024** ✅; `DeskAwayPresence` + health→prompt + dogfood / **Away from desk**.
-- **Next:** Phase 24 **CircadianOffset** — Ready **P24-E1-T1** (ADR-025). Gate **PM-GATE-POST-P23** ✅.
+- **Next:** Phase 24 **CircadianOffset** — **ADR-025** ✅ · Ready **P24-E2-T1** (ship Feature). Gate **PM-GATE-POST-P23** ✅.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -128,7 +128,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P24-E1-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–23 Done · Phase 24 Active.
+Immediate Kanban = **P24-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–23 Done · Phase 24 Active (E1 ✅).
 
 | Phase | Focus |
 | :--- | :--- |
@@ -151,7 +151,7 @@ Immediate Kanban = **P24-E1-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–23 Done 
 | **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
 | **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
 | **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
-| **24** | Active — CircadianOffset (**PM-GATE-POST-P23** ✅ · Ready P24-E1 ADR-025); deferred IDE · weather · App Store · TypingRhythm |
+| **24** | Active — CircadianOffset (**ADR-025** ✅ · Ready P24-E2); deferred IDE · weather · App Store · TypingRhythm |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

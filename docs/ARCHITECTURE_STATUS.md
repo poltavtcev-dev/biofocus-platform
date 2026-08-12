@@ -27,8 +27,8 @@
 - **Phase 21:** **Done** (2026-08-11) — DeepWorkScore; **ADR-022** ✅; Feature + dogfood + Sustained focus chart. Branch: `phase/21-deep-work-score` (PR after freeze).
 - **Phase 22:** **Done** (2026-08-11) — AttentionStability; **ADR-023** ✅; Feature + dogfood + Focus stability chart. Branch: `phase/22-attention-stability` (PR after freeze).
 - **Phase 23:** **Done** (2026-08-11) — Personal Context Layer; **ADR-024** ✅; `DeskAwayPresence` + health→prompt + dogfood / Away from desk. Branch: `phase/23-personal-context` (PR after freeze).
-- **Phase 24:** **Active** (2026-08-11) — CircadianOffset; Ready **P24-E1-T1** (**ADR-025**). Branch: `phase/24-circadian-offset` (PR after freeze). Deferred: IDE · weather · App Store · Companion polish · TypingRhythm · precise GPS.
-- **Gate:** **PM-GATE-POST-P23** ✅ chose **`CircadianOffset`**. **PM-GATE-POST-P22** ✅. **ADR-024** ✅.
+- **Phase 24:** **Active** (2026-08-11) — CircadianOffset; **ADR-025** ✅; Ready **P24-E2-T1**. Branch: `phase/24-circadian-offset` (PR after freeze). Deferred: IDE · weather · App Store · Companion polish · TypingRhythm · precise GPS.
+- **Gate:** **PM-GATE-POST-P23** ✅ chose **`CircadianOffset`**. **ADR-025** ✅.
 ## Core Decisions
 - Local First Architecture
 - Rust Runtime (Tokio)
