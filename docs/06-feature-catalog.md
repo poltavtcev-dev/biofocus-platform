@@ -282,7 +282,7 @@
 - **Suggested calm chart label:** Schedule alignment (Dashboard series when present; omit stays quiet).
 - **Dogfood:** `docs/12-development.md` § CircadianOffset dogfood.
 
-### 1.21 `SustainedLoadIndicator` (ADR-026 / P25-E2 — shipped)
+### 1.21 `SustainedLoadIndicator` (ADR-026 / P25-E2–E3 — shipped)
 
 - **Goal:** Calm **prolonged / persistence** load from elevated Stress + Fatigue (+ optional schedule density). “Prolonged load in this window” — **not** clinical burnout / “you are burned out”; **not** workplace surveillance scoring; **not** CognitiveLoad “combined demand” (current window).
 - **Window:** Feature cadence **15m / 1m** (align catalog); persistence math uses **4h lookback** ending at window end (multi-window evidence — not multi-day burnout profiling).
@@ -298,7 +298,7 @@
 - **DAG:** depends on StressIndex + FatigueIndex + MeetingDensity; `feature_engine::register_sustained_load_v1` / `register_catalog_v1` (after focus / stress / calendar nodes).
 - **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite StressIndex / FatigueIndex / MeetingDensity / CognitiveLoad.
 - **Sibling:** distinct from **CognitiveLoad** (current combined demand).
-- **Suggested calm chart label (E3):** Prolonged load.
+- **Suggested calm chart label:** Prolonged load (Dashboard series when present; omit stays quiet).
 
 ## 2. Planned backlog (not sprint-Ready)
 
@@ -321,5 +321,5 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 >
 > **Phase 24 note (ADR-025 / P24-E2–E3):** Catalog Feature **`CircadianOffset` shipped** — Observation-level sleep + work/activity timing; 15m/1m + 24h lookback; 0–100 alignment; omit unless both slots; §1.20 above. Calm “schedule alignment in this window”; Dashboard chart **Schedule alignment**; no chronotype diagnosis.
 >
-> **Phase 25 note (ADR-026 / P25-E2):** Catalog Feature **`SustainedLoadIndicator` shipped** — Feature-level Stress + Fatigue + MeetingDensity; 15m/1m + 4h lookback; 0–100 prolonged load; omit when both Stress and Fatigue absent; §1.21 above. Calm “prolonged load in this window”; no burnout diagnosis. Distinct from CognitiveLoad. Optional dogfood / Dashboard → **P25-E3**.
+> **Phase 25 note (ADR-026 / P25-E2–E3):** Catalog Feature **`SustainedLoadIndicator` shipped** — Feature-level Stress + Fatigue + MeetingDensity; 15m/1m + 4h lookback; 0–100 prolonged load; omit when both Stress and Fatigue absent; §1.21 above. Calm “prolonged load in this window”; Dashboard chart **Prolonged load**; no burnout diagnosis. Distinct from CognitiveLoad.
 **Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; P24-E2 — `CircadianOffset`; P25-E2 — `SustainedLoadIndicator` when shipped; others may omit until wired).

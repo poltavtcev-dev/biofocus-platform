@@ -105,6 +105,7 @@ export function mockSnapshotFromLocation(
     const attentionStability = [88, 90, 86, 92, 91];
     const deskAway = [0, 55, 72, 40, 65];
     const circadian = [82, 80, 78, 85, 84];
+    const sustainedLoad = [48, 51, 54, 52, 55];
     const features: FeatureDto[] = [];
     for (let i = 0; i < windows.length; i += 1) {
       const tw = windows[i];
@@ -162,6 +163,12 @@ export function mockSnapshotFromLocation(
           timeWindow: tw,
           value: circadian[i],
           provenance: ["00000000-0000-0000-0000-00000000000e"],
+        },
+        {
+          featureId: "SustainedLoadIndicator",
+          timeWindow: tw,
+          value: sustainedLoad[i],
+          provenance: ["00000000-0000-0000-0000-00000000000f"],
         },
       );
     }

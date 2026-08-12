@@ -15,6 +15,7 @@ export const CHART_FEATURE_IDS = [
   "AttentionStability",
   "DeskAwayPresence",
   "CircadianOffset",
+  "SustainedLoadIndicator",
 ] as const;
 
 export type ChartFeatureId = (typeof CHART_FEATURE_IDS)[number];
@@ -33,6 +34,7 @@ export const SCORE_SERIES_IDS: ChartFeatureId[] = [
   "AttentionStability",
   "DeskAwayPresence",
   "CircadianOffset",
+  "SustainedLoadIndicator",
 ];
 
 /** Calm UI labels — Feature names only, no evaluative / medical claims. */
@@ -105,6 +107,11 @@ export const CHART_SERIES_META: Record<
     unit: "0–100",
     color: "#5c6b7a",
   },
+  SustainedLoadIndicator: {
+    label: "Prolonged load",
+    unit: "0–100",
+    color: "#8a6b5c",
+  },
 };
 
 export type ChartPoint = {
@@ -123,6 +130,7 @@ export type ChartPoint = {
   AttentionStability?: number;
   DeskAwayPresence?: number;
   CircadianOffset?: number;
+  SustainedLoadIndicator?: number;
 };
 
 function scalarValue(value: FeatureDto["value"]): number | null {

@@ -57,7 +57,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 22 (Done 2026-08-11):** AttentionStability — **ADR-023** ✅; Feature + dogfood + Dashboard **Focus stability**.
 - **Phase 23 (Done 2026-08-11):** Personal Context Layer — **ADR-024** ✅; `DeskAwayPresence` + health→prompt + dogfood / **Away from desk**.
 - **Phase 24 (Done 2026-08-12):** CircadianOffset — **ADR-025** ✅; Feature + dogfood / **Schedule alignment**.
-- **Next:** Phase 25 **SustainedLoadIndicator** — **ADR-026** ✅ · Feature **shipped** · Ready **P25-E3-T1** (dogfood / optional **Prolonged load**). Gate **PM-GATE-POST-P24** ✅.
+- **Phase 25 (Done 2026-08-12):** SustainedLoadIndicator — **ADR-026** ✅; Feature + dogfood / Dashboard **Prolonged load**.
+- **Next:** **PM-GATE-POST-P25** — choose Phase 26+ (IDE · weather · App Store · Companion polish · TypingRhythm · other). Gate **PM-GATE-POST-P24** ✅.
 - **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
@@ -129,7 +130,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P25-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–24 Done · Phase 25 Active (E1 ✅ · E2 ✅).
+Immediate Kanban = **PM-GATE-POST-P25** (`/docs/SPRINT_ROADMAP.md`). Phase 0–25 Done.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -153,7 +154,8 @@ Immediate Kanban = **P25-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–24 Done 
 | **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
 | **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
 | **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
-| **25** | Active — SustainedLoadIndicator (**ADR-026** ✅ · Feature shipped · Ready P25-E3); deferred IDE · weather · App Store · TypingRhythm |
+| **25** | Done — SustainedLoadIndicator (**ADR-026** → Feature + dogfood + Prolonged load) |
+| **26+** | Open via **PM-GATE-POST-P25** — IDE · weather · App Store · Companion polish · TypingRhythm |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

@@ -88,7 +88,7 @@ Immediate Kanban = **P25-E2-T1** (ship SustainedLoadIndicator). Below is the acc
 | **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
 | **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
 | **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
-| **25** | Active — SustainedLoadIndicator (**ADR-026** ✅ · Ready P25-E2); deferred IDE · weather · App Store · TypingRhythm |
-| **26+** | Open via later PM gate — IDE · weather · App Store · Companion polish · TypingRhythm |
+| **25** | Done — SustainedLoadIndicator (**ADR-026** → Feature + dogfood + Prolonged load) |
+| **26+** | Open via **PM-GATE-POST-P25** — IDE · weather · App Store · Companion polish · TypingRhythm |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

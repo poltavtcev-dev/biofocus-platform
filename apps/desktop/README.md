@@ -33,9 +33,10 @@ via **Open Dashboard** (`invoke("open_dashboard")`). Snapshot via
 `get_feature_snapshot` only — loading / empty / error / ready. Chart slot shows
 Recharts series for `FocusScore`, `StressIndex`, `FatigueIndex`,
 `ContextSwitchRate`, wearable scores, **`CognitiveLoad`**, **`DeepWorkScore`**,
-**`AttentionStability`**, **`DeskAwayPresence`**, and **`CircadianOffset`** when
-present (calm labels **Combined demand** / **Sustained focus** / **Focus stability** /
-**Away from desk** / **Schedule alignment**; scores 0–100; CSR on secondary axis). Insights list via `get_insights` (evaluate-on-read over the same Feature
+**`AttentionStability`**, **`DeskAwayPresence`**, **`CircadianOffset`**, and
+**`SustainedLoadIndicator`** when present (calm labels **Combined demand** /
+**Sustained focus** / **Focus stability** / **Away from desk** /
+**Schedule alignment** / **Prolonged load**; scores 0–100; CSR on secondary axis). Insights list via `get_insights` (evaluate-on-read over the same Feature
 cache; Pattern Discovery baseline rules included when history supports them;
 calm empty state when none / thin history). Suggestions (Recommendations)
 via `get_recommendations` — evaluate-on-read after Insights on the same

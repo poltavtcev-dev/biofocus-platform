@@ -123,10 +123,12 @@
 
 - [x] **PM-GATE-POST-P24** — chose **`SustainedLoadIndicator`** (2026-08-12)
 
-- [ ] **Phase 25: SustainedLoadIndicator** (Sprint 49–50) — opened 2026-08-12 (**PM-GATE-POST-P24**)
+- [x] **Phase 25: SustainedLoadIndicator** (Sprint 49–50) — closed 2026-08-12 (**PM-GATE-POST-P24**)
   - Lock `SustainedLoadIndicator` Feature scope (**ADR-026**) — **P25-E1 Done** (2026-08-12).
   - Ship catalog Feature `SustainedLoadIndicator` — **P25-E2 Done** (2026-08-12).
-  - Dogfood / optional surface — **P25-E3 Ready** (T1).
+  - Dogfood / optional surface — **P25-E3 Done** (2026-08-12).
+
+- [ ] **PM-GATE-POST-P25** — choose Phase 26+ primary (IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · other)
 
 **Deferred (gate leftovers):** IDE · weather ambient · App Store packaging · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS.
 
@@ -154,7 +156,7 @@
 **Phase 22:** Done 2026-08-11 — **ADR-023** → `AttentionStability` → dogfood + Focus stability · branch `phase/22-attention-stability` (PR after freeze)
 **Phase 23:** Done 2026-08-11 — **ADR-024** → `DeskAwayPresence` → health→prompt → dogfood + Away from desk · branch `phase/23-personal-context` (PR after freeze)
 **Phase 24:** Done 2026-08-12 — **ADR-025** → `CircadianOffset` → dogfood + Schedule alignment · branch `phase/24-circadian-offset` (PR after freeze)
-**Phase 25:** Active — **ADR-026** ✅ · Feature **shipped** · Ready **P25-E3-T1** (dogfood / Prolonged load) · branch `phase/25-sustained-load` (PR after freeze)
-**Gate:** **PM-GATE-POST-P24** ✅ · **ADR-019…026** ✅ · **PR freeze until 2026-09-01**
+**Phase 25:** Done 2026-08-12 — **ADR-026** → `SustainedLoadIndicator` → dogfood + Prolonged load · branch `phase/25-sustained-load` (PR after freeze)
+**Gate:** **PM-GATE-POST-P24** ✅ · Ready **PM-GATE-POST-P25** · **ADR-019…026** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.
