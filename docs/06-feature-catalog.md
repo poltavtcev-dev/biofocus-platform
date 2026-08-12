@@ -279,7 +279,8 @@
 - **DAG:** independent; `feature_engine::register_circadian_v1` / `register_catalog_v1`.
 - **Schema:** **no** new Observation `data_type`; **no** migration; **do not** rewrite SleepDebt / EnergyScore / ActivityBalance / FocusScore / DeskAwayPresence.
 - **Siblings:** distinct from **SleepDebt** (debt magnitude) and **DeskAwayPresence** (away-from-desk).
-- **Suggested calm chart label (E3):** Schedule alignment.
+- **Suggested calm chart label:** Schedule alignment (Dashboard series when present; omit stays quiet).
+- **Dogfood:** `docs/12-development.md` § CircadianOffset dogfood.
 
 ## 2. Planned backlog (not sprint-Ready)
 
@@ -301,5 +302,5 @@ Accepted vision (`/docs/00-vision.md`): keep a catalog backlog; **implement only
 >
 > **Phase 23 note (ADR-024 / P23-E2):** **Personal Context Layer** — **`DeskAwayPresence` shipped** (§1.19); health-context local config + prompt-pack injection shipped (L5 consume-only). Variant B large literature library deferred. Provider-agnostic Observation contracts.
 >
-> **Phase 24 note (ADR-025 / P24-E2):** Catalog Feature **`CircadianOffset` shipped** — Observation-level sleep + work/activity timing; 15m/1m + 24h lookback; 0–100 alignment; omit unless both slots; §1.20 above. Calm “schedule alignment in this window”; no chronotype diagnosis. Optional dogfood / Dashboard → **P24-E3**.
+> **Phase 24 note (ADR-025 / P24-E2–E3):** Catalog Feature **`CircadianOffset` shipped** — Observation-level sleep + work/activity timing; 15m/1m + 24h lookback; 0–100 alignment; omit unless both slots; §1.20 above. Calm “schedule alignment in this window”; Dashboard chart **Schedule alignment**; no chronotype diagnosis.
 **Rules:** each shipped Feature needs formula + units + dependencies + provenance + **confidence** (ADR-007) in this doc; **explanation factors** where catalog emits them (P7-E2 — `FocusScore`; P7-E3 — `RecoveryScore`; P10-E3 — `DistractionScore`; P12-E3 — `AmbientMediaShare`; P13-E3 — `GitActivityRate`; P16-E2 — `AmbientLightShare`; P17-E3 — `ActivityBalance` / `EnergyScore` / `SleepDebt`; P18-E3 — `NotificationPressure`; P20-E2 — `CognitiveLoad`; P21-E2 — `DeepWorkScore`; P22-E2 — `AttentionStability`; P23-E2 — `DeskAwayPresence`; P24-E2 — `CircadianOffset` when shipped; others may omit until wired).

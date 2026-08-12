@@ -118,8 +118,8 @@
 
 - [ ] **Phase 24: CircadianOffset** (Sprint 47–48) — opened 2026-08-11 (**PM-GATE-POST-P23**)
   - Lock `CircadianOffset` Feature scope (**ADR-025**) — **P24-E1 Done** (2026-08-12).
-  - Ship catalog Feature `CircadianOffset` — **P24-E2 Ready** (T1).
-  - Dogfood / optional surface — **P24-E3**.
+  - Ship catalog Feature `CircadianOffset` — **P24-E2 Done** (2026-08-12).
+  - Dogfood / optional surface — **P24-E3 Ready** (T1).
 
 **Deferred (gate leftovers):** IDE · weather ambient · App Store packaging · Companion polish-as-primary · TypingRhythm · precise GPS.
 
@@ -146,7 +146,7 @@
 **Phase 21:** Done 2026-08-11 — **ADR-022** → `DeepWorkScore` → dogfood + Sustained focus · branch `phase/21-deep-work-score` (PR after freeze)
 **Phase 22:** Done 2026-08-11 — **ADR-023** → `AttentionStability` → dogfood + Focus stability · branch `phase/22-attention-stability` (PR after freeze)
 **Phase 23:** Done 2026-08-11 — **ADR-024** → `DeskAwayPresence` → health→prompt → dogfood + Away from desk · branch `phase/23-personal-context` (PR after freeze)
-**Phase 24:** Active — **ADR-025** ✅ · Ready **P24-E2-T1** (ship CircadianOffset) · branch `phase/24-circadian-offset` (PR after freeze)
+**Phase 24:** Active — **ADR-025** ✅ · Feature shipped · Ready **P24-E3-T1** · branch `phase/24-circadian-offset` (PR after freeze)
 **Gate:** **PM-GATE-POST-P23** ✅ · **ADR-019…025** ✅ · **PR freeze until 2026-09-01**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

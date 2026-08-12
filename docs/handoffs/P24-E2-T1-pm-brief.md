@@ -2,7 +2,7 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (2026-08-12) — QA Pass · Feature shipped · next **P24-E3-T1**  
 **Date:** 2026-08-12  
 **Closed previous:** P24-E1-T1 (**ADR-025** locked; QA Pass)  
 **Evidence:** `docs/handoffs/P24-E1-T1-qa-to-pm.md` · `docs/handoffs/P24-E1-T1-dev-to-qa.md`  

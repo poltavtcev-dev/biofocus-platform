@@ -41,10 +41,10 @@
 - None.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — mark **P24-E2-T1** Done; Ready **P24-E3-T1** (dogfood / optional Dashboard)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` — CircadianOffset **shipped** (math+DAG); E3 next
-- [ ] Write `docs/handoffs/P24-E3-T1-pm-brief.md` when Ready
+- [x] `/docs/SPRINT_ROADMAP.md` — mark **P24-E2-T1** Done; Ready **P24-E3-T1** (dogfood / optional Dashboard)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` — CircadianOffset **shipped** (math+DAG); E3 next
+- [x] Write `docs/handoffs/P24-E3-T1-pm-brief.md` when Ready
 
 ## Suggested next Ready task
 - **P24-E3-T1** — Dogfood / optional calm Dashboard surface for CircadianOffset (chart label **Schedule alignment**); still non-clinical copy; no PR during freeze.

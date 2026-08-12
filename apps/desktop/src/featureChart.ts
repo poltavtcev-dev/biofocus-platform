@@ -14,6 +14,7 @@ export const CHART_FEATURE_IDS = [
   "DeepWorkScore",
   "AttentionStability",
   "DeskAwayPresence",
+  "CircadianOffset",
 ] as const;
 
 export type ChartFeatureId = (typeof CHART_FEATURE_IDS)[number];
@@ -31,6 +32,7 @@ export const SCORE_SERIES_IDS: ChartFeatureId[] = [
   "DeepWorkScore",
   "AttentionStability",
   "DeskAwayPresence",
+  "CircadianOffset",
 ];
 
 /** Calm UI labels — Feature names only, no evaluative / medical claims. */
@@ -98,6 +100,11 @@ export const CHART_SERIES_META: Record<
     unit: "0–100",
     color: "#7a6b5c",
   },
+  CircadianOffset: {
+    label: "Schedule alignment",
+    unit: "0–100",
+    color: "#5c6b7a",
+  },
 };
 
 export type ChartPoint = {
@@ -115,6 +122,7 @@ export type ChartPoint = {
   DeepWorkScore?: number;
   AttentionStability?: number;
   DeskAwayPresence?: number;
+  CircadianOffset?: number;
 };
 
 function scalarValue(value: FeatureDto["value"]): number | null {
