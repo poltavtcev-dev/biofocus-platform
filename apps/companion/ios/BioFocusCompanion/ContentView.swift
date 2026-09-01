@@ -23,10 +23,15 @@ struct ContentView: View {
                 } header: {
                     Text("Desktop pairing")
                 } footer: {
-                    Text("Copy Base URL and token from Desktop → Companion. Simulator: loopback. Phone: BIOFOCUS_INGEST_LAN=1, then LAN Base URL.")
+                    Text("Copy Base URL and token from Desktop → Companion. Simulator: loopback. Physical iPhone: enable LAN on Desktop, then use the LAN Base URL — not 127.0.0.1.")
                 }
 
                 Section {
+                    Button("Test connection") {
+                        Task { await testConnection() }
+                    }
+                    .disabled(isBusy || baseURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
                     Toggle("Auto-sync", isOn: $autoSync)
                         .onChange(of: autoSync) { _, enabled in
                             sync.isAutoSyncEnabled = enabled
@@ -43,7 +48,7 @@ struct ContentView: View {
                 } header: {
                     Text("Autonomy")
                 } footer: {
-                    Text("When on, new HealthKit samples (HR, HRV SDNN, steps, active energy, sleep intervals; SpO2 only if present) enqueue and flush to Desktop when reachable. No busy-loop — HealthKit observers only. Sparse types soft-omit — never invented.")
+                    Text("When on, new HealthKit samples enqueue and flush when Desktop is reachable. Test connection checks reachability in under 5 seconds.")
                 }
 
                 Section {
@@ -64,7 +69,9 @@ struct ContentView: View {
                     Button("Flush queue only") {
                         Task { await flushOnly() }
                     }
-                    .disabled(isBusy || sync.pendingCount == 0)
+                    .disabled(isBusy || sync.pendingCount == 0
+                        || baseURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        || token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
 
                 Section("Status") {
@@ -86,6 +93,18 @@ struct ContentView: View {
     }
 
     @MainActor
+    private func testConnection() async {
+        let trimmedURL = baseURLText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmedURL), url.scheme == "http" || url.scheme == "https" else {
+            sync.reportPairingError("Base URL looks invalid — use http://… from Desktop Companion.")
+            return
+        }
+        isBusy = true
+        defer { isBusy = false }
+        await sync.testConnection(baseURL: url, token: token)
+    }
+
+    @MainActor
     private func sendNow() async {
         let trimmedURL = baseURLText.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -95,6 +114,15 @@ struct ContentView: View {
         }
         isBusy = true
         defer { isBusy = false }
+        do {
+            try await sync.preflightConnection(baseURL: url, token: trimmedToken)
+        } catch let err as IngestClientError {
+            sync.reportPairingError(err.localizedDescription ?? "Connection check failed.")
+            return
+        } catch {
+            sync.reportPairingError(error.localizedDescription)
+            return
+        }
         await sync.sendLatestNow(baseURL: url, token: trimmedToken)
     }
 
@@ -108,6 +136,15 @@ struct ContentView: View {
         }
         isBusy = true
         defer { isBusy = false }
+        do {
+            try await sync.preflightConnection(baseURL: url, token: trimmedToken)
+        } catch let err as IngestClientError {
+            sync.reportPairingError(err.localizedDescription ?? "Connection check failed.")
+            return
+        } catch {
+            sync.reportPairingError(error.localizedDescription)
+            return
+        }
         do {
             try await sync.flush(baseURL: url, token: trimmedToken)
         } catch {

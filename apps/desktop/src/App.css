@@ -656,3 +656,34 @@ body {
   width: 168px;
   height: 168px;
 }
+
+.companion-warning {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--bf-retry-border);
+  background: color-mix(in srgb, var(--bf-bg-accent) 55%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.companion-warning--error {
+  border-color: color-mix(in srgb, #c45 35%, var(--bf-retry-border));
+}
+
+.pairing-lan-toggle {
+  margin-bottom: 0.85rem;
+}
+
+.pairing-lan-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.pairing-lan-label input {
+  margin-top: 0.15rem;
+}

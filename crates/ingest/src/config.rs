@@ -100,12 +100,13 @@ impl IngestConfig {
 /// Order:
 /// 1. Non-empty `BIOFOCUS_INGEST_BIND_HOST` → parse as IPv4 (invalid → error).
 /// 2. Else if `BIOFOCUS_INGEST_LAN` is truthy → [`INGEST_LAN_BIND_HOST`] (`0.0.0.0`).
-/// 3. Else → [`INGEST_BIND_HOST`] (`127.0.0.1`).
+/// 3. Else if persisted `~/.biofocus/ingest_lan_enabled` → [`INGEST_LAN_BIND_HOST`].
+/// 4. Else → [`INGEST_BIND_HOST`] (`127.0.0.1`).
 pub fn resolve_bind_host() -> IngestResult<Ipv4Addr> {
     resolve_bind_host_from_env(|key| std::env::var_os(key))
 }
 
-fn resolve_bind_host_from_env<F>(mut getenv: F) -> IngestResult<Ipv4Addr>
+pub(crate) fn resolve_bind_host_from_env<F>(mut getenv: F) -> IngestResult<Ipv4Addr>
 where
     F: FnMut(&str) -> Option<std::ffi::OsString>,
 {
@@ -123,10 +124,14 @@ where
         return Ok(INGEST_LAN_BIND_HOST);
     }
 
+    if crate::ingest_prefs::read_persisted_lan_enabled() {
+        return Ok(INGEST_LAN_BIND_HOST);
+    }
+
     Ok(INGEST_BIND_HOST)
 }
 
-fn lan_flag_enabled(raw: Option<std::ffi::OsString>) -> bool {
+pub(crate) fn lan_flag_enabled(raw: Option<std::ffi::OsString>) -> bool {
     let Some(raw) = raw else {
         return false;
     };

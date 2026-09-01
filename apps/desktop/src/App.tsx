@@ -12,13 +12,21 @@ import { Dashboard } from "./Dashboard";
 import { isDashboardSurface, openDashboardWindow } from "./dashboardWindow";
 import {
   copyText,
+  companionLanAddressError,
+  companionLoopbackWarning,
   fetchPairingToken,
+  isPrimaryUrlCopyable,
   maskToken,
   networkModeDetail,
   networkModeLabel,
   primaryBaseUrl,
   type PairingView,
 } from "./pairing";
+import {
+  fetchIngestLanPreference,
+  setIngestLanPreference,
+  type IngestLanPreference,
+} from "./ingestLan";
 import {
   fetchRecentLifeEvents,
   formatLifeEventTime,
@@ -75,6 +83,9 @@ function MenubarShell() {
   const [tokenVisible, setTokenVisible] = useState(false);
   const [qrVisible, setQrVisible] = useState(false);
   const [copyNote, setCopyNote] = useState<string | null>(null);
+  const [lanPref, setLanPref] = useState<IngestLanPreference | null>(null);
+  const [lanNote, setLanNote] = useState<string | null>(null);
+  const [lanBusy, setLanBusy] = useState(false);
   const [dashNote, setDashNote] = useState<string | null>(null);
   const [lifeEvents, setLifeEvents] = useState<LifeEventsListView>({
     kind: "idle",
@@ -122,6 +133,18 @@ function MenubarShell() {
     void fetchPairingToken().then((next) => {
       if (!cancelled) {
         setPairing(next);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchIngestLanPreference().then((next) => {
+      if (!cancelled) {
+        setLanPref(next);
       }
     });
     return () => {
@@ -184,11 +207,34 @@ function MenubarShell() {
   };
 
   const onCopyBaseUrl = async () => {
-    if (pairing.kind !== "ready") {
+    if (pairing.kind !== "ready" || !isPrimaryUrlCopyable(pairing.info)) {
+      setCopyNote("Enable LAN and restart before copying a phone Base URL.");
       return;
     }
     const ok = await copyText(primaryBaseUrl(pairing.info));
     setCopyNote(ok ? "Base URL copied." : "Could not copy.");
+  };
+
+  const onToggleLanPref = async (enabled: boolean) => {
+    if (lanBusy || lanPref?.fromEnv) {
+      return;
+    }
+    setLanBusy(true);
+    setLanNote(null);
+    const result = await setIngestLanPreference(enabled);
+    setLanBusy(false);
+    if (!result.ok) {
+      setLanNote(result.detail);
+      return;
+    }
+    setLanPref(result.pref);
+    setLanNote(
+      result.pref.needsRestart
+        ? "Restart BioFocus to apply LAN bind on this Mac."
+        : enabled
+          ? "LAN preference saved."
+          : "LAN preference cleared — restart to return to loopback-only.",
+    );
   };
 
   const onOpenDashboard = () => {
@@ -508,15 +554,47 @@ function MenubarShell() {
 
         {pairing.kind === "ready" && (
           <>
+            {companionLoopbackWarning(pairing.info) && (
+              <p className="companion-warning" role="status">
+                {companionLoopbackWarning(pairing.info)}
+              </p>
+            )}
+            {companionLanAddressError(pairing.info) && (
+              <p className="companion-warning companion-warning--error" role="alert">
+                {companionLanAddressError(pairing.info)}
+              </p>
+            )}
+
+            <div className="pairing-lan-toggle">
+              <label className="pairing-lan-label">
+                <input
+                  type="checkbox"
+                  checked={Boolean(lanPref?.persisted)}
+                  disabled={lanBusy || Boolean(lanPref?.fromEnv)}
+                  onChange={(e) => void onToggleLanPref(e.target.checked)}
+                />
+                Enable LAN ingest for physical iPhone (opt-in)
+              </label>
+              {lanPref?.fromEnv && (
+                <p className="status-meta">
+                  LAN bind is controlled by environment variables for this launch.
+                </p>
+              )}
+              {lanNote && <p className="status-meta">{lanNote}</p>}
+            </div>
+
             <div className="pairing-url-block">
               <p className="pairing-subtitle">Base URL</p>
               <p className="pairing-url" aria-live="polite">
-                {primaryBaseUrl(pairing.info)}
+                {isPrimaryUrlCopyable(pairing.info)
+                  ? primaryBaseUrl(pairing.info)
+                  : "LAN address unavailable — fix bind, then Reload."}
               </p>
               <div className="pairing-actions">
                 <button
                   type="button"
                   className="retry"
+                  disabled={!isPrimaryUrlCopyable(pairing.info)}
                   onClick={() => void onCopyBaseUrl()}
                 >
                   Copy URL

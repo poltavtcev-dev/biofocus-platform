@@ -25,6 +25,19 @@ pub const INGEST_TOKEN_ENV: &str = "BIOFOCUS_INGEST_TOKEN";
 /// Number of random bytes used for a newly generated pairing token.
 const TOKEN_BYTES: usize = 32;
 
+/// Returns `$BIOFOCUS_HOME` or `$HOME/.biofocus`.
+pub fn biofocus_config_dir() -> IngestResult<PathBuf> {
+    if let Ok(home) = env::var(BIOFOCUS_HOME_ENV) {
+        let home = home.trim();
+        if !home.is_empty() {
+            return Ok(PathBuf::from(home));
+        }
+    }
+
+    let home = env::var_os("HOME").ok_or(IngestError::HomeDirUnavailable)?;
+    Ok(PathBuf::from(home).join(BIOFOCUS_DIR))
+}
+
 /// Returns the default on-disk path for the pairing token.
 ///
 /// Resolution:
@@ -150,10 +163,7 @@ fn hex_encode(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
-
-    /// Serializes env-mutating tests in this module.
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
+    use crate::test_lock::ENV_LOCK;
 
     #[test]
     fn generate_token_is_64_hex_chars() {

@@ -66,7 +66,7 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recomm
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **P27-E2-T1** (ADR-028 ship locked Insight/Recommendation rules). Phase 26 hygiene Done — **public launch not Done** until layers 2–3 after freeze. Below is the accepted ladder — open later slices via PM gate, not all at once.
+Immediate Kanban = **P27-E3-T1** (ADR-028 dogfood / optional Insights·Suggestions). Phase 26 hygiene Done — **public launch not Done** until layers 2–3 after freeze. Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -90,7 +90,8 @@ Immediate Kanban = **P27-E2-T1** (ADR-028 ship locked Insight/Recommendation rul
 | **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
 | **25** | Done — SustainedLoadIndicator (**ADR-026** → Feature + dogfood + Prolonged load) |
 | **26** | Done — OSS Public Launch Hygiene (**ADR-027** · SoT · dry-run); **public launch not Done** |
-| **27** | Active — Pattern Discovery rule expansion (**ADR-028** ✅ · Ready P27-E2); deferred IDE · weather · App Store · TypingRhythm |
-| **28+** | Open via later PM gate — IDE · weather · App Store · Companion polish · TypingRhythm · Feature math · OSS layers 2–3 ops |
+| **27** | Active — Pattern Discovery rule expansion (**ADR-028** ✅ · E2 ✅ · Ready P27-E3); deferred IDE · weather · App Store · TypingRhythm |
+| **28** | Queued — **Local device reliability (A+B)** (**ADR-029** ✅): Mac always-on + iPhone buffer + catch-up replay; **no BioFocus cloud**; Ready P28-E1 |
+| **29+** | Open via later PM gate — IDE · weather · App Store · TypingRhythm · Feature math · OSS layers 2–3 ops · optional user-owned E2E sync (separate ADR) |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

@@ -161,6 +161,31 @@ final class HealthKitSyncCoordinator: ObservableObject {
         lastStatus = message
     }
 
+    /// Preflight Desktop reachability before Send/Flush (P28-E1-T1).
+    func testConnection(baseURL: URL, token: String) async {
+        lastWasError = false
+        lastStatus = "Testing connection…"
+        do {
+            let client = IngestClient(baseURL: baseURL, token: token)
+            let status = try await client.fetchStatus()
+            lastWasError = false
+            lastStatus =
+                "Connected — bind_mode=\(status.bind_mode), db_status=\(status.db_status)."
+        } catch let err as IngestClientError {
+            lastWasError = true
+            lastStatus = err.localizedDescription
+        } catch {
+            lastWasError = true
+            lastStatus = error.localizedDescription
+        }
+    }
+
+    /// Preflight `GET /v1/status` before Send/Flush (P28-E1-T1).
+    func preflightConnection(baseURL: URL, token: String) async throws {
+        let client = IngestClient(baseURL: baseURL, token: token)
+        _ = try await client.fetchStatus()
+    }
+
     func lastFlushDate() -> Date? {
         let t = UserDefaults.standard.double(forKey: "biofocus.lastFlushSuccess")
         guard t > 0 else { return nil }

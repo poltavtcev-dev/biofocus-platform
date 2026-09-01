@@ -107,6 +107,46 @@ async fn wrong_token_is_unauthorized_not_silent() {
 }
 
 #[tokio::test]
+async fn get_status_on_loopback_ingest() {
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let state = IngestState::new(TOKEN, tx);
+    let app = ingest_router(state);
+
+    let (listener, addr) = bind_loopback(0).await.expect("bind");
+    let server = tokio::spawn(async move {
+        axum::serve(listener, app).await.expect("serve");
+    });
+
+    tokio::time::sleep(Duration::from_millis(20)).await;
+
+    let base = format!("http://{addr}");
+    let client = CompanionClient::for_status(&base, TOKEN).expect("client");
+    let status = client.get_status().await.expect("status");
+    assert_eq!(status.db_status, "ok");
+    assert_eq!(status.bind_mode, ingest::BindMode::Loopback);
+
+    server.abort();
+}
+
+#[test]
+fn classify_timeout_vs_connect() {
+    let rt = tokio::runtime::Runtime::new().expect("rt");
+    let err = rt
+        .block_on(async {
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_millis(50))
+                .build()
+                .expect("client");
+            client.get("http://127.0.0.1:1").send().await
+        })
+        .expect_err("must fail");
+    assert_eq!(
+        companion::classify_network_error(&err),
+        companion::NetworkErrorKind::Unreachable
+    );
+}
+
+#[tokio::test]
 async fn connection_refused_surfaces_as_network_error() {
     let (listener, addr) = bind_loopback(0).await.expect("bind");
     let port = addr.port();

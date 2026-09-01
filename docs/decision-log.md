@@ -29,6 +29,7 @@
 | ADR-025 | 2026-08-12 | **Phase 24:** catalog Feature **`CircadianOffset`** = **Observation-level timing** composite of **sleep timing** (`sleep_interval`) vs **work/activity timing** (`keystrokes` / `context_window`, optional `step_count` / `active_energy` / workout `life_event`); Feature cadence **15m / 1m** with **24h lookback**; output **0–100** alignment (not signed hours); **omit** unless both sleep + work/activity timing present; ADR-007 expected slots = 2; **no** new Observation / **no** migration; calm “schedule alignment in this window” framing | PM-GATE-POST-P23 chose CircadianOffset after Personal Context; sleep + activity Observations already shipped (P17+). Timing alignment ≠ SleepDebt magnitude ≠ DeskAwayPresence. Personal self-tracking only | Clinical chronotype / circadian-disorder / “night owl so you fail”; workplace schedule surveillance; new Observation families; rewriting SleepDebt / EnergyScore / ActivityBalance / FocusScore; Feature-level SleepDebt/EnergyScore as timing; signed chronotype hours as primary units; IDE / weather / App Store / TypingRhythm as P24 primary; precise GPS; PR during freeze; migration without approve |
 | ADR-026 | 2026-08-12 | **Phase 25:** catalog Feature **`SustainedLoadIndicator`** = Feature-level **persistence** composite of **`StressIndex` + `FatigueIndex` + `MeetingDensity`** (schedule proxy); Feature cadence **15m / 1m** with **4h lookback** for prolonged-load math; output **0–100**; omit when both Stress and Fatigue absent; **renormalize** present slots (MeetingDensity optional); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “prolonged load in this window” framing | PM-GATE-POST-P24 chose SustainedLoadIndicator; Stress / Fatigue / MeetingDensity long shipped. Prolonged persistence ≠ CognitiveLoad current demand. Personal self-tracking only | Clinical burnout / “you are burned out”; workplace surveillance scoring; new Observation families; rewriting Stress / Fatigue / MeetingDensity / CognitiveLoad; using CognitiveLoad as input; TypingRhythm / DeepFocusLikelihood / IDE / weather / App Store as P25 primary; PR during freeze; migration without approve |
 | ADR-027 | 2026-08-12 | **Phase 26:** **OSS Public Launch Hygiene** — SoT **`docs/19-oss-public-launch.md`**; packaging ops stay in **`docs/18-packaging-runbook.md`**; three launch layers (repo/docs hygiene → post–freeze `main` catch-up → notarized GitHub Release before public visibility); AGPLv3 Core open; personal self-tracking framing in public copy; **no** migration / **no** Feature math | PM-GATE-POST-P25; vision already links missing `19-oss…`; catalog math backlog empty of safe distinct Features; packaging runbook exists (ADR-012) | IDE plugin; weather ambient; App Store listing as primary; Companion polish-as-primary; TypingRhythm; DeepFocusLikelihood; precise GPS; new Observation/Feature math; Pattern Discovery expansion as primary; PR during freeze; cloud accounts/telemetry by default; secret/proprietary Feature formulas |
+| ADR-029 | 2026-08-31 | **Phase 28:** **Local device reliability (A+B)** — **(A)** Mac menubar always-on + opt-in Launch Agent / login item; ingest + collectors + Feature Worker while app process lives; **(B)** iPhone HealthKit buffer (durable queue + retry flush when Mac LAN-reachable); **catch-up replay** of Observations after offline gaps; existing `observations` SQLite on Mac; Bearer LAN ingest (ADR-005); **no** BioFocus cloud / **no** default telemetry | User approved local-only path (2026-08-31): product must work safely and deliver Pattern Discovery value without vendor cloud. Watches → HealthKit → phone queue → Mac compute. Mac must stay reachable in LAN when user opts in; phone holds data until flush. | BioFocus cloud relay / sync service; mandatory cloud account; compute Features on vendor servers; silent always-on `0.0.0.0`; mDNS auto-discovery (ADR-005 rejected); iCloud/third-party sync without separate opt-in ADR; new Observation SQLite outbox on Mac; busy-loop HK/TCP poll; clinical claims |
 | ADR-028 | 2026-08-12 | **Phase 27:** **Pattern Discovery rule expansion** — add deterministic **InsightRule** / **RecommendationRule**s in `knowledge-engine` on **shipped** Features only; evaluate-on-read (ADR-008/009); **no** Insight/Recommendation SQLite store; E2 slate: `cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1`; **no** migration / **no** new Feature formulas | PM-GATE-POST-P26; north star Pattern Discovery; Phases 10–25 Features under-used by Knowledge; Feature-math backlog empty of safe nodes | New Feature catalog math; TypingRhythm; DeepFocusLikelihood; IDE; weather; App Store; Companion polish-as-primary; precise GPS; LLM-authored Insights/Recommendations; workplace surveillance framing; PR during freeze; migration / new Observation; claiming public launch Done / flipping visibility |
 
 ### ADR-007 detail — Feature confidence (v1)
@@ -2303,4 +2304,54 @@ E3 (optional)
 14. **Parallel Coach / Correlation Engine crate** — extend `knowledge-engine` only.
 15. **Persisted Insight/Recommendation SQLite store** — rejected for v1 (ADR-008/009 stance).
 16. **Shipping more than the locked three rules in E2** without ADR amend — rejected (keep slate small).
+
+### ADR-029 detail — Phase 28: Local device reliability without BioFocus cloud (A+B)
+
+> **Relationship:** Vision = *data stays only with the user* (`docs/00-vision.md`). ADR-005 ships LAN ingest + Bearer pairing; ADR-016/018 ship HealthKit → phone queue → Desktop flush. **Gap:** companion reachability is fragile (P28 diagnosis); Desktop stops computing when the process exits; Feature Worker starts at DB tip (offline backlog not replayed). **User decision 2026-08-31:** pursue **A + B** — no BioFocus cloud. Epic split: `docs/SPRINT_ROADMAP.md` Phase 28.
+
+| Pillar | Role in Phase 28 v1 |
+| :--- | :--- |
+| **(A) Mac always-on** | Menubar app survives window close; opt-in **Login Item / Launch Agent** starts BioFocus at login; ingest + macOS collectors + Feature Worker run in the desktop process (idle-safe — no busy-loop) |
+| **(B) iPhone buffer** | HealthKit observers + background delivery enqueue locally; **durable queue** on phone until Mac is reachable; retry flush with backoff; preflight `GET /v1/status` (fail-fast) |
+| **Catch-up replay** | After Mac wake / launch / post-flush batch: Feature Worker **drains** new Observations from cursor — not “tip only, skip backlog” when cursor lags |
+| **Storage** | Mac: `~/.biofocus/data/biofocus_main.db` (unchanged). Phone: local queue + HK anchors (UserDefaults or equivalent — no cloud) |
+| **Security** | Bearer required on `POST /v1/ingest`; default bind loopback; LAN **explicit opt-in** (ADR-005); no telemetry; UI ↛ SQLite |
+
+#### Data flow (locked)
+
+```text
+Watch → Apple Health → iPhone Companion (queue B)
+                              ↓ flush when Mac LAN online + paired
+Mac menubar (A) → ingest → SQLite observations → pipeline → Features → Insights
+```
+
+#### Epic map (Phase 28)
+
+| Epic | Task | Deliverable |
+| :--- | :--- | :--- |
+| **P28-E1** | **P28-E1-T1** | Companion LAN connectivity — preflight, timeouts, calm errors, Desktop Companion UX, optional persisted LAN opt-in |
+| **P28-E2** | **P28-E2-T1** | iPhone buffer hardening — retry/backoff flush, network-reachability trigger, queue durability (cap + calm drop policy), wake/foreground flush |
+| **P28-E3** | **P28-E3-T1** | Mac always-on — Login Item opt-in, quit vs hide semantics, ingest/collector lifecycle on login start |
+| **P28-E4** | **P28-E4-T1** | Catch-up replay — Feature Worker drains observation cursor after offline; Insights/snapshot refresh after batch |
+| **P28-E5** | **P28-E5-T1** *(optional)* | Sync health surface — calm Desktop + Companion status (“last flush”, “Mac reachable”, “N pending”) for first-week trust |
+
+#### Mechanics (v1)
+
+1. **No BioFocus cloud** — relay, account, or vendor-hosted biometrics storage remain **out of scope**.
+2. **No new SQLite schema** on Mac for sync outbox in v1 — phone queue is the offline buffer; Mac remains compute + durable store.
+3. **LAN stays opt-in** — packaged `.app` may persist user’s LAN preference locally (ADR-005); never silent wide-open bind without user action.
+4. **Idle-safe** — HK observers + event-driven flush; Mac worker uses poll/sleep when empty (existing runtime pattern).
+5. **Product value path** — reliable ingest → enough Observations → existing Pattern Discovery rules (ADR-008/028) → Insights / charts / optional Report; no new Feature math required in Phase 28.
+6. **Future horizon** — user-owned encrypted export or **separate opt-in ADR** for iCloud/self-hosted E2E sync; not Phase 28 v1.
+
+#### Rejected alternatives
+
+1. **BioFocus cloud relay** — rejected (privacy thesis).
+2. **Mandatory cloud account / telemetry** — rejected.
+3. **Compute Features on phone or in cloud** — rejected for v1; Mac remains primary engine.
+4. **mDNS / Bonjour auto-discovery** — rejected (ADR-005).
+5. **Silent always-on `0.0.0.0` bind** — rejected.
+6. **New Mac SQLite outbox / sync tables** — rejected for v1.
+7. **Busy-loop HealthKit or TCP polling** — rejected.
+8. **Clinical / surveillance framing** in sync UX — rejected.
 

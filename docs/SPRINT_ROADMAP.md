@@ -1,7 +1,7 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
 > **Phase 27: Pattern Discovery rule expansion** (Sprint 53–54) — **Active**.  
-> Phase 0–26 Done. Gate **PM-GATE-POST-P26** ✅ · **ADR-028** ✅ · Ready **P27-E2-T1**.  
+> Phase 0–26 Done. Gate **PM-GATE-POST-P26** ✅ · **ADR-028** ✅ · E2 rules ✅ · Ready **P27-E3-T1**.  
 > **Public launch not Done** (OSS layers 2–3 after PR freeze). Deferred: park-until-freeze-lift as primary · IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math expansion.
 
 **Phase 27 outcome (target):** **ADR-028** locks Insight/Recommendation rule slate on **shipped** Features → register rules in `knowledge-engine` → optional dogfood / Dashboard Insights·Suggestions. Extend ADR-008 / ADR-009. **No** new Observation / Feature math. **Not** App Store. **Not** public launch Done.
@@ -41,14 +41,14 @@
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P27-E2-T1** |
+| **Ready** | **P27-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0–26 · **PM-GATE-POST-P14…P26** · **P26-E1–E3** · **P25-E1–E3** · **P27-E1-T1** (see archives) |
+| **Done** | Phase 0–26 · **PM-GATE-POST-P14…P26** · **P26-E1–E3** · **P25-E1–E3** · **P27-E1–E2** (see archives) |
 
-**Epic status:** Phase 27 Active (E1 ✅ · E2 Ready) · Phase 26 ✅
+**Epic status:** Phase 27 Active (E1–E2 ✅ · E3 Ready) · Phase 26 ✅
 
-**Phase 27 on `/docs/14-roadmap.md`:** opened 2026-08-12 · **ADR-028** locked · Ready E2 ship rules
+**Phase 27 on `/docs/14-roadmap.md`:** opened 2026-08-12 · **ADR-028** ✅ · E2 rules shipped · Ready E3 dogfood
 
 **Live board (maintainers):** Cursor canvas `biofocus-execution-board.canvas.tsx` in the local Cursor projects `canvases/` directory (not required for external contributors).
 
@@ -56,9 +56,9 @@
 
 ### Active assignment
 
-**Ready now:** **P27-E2-T1** — Ship locked Insight/Recommendation rules per **ADR-028** (`cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1`). Brief: `docs/handoffs/P27-E2-T1-pm-brief.md`. Role: **Dev** (`knowledge-engine` + tests).
+**Ready now:** **P27-E3-T1** — Dogfood notes + optional calm Insights/Suggestions surface for ADR-028 rules. Brief: `docs/handoffs/P27-E3-T1-pm-brief.md`. Role: **Dev|UX** (docs + optional Dashboard).
 
-**Just closed:** **P27-E1-T1** (2026-08-12) — **ADR-028** locked Pattern Discovery / Recommendations expansion scope (QA Pass).
+**Just closed:** **P27-E2-T1** (2026-08-12) — shipped `cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1` in `knowledge-engine` (QA Pass · 46/46).
 
 **Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 27 on `phase/27-pattern-rules`. Phase 26 cluster stays on `phase/26-oss-public-launch`. **Public launch not Done** (OSS layers 2–3 parked after freeze).
 
@@ -72,17 +72,17 @@
 | :--- | :--- | :--- | :--- |
 | **P27-E1-T1** ✅ | Lock Pattern Discovery / Recommendations expansion (**ADR-028**) | Dev | docs + decision-log (+ knowledge-engine contracts) |
 
-### Epic P27-E2 — Rules ship
+### Epic P27-E2 — Rules ship ✅
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P27-E2-T1** ← Ready | Ship locked Insight/Recommendation rules | Dev | knowledge-engine (+ tests) |
+| **P27-E2-T1** ✅ | Ship locked Insight/Recommendation rules | Dev | knowledge-engine (+ tests) |
 
 ### Epic P27-E3 — Dogfood / surface
 
 | ID | Task | Role | Modules |
 | :--- | :--- | :--- | :--- |
-| **P27-E3-T1** | Dogfood notes + optional calm Insights/Suggestions surface | Dev\|UX | docs (+ optional Dashboard) |
+| **P27-E3-T1** ← Ready | Dogfood notes + optional calm Insights/Suggestions surface | Dev\|UX | docs (+ optional Dashboard) |
 
 ---
 
@@ -183,12 +183,69 @@ Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
 ## Queue (Phase 27)
 
 1. **P27-E1-T1** — ADR-028 Pattern Discovery / Recommendations expansion ← **Done** (2026-08-12)  
-2. **P27-E2-T1** — Ship locked Insight/Recommendation rules ← **Ready**  
-3. **P27-E3-T1** — Dogfood + optional Insights/Suggestions surface  
+2. **P27-E2-T1** — Ship locked Insight/Recommendation rules ← **Done** (2026-08-12)  
+3. **P27-E3-T1** — Dogfood + optional Insights/Suggestions surface ← **Ready**  
 
-**Deferred / parked:** OSS layers 2–3 (after freeze) · IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math.
+**Deferred / parked:** OSS layers 2–3 (after freeze) · IDE · weather · App Store · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math.
 
-**Git:** Phase 27 on `phase/27-pattern-rules` → **PR after 2026-09-01**. Phase 26 remains on `phase/26-oss-public-launch`.  
-**Brief:** `docs/handoffs/P27-E2-T1-pm-brief.md`.  
-**Evidence E1:** `docs/handoffs/P27-E1-T1-qa-to-pm.md`.  
+**Git:** Phase 27 on `phase/27-pattern-rules` → **PR after 2026-09-01**. Phase 28 on `phase/28-local-reliability` (may start parallel after P27-E3 or interrupt for user blocker).  
+**Brief:** `docs/handoffs/P27-E3-T1-pm-brief.md`.  
+**Evidence E1–E2:** `docs/handoffs/P27-E1-T1-qa-to-pm.md` · `docs/handoffs/P27-E2-T1-qa-to-pm.md`.  
 **Note:** **Public launch not Done**.
+
+---
+
+## Phase 28 — Local device reliability (A+B) — **Queued** (user blocker)
+
+> **ADR-029** ✅ (2026-08-31) — Mac always-on **(A)** + iPhone buffer **(B)**; no BioFocus cloud.  
+> **Outcome:** данные только у юзера; companion не отваливается; Mac догоняет после offline; Insights/графики начинают приносить пользу на 1–2-й неделе.
+
+**Branch:** `phase/28-local-reliability` (or ride `phase/28-companion-connectivity` for E1 only).
+
+| Status | IDs |
+| :--- | :--- |
+| **Ready** | **P28-E1-T1** (after PM gate or parallel to P27-E3) |
+| **Queued** | P28-E2-T1 · P28-E3-T1 · P28-E4-T1 · P28-E5-T1 (optional) |
+| **Done** | — |
+
+### Epic P28-E1 — Companion connectivity (ADR-029 / ADR-005)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E1-T1** ← Ready | LAN preflight, timeouts, calm errors, Desktop Companion UX | Dev\|UX | `apps/companion/ios`, `apps/desktop`, docs |
+
+Brief: `docs/handoffs/P28-E1-T1-pm-brief.md`.
+
+### Epic P28-E2 — iPhone buffer (B)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E2-T1** | Retry/backoff flush, reachability + foreground triggers, queue durability | Dev | `apps/companion/ios`, tests |
+
+Brief: `docs/handoffs/P28-E2-T1-pm-brief.md`.
+
+### Epic P28-E3 — Mac always-on (A)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E3-T1** | Login Item opt-in, hide≠quit, lifecycle on login start | Dev\|UX | `apps/desktop`, docs |
+
+Brief: `docs/handoffs/P28-E3-T1-pm-brief.md`.
+
+### Epic P28-E4 — Catch-up replay
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E4-T1** | Feature Worker drains cursor after offline; snapshot refresh | Dev | `apps/desktop`, `runtime`, `feature_host` |
+
+Brief: `docs/handoffs/P28-E4-T1-pm-brief.md`.
+
+### Epic P28-E5 — Sync health (optional)
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E5-T1** | Calm sync status (last flush, pending, Mac reachable) | Dev\|UX | Desktop Companion UI + iOS status |
+
+Brief: `docs/handoffs/P28-E5-T1-pm-brief.md`.
+
+**Sequencing:** E1 → E2 → E3 → E4 (E5 anytime after E1). **PM-GATE-POST-P27** may promote P28-E1 ahead of P27-E3 (user blocker).

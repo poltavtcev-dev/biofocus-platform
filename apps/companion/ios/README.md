@@ -58,6 +58,24 @@ xcrun --sdk iphonesimulator swiftc \
 
 Contract: JSON array of Observations (`provider_id=com.biofocus.applehealth`) → `POST {baseURL}/v1/ingest` with Bearer token.
 
+## Connectivity (P28-E1-T1)
+
+- **Test connection** — `GET /v1/status` with ≤5s timeout; shows `bind_mode` + `db_status` on success.
+- **Send / Flush** — preflight status before POST (≤10s ingest timeout).
+- Physical iPhone **cannot** use `127.0.0.1` — use LAN Base URL from Desktop Companion.
+- Calm errors: loopback blocked, timeout/unreachable, unauthorized (check token).
+
+### Troubleshooting (physical iPhone)
+
+| Symptom | Fix |
+| :--- | :--- |
+| Timeout / unreachable | Desktop: enable LAN → restart → copy LAN URL; same Wi‑Fi; check firewall |
+| Loopback message | Replace `127.0.0.1` with Desktop LAN URL |
+| 401 unauthorized | Re-copy pairing token from Desktop |
+| LAN on, no URL on Desktop | Set `BIOFOCUS_INGEST_BIND_HOST` to Mac LAN IP → restart |
+
+See also `docs/12-development.md` § Companion connectivity.
+
 ## Autonomy
 
 - HealthKit **observer** + **background delivery** (hourly) enqueue new samples — **no** busy-loop poll.

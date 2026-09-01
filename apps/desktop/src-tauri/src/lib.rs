@@ -740,6 +740,58 @@ struct CorePing {
     schema_version: u32,
 }
 
+/// IPC payload for ingest LAN preference (P28-E1-T1 / ADR-029).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct IngestLanPreferenceDto {
+    /// User persisted opt-in via `~/.biofocus/ingest_lan_enabled`.
+    persisted: bool,
+    /// Env overrides persisted file for this process.
+    from_env: bool,
+    /// Current running bind is LAN (may lag persisted until restart).
+    effective_lan: bool,
+    /// After `set_ingest_lan_preference`, host must restart ingest bind.
+    needs_restart: bool,
+}
+
+fn build_ingest_lan_preference(needs_restart: bool) -> Result<IngestLanPreferenceDto, String> {
+    let from_env = ingest::lan_preference_overridden_by_env();
+    let persisted = ingest::read_persisted_lan_enabled();
+    let effective_lan = ingest::resolve_bind_host()
+        .map(|host| !host.is_loopback())
+        .map_err(|_| "Could not resolve ingest bind host.".to_string())?;
+    Ok(IngestLanPreferenceDto {
+        persisted,
+        from_env,
+        effective_lan,
+        needs_restart,
+    })
+}
+
+/// Reads persisted LAN opt-in and effective bind mode (no SQLite).
+#[tauri::command]
+fn get_ingest_lan_preference() -> Result<IngestLanPreferenceDto, String> {
+    build_ingest_lan_preference(false)
+}
+
+/// Persists LAN opt-in for next launch (ADR-005 — still explicit opt-in).
+#[tauri::command]
+fn set_ingest_lan_preference(enabled: bool) -> Result<IngestLanPreferenceDto, String> {
+    if ingest::lan_preference_overridden_by_env() {
+        return Err(
+            "LAN bind is controlled by environment variables for this launch.".into(),
+        );
+    }
+    ingest::write_persisted_lan_enabled(enabled).map_err(|err| match err {
+        ingest::IngestError::HomeDirUnavailable => {
+            "Could not locate local BioFocus config.".into()
+        }
+        ingest::IngestError::TokenIo { .. } => "Could not save LAN preference.".into(),
+        other => other.to_string(),
+    })?;
+    build_ingest_lan_preference(true)
+}
+
 /// IPC payload for [`get_pairing_token`]. Local secret only — no cloud, no paths.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -1105,6 +1157,8 @@ pub fn run() -> DesktopResult<()> {
             open_dashboard,
             core_ping,
             get_pairing_token,
+            get_ingest_lan_preference,
+            set_ingest_lan_preference,
             log_life_event,
             list_recent_life_events,
             get_git_watched_roots,

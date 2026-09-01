@@ -12,10 +12,12 @@ mod advertise;
 mod auth;
 mod config;
 mod error;
+mod ingest_prefs;
 mod persist;
 mod routes;
 mod server;
 mod status;
+mod test_lock;
 mod token;
 
 pub use advertise::{http_base_url, AdvertiseInfo, BindMode};
@@ -24,6 +26,11 @@ pub use config::{
     INGEST_BIND_HOST, INGEST_BIND_HOST_ENV, INGEST_LAN_BIND_HOST, INGEST_LAN_ENV, INGEST_TOKEN_ENV,
 };
 pub use error::{IngestError, IngestResult};
+pub use ingest_prefs::{
+    ingest_lan_prefs_path, read_persisted_lan_enabled, write_persisted_lan_enabled,
+    INGEST_LAN_PREFS_FILE,
+};
+pub use ingest_prefs::lan_preference_overridden_by_env;
 pub use persist::spawn_persist_worker;
 pub use routes::{ingest_router, DbProbe, IngestResponse, IngestState, QueuePressureBody};
 pub use server::{bind_host, bind_loopback, serve_listener, serve_with_shutdown};

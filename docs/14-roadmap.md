@@ -140,8 +140,8 @@
 
 - [ ] **Phase 27: Pattern Discovery rule expansion** (Sprint 53–54) — opened 2026-08-12 (**PM-GATE-POST-P26**)
   - Lock Pattern / Recommendations expansion scope (**ADR-028**) — **P27-E1 Done** (2026-08-12).
-  - Ship locked Insight/Recommendation rules — **P27-E2 Ready** (T1).
-  - Dogfood / optional Insights·Suggestions surface — **P27-E3**.
+  - Ship locked Insight/Recommendation rules — **P27-E2 Done** (2026-08-12).
+  - Dogfood / optional Insights·Suggestions surface — **P27-E3 Ready** (T1).
 
 **Deferred (gate leftovers):** OSS layers 2–3 (after freeze) · IDE · weather ambient · App Store listing · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math expansion.
 
@@ -171,7 +171,8 @@
 **Phase 24:** Done 2026-08-12 — **ADR-025** → `CircadianOffset` → dogfood + Schedule alignment · branch `phase/24-circadian-offset` (PR after freeze)
 **Phase 25:** Done 2026-08-12 — **ADR-026** → `SustainedLoadIndicator` → dogfood + Prolonged load · branch `phase/25-sustained-load` (PR after freeze)
 **Phase 26:** Done 2026-08-12 — **ADR-027** → SoT `19-oss…` → dry-run · **public launch not Done** · branch `phase/26-oss-public-launch` (PR after freeze)
-**Phase 27:** Active — **ADR-028** ✅ · Ready **P27-E2-T1** (ship locked rules) · branch `phase/27-pattern-rules` (PR after freeze)
-**Gate:** **PM-GATE-POST-P26** ✅ chose Pattern Discovery rule expansion · **ADR-019…028** ✅ · **PR freeze until 2026-09-01** · **public launch not Done**
+**Phase 27:** Active — **ADR-028** ✅ · E2 rules ✅ · Ready **P27-E3-T1** (dogfood / optional surface) · branch `phase/27-pattern-rules` (PR after freeze)
+**Phase 28:** Queued — **ADR-029** ✅ (2026-08-31) — **Local device reliability (A+B)** without BioFocus cloud: Mac always-on + iPhone buffer + catch-up replay · Ready **P28-E1-T1** · branch `phase/28-local-reliability` (PR after freeze)
+**Gate:** **PM-GATE-POST-P26** ✅ chose Pattern Discovery rule expansion · **ADR-019…029** ✅ · **PR freeze until 2026-09-01** · **public launch not Done**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.
