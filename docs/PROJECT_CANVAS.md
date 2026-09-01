@@ -59,8 +59,8 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - **Phase 24 (Done 2026-08-12):** CircadianOffset — **ADR-025** ✅; Feature + dogfood / **Schedule alignment**.
 - **Phase 25 (Done 2026-08-12):** SustainedLoadIndicator — **ADR-026** ✅; Feature + dogfood / Dashboard **Prolonged load**.
 - **Phase 26 (Done 2026-08-12):** OSS Public Launch Hygiene — **ADR-027** ✅; SoT `19-oss…` + dry-run checklist. **Public launch not Done** (layers 2–3 after freeze).
-- **Next:** Phase 27 **Pattern Discovery rule expansion** — **ADR-028** ✅; Ready **P27-E2-T1** (ship locked rules). Gate **PM-GATE-POST-P26** ✅.
-- **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
+- **Next:** Phase 27 **Pattern Discovery rule expansion** — **ADR-028** ✅ · E2 rules ✅; Ready **P27-E3-T1** (dogfood / optional Insights·Suggestions). Gate **PM-GATE-POST-P26** ✅.
+- **Git:** classic PR flow restored (2026-09-01); CI auto-run on push/PR (`docs/12-development.md`).
 - Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
 Dogfood tip: if `base_url_hints` is empty under `BIOFOCUS_INGEST_LAN=1`, set `BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>` before pairing.
@@ -131,7 +131,7 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **P27-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–26 Done · Phase 27 Active · **ADR-028** ✅ · **public launch not Done**.
+Immediate Kanban = **P27-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–26 Done · Phase 27 Active · **ADR-028** ✅ · E2 rules ✅ · **public launch not Done**.
 
 | Phase | Focus |
 | :--- | :--- |
@@ -157,7 +157,7 @@ Immediate Kanban = **P27-E2-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–26 Done 
 | **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
 | **25** | Done — SustainedLoadIndicator (**ADR-026** → Feature + dogfood + Prolonged load) |
 | **26** | Done — OSS Public Launch Hygiene (**ADR-027** · SoT · dry-run); **public launch not Done** |
-| **27** | Active — Pattern Discovery rule expansion (**ADR-028** ✅ · Ready P27-E2); deferred IDE · weather · App Store · TypingRhythm |
+| **27** | Active — Pattern Discovery rule expansion (**ADR-028** ✅ · E2 ✅ · Ready P27-E3); deferred IDE · weather · App Store · TypingRhythm |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

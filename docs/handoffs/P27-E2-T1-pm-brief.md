@@ -2,10 +2,10 @@
 
 **From:** PM  
 **To:** Dev  
-**Status:** Ready  
+**Status:** Done (2026-08-12) — QA Pass · three ADR-028 rules shipped · next **P27-E3-T1**  
 **Date:** 2026-08-12  
 **Closed previous:** **P27-E1-T1** (**ADR-028** locked; QA Pass)  
-**Evidence:** `docs/handoffs/P27-E1-T1-qa-to-pm.md` · `docs/handoffs/P27-E1-T1-dev-to-qa.md`  
+**Evidence:** `docs/handoffs/P27-E2-T1-qa-to-pm.md` · `docs/handoffs/P27-E2-T1-dev-to-qa.md`  
 **Phase:** Phase 27 Pattern Discovery rule expansion — Epic P27-E2  
 **Branch:** `phase/27-pattern-rules`
 

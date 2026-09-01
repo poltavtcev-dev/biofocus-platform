@@ -7,6 +7,7 @@
 - **Date:** 2026-08-12
 - **AC source:** `docs/handoffs/P27-E2-T1-pm-brief.md` · `/docs/SPRINT_ROADMAP.md` Phase 27 · ADR-028
 - **Branch:** `phase/27-pattern-rules`
+- **Code:** committed in `a7f5971` (re-verified this build-qa chat)
 
 ## What changed
 - Implemented + registered **exactly** the ADR-028 E2 slate in `knowledge-engine`:
@@ -45,7 +46,7 @@ rg -n "CognitiveLoadNode|SustainedLoadIndicator|register_sustained_load|register
 # (expect Feature *ids* as string inputs only — no FeatureEngine register helpers)
 ```
 
-Dev local: `cargo test -p knowledge-engine` → **46 passed**.
+Dev local (this chat): `cargo test -p knowledge-engine` → **46 passed**.
 
 ## Acceptance Criteria checklist (for QA)
 - [ ] AC1: Exactly three new rules registered via `register_insights_v1` / `register_recommendations_v1` with locked triggers, Evidence, calm copy
@@ -59,7 +60,7 @@ Dev local: `cargo test -p knowledge-engine` → **46 passed**.
 ## Risks / not covered
 - Dashboard category labels for `demand` / `prolonged_load` may fall back to raw category until **P27-E3** surface polish.
 - Host already calls `register_insights_v1` / `register_recommendations_v1` — new rules pick up automatically; no desktop IPC change this task.
-- Unrelated dirty Phase 26 docs may exist on the branch — out of AC unless they contradict ADR-028 ship.
+- Unrelated dirty Phase 26 / PM-close docs may exist on the branch — out of AC unless they contradict ADR-028 ship.
 
 ## Notes for QA
 - Thresholds fixed at **60** (within ADR ±10 band).

@@ -479,33 +479,22 @@ GitHub Actions (no CD): `.github/workflows/ci.yml`
 
 - **rust-core:** `cargo check --workspace --exclude desktop`, `cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p feature-engine -p plugin-sdk -p macos-collector -p companion`
 - **desktop:** `cargo test -p desktop`, `pnpm install` + `pnpm build`, UI↛DB boundary grep
-- **Manual full suite:** Actions → CI → **Run workflow** (`workflow_dispatch`) — only while auto-CI is off, or anytime for a full check
-- **Local before ship** (required while Actions auto-run is off): `cargo test` on touched crates; if IPC/Tauri/`apps/desktop` touched → `cargo test -p desktop` + `pnpm build`
-
-### TEMP — Actions auto-run OFF (billing limit, 2026-08-06)
-
-`push` / `pull_request` triggers are **commented out** in `ci.yml`. Workflow starts only via **Run workflow**.  
-Until minutes reset: **local tests = gate**; agents may **commit + push straight to `main`** (no PR). When limit returns: restore triggers in `ci.yml` and resume classic PR flow below.
+- **Manual full suite:** Actions → CI → **Run workflow** (`workflow_dispatch`) anytime for a full check
+- **Local before ship:** `cargo test` on touched crates; if IPC/Tauri/`apps/desktop` touched → `cargo test -p desktop` + `pnpm build`
 
 ## Git workflow (related work → PR)
 
-**Default (when Actions minutes available):** не пушить напрямую в `main`. Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
+**Default:** не пушить напрямую в `main`. Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
 
-### PR freeze (active until 2026-09-01)
-
-До **2026-09-01 включительно** агенты **не открывают PR** и **не мержат в `main` через PR**.  
-Работаем на feature-ветках; handoffs + локальные коммиты — ок. Классический flow ниже — **после** этой даты (или если пользователь явно снял freeze).
-
-Классика (после freeze): **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
+Классика: **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
 Не коммит/PR на каждый handoff. **Docs / roadmap / canvas** — отдельно позже или в следующий code PR.
 
 | Уровень | Правило |
 | :--- | :--- |
-| **Freeze** | Нет PR / merge в `main` до **2026-09-01** (если не сняли раньше). |
 | **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. |
 | **Commit** | Когда код-единица готова (batch Task IDs ок). Handoffs на диске — не триггерят PR. |
-| **Push / PR** | Только **после freeze** + substantive code vs `main` **и** (кластер готов **или** явный «PR»). Один PR на ветку. Squash preferred. |
-| **Не PR** | до 2026-09-01; handoffs-only; roadmap/canvas-only; второй PR на тот же tip. |
+| **Push / PR** | Substantive code vs `main` **и** (кластер готов **или** явный «PR»). Один PR на ветку. Squash preferred. |
+| **Не PR** | handoffs-only; roadmap/canvas-only; второй PR на тот же tip. |
 | **Спринт** | Лучше мало содержательных PR, чем много пустых. |
 
 ```bash
@@ -530,4 +519,4 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 ## Status
 
 **Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 + P5-E2 Done** (LAN bind ADR-005 + advertise hints + Companion LAN UI); Ready **P5-E3-T1** (runnable iOS HealthKit companion). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E3-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
-**Git policy:** **PR freeze until 2026-09-01** (no agent PRs); then few **code** PRs; commit messages describe the change only — no personal device inventories.
+**Git policy:** classic PR flow; few **code** PRs; commit messages describe the change only — no personal device inventories.
