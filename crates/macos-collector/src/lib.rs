@@ -21,7 +21,7 @@
 //! (ADR-020 / P19-E2): read-only **usernoted** NC SQLite (`group.com.apple.usernoted/db2/db`)
 //! with hard non-content field allowlist; soft-fail when unavailable / TCC denied.
 
-#![cfg_attr(not(target_os = "macos"), forbid(unsafe_code))]
+#![cfg_attr(not(any(test, target_os = "macos")), forbid(unsafe_code))]
 // objc2 / CoreGraphics bindings require `unsafe` only inside macOS probe modules.
 
 mod ambient_light_plugin;
