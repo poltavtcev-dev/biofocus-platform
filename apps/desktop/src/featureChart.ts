@@ -6,6 +6,16 @@ export const CHART_FEATURE_IDS = [
   "StressIndex",
   "FatigueIndex",
   "ContextSwitchRate",
+  "ActivityBalance",
+  "EnergyScore",
+  "SleepDebt",
+  "RecoveryScore",
+  "CognitiveLoad",
+  "DeepWorkScore",
+  "AttentionStability",
+  "DeskAwayPresence",
+  "CircadianOffset",
+  "SustainedLoadIndicator",
 ] as const;
 
 export type ChartFeatureId = (typeof CHART_FEATURE_IDS)[number];
@@ -15,6 +25,16 @@ export const SCORE_SERIES_IDS: ChartFeatureId[] = [
   "FocusScore",
   "StressIndex",
   "FatigueIndex",
+  "ActivityBalance",
+  "EnergyScore",
+  "SleepDebt",
+  "RecoveryScore",
+  "CognitiveLoad",
+  "DeepWorkScore",
+  "AttentionStability",
+  "DeskAwayPresence",
+  "CircadianOffset",
+  "SustainedLoadIndicator",
 ];
 
 /** Calm UI labels — Feature names only, no evaluative / medical claims. */
@@ -42,6 +62,56 @@ export const CHART_SERIES_META: Record<
     unit: "per window min",
     color: "#7a8a7a",
   },
+  ActivityBalance: {
+    label: "Activity",
+    unit: "0–100",
+    color: "#6a8f7a",
+  },
+  EnergyScore: {
+    label: "Energy",
+    unit: "0–100",
+    color: "#8c7a5b",
+  },
+  SleepDebt: {
+    label: "Sleep shortfall",
+    unit: "0–100",
+    color: "#6b7088",
+  },
+  RecoveryScore: {
+    label: "Recovery",
+    unit: "0–100",
+    color: "#7a6b8c",
+  },
+  CognitiveLoad: {
+    label: "Combined demand",
+    unit: "0–100",
+    color: "#6b7a8a",
+  },
+  DeepWorkScore: {
+    label: "Sustained focus",
+    unit: "0–100",
+    color: "#5c7a6b",
+  },
+  AttentionStability: {
+    label: "Focus stability",
+    unit: "0–100",
+    color: "#5b7a8c",
+  },
+  DeskAwayPresence: {
+    label: "Away from desk",
+    unit: "0–100",
+    color: "#7a6b5c",
+  },
+  CircadianOffset: {
+    label: "Schedule alignment",
+    unit: "0–100",
+    color: "#5c6b7a",
+  },
+  SustainedLoadIndicator: {
+    label: "Prolonged load",
+    unit: "0–100",
+    color: "#8a6b5c",
+  },
 };
 
 export type ChartPoint = {
@@ -51,6 +121,16 @@ export type ChartPoint = {
   StressIndex?: number;
   FatigueIndex?: number;
   ContextSwitchRate?: number;
+  ActivityBalance?: number;
+  EnergyScore?: number;
+  SleepDebt?: number;
+  RecoveryScore?: number;
+  CognitiveLoad?: number;
+  DeepWorkScore?: number;
+  AttentionStability?: number;
+  DeskAwayPresence?: number;
+  CircadianOffset?: number;
+  SustainedLoadIndicator?: number;
 };
 
 function scalarValue(value: FeatureDto["value"]): number | null {
@@ -62,7 +142,7 @@ function isChartFeatureId(id: string): id is ChartFeatureId {
 }
 
 /**
- * Build Recharts rows from a Feature snapshot: one point per distinct
+ * Build Recharts rows from Feature series: one point per distinct
  * `timeWindow.end`, merging Features that share that end.
  */
 export function buildChartPoints(features: FeatureDto[]): ChartPoint[] {

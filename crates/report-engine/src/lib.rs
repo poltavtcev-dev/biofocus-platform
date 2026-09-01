@@ -1,37 +1,56 @@
-//! Deterministic markdown reports and optional local LLM interpretation.
+//! Deterministic markdown reports, versioned prompt packs, and optional local LLM.
 //!
 //! Phase 4:
 //! - **P4-E3-T1:** [`build_report`] → offline [`ReportDocument`] (no network).
 //! - **P4-E3-T2:** opt-in [`interpret_report`] / [`interpret_llm_prompt`] against a
 //!   local OpenAI-compatible endpoint (Ollama). Default **OFF**.
 //!
+//! Phase 11:
+//! - **P11-E2:** named/versioned [`build_report_with_pack`] over Features /
+//!   Insights / Recommendations (ADR-011). Default pack: [`DEFAULT_PROMPT_PACK_ID`]
+//!   @ [`DEFAULT_PROMPT_PACK_VERSION`].
+//!
 //! # Entrypoint
 //!
-//! - [`build_report`] — `&[Feature]` + `&[Insight]` → [`ReportDocument`]
+//! - [`build_report`] — `&[Feature]` + `&[Insight]` → [`ReportDocument`] (Phase 4)
+//! - [`build_report_with_pack`] — pack `id` + `version` + Features / Insights /
+//!   Recommendations → [`ReportDocument`]
 //! - [`ReportDocument::markdown`] — calm offline summary
 //! - [`ReportDocument::llm_prompt`] — same facts wrapped for interpret-only LLM
 //! - [`LocalLlmConfig::from_env`] / [`interpret_report`] — explicit opt-in HTTP
 //!
 //! Empty inputs → calm minimal markdown (still `Ok`). The crate never computes
-//! Features; it only renders values already produced by `feature-engine` /
-//! `knowledge-engine`. The LLM path interprets [`ReportDocument::llm_prompt`]
-//! only — hosts must not call it on app startup.
+//! Features or Recommendations; it only renders values already produced by
+//! `feature-engine` / `knowledge-engine`. The LLM path interprets
+//! [`ReportDocument::llm_prompt`] only — hosts must not call it on app startup.
 
 #![forbid(unsafe_code)]
 
 mod builder;
 mod error;
+mod health_context;
 mod llm;
+mod packs;
 
 pub use bio_spec::{
-    EvidenceRef, Feature, FeatureId, FeatureValue, Insight, InsightId, TimeWindow,
+    EvidenceRef, Feature, FeatureId, FeatureValue, Insight, InsightId, Recommendation,
+    RecommendationId, TimeWindow,
 };
 
 pub use builder::{build_report, ReportDocument};
 pub use error::{ReportEngineError, ReportResult};
+pub use health_context::{
+    default_health_context_path, is_v1_health_condition, load_health_context,
+    load_health_context_file, parse_health_context_toml, HealthContext, BIOFOCUS_CONFIG_DIR_NAME,
+    BIOFOCUS_HOME_ENV, HEALTH_CONTEXT_FILE_NAME, V1_HEALTH_CONDITION_IDS,
+};
 pub use llm::{
-    interpret_llm_prompt, interpret_report, LocalLlmConfig, LOCAL_LLM_BASE_URL_ENV, LOCAL_LLM_ENV,
-    LOCAL_LLM_MODEL_ENV, LOCAL_LLM_TIMEOUT_SECS_ENV,
+    interpret_llm_prompt, interpret_report, LocalLlmConfig, LOCAL_LLM_API_KEY_ENV,
+    LOCAL_LLM_BASE_URL_ENV, LOCAL_LLM_ENV, LOCAL_LLM_MODEL_ENV, LOCAL_LLM_TIMEOUT_SECS_ENV,
+};
+pub use packs::{
+    build_report_with_pack, build_report_with_pack_and_health, default_prompt_pack,
+    list_prompt_packs, PromptPackRef, DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
 };
 
 /// Crate identity used by dependents and status payloads.

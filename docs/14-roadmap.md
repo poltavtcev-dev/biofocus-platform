@@ -28,26 +28,151 @@
   - Feature confidence (ADR-007) — **P7-E1 Done**.
   - Explanation factors — **P7-E2 Done**.
   - `RecoveryScore` bio-backed Feature — **P7-E3 Done**.
-- [ ] **Phase 8: Pattern Discovery v1 (Sprint 15–16)** — **opened 2026-08-06**
-  - ADR-008 history / recompute — Ready **P8-E1-T1**.
-  - Baseline Knowledge Insights → Insights IPC surface (E2–E3).
+- [x] **Phase 8: Pattern Discovery v1 (Sprint 15–16)** — closed 2026-08-08 (E1–E3 Done; cluster PR after freeze)
+  - ADR-008 history / recompute (**recompute-on-read**) — **P8-E1 Done** (2026-08-07).
+  - Baseline Knowledge Insights (`focus_vs_recent_baseline_v1`) — **P8-E2 Done** (2026-08-07).
+  - Insights IPC / UX surface — **P8-E3 Done** (2026-08-08).
 
-### Horizon (accepted vision ladder — not Kanban-Ready yet)
+- [x] **Phase 9: Recommendations** (Sprint 17–18) — closed 2026-08-08 (E1–E3 Done; cluster PR after freeze)
+  - ADR-009 Recommendations domain / engine shape — **P9-E1 Done** (2026-08-08).
+  - Deterministic recommendation path (`focus_dip_pace_hint_v1`) — **P9-E2 Done** (2026-08-08).
+  - Recommendations IPC / UX (`get_recommendations` + Suggestions) — **P9-E3 Done** (2026-08-08).
 
-Product philosophy + sequencing: `/docs/00-vision.md`. Open each phase via PM gate only.
+- [x] **Phase 10: Plugin wave-1** (Sprint 19–20) — closed 2026-08-10 (E1–E3 Done; cluster PR after freeze)
+  - ADR-010 Browser categories + Observation contract — **P10-E1 Done** (2026-08-10).
+  - Browser categories collector plugin — **P10-E2 Done** (2026-08-10).
+  - `DistractionScore` catalog Feature — **P10-E3 Done** (2026-08-10).
 
-- [ ] **Phase 9: Recommendations** — deterministic action suggestions with Evidence
-- [ ] **Phase 10: Plugin wave-1** — IDE/Git or Browser categories (dogfood-driven)
-- [ ] **Phase 11: AI coaching polish** — prompt packs / provider UX (interpret-only)
-- [ ] **Phase 12+: Ambient + commercial packaging** — music/weather/light; signed builds / updates; optional user sync
+- [x] **Phase 11: AI coaching polish** (Sprint 21–22) — closed 2026-08-10 (E1–E3 Done; cluster PR after freeze)
+  - ADR-011 prompt packs + provider UX boundaries — **P11-E1 Done** (2026-08-10).
+  - Versioned prompt packs in `report-engine` — **P11-E2 Done** (2026-08-10).
+  - Local LLM provider UX + pack-aware Report flow — **P11-E3 Done** (2026-08-10).
+
+- [x] **Phase 12: Ambient + commercial packaging** (Sprint 23–24) — closed 2026-08-10 (E1–E3 Done; cluster PR after freeze)
+  - ADR-012 ambient + packaging boundaries — **P12-E1 Done** (2026-08-10).
+  - Now Playing ambient plugin — **P12-E2 Done** (2026-08-10).
+  - `AmbientMediaShare` + packaging runbook — **P12-E3 Done** (2026-08-10).
+
+- [x] **Phase 13: Plugin wave-2 (Git activity)** (Sprint 25–26) — closed 2026-08-10 (E1–E3 Done; cluster PR after freeze)
+  - ADR-013 Git activity + Observation contract — **P13-E1 Done** (2026-08-10).
+  - Git activity collector plugin — **P13-E2 Done** (2026-08-10).
+  - `GitActivityRate` catalog Feature — **P13-E3 Done** (2026-08-10).
+
+- [x] **Phase 14: Git path-allowlist / live probe** (Sprint 27–28) — closed 2026-08-10 (E1–E3 Done; cluster PR after freeze)
+  - ADR-014 watched-roots / path-allowlist boundaries — **P14-E1 Done** (2026-08-10).
+  - Allowlist + live `SystemGitActivityProbe` — **P14-E2 Done** (2026-08-10).
+  - Dogfood gate / allowlist UX — **P14-E3 Done** (2026-08-10).
+
+- [x] **Phase 15: Companion HRV + autonomy** (Sprint 29–30) — closed 2026-08-11 (reprioritized from ambient light)
+  - ADR-015 ambient light contract — **recorded / parked** during P15 → **resumed Phase 16**.
+  - ADR-016 companion HRV + autonomy — **P15-E1 Done** (2026-08-11).
+  - Core SDNN-or-RMSSD + iOS Auto-sync — **P15-E2 Done** (2026-08-11).
+  - Dogfood runbook + Companion UI — **P15-E3 Done** (2026-08-11).
+
+- [x] **Phase 16: Ambient light** (Sprint 31–32) — closed 2026-08-11 (E1–E2 Done; cluster PR after freeze)
+  - Ambient light collector plugin (ADR-015) — **P16-E1 Done** (2026-08-11).
+  - AmbientLightShare catalog Feature — **P16-E2 Done** (2026-08-11).
+
+- [x] **Phase 17: Wearable depth + chart ranges** (Sprint 33–34) — closed 2026-08-11 (E1–E3 Done; cluster PR after freeze)
+  - Lock HealthKit + chart-range contracts (**ADR-018**) — **P17-E1 Done** (2026-08-11).
+  - Companion HealthKit expand — **P17-E2 Done** (2026-08-11).
+  - Dashboard ranges 1h/8h/12h/1d/1w + Features — **P17-E3 Done** (2026-08-11).
+
+- [x] **Phase 18: Notification pressure** (Sprint 35–36) — closed 2026-08-11 (E1–E3 Done; cluster PR after freeze)
+  - Lock notification Observation + `NotificationPressure` scope (**ADR-019**) — **P18-E1 Done** (2026-08-11).
+  - Notification collector plugin — **P18-E2 Done** (2026-08-11).
+  - `NotificationPressure` catalog Feature — **P18-E3 Done** (2026-08-11).
+
+- [x] **Phase 19: Live NC OS mapping** (Sprint 37–38) — closed 2026-08-11 (E1–E3 Done; cluster PR after freeze)
+  - Lock privacy-safe Notification Center OS mapping (**ADR-020**) — **P19-E1 Done** (2026-08-11).
+  - Live `SystemNotificationEventProbe` — **P19-E2 Done** (2026-08-11).
+  - Dogfood runbook + verify `NotificationPressure` — **P19-E3 Done** (2026-08-11).
+
+- [x] **Phase 20: CognitiveLoad** (Sprint 39–40) — closed 2026-08-11 (**PM-GATE-POST-P19**)
+  - Lock `CognitiveLoad` Feature scope (**ADR-021**) — **P20-E1 Done** (2026-08-11).
+  - Ship catalog Feature `CognitiveLoad` — **P20-E2 Done** (2026-08-11).
+  - Dogfood / optional Dashboard surface — **P20-E3 Done** (2026-08-11).
+
+- [x] **PM-GATE-POST-P20** — chose **`DeepWorkScore`** (2026-08-11)
+
+- [x] **Phase 21: DeepWorkScore** (Sprint 41–42) — closed 2026-08-11 (**PM-GATE-POST-P20**)
+  - Lock `DeepWorkScore` Feature scope (**ADR-022**) — **P21-E1 Done** (2026-08-11).
+  - Ship catalog Feature `DeepWorkScore` — **P21-E2 Done** (2026-08-11).
+  - Dogfood / optional Dashboard surface — **P21-E3 Done** (2026-08-11).
+
+- [x] **PM-GATE-POST-P21** — chose **`AttentionStability`** (2026-08-11)
+
+- [x] **Phase 22: AttentionStability** (Sprint 43–44) — closed 2026-08-11 (**PM-GATE-POST-P21**)
+  - Lock `AttentionStability` Feature scope (**ADR-023**) — **P22-E1 Done** (2026-08-11).
+  - Ship catalog Feature `AttentionStability` — **P22-E2 Done** (2026-08-11).
+  - Dogfood / optional Dashboard surface — **P22-E3 Done** (2026-08-11).
+
+- [x] **PM-GATE-POST-P22** — chose **Personal Context Layer** (2026-08-11; supersedes CircadianOffset draft)
+
+- [x] **Phase 23: Personal Context Layer** (Sprint 45–46) — closed 2026-08-11 (**PM-GATE-POST-P22**)
+  - Lock Personal Context Layer (**ADR-024**: Variant B + health context + desk-away) — **P23-E1 Done** (2026-08-11).
+  - First ship slice (`DeskAwayPresence` + health→prompt) — **P23-E2 Done** (2026-08-11).
+  - Dogfood / optional surface — **P23-E3 Done** (2026-08-11).
+
+- [x] **PM-GATE-POST-P23** — chose **`CircadianOffset`** (2026-08-11)
+
+- [x] **Phase 24: CircadianOffset** (Sprint 47–48) — closed 2026-08-12 (**PM-GATE-POST-P23**)
+  - Lock `CircadianOffset` Feature scope (**ADR-025**) — **P24-E1 Done** (2026-08-12).
+  - Ship catalog Feature `CircadianOffset` — **P24-E2 Done** (2026-08-12).
+  - Dogfood / optional surface — **P24-E3 Done** (2026-08-12).
+
+- [x] **PM-GATE-POST-P24** — chose **`SustainedLoadIndicator`** (2026-08-12)
+
+- [x] **Phase 25: SustainedLoadIndicator** (Sprint 49–50) — closed 2026-08-12 (**PM-GATE-POST-P24**)
+  - Lock `SustainedLoadIndicator` Feature scope (**ADR-026**) — **P25-E1 Done** (2026-08-12).
+  - Ship catalog Feature `SustainedLoadIndicator` — **P25-E2 Done** (2026-08-12).
+  - Dogfood / optional surface — **P25-E3 Done** (2026-08-12).
+
+- [x] **PM-GATE-POST-P25** — chose **OSS Public Launch Hygiene** (2026-08-12)
+
+- [x] **Phase 26: OSS Public Launch Hygiene** (Sprint 51–52) — closed 2026-08-12 (**PM-GATE-POST-P25**)
+  - Lock OSS public-launch scope (**ADR-027**) — **P26-E1 Done** (2026-08-12).
+  - Author `docs/19-oss-public-launch.md` + hygiene touchpoints — **P26-E2 Done** (2026-08-12).
+  - Dry-run release checklist — **P26-E3 Done** (2026-08-12).
+  - **Public launch not Done** — layers 2–3 after PR freeze.
+
+- [x] **PM-GATE-POST-P26** — chose **Pattern Discovery rule expansion** (2026-08-12)
+
+- [ ] **Phase 27: Pattern Discovery rule expansion** (Sprint 53–54) — opened 2026-08-12 (**PM-GATE-POST-P26**)
+  - Lock Pattern / Recommendations expansion scope (**ADR-028**) — **P27-E1 Done** (2026-08-12).
+  - Ship locked Insight/Recommendation rules — **P27-E2 Done** (2026-08-12).
+  - Dogfood / optional Insights·Suggestions surface — **P27-E3 Ready** (T1).
+
+**Deferred (gate leftovers):** OSS layers 2–3 (after freeze) · IDE · weather ambient · App Store listing · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math expansion.
 
 **Evidence Phase 1:** `docs/handoffs/P1-E4-T1-acceptance.md` · `P1-E4-T2-qa-to-pm.md`  
-**Phase 2:** merged [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)  
+**Phase 2:** merged [PR #2](https://github.com/poltavtsev-dev/biofocus-platform/pull/2)  
 **Phase 3:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` archive · handoffs `P3-*-qa-to-pm.md`  
 **Phase 4:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR when ready)  
 **Phase 5:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P5-*-qa-to-pm.md` · branch `phase/5-wearable-dogfood` (cluster PR when ready)  
 **Phase 6:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P6-*-qa-to-pm.md` · tip `phase/6-dogfood-fixes` (PR after freeze)  
 **Phase 7:** E1–E3 Done — `docs/SPRINT_ROADMAP.md` · handoffs `P7-*-qa-to-pm.md` · branch `phase/7-trust-layer` (PR after freeze)  
-**Phase 8:** active — `docs/SPRINT_ROADMAP.md` · Ready **P8-E1-T1** · branch `phase/8-pattern-discovery` · **PR freeze until 2026-09-01**  
+**Phase 8:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P8-*-qa-to-pm.md` · branch `phase/8-pattern-discovery` (PR after freeze)  
+**Phase 9:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P9-*-qa-to-pm.md` · branch `phase/9-recommendations` (PR after freeze)  
+**Phase 10:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P10-*-qa-to-pm.md` · branch `phase/10-plugin-wave-1` (PR after freeze)  
+**Phase 11:** Done — `docs/SPRINT_ROADMAP.md` · handoffs `P11-*-qa-to-pm.md` · branch `phase/11-ai-coaching-polish` (PR after freeze)  
+**Phase 12:** Done 2026-08-10 — ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook · branch `phase/12-ambient-packaging` (PR after freeze)
+**Phase 13:** Done 2026-08-10 — ADR-013 → Git plugin → `GitActivityRate` · branch `phase/13-plugin-wave-2` (PR after freeze)
+**Phase 14:** Done 2026-08-10 — ADR-014 → live probe → dogfood + Menubar **Git folders** · branch `phase/14-git-allowlist` (PR after freeze)
+**Phase 15:** Done 2026-08-11 — ADR-016 companion HRV + autonomy · branch `phase/15-companion-hrv-autonomy` (PR after freeze)
+**Phase 16:** Done 2026-08-11 — ADR-015 collector + `AmbientLightShare` · branch `phase/16-ambient-light` (PR after freeze)
+**Phase 17:** Done 2026-08-11 — ADR-017 · **ADR-018** → Companion emit → chart ranges + wearable Features · branch `phase/17-wearable-charts` (PR after freeze)
+**Phase 18:** Done 2026-08-11 — **ADR-019** → collector → `NotificationPressure` · branch `phase/18-notification-pressure` (PR after freeze)
+**Phase 19:** Done 2026-08-11 — **ADR-020** → usernoted live probe → dogfood · branch `phase/19-live-nc-mapping` (PR after freeze)
+**Phase 20:** Done 2026-08-11 — **ADR-021** → `CognitiveLoad` → dogfood + Combined demand · branch `phase/20-cognitive-load` (PR after freeze)
+**Phase 21:** Done 2026-08-11 — **ADR-022** → `DeepWorkScore` → dogfood + Sustained focus · branch `phase/21-deep-work-score` (PR after freeze)
+**Phase 22:** Done 2026-08-11 — **ADR-023** → `AttentionStability` → dogfood + Focus stability · branch `phase/22-attention-stability` (PR after freeze)
+**Phase 23:** Done 2026-08-11 — **ADR-024** → `DeskAwayPresence` → health→prompt → dogfood + Away from desk · branch `phase/23-personal-context` (PR after freeze)
+**Phase 24:** Done 2026-08-12 — **ADR-025** → `CircadianOffset` → dogfood + Schedule alignment · branch `phase/24-circadian-offset` (PR after freeze)
+**Phase 25:** Done 2026-08-12 — **ADR-026** → `SustainedLoadIndicator` → dogfood + Prolonged load · branch `phase/25-sustained-load` (PR after freeze)
+**Phase 26:** Done 2026-08-12 — **ADR-027** → SoT `19-oss…` → dry-run · **public launch not Done** · branch `phase/26-oss-public-launch` (PR after freeze)
+**Phase 27:** Active — **ADR-028** ✅ · E2 rules ✅ · Ready **P27-E3-T1** (dogfood / optional surface) · branch `phase/27-pattern-rules` (PR after freeze)
+**Phase 28:** Queued — **ADR-029** ✅ (2026-08-31) — **Local device reliability (A+B)** without BioFocus cloud: Mac always-on + iPhone buffer + catch-up replay · Ready **P28-E1-T1** · branch `phase/28-local-reliability` (PR after freeze)
+**Gate:** **PM-GATE-POST-P26** ✅ chose Pattern Discovery rule expansion · **ADR-019…029** ✅ · **PR freeze until 2026-09-01** · **public launch not Done**
 **Vision:** `/docs/00-vision.md` · canvas snapshot `PROJECT_CANVAS.md`  
 **Git:** related-work branches → local commits; **PR freeze until 2026-09-01** — see `docs/12-development.md` / `.cursor/rules/06-git-agent-policy.mdc`.

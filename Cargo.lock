@@ -673,6 +673,7 @@ dependencies = [
  "storage",
  "tauri",
  "tauri-build",
+ "tempfile",
  "thiserror 2.0.19",
  "tokio",
  "tracing",
@@ -1834,6 +1835,7 @@ name = "knowledge-engine"
 version = "0.1.0"
 dependencies = [
  "bio-spec",
+ "serde_json",
  "thiserror 2.0.19",
  "uuid",
 ]
@@ -1957,12 +1959,14 @@ dependencies = [
  "objc2-foundation",
  "plugin-sdk",
  "runtime",
+ "rusqlite",
  "serde",
  "serde_json",
  "storage",
  "tempfile",
  "thiserror 2.0.19",
  "tokio",
+ "toml 0.8.2",
  "tracing",
  "uuid",
 ]
@@ -2828,6 +2832,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.19",
  "tokio",
+ "toml 0.8.2",
  "uuid",
 ]
 

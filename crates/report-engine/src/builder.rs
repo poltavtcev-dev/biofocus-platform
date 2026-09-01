@@ -32,7 +32,7 @@ pub fn build_report(features: &[Feature], insights: &[Insight]) -> ReportResult<
     })
 }
 
-fn render_markdown(features: &[Feature], insights: &[Insight]) -> ReportResult<String> {
+pub(crate) fn render_markdown(features: &[Feature], insights: &[Insight]) -> ReportResult<String> {
     let mut out = String::new();
     out.push_str("# BioFocus report\n\n");
     out.push_str(
@@ -45,66 +45,78 @@ fn render_markdown(features: &[Feature], insights: &[Insight]) -> ReportResult<S
         return Ok(out);
     }
 
+    render_features_section(&mut out, features)?;
+    render_insights_section(&mut out, insights);
+    Ok(out)
+}
+
+pub(crate) fn render_features_section(
+    out: &mut String,
+    features: &[Feature],
+) -> ReportResult<()> {
     out.push_str("## Features\n\n");
     if features.is_empty() {
         out.push_str("_No Features in this period._\n\n");
-    } else {
-        let mut sorted: Vec<&Feature> = features.iter().collect();
-        sorted.sort_by(|a, b| {
-            (
-                a.feature_id.as_str(),
-                a.time_window.start.as_secs(),
-                a.time_window.end.as_secs(),
-            )
-                .cmp(&(
-                    b.feature_id.as_str(),
-                    b.time_window.start.as_secs(),
-                    b.time_window.end.as_secs(),
-                ))
-        });
-
-        out.push_str("| Feature | Window (UTC s) | Value |\n");
-        out.push_str("| :--- | :--- | :--- |\n");
-        for feature in sorted {
-            let window = format!(
-                "{}–{}",
-                feature.time_window.start.as_secs(),
-                feature.time_window.end.as_secs()
-            );
-            let value = format_feature_value(&feature.value)?;
-            out.push_str(&format!(
-                "| {} | {} | {} |\n",
-                escape_cell(&feature.feature_id),
-                window,
-                escape_cell(&value)
-            ));
-        }
-        out.push('\n');
+        return Ok(());
     }
 
+    let mut sorted: Vec<&Feature> = features.iter().collect();
+    sorted.sort_by(|a, b| {
+        (
+            a.feature_id.as_str(),
+            a.time_window.start.as_secs(),
+            a.time_window.end.as_secs(),
+        )
+            .cmp(&(
+                b.feature_id.as_str(),
+                b.time_window.start.as_secs(),
+                b.time_window.end.as_secs(),
+            ))
+    });
+
+    out.push_str("| Feature | Window (UTC s) | Value |\n");
+    out.push_str("| :--- | :--- | :--- |\n");
+    for feature in sorted {
+        let window = format!(
+            "{}–{}",
+            feature.time_window.start.as_secs(),
+            feature.time_window.end.as_secs()
+        );
+        let value = format_feature_value(&feature.value)?;
+        out.push_str(&format!(
+            "| {} | {} | {} |\n",
+            escape_cell(&feature.feature_id),
+            window,
+            escape_cell(&value)
+        ));
+    }
+    out.push('\n');
+    Ok(())
+}
+
+pub(crate) fn render_insights_section(out: &mut String, insights: &[Insight]) {
     out.push_str("## Insights\n\n");
     if insights.is_empty() {
         out.push_str("_No Insights matched for this period._\n");
-    } else {
-        let mut sorted: Vec<&Insight> = insights.iter().collect();
-        sorted.sort_by(|a, b| a.id.cmp(&b.id));
-
-        for insight in sorted {
-            out.push_str(&format!("### {}\n\n", insight.title));
-            out.push_str(&format!("{}\n\n", insight.description));
-            out.push_str(&format!("- **Category:** {}\n", insight.category));
-            out.push_str(&format!(
-                "- **Evidence:** {}\n",
-                format_evidence(&insight.evidence_list)
-            ));
-            if let Some(action) = &insight.action_recommendation {
-                out.push_str(&format!("- **Suggestion:** {action}\n"));
-            }
-            out.push('\n');
-        }
+        return;
     }
 
-    Ok(out)
+    let mut sorted: Vec<&Insight> = insights.iter().collect();
+    sorted.sort_by(|a, b| a.id.cmp(&b.id));
+
+    for insight in sorted {
+        out.push_str(&format!("### {}\n\n", insight.title));
+        out.push_str(&format!("{}\n\n", insight.description));
+        out.push_str(&format!("- **Category:** {}\n", insight.category));
+        out.push_str(&format!(
+            "- **Evidence:** {}\n",
+            format_evidence(&insight.evidence_list)
+        ));
+        if let Some(action) = &insight.action_recommendation {
+            out.push_str(&format!("- **Suggestion:** {action}\n"));
+        }
+        out.push('\n');
+    }
 }
 
 fn render_llm_prompt(markdown: &str) -> String {
@@ -115,17 +127,22 @@ fn render_llm_prompt(markdown: &str) -> String {
          diagnoses, or clinical claims. Keep a calm, non-evaluative tone. \
          Do not recompute Features — interpret the given values only.\n\n",
     );
+    wrap_markdown_for_llm(&mut out, markdown);
+    out.push_str(
+        "Write a short natural-language summary the user can skim. \
+         Prefer gentle observations over advice.\n",
+    );
+    out
+}
+
+/// Wraps report markdown between `---` fences for an LLM prompt body.
+pub(crate) fn wrap_markdown_for_llm(out: &mut String, markdown: &str) {
     out.push_str("---\n");
     out.push_str(markdown);
     if !markdown.ends_with('\n') {
         out.push('\n');
     }
     out.push_str("---\n\n");
-    out.push_str(
-        "Write a short natural-language summary the user can skim. \
-         Prefer gentle observations over advice.\n",
-    );
-    out
 }
 
 fn format_feature_value(value: &FeatureValue) -> ReportResult<String> {
@@ -147,7 +164,7 @@ fn format_scalar(n: f64) -> String {
     format!("{n:.4}")
 }
 
-fn format_evidence(list: &[EvidenceRef]) -> String {
+pub(crate) fn format_evidence(list: &[EvidenceRef]) -> String {
     if list.is_empty() {
         return "_none_".into();
     }
@@ -155,6 +172,7 @@ fn format_evidence(list: &[EvidenceRef]) -> String {
         .map(|e| match e {
             EvidenceRef::Feature(id) => format!("feature:{id}"),
             EvidenceRef::Signal(id) => format!("signal:{id}"),
+            EvidenceRef::Insight(id) => format!("insight:{id}"),
         })
         .collect::<Vec<_>>()
         .join(", ")

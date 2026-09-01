@@ -1,16 +1,17 @@
 # BioFocus — Sprint Roadmap & Kanban Matrix
 
-> **Phase 8: Pattern Discovery v1** (Sprint 15–16) — **Opened** 2026-08-06.  
-> Phase 0–7 Done. Goal: multi-day / baseline **Knowledge** (personal patterns) — ADR for recompute vs Feature history first; calm Insights with Evidence. No clinical claims. No new SQLite schema without ADR + approve.
+> **Phase 27: Pattern Discovery rule expansion** (Sprint 53–54) — **Active**.  
+> Phase 0–26 Done. Gate **PM-GATE-POST-P26** ✅ · **ADR-028** ✅ · E2 rules ✅ · Ready **P27-E3-T1**.  
+> **Public launch not Done** (OSS layers 2–3 after PR freeze). Deferred: park-until-freeze-lift as primary · IDE · weather · App Store · Companion polish-as-primary · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math expansion.
 
-**Phase 8 goal:** User-visible personal patterns over days (e.g. “Focus tends to be higher after recovery windows”) via Knowledge layer — not a new ML crate. Decide persistence/recompute in ADR-008 before shipping history tables or recompute jobs.
+**Phase 27 outcome (target):** **ADR-028** locks Insight/Recommendation rule slate on **shipped** Features → register rules in `knowledge-engine` → optional dogfood / Dashboard Insights·Suggestions. Extend ADR-008 / ADR-009. **No** new Observation / Feature math. **Not** App Store. **Not** public launch Done.
 
-**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · horizon P9–P12+ — `/docs/00-vision.md`. **Do not** pull P9+ into this Kanban until PM opens that phase.
+**Platform vision (accepted):** Personal Pattern Discovery · L1–L5 · `/docs/00-vision.md`.
 
 **Global DoD (каждая задача):**
-- [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight`)
+- [ ] Freeze `/docs/ARCHITECTURE_STATUS.md` + Ubiquitous Language (`Observation` / `Signal` / `Feature` / `Insight` / `Recommendation`)
 - [ ] Нет `unwrap()` / `expect()` в production
-- [ ] UI ↛ SQLite (только IPC); Features/Insights считаются в Core
+- [ ] UI ↛ SQLite (только IPC); Features/Insights/Recommendations считаются в Core
 - [ ] Тесты зелёные; `cargo check` / релевантный CI
 - [ ] **Idle footprint:** нет busy-loop; poll/refresh по событию или редкому таймеру
 - [ ] **Нет новой SQLite-схемы** без ADR + approve
@@ -18,197 +19,233 @@
 - [ ] **PR freeze до 2026-09-01** — не открывать PR / не мержить в `main` через PR (`06-git-agent-policy.mdc`)
 - [ ] Copy спокойный, неоценочный (не «ты выгорел» / clinical claims)
 - [ ] **LAN / companion:** Bearer обязателен; нет cloud telemetry; default = loopback
+- [ ] **LLM не считает** Recommendations / Features / Evidence (interpret-only stays L5)
+- [ ] **Plugins:** opt-in; no full URL / keystroke content / employee-surveillance framing; stop joins background work
+- [ ] **Coaching:** never auto-invoke LLM on app / Dashboard open; opt-in local provider; no cloud LLM by default
+- [ ] **Ambient / packaging:** opt-in ambient capture; no always-on mic/geo dumps; commercial packaging ≠ closed Feature math; optional sync off by default
+- [ ] **Git allowlist:** user-chosen roots only; never widen `git_activity` Observation payloads with paths/remotes/diffs
+- [ ] **Companion autonomy:** HealthKit event → local queue → flush; no busy-loop; no cloud relay; no clinical claims on HRV/SDNN
+- [ ] **Ambient light:** opt-in; coarse light labels/levels only — no camera frames / screen contents / precise geo
+- [ ] **Wearable depth:** HealthKit only (no Mi Cloud); soft-optional HRV; new types only per Phase 17 contract ADR
+- [ ] **Chart ranges:** recompute-on-read; UI ↛ SQLite; Snapshot = latest (series on chart)
+- [ ] **Notifications:** opt-in; coarse counts/cadence only — **no** notification body/title/content; personal self-tracking only
+- [ ] **Personal context:** Variant B framing; user-declared health only; no precise GPS desk-away; no diagnosis from biometrics
+- [ ] **Circadian:** schedule-alignment framing only — no chronotype / sleep-disorder diagnosis
+- [ ] **Sustained load:** prolonged-load framing only — no burnout / clinical diagnosis
+- [ ] **OSS launch:** AGPLv3 Core open; no App Store productization as Phase 26 primary; no cloud accounts / telemetry by default; packaging ≠ secret Feature math
+- [ ] **Pattern rules:** evaluate-on-read only; Evidence-backed; no LLM-authored Insights/Recommendations; no new Feature math this phase
 
 ---
 
-## Kanban Overview (Phase 8 active)
+## Kanban Overview (Phase 27)
 
 | Status | IDs |
 | :--- | :--- |
-| **Ready** | **P8-E1-T1** |
+| **Ready** | **P27-E3-T1** |
 | **In Progress** | — |
 | **Blocked** | — |
-| **Done** | Phase 0 · **Phase 1** · **Phase 2** ([PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2)) · **Phase 3** (E1–E3) · **Phase 4** (E1–E3) · **Phase 5** (E1–E3) · **Phase 6** (E1–E3) · **Phase 7** (E1–E3) |
+| **Done** | Phase 0–26 · **PM-GATE-POST-P14…P26** · **P26-E1–E3** · **P25-E1–E3** · **P27-E1–E2** (see archives) |
 
-**Epic status:** P8-E1 ⬜ (T1 Ready) · P8-E2 ⬜ · P8-E3 ⬜
+**Epic status:** Phase 27 Active (E1–E2 ✅ · E3 Ready) · Phase 26 ✅
 
-**Phase 8 on `/docs/14-roadmap.md`:** opened 2026-08-06
+**Phase 27 on `/docs/14-roadmap.md`:** opened 2026-08-12 · **ADR-028** ✅ · E2 rules shipped · Ready E3 dogfood
 
-**Рекомендуемый порядок:**  
-**P8-E1-T1** → P8-E2-T1 → P8-E3-T1
+**Live board (maintainers):** Cursor canvas `biofocus-execution-board.canvas.tsx` in the local Cursor projects `canvases/` directory (not required for external contributors).
 
-**Live board:** [`biofocus-execution-board.canvas.tsx`](/Users/maksimpoltavcev/.cursor/projects/Users-maksimpoltavcev-Developer-AI-Project-BioFocus/canvases/biofocus-execution-board.canvas.tsx)
-
-**Agent pipeline:** Dev|UX → QA → PM. См. `/docs/17-agent-workflow.md`. Git: **PR freeze до 2026-09-01** — commits OK, no PRs (`docs/12-development.md`).  
-**Suggested branch:** `phase/8-pattern-discovery` (or continue `phase/7-trust-layer` tip until freeze ends / user asks for branch cut).
+**Agent pipeline:** Dev|UX → QA → PM. Git: **PR freeze до 2026-09-01**.
 
 ### Active assignment
 
-**Ready now:** **P8-E1-T1** — ADR-008 Pattern Discovery history / recompute (Dev).  
-Brief: `docs/handoffs/P8-E1-T1-pm-brief.md`.
+**Ready now:** **P27-E3-T1** — Dogfood notes + optional calm Insights/Suggestions surface for ADR-028 rules. Brief: `docs/handoffs/P27-E3-T1-pm-brief.md`. Role: **Dev|UX** (docs + optional Dashboard).
 
-**Closed (Phase 7):** P7-E3-T1 (QA Pass, 2026-08-06) — `RecoveryScore` + confidence + factors; Epic **P7-E3** ✅ · Phase 7 Kanban complete. Evidence: `docs/handoffs/P7-E3-T1-qa-to-pm.md`. Branch: `phase/7-trust-layer`.
+**Just closed:** **P27-E2-T1** (2026-08-12) — shipped `cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1` in `knowledge-engine` (QA Pass · 46/46).
 
-**Ops note:** **PR freeze until 2026-09-01** — Phase 7 Trust cluster stays on `phase/7-trust-layer` (local commits OK). Open Phase 8 work on disk; one cluster PR **after** freeze (or when user lifts it).
+**Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 27 on `phase/27-pattern-rules`. Phase 26 cluster stays on `phase/26-oss-public-launch`. **Public launch not Done** (OSS layers 2–3 parked after freeze).
 
 ---
 
-## Epic P8-E1 — Pattern Discovery ADR & storage contract
+## Phase 27 — Pattern Discovery rule expansion (Active)
 
-**Цель:** Decide how multi-day baselines / Feature history work — ADR before schema or background recompute.
+### Epic P27-E1 — Contracts ADR (**ADR-028**) ✅
 
-### P8-E1-T1 — ADR-008: recompute vs Feature history ✅ Ready
-| Field | Value |
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P27-E1-T1** ✅ | Lock Pattern Discovery / Recommendations expansion (**ADR-028**) | Dev | docs + decision-log (+ knowledge-engine contracts) |
+
+### Epic P27-E2 — Rules ship ✅
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P27-E2-T1** ✅ | Ship locked Insight/Recommendation rules | Dev | knowledge-engine (+ tests) |
+
+### Epic P27-E3 — Dogfood / surface
+
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P27-E3-T1** ← Ready | Dogfood notes + optional calm Insights/Suggestions surface | Dev\|UX | docs (+ optional Dashboard) |
+
+---
+
+## Phase 26 archive (Done)
+
+<details>
+<summary>Phase 26 Kanban & epics (closed 2026-08-12 — OSS Public Launch Hygiene)</summary>
+
+**Done:** P26-E1 (T1) · P26-E2 (T1) · P26-E3 (T1).  
+**ADR-027** · SoT `docs/19-oss-public-launch.md` · dry-run checklist vs `docs/18-packaging-runbook.md`.  
+**Public launch not Done** — layers (2)–(3) after freeze.  
+Branch: `phase/26-oss-public-launch` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P26-*-qa-to-pm.md`.
+
+</details>
+
+## Phase 25 archive (Done)
+
+<details>
+<summary>Phase 25 Kanban & epics (closed 2026-08-12 — SustainedLoadIndicator)</summary>
+
+**Done:** P25-E1 (T1) · P25-E2 (T1) · P25-E3 (T1).  
+**ADR-026** · `SustainedLoadIndicator` Feature · dogfood + calm Dashboard **Prolonged load**.  
+Branch: `phase/25-sustained-load` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P25-*-qa-to-pm.md`.
+
+</details>
+
+## Phase 24 archive (Done)
+
+<details>
+<summary>Phase 24 Kanban & epics (closed 2026-08-12 — CircadianOffset)</summary>
+
+**Done:** P24-E1 (T1) · P24-E2 (T1) · P24-E3 (T1).  
+**ADR-025** · `CircadianOffset` Feature · dogfood + calm Dashboard **Schedule alignment**.  
+Branch: `phase/24-circadian-offset` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P24-*-qa-to-pm.md`.
+
+</details>
+
+## Phase 23 archive (Done)
+
+<details>
+<summary>Phase 23 Kanban & epics (closed 2026-08-11 — Personal Context Layer)</summary>
+
+**Done:** P23-E1 (T1) · P23-E2 (T1) · P23-E3 (T1).  
+**ADR-024** · `DeskAwayPresence` Feature · health→prompt · dogfood + calm Dashboard **Away from desk**.  
+Branch: `phase/23-personal-context` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P23-*-qa-to-pm.md`.
+
+</details>
+
+## Phase 22 archive (Done)
+
+<details>
+<summary>Phase 22 Kanban & epics (closed 2026-08-11 — AttentionStability)</summary>
+
+**Done:** P22-E1 (T1) · P22-E2 (T1) · P22-E3 (T1).  
+**ADR-023** · `AttentionStability` Feature · dogfood + calm Dashboard Focus stability.  
+Branch: `phase/22-attention-stability` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P22-*-qa-to-pm.md`.
+
+</details>
+
+## Phase 21 archive (Done)
+
+<details>
+<summary>Phase 21 Kanban & epics (closed 2026-08-11 — DeepWorkScore)</summary>
+
+**Done:** P21-E1 (T1) · P21-E2 (T1) · P21-E3 (T1).  
+**ADR-022** · `DeepWorkScore` Feature · dogfood + calm Dashboard Sustained focus.  
+Branch: `phase/21-deep-work-score` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P21-*-qa-to-pm.md`.
+
+</details>
+
+## Phase 20 archive (Done)
+
+<details>
+<summary>Phase 20 Kanban & epics (closed 2026-08-11 — CognitiveLoad)</summary>
+
+**Done:** P20-E1 (T1) · P20-E2 (T1) · P20-E3 (T1).  
+**ADR-021** · `CognitiveLoad` Feature · dogfood + calm Dashboard Combined demand.  
+Branch: `phase/20-cognitive-load` (cluster PR after freeze).
+
+Evidence: `docs/handoffs/P20-*-qa-to-pm.md`.
+
+</details>
+
+---
+
+## Queue (Phase 27)
+
+1. **P27-E1-T1** — ADR-028 Pattern Discovery / Recommendations expansion ← **Done** (2026-08-12)  
+2. **P27-E2-T1** — Ship locked Insight/Recommendation rules ← **Done** (2026-08-12)  
+3. **P27-E3-T1** — Dogfood + optional Insights/Suggestions surface ← **Ready**  
+
+**Deferred / parked:** OSS layers 2–3 (after freeze) · IDE · weather · App Store · TypingRhythm · DeepFocusLikelihood · precise GPS · Feature-math.
+
+**Git:** Phase 27 on `phase/27-pattern-rules` → **PR after 2026-09-01**. Phase 28 on `phase/28-local-reliability` (may start parallel after P27-E3 or interrupt for user blocker).  
+**Brief:** `docs/handoffs/P27-E3-T1-pm-brief.md`.  
+**Evidence E1–E2:** `docs/handoffs/P27-E1-T1-qa-to-pm.md` · `docs/handoffs/P27-E2-T1-qa-to-pm.md`.  
+**Note:** **Public launch not Done**.
+
+---
+
+## Phase 28 — Local device reliability (A+B) — **Queued** (user blocker)
+
+> **ADR-029** ✅ (2026-08-31) — Mac always-on **(A)** + iPhone buffer **(B)**; no BioFocus cloud.  
+> **Outcome:** данные только у юзера; companion не отваливается; Mac догоняет после offline; Insights/графики начинают приносить пользу на 1–2-й неделе.
+
+**Branch:** `phase/28-local-reliability` (or ride `phase/28-companion-connectivity` for E1 only).
+
+| Status | IDs |
 | :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `docs/decision-log.md`, `docs/04-storage.md` / `02-domain-model` / `05-pipeline` notes as needed; **no** schema migration without user approve after ADR |
-| **Depends on** | Phase 7 Done (trusted Features + confidence) |
-| **AC** | (1) Record **ADR-008**: Pattern Discovery v1 approach — evaluate-on-read recompute over Observations/Features **vs** persisted Feature/baseline history (or hybrid); rejected alternatives; idle/privacy constraints. (2) If schema needed: propose tables/columns in ADR + docs — **do not apply migration** until user approve. (3) Document how Knowledge Insights would consume the chosen approach (contracts sketch OK). (4) Calm non-clinical framing. (5) Handoff: `docs/handoffs/P8-E1-T1-dev-to-qa.md`. |
-| **Out of scope** | Implementing history tables / recompute worker (→ **E2** after approve); Recommendations engine (P9); ML training |
+| **Ready** | **P28-E1-T1** (after PM gate or parallel to P27-E3) |
+| **Queued** | P28-E2-T1 · P28-E3-T1 · P28-E4-T1 · P28-E5-T1 (optional) |
+| **Done** | — |
 
----
+### Epic P28-E1 — Companion connectivity (ADR-029 / ADR-005)
 
-## Epic P8-E2 — Baseline / multi-day Knowledge path
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E1-T1** ← Ready | LAN preflight, timeouts, calm errors, Desktop Companion UX | Dev\|UX | `apps/companion/ios`, `apps/desktop`, docs |
 
-**Цель:** First evaluate-on-read or history-backed baseline Insights using ADR-008 decision.
+Brief: `docs/handoffs/P28-E1-T1-pm-brief.md`.
 
-### P8-E2-T1 — Pattern Discovery v1 Insight path
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev |
-| **Modules** | `crates/knowledge-engine`, contracts / API as needed |
-| **Depends on** | P8-E1-T1 (+ user approve if schema) |
-| **AC** | ≥1 Insight rule or evaluator that uses multi-window / baseline comparison with Evidence; tests; idle-safe; calm copy. Handoff required. |
-| **Out of scope** | LLM pattern generation; CircadianOffset Feature; Recommendations |
+### Epic P28-E2 — iPhone buffer (B)
 
----
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E2-T1** | Retry/backoff flush, reachability + foreground triggers, queue durability | Dev | `apps/companion/ios`, tests |
 
-## Epic P8-E3 — Surface patterns (IPC / Dashboard read)
+Brief: `docs/handoffs/P28-E2-T1-pm-brief.md`.
 
-**Цель:** Expose Pattern Discovery Insights via existing Insights IPC (and optional calm Dashboard copy) without UI→DB.
+### Epic P28-E3 — Mac always-on (A)
 
-### P8-E3-T1 — Insights IPC / UX for patterns
-| Field | Value |
-| :--- | :--- |
-| **Role** | Dev (+ UX if UI copy) |
-| **Modules** | desktop Insights path / `09-api` |
-| **Depends on** | P8-E2-T1 |
-| **AC** | Patterns visible via existing Insights IPC path; calm copy; smoke notes in handoff. |
-| **Out of scope** | New “Pattern Discovery” product window redesign; cloud sync |
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E3-T1** | Login Item opt-in, hide≠quit, lifecycle on login start | Dev\|UX | `apps/desktop`, docs |
 
----
+Brief: `docs/handoffs/P28-E3-T1-pm-brief.md`.
 
-## Phase 7 archive (Done)
+### Epic P28-E4 — Catch-up replay
 
-<details>
-<summary>Phase 7 Kanban & epics (closed 2026-08-06 — E1–E3)</summary>
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E4-T1** | Feature Worker drains cursor after offline; snapshot refresh | Dev | `apps/desktop`, `runtime`, `feature_host` |
 
-**Done:** P7-E1 (T1) · P7-E2 (T1) · P7-E3 (T1).  
-Feature confidence ADR-007 → Explanation factors (`FocusScore`) → `RecoveryScore` bio-backed Feature.
+Brief: `docs/handoffs/P28-E4-T1-pm-brief.md`.
 
-Evidence: `docs/handoffs/P7-*-qa-to-pm.md` · branch `phase/7-trust-layer` (cluster PR after freeze).
+### Epic P28-E5 — Sync health (optional)
 
-**P7-E3-T1 shipped:** `RecoveryScore` §1.7; `register_recovery_v1` in `register_catalog_v1`; confidence + optional factors; QA Pass 2026-08-06.
+| ID | Task | Role | Modules |
+| :--- | :--- | :--- | :--- |
+| **P28-E5-T1** | Calm sync status (last flush, pending, Mac reachable) | Dev\|UX | Desktop Companion UI + iOS status |
 
-</details>
+Brief: `docs/handoffs/P28-E5-T1-pm-brief.md`.
 
----
-
-## Phase 6 archive (Done)
-
-<details>
-<summary>Phase 6 Kanban & epics (closed 2026-08-06 — E1–E3)</summary>
-
-**Done:** P6-E1 (T1) · P6-E2 (T1) · P6-E3 (T1–T2).  
-Life Events ADR-006 + quick-log → Calendar ICS Observations → `MeetingDensity` / `RecoveryBetweenMeetings`.
-
-Evidence: `docs/handoffs/P6-*-qa-to-pm.md` · branch tip `phase/6-dogfood-fixes` (cluster PR after freeze).
-
-</details>
-
----
-
-## Phase 5 archive (Done)
-
-<details>
-<summary>Phase 5 Kanban & epics (closed 2026-08-05 — E1–E3)</summary>
-
-**Done:** P5-E1 (T1–T2) · P5-E2 (T1) · P5-E3 (T1–T2).  
-Opt-in LAN ingest (ADR-005) → Companion LAN UI → iOS HealthKit companion → dogfood runbook.
-
-Evidence: `docs/handoffs/P5-*-qa-to-pm.md` · branch `phase/5-wearable-dogfood` (cluster PR after freeze).
-
-</details>
-
----
-
-## Phase 4 archive (Done)
-
-<details>
-<summary>Phase 4 Kanban & epics (closed 2026-08-05 — E1–E3)</summary>
-
-**Done:** P4-E1 (T1–T3) · P4-E2 (T1–T3) · P4-E3 (T1–T3).  
-Feature snapshot IPC → Dashboard + Recharts → Knowledge Insights → report-engine + optional local LLM + Report UX.
-
-Evidence: `docs/handoffs/P4-*-qa-to-pm.md` · branch `phase/4-dashboard-ai` (cluster PR after freeze).
-
-</details>
-
----
-
-## Phase 3 archive (Done)
-
-<details>
-<summary>Phase 3 Kanban & epics (closed 2026-08-05 — E1–E3)</summary>
-
-**Done:** P3-E1 (T1–T4) · P3-E2 (T1–T4) · P3-E3 (T1–T3).  
-Pipeline quality → Feature DAG → Menubar AlertLevel IPC + UX.
-
-Evidence: `docs/handoffs/P3-*-qa-to-pm.md` · PRs #5–#23 (cluster) · Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24).
-
-</details>
-
----
-
-## Phase 2 archive (Done)
-
-<details>
-<summary>Phase 2 Kanban & epics (closed 2026-08-04, PR #2)</summary>
-
-**Done:** P2-E0 · P2-E1 (T1–T4) · P2-E2 (T1–T3) · P2-E3 (T1–T2).  
-Evidence: `docs/handoffs/P2-*-qa-to-pm.md` · [PR #2](https://github.com/poltavtcev-dev/biofocus-platform/pull/2).
-
-</details>
-
----
-
-## Phase 1 archive (Done)
-
-<details>
-<summary>Phase 1 Kanban & epics (closed 2026-08-04)</summary>
-
-**Done:** Epic E1–E4. Evidence: `docs/handoffs/P1-E4-T1-acceptance.md`, `P1-E4-T2-qa-to-pm.md`.
-
-</details>
-
----
-
-## Role × Module Matrix (Phase 8)
-
-| Task | PM | Dev | QA | UX | Primary modules |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| P8-E1-T1 ADR-008 history/recompute | | ● | ○ | | docs + decision-log |
-| P8-E2-T1 Pattern Insight path | | ● | ○ | | knowledge-engine |
-| P8-E3-T1 Insights IPC / UX | | ● | ○ | ○ | desktop + API |
-
-● = owner · ○ = collaborator
-
----
-
-## Sprint 15–16 — Queue
-
-1. **P8-E1-T1 — ADR-008 Pattern Discovery history / recompute** ← **Ready**  
-2. P8-E2-T1 — Pattern Discovery v1 Insight path  
-3. P8-E3-T1 — Insights IPC / UX for patterns  
-
-**Git:** `phase/8-pattern-discovery` (or `phase/7-trust-layer` tip) → local commits → **one cluster PR after 2026-09-01**.
+**Sequencing:** E1 → E2 → E3 → E4 (E5 anytime after E1). **PM-GATE-POST-P27** may promote P28-E1 ahead of P27-E3 (user blocker).

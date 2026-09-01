@@ -8,12 +8,14 @@ use crate::{FeatureId, SignalId};
 /// Insight primary key.
 pub type InsightId = Uuid;
 
-/// Reference to supporting Feature or Signal evidence.
+/// Reference to supporting Feature, Signal, or Insight evidence (ADR-009).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "id", rename_all = "snake_case")]
 pub enum EvidenceRef {
     Feature(FeatureId),
     Signal(SignalId),
+    /// Cite a Knowledge Insight as Evidence (Recommendations / L4).
+    Insight(InsightId),
 }
 
 /// Analytical conclusion with provenance evidence and optional action.

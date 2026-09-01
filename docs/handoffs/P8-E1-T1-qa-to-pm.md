@@ -25,9 +25,9 @@
 - None blocking. Note (pre-existing): `docs/04-storage.md` / `docs/05-pipeline.md` remain partially stub-wrapped; ADR notes are readable after existing content.
 
 ## What PM must update
-- [ ] `/docs/SPRINT_ROADMAP.md` — move **P8-E1-T1** to Done; Ready **P8-E2-T1** (no schema approve wait — ADR chose recompute-on-read with no migration)
-- [ ] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
-- [ ] Other docs if needed: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` Phase 8 line (ADR-008 decided)
+- [x] `/docs/SPRINT_ROADMAP.md` — move **P8-E1-T1** to Done; Ready **P8-E2-T1** (no schema approve wait — ADR chose recompute-on-read with no migration)
+- [x] Execution canvas `biofocus-execution-board.canvas.tsx` — QUEUE, todos, stats, callout, DAG
+- [x] Other docs if needed: `ARCHITECTURE_STATUS` / `PROJECT_CANVAS` / `14-roadmap` Phase 8 line (ADR-008 decided)
 
 ## Suggested next Ready task
 - **P8-E2-T1** — Pattern Discovery v1 Insight path (`knowledge-engine` baseline rule per ADR-008)

@@ -100,6 +100,12 @@ export function mockSnapshotFromLocation(
     const stress = [38, 41, 44, 42, 40];
     const fatigue = [28, 30, 33, 35, 36];
     const csr = [0.8, 1.1, 0.9, 1.2, 1.0];
+    const cognitive = [42, 45, 48, 46, 44];
+    const deepWork = [70, 72, 75, 73, 74];
+    const attentionStability = [88, 90, 86, 92, 91];
+    const deskAway = [0, 55, 72, 40, 65];
+    const circadian = [82, 80, 78, 85, 84];
+    const sustainedLoad = [48, 51, 54, 52, 55];
     const features: FeatureDto[] = [];
     for (let i = 0; i < windows.length; i += 1) {
       const tw = windows[i];
@@ -127,6 +133,42 @@ export function mockSnapshotFromLocation(
           timeWindow: tw,
           value: csr[i],
           provenance: ["00000000-0000-0000-0000-000000000004"],
+        },
+        {
+          featureId: "CognitiveLoad",
+          timeWindow: tw,
+          value: cognitive[i],
+          provenance: ["00000000-0000-0000-0000-00000000000a"],
+        },
+        {
+          featureId: "DeepWorkScore",
+          timeWindow: tw,
+          value: deepWork[i],
+          provenance: ["00000000-0000-0000-0000-00000000000b"],
+        },
+        {
+          featureId: "AttentionStability",
+          timeWindow: tw,
+          value: attentionStability[i],
+          provenance: ["00000000-0000-0000-0000-00000000000c"],
+        },
+        {
+          featureId: "DeskAwayPresence",
+          timeWindow: tw,
+          value: deskAway[i],
+          provenance: ["00000000-0000-0000-0000-00000000000d"],
+        },
+        {
+          featureId: "CircadianOffset",
+          timeWindow: tw,
+          value: circadian[i],
+          provenance: ["00000000-0000-0000-0000-00000000000e"],
+        },
+        {
+          featureId: "SustainedLoadIndicator",
+          timeWindow: tw,
+          value: sustainedLoad[i],
+          provenance: ["00000000-0000-0000-0000-00000000000f"],
         },
       );
     }

@@ -22,18 +22,18 @@ Zero telemetry by default · AI only on explicit user action · separate permiss
 
 ## 3. Analysis stack (5 levels)
 
-Сохраняем Ubiquitous Language: `Observation` → `Signal` → `Feature` → `Insight` (+ future Recommendation). UI (в т.ч. Dashboard window) — presentation; Core не называется «Dashboard».
+Сохраняем Ubiquitous Language: `Observation` → `Signal` → `Feature` → `Insight` → `Recommendation`. UI (в т.ч. Dashboard window) — presentation; Core не называется «Dashboard».
 
 | Level | Name | Role | Implementation today |
 | :--- | :--- | :--- | :--- |
 | **L1** | Observations | Immutable raw facts (user rarely inspects) | SQLite + ingest + macOS collectors + sample HR |
 | **L2** | Features | Deterministic metrics + provenance + confidence (ADR-007) + optional explanation factors (P7-E2) | `feature-engine` DAG (`FeatureNode`) |
 | **L3** | Knowledge | Patterns / Insights from Features (+ Evidence) | `knowledge-engine` `InsightRule` (evaluate-on-read) |
-| **L4** | Recommendations | Deterministic suggested actions with Evidence | Thin optional text on Insight; engine later (Phase 9) |
-| **L5** | Coaching (AI) | NL explanation only — never computes Features | `report-engine` + opt-in local LLM |
+| **L4** | Recommendations | Deterministic suggested actions with Evidence | ADR-009 + `focus_dip_pace_hint_v1` + IPC `get_recommendations` / Dashboard Suggestions (Phase 9 Done); thin `Insight.actionRecommendation` remains optional hint only |
+| **L5** | Coaching (AI) | NL explanation only — never computes Features / Recommendations | `report-engine` + opt-in local LLM |
 
 ```text
-Observation → Pipeline → Signal / Feature → Knowledge (Insight)
+Observation → Pipeline → Signal / Feature → Knowledge (Insight) → Recommendation
                                               ↓
                                     Report / Prompt → optional LLM
 ```
@@ -56,6 +56,8 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight)
 | **Power users (OSS)** | Build from source, plugins, custom Features/rules, local LLM, editable prompts (later), full data control |
 | **Everyday users (commercial apps, later)** | Packaged installers, guided device setup, calm UI/reports — same open Core, no secret metric math |
 
+**OSS public launch (maintainers):** polished public beta gates — hygiene now, `main` catch-up after PR freeze, then notarized GitHub Release before flipping visibility — [`docs/19-oss-public-launch.md`](19-oss-public-launch.md) (**ADR-027**; SoT + **§ Dry-run release checklist** — **public launch not Done** until layers 2–3 after freeze; packaging ops stay in [`docs/18-packaging-runbook.md`](18-packaging-runbook.md)). App Store listing stays deferred.
+
 ## 6. Non-Goals (Scope Limits)
 - Платформа **не является** медицинским диагностическим средством / clinical diagnosis.
 - Платформа **не предоставляет** централизованное облачное хранилище по умолчанию.
@@ -64,15 +66,32 @@ Observation → Pipeline → Signal / Feature → Knowledge (Insight)
 
 ## 7. Horizon phases (product ladder)
 
-Immediate Kanban = **Phase 8** only (`/docs/SPRINT_ROADMAP.md`). Below is the accepted ladder — open later phases via PM gate, not all at once.
+Immediate Kanban = **P27-E3-T1** (ADR-028 dogfood / optional Insights·Suggestions). Phase 26 hygiene Done — **public launch not Done** until layers 2–3 after freeze. Below is the accepted ladder — open later slices via PM gate, not all at once.
 
 | Phase | Focus |
 | :--- | :--- |
 | **0–7** | Done — foundation → ingest → pipeline → Dashboard/Insights → wearable dogfood → Life Events + Calendar → Trust layer (confidence / factors / RecoveryScore) |
-| **8** | Pattern Discovery v1 — multi-day / baseline Knowledge (ADR) |
-| **9** | Deterministic Recommendations engine |
-| **10** | Plugin wave-1 (IDE/Git or Browser categories — dogfood-driven) |
-| **11** | AI coaching polish — prompt packs / provider UX (still interpret-only) |
-| **12+** | Ambient sources + commercial packaging |
+| **8** | Done — Pattern Discovery v1 (ADR-008 recompute-on-read → baseline Insight → Dashboard surface) |
+| **9** | Done — Deterministic Recommendations (ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Suggestions) |
+| **10** | Done — Plugin wave-1 (ADR-010 Browser categories → collector → `DistractionScore`) |
+| **11** | Done — AI coaching polish (ADR-011 → packs → provider UX; interpret-only) |
+| **12** | Done — Ambient + commercial packaging (ADR-012 → Now Playing → `AmbientMediaShare` + packaging runbook) |
+| **13** | Done — Plugin wave-2 (ADR-013 → Git plugin → `GitActivityRate`) |
+| **14** | Done — Git path-allowlist (ADR-014 → live probe → dogfood / Menubar Git folders) |
+| **15** | Done — Companion HRV + autonomy (ADR-016) |
+| **16** | Done — Ambient light resume (ADR-015 → collector → `AmbientLightShare`); weather deferred |
+| **17** | Done — Wearable depth + chart ranges (ADR-017 · ADR-018 → Companion emit → `get_feature_series` + wearable Features) |
+| **18** | Done — Notification pressure (ADR-019 → collector → `NotificationPressure`) |
+| **19** | Done — Live NC OS mapping (ADR-020 → usernoted probe → dogfood for `NotificationPressure`) |
+| **20** | Done — CognitiveLoad (**ADR-021** → Feature + dogfood + Combined demand) |
+| **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
+| **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
+| **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
+| **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
+| **25** | Done — SustainedLoadIndicator (**ADR-026** → Feature + dogfood + Prolonged load) |
+| **26** | Done — OSS Public Launch Hygiene (**ADR-027** · SoT · dry-run); **public launch not Done** |
+| **27** | Active — Pattern Discovery rule expansion (**ADR-028** ✅ · E2 ✅ · Ready P27-E3); deferred IDE · weather · App Store · TypingRhythm |
+| **28** | Queued — **Local device reliability (A+B)** (**ADR-029** ✅): Mac always-on + iPhone buffer + catch-up replay; **no BioFocus cloud**; Ready P28-E1 |
+| **29+** | Open via later PM gate — IDE · weather · App Store · TypingRhythm · Feature math · OSS layers 2–3 ops · optional user-owned E2E sync (separate ADR) |
 
 Sources: PM triage 2026-08-05 · canvases `platform-vision-triage` · `phase5-architecture-triage`.

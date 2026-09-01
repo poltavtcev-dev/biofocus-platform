@@ -16,6 +16,20 @@ pub const MACOS_INPUT_PROVIDER_ID: &str = "com.biofocus.macos.input";
 /// Provider id for the local Calendar (ICS) collector.
 pub const MACOS_CALENDAR_PROVIDER_ID: &str = "com.biofocus.macos.calendar";
 
+/// Provider id for the Browser categories collector (ADR-010).
+pub const MACOS_BROWSER_PROVIDER_ID: &str = "com.biofocus.macos.browser";
+
+/// Provider id for the Now Playing ambient collector (ADR-012).
+pub const MACOS_NOW_PLAYING_PROVIDER_ID: &str = "com.biofocus.macos.now_playing";
+
+/// Provider id for the Git activity collector (ADR-013).
+pub const MACOS_GIT_PROVIDER_ID: &str = "com.biofocus.macos.git";
+
+/// Provider id for the ambient light collector (ADR-015).
+pub const MACOS_AMBIENT_LIGHT_PROVIDER_ID: &str = "com.biofocus.macos.ambient_light";
+/// Notification events collector (ADR-019 / P18-E2).
+pub const MACOS_NOTIFICATIONS_PROVIDER_ID: &str = "com.biofocus.macos.notifications";
+
 /// Storage / schema `data_type` for active window context.
 pub const CONTEXT_WINDOW_DATA_TYPE: &str = "context_window";
 
@@ -24,6 +38,20 @@ pub const KEYSTROKES_DATA_TYPE: &str = "keystrokes";
 
 /// Storage / schema `data_type` for Calendar / meeting events.
 pub const CALENDAR_EVENT_DATA_TYPE: &str = "calendar_event";
+
+/// Storage / schema `data_type` for Browser category context.
+pub const BROWSER_CATEGORY_DATA_TYPE: &str = "browser_category";
+
+/// Storage / schema `data_type` for Now Playing ambient context.
+pub const NOW_PLAYING_DATA_TYPE: &str = "now_playing";
+
+/// Storage / schema `data_type` for Git activity context.
+pub const GIT_ACTIVITY_DATA_TYPE: &str = "git_activity";
+
+/// Storage / schema `data_type` for ambient light context.
+pub const AMBIENT_LIGHT_DATA_TYPE: &str = "ambient_light";
+/// Observation `data_type` for notification events (ADR-019).
+pub const NOTIFICATION_EVENT_DATA_TYPE: &str = "notification_event";
 
 /// Builds privacy-safe payload: app identity only (no window title / content).
 #[must_use]
@@ -56,4 +84,74 @@ pub fn calendar_event_payload(event: &CalendarEvent) -> JsonValue {
         "all_day": event.all_day,
         "busy": event.busy,
     })
+}
+
+/// Builds privacy-safe browser category payload (coarse labels only — no URL/title).
+#[must_use]
+pub fn browser_category_payload(sample: &crate::browser_probe::BrowserCategorySample) -> JsonValue {
+    match &sample.browser_bundle_id {
+        Some(bundle) if !bundle.is_empty() => json!({
+            "category": sample.category,
+            "browser_bundle_id": bundle,
+        }),
+        _ => json!({
+            "category": sample.category,
+        }),
+    }
+}
+
+/// Builds privacy-safe Now Playing payload (coarse kind + playing — no titles).
+#[must_use]
+pub fn now_playing_payload(sample: &crate::now_playing_probe::NowPlayingSample) -> JsonValue {
+    json!({
+        "media_kind": sample.media_kind,
+        "is_playing": sample.is_playing,
+    })
+}
+
+/// Builds privacy-safe Git activity payload (coarse kind + optional count — no paths).
+#[must_use]
+pub fn git_activity_payload(sample: &crate::git_activity_probe::GitActivitySample) -> JsonValue {
+    match sample.event_count {
+        Some(n) if n >= 1 => json!({
+            "activity_kind": sample.activity_kind,
+            "event_count": n,
+        }),
+        _ => json!({
+            "activity_kind": sample.activity_kind,
+        }),
+    }
+}
+
+/// Builds privacy-safe ambient light payload (coarse kind + optional level — no frames).
+#[must_use]
+pub fn ambient_light_payload(sample: &crate::ambient_light_probe::AmbientLightSample) -> JsonValue {
+    match sample.level {
+        Some(n) if n <= 100 => json!({
+            "light_kind": sample.light_kind,
+            "level": n,
+        }),
+        _ => json!({
+            "light_kind": sample.light_kind,
+        }),
+    }
+}
+
+/// Builds privacy-safe notification event payload (count + optional closed-set labels).
+#[must_use]
+pub fn notification_event_payload(
+    sample: &crate::notification_probe::NotificationEventSample,
+) -> JsonValue {
+    let mut map = serde_json::Map::new();
+    map.insert("count".to_string(), json!(sample.count.max(1)));
+    if let Some(ref category) = sample.category {
+        map.insert("category".to_string(), json!(category));
+    }
+    if let Some(ref level) = sample.interruption_level {
+        map.insert("interruption_level".to_string(), json!(level));
+    }
+    if let Some(ref app_kind) = sample.app_kind {
+        map.insert("app_kind".to_string(), json!(app_kind));
+    }
+    JsonValue::Object(map)
 }

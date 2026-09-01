@@ -1,8 +1,11 @@
 //! Integration: mock collectors → bounded channel → persist worker → SQLite.
 //!
-//! Covers emit Observation for `context_window`, opt-in `keystrokes`, and
-//! synthetic Calendar → `calendar_event`, plus stop/idle: after `stop_stream`
-//! probe work must not keep ticking.
+//! Covers emit Observation for `context_window`, opt-in `keystrokes`,
+//! synthetic Calendar → `calendar_event`, opt-in Browser → `browser_category`,
+//! opt-in Now Playing → `now_playing`, opt-in Git activity → `git_activity`,
+//! and opt-in ambient light → `ambient_light`,
+//! and opt-in notification events → `notification_event`,
+//! plus stop/idle: after `stop_stream` probe work must not keep ticking.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -11,10 +14,18 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use bio_spec::Observation;
 use ingest::spawn_persist_worker;
 use macos_collector::{
-    spawn_calendar_loop, ActiveWindowPlugin, CalendarEvent, CalendarPlugin, CalendarProbe,
-    FrontmostApp, FrontmostProbe, IcsFileCalendarProbe, InputCountProbe, KeystrokeAggregatePlugin,
-    ScriptedCalendarProbe, ScriptedInputProbe, CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE,
-    KEYSTROKES_DATA_TYPE,
+    spawn_calendar_loop, ActiveWindowPlugin, AmbientLightPlugin, AmbientLightProbe,
+    AmbientLightSample, BrowserCategoryPlugin, BrowserCategoryProbe, BrowserCategorySample,
+    CalendarEvent, CalendarPlugin, CalendarProbe, FrontmostApp, FrontmostProbe, GitActivityPlugin,
+    GitActivityProbe, GitActivitySample, IcsFileCalendarProbe, InputCountProbe,
+    KeystrokeAggregatePlugin, NotificationEventProbe, NotificationEventSample, NotificationPlugin,
+    NowPlayingPlugin, NowPlayingProbe, NowPlayingSample, ScriptedAmbientLightProbe,
+    ScriptedBrowserProbe, ScriptedCalendarProbe, ScriptedGitActivityProbe, ScriptedInputProbe,
+    ScriptedNotificationEventProbe, ScriptedNowPlayingProbe, SystemAmbientLightProbe,
+    SystemGitActivityProbe, SystemNotificationEventProbe, AMBIENT_LIGHT_DATA_TYPE,
+    BROWSER_CATEGORY_DATA_TYPE, CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE,
+    GIT_ACTIVITY_DATA_TYPE, KEYSTROKES_DATA_TYPE, NOTIFICATION_EVENT_DATA_TYPE,
+    NOW_PLAYING_DATA_TYPE, write_fixture_nc_db,
 };
 use plugin_sdk::BioFocusPlugin;
 use runtime::observation_channel;
@@ -85,6 +96,111 @@ impl CalendarProbe for CountingCalendarProbe {
     ) -> macos_collector::CollectorResult<Vec<CalendarEvent>> {
         self.polls.fetch_add(1, Ordering::SeqCst);
         self.inner.events_in_range(horizon_start, horizon_end)
+    }
+}
+
+struct CountingBrowserProbe {
+    sample: BrowserCategorySample,
+    polls: AtomicUsize,
+}
+
+impl CountingBrowserProbe {
+    fn new(sample: BrowserCategorySample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl BrowserCategoryProbe for CountingBrowserProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<BrowserCategorySample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
+    }
+}
+
+struct CountingNowPlayingProbe {
+    sample: NowPlayingSample,
+    polls: AtomicUsize,
+}
+
+impl CountingNowPlayingProbe {
+    fn new(sample: NowPlayingSample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl NowPlayingProbe for CountingNowPlayingProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<NowPlayingSample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
+    }
+}
+
+struct CountingAmbientLightProbe {
+    sample: AmbientLightSample,
+    polls: AtomicUsize,
+}
+
+impl CountingAmbientLightProbe {
+    fn new(sample: AmbientLightSample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl AmbientLightProbe for CountingAmbientLightProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<AmbientLightSample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
+    }
+}
+
+struct CountingNotificationEventProbe {
+    sample: NotificationEventSample,
+    polls: AtomicUsize,
+}
+
+impl CountingNotificationEventProbe {
+    fn new(sample: NotificationEventSample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl NotificationEventProbe for CountingNotificationEventProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<NotificationEventSample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
+    }
+}
+
+struct CountingGitActivityProbe {
+    sample: GitActivitySample,
+    polls: AtomicUsize,
+}
+
+impl CountingGitActivityProbe {
+    fn new(sample: GitActivitySample) -> Self {
+        Self {
+            sample,
+            polls: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl GitActivityProbe for CountingGitActivityProbe {
+    fn current(&self) -> macos_collector::CollectorResult<Option<GitActivitySample>> {
+        self.polls.fetch_add(1, Ordering::SeqCst);
+        Ok(Some(self.sample.clone()))
     }
 }
 
@@ -257,6 +373,40 @@ async fn calendar_ics_fixture_round_trip_to_storage() {
     worker.join().expect("persist worker");
 }
 
+#[tokio::test]
+async fn browser_category_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedBrowserProbe::new());
+    probe.push(Some(BrowserCategorySample {
+        category: "entertainment".into(),
+        browser_bundle_id: Some("com.apple.Safari".into()),
+    }));
+
+    let plugin = BrowserCategoryPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn BrowserCategoryProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, BROWSER_CATEGORY_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["category"], "entertainment");
+    assert_eq!(listed[0].payload["browser_bundle_id"], "com.apple.Safari");
+    assert!(listed[0].payload.get("url").is_none());
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("href").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
 fn format_ical_utc(unix: i64) -> String {
     let days = unix.div_euclid(86_400);
     let tod = unix.rem_euclid(86_400) as u32;
@@ -356,4 +506,515 @@ async fn calendar_stop_halts_periodic_probe_work() {
         after_stop,
         "calendar probe must not keep polling after stop (no busy-loop)"
     );
+}
+
+#[tokio::test]
+async fn browser_category_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingBrowserProbe::new(BrowserCategorySample {
+        category: "work".into(),
+        browser_bundle_id: Some("com.google.Chrome".into()),
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = BrowserCategoryPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn BrowserCategoryProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "browser category probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn now_playing_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedNowPlayingProbe::new());
+    probe.push(Some(NowPlayingSample {
+        media_kind: "music".into(),
+        is_playing: true,
+    }));
+
+    let plugin = NowPlayingPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NowPlayingProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, NOW_PLAYING_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["media_kind"], "music");
+    assert_eq!(listed[0].payload["is_playing"], true);
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("artist").is_none());
+    assert!(listed[0].payload.get("album").is_none());
+    assert!(listed[0].payload.get("lyrics").is_none());
+    assert!(listed[0].payload.get("playlist_id").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn now_playing_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingNowPlayingProbe::new(NowPlayingSample {
+        media_kind: "podcast".into(),
+        is_playing: true,
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = NowPlayingPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NowPlayingProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "now_playing probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn git_activity_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedGitActivityProbe::new());
+    probe.push(Some(GitActivitySample {
+        activity_kind: "commit".into(),
+        event_count: Some(2),
+    }));
+
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, GIT_ACTIVITY_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["activity_kind"], "commit");
+    assert_eq!(listed[0].payload["event_count"], 2);
+    assert!(listed[0].payload.get("repo_path").is_none());
+    assert!(listed[0].payload.get("remote").is_none());
+    assert!(listed[0].payload.get("branch").is_none());
+    assert!(listed[0].payload.get("sha").is_none());
+    assert!(listed[0].payload.get("message").is_none());
+    assert!(listed[0].payload.get("diff").is_none());
+    assert!(listed[0].payload.get("author").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn git_activity_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingGitActivityProbe::new(GitActivitySample {
+        activity_kind: "sync".into(),
+        event_count: Some(1),
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "git_activity probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn git_activity_empty_allowlist_emits_nothing() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemGitActivityProbe::with_roots(Vec::new()));
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+
+    let db = Database::open(&db_path).expect("re-open db");
+    let listed = ObservationRepository::new(&db)
+        .list_by_data_type(GIT_ACTIVITY_DATA_TYPE)
+        .expect("list");
+    assert!(
+        listed.is_empty(),
+        "empty allowlist must not emit git_activity Observations"
+    );
+}
+
+#[tokio::test]
+async fn git_activity_live_probe_fixture_root_emits_into_storage() {
+    use std::process::Command;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repo = dir.path().join("repo");
+    std::fs::create_dir_all(&repo).expect("mkdir");
+
+    let git = |args: &[&str]| {
+        let status = Command::new("git")
+            .args(args)
+            .current_dir(&repo)
+            .env("GIT_AUTHOR_NAME", "Dogfood")
+            .env("GIT_AUTHOR_EMAIL", "dogfood@example.com")
+            .env("GIT_COMMITTER_NAME", "Dogfood")
+            .env("GIT_COMMITTER_EMAIL", "dogfood@example.com")
+            .status()
+            .expect("spawn git");
+        assert!(status.success(), "git {args:?} failed");
+    };
+
+    git(&["init"]);
+    git(&["config", "user.email", "dogfood@example.com"]);
+    git(&["config", "user.name", "Dogfood"]);
+    std::fs::write(repo.join("a.txt"), "one\n").expect("write");
+    git(&["add", "a.txt"]);
+    git(&["commit", "-m", "init"]);
+
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemGitActivityProbe::with_roots(vec![dir
+        .path()
+        .to_path_buf()]));
+    let plugin = GitActivityPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn GitActivityProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    // Prime baselines (first poll(s) must not emit).
+    tokio::time::sleep(Duration::from_millis(120)).await;
+
+    std::fs::write(repo.join("a.txt"), "two\n").expect("write");
+    git(&["add", "a.txt"]);
+    git(&["commit", "-m", "second"]);
+
+    let listed =
+        wait_for_data_type(&db_path, GIT_ACTIVITY_DATA_TYPE, 1, Duration::from_secs(4)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["activity_kind"], "commit");
+    assert!(listed[0].payload.get("repo_path").is_none());
+    assert!(listed[0].payload.get("path").is_none());
+    assert!(listed[0].payload.get("remote").is_none());
+    assert!(listed[0].payload.get("branch").is_none());
+    assert!(listed[0].payload.get("sha").is_none());
+    assert!(listed[0].payload.get("message").is_none());
+    assert!(listed[0].payload.get("diff").is_none());
+    assert!(listed[0].payload.get("author").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn ambient_light_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedAmbientLightProbe::new());
+    probe.push(Some(AmbientLightSample {
+        light_kind: "dim".into(),
+        level: Some(25),
+    }));
+
+    let plugin = AmbientLightPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn AmbientLightProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed =
+        wait_for_data_type(&db_path, AMBIENT_LIGHT_DATA_TYPE, 1, Duration::from_secs(3)).await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["light_kind"], "dim");
+    assert_eq!(listed[0].payload["level"], 25);
+    assert!(listed[0].payload.get("camera_frame").is_none());
+    assert!(listed[0].payload.get("screenshot").is_none());
+    assert!(listed[0].payload.get("latitude").is_none());
+    assert!(listed[0].payload.get("longitude").is_none());
+    assert!(listed[0].payload.get("mic_waveform").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn ambient_light_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingAmbientLightProbe::new(AmbientLightSample {
+        light_kind: "moderate".into(),
+        level: Some(50),
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = AmbientLightPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn AmbientLightProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "ambient_light probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn ambient_light_system_probe_soft_fails_emits_nothing() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemAmbientLightProbe);
+    let plugin = AmbientLightPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn AmbientLightProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+
+    let db = Database::open(&db_path).expect("re-open db");
+    let listed = ObservationRepository::new(&db)
+        .list_by_data_type(AMBIENT_LIGHT_DATA_TYPE)
+        .expect("list");
+    assert!(
+        listed.is_empty(),
+        "soft-fail system ambient light probe must not emit Observations"
+    );
+}
+
+#[tokio::test]
+async fn notification_event_emits_observation_into_channel_and_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(ScriptedNotificationEventProbe::new());
+    probe.push(Some(NotificationEventSample {
+        count: 2,
+        category: Some("communication".into()),
+        interruption_level: Some("active".into()),
+        app_kind: Some("messaging".into()),
+    }));
+
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed = wait_for_data_type(
+        &db_path,
+        NOTIFICATION_EVENT_DATA_TYPE,
+        1,
+        Duration::from_secs(3),
+    )
+    .await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].payload["count"], 2);
+    assert_eq!(listed[0].payload["category"], "communication");
+    assert_eq!(listed[0].payload["interruption_level"], "active");
+    assert_eq!(listed[0].payload["app_kind"], "messaging");
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("body").is_none());
+    assert!(listed[0].payload.get("subtitle").is_none());
+    assert!(listed[0].payload.get("message").is_none());
+    assert!(listed[0].payload.get("screenshot").is_none());
+    assert!(listed[0].payload.get("userInfo").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+}
+
+#[tokio::test]
+async fn notification_event_stop_halts_periodic_probe_work() {
+    let probe = Arc::new(CountingNotificationEventProbe::new(NotificationEventSample {
+        count: 1,
+        category: Some("system".into()),
+        interruption_level: None,
+        app_kind: None,
+    }));
+
+    let (tx, _rx) = observation_channel(4).expect("channel");
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(50),
+    );
+
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(180)).await;
+    assert!(probe.polls.load(Ordering::SeqCst) >= 1);
+
+    plugin.stop_stream().await.expect("stop");
+    let after_stop = probe.polls.load(Ordering::SeqCst);
+
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    assert_eq!(
+        probe.polls.load(Ordering::SeqCst),
+        after_stop,
+        "notification_event probe must not keep polling after stop_stream (no busy-loop)"
+    );
+}
+
+#[tokio::test]
+async fn notification_event_system_probe_soft_fails_emits_nothing() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    // Force missing NC DB path → deterministic soft-fail (no Full Disk Access / no OS DB).
+    let missing_nc = dir.path().join("missing-usernoted-db");
+    let probe = Arc::new(SystemNotificationEventProbe::with_db_path(missing_nc));
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
+
+    let db = Database::open(&db_path).expect("re-open db");
+    let listed = ObservationRepository::new(&db)
+        .list_by_data_type(NOTIFICATION_EVENT_DATA_TYPE)
+        .expect("list");
+    assert!(
+        listed.is_empty(),
+        "soft-fail system notification probe must not emit Observations"
+    );
+}
+
+#[tokio::test]
+async fn notification_event_live_fixture_db_emits_into_storage() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let nc_path = dir.path().join("usernoted-fixture.db");
+    write_fixture_nc_db(&nc_path, &[("com.apple.mail", 10.0)]).expect("fixture nc");
+
+    let db_path = dir.path().join("biofocus_main.db");
+    let db = Database::open(&db_path).expect("open db");
+    let (tx, rx) = observation_channel(8).expect("channel");
+    let worker = spawn_persist_worker(rx, db);
+
+    let probe = Arc::new(SystemNotificationEventProbe::with_db_path(&nc_path));
+    // Watermark init (no emit).
+    assert!(probe.current().expect("ok").is_none());
+
+    // New delivery after watermark.
+    {
+        use rusqlite::Connection;
+        let conn = Connection::open(&nc_path).expect("open nc");
+        let app_id: i64 = conn
+            .query_row(
+                "SELECT app_id FROM app WHERE identifier = 'com.apple.mail' LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .expect("app");
+        conn.execute(
+            "INSERT INTO record (rec_id, app_id, delivered_date) VALUES (42, ?1, 50.0)",
+            [app_id],
+        )
+        .expect("insert");
+    }
+
+    let plugin = NotificationPlugin::with_probe(
+        Arc::clone(&probe) as Arc<dyn NotificationEventProbe>,
+        Duration::from_millis(40),
+    );
+    plugin.start_stream(tx).await.expect("start");
+
+    let listed = wait_for_data_type(
+        &db_path,
+        NOTIFICATION_EVENT_DATA_TYPE,
+        1,
+        Duration::from_secs(3),
+    )
+    .await;
+    assert_eq!(listed.len(), 1);
+    assert!(listed[0].payload["count"].as_u64().unwrap_or(0) >= 1);
+    assert_eq!(listed[0].payload["app_kind"], "mail");
+    assert!(listed[0].payload.get("title").is_none());
+    assert!(listed[0].payload.get("body").is_none());
+    assert!(listed[0].payload.get("bundle_id").is_none());
+    assert!(listed[0].payload.get("data").is_none());
+
+    plugin.stop_stream().await.expect("stop");
+    worker.join().expect("persist worker");
 }

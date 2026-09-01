@@ -1,7 +1,7 @@
 # BioFocus — Project Canvas
 
 > One-page snapshot. Sources: `/docs/00–16`, `ARCHITECTURE_STATUS.md`, `decision-log.md`.  
-> **Status:** MVP 1.0 Architecture Frozen · **License:** AGPLv3 (ADR-004)
+> **Status:** MVP 1.0 Architecture Frozen · **License:** AGPLv3 (ADR-004) · **OSS public prep:** [`docs/19-oss-public-launch.md`](19-oss-public-launch.md)
 
 ---
 
@@ -28,7 +28,7 @@
 | 1 | Observations | ingest / collectors / SQLite |
 | 2 | Features | `feature-engine` |
 | 3 | Knowledge (Insights) | `knowledge-engine` |
-| 4 | Recommendations | thin Insight text → Phase 9 engine |
+| 4 | Recommendations | ADR-009 + `focus_dip_pace_hint_v1` + `get_recommendations` / Suggestions (Phase 9 Done) |
 | 5 | Coaching (AI interpret) | `report-engine` + opt-in LLM |
 
 UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer name.
@@ -40,9 +40,28 @@ UI (Menubar / Dashboard window) = **presentation** over IPC — not a Core layer
 - Today: HealthKit / CLI sample sources + loopback/LAN ingest; Desktop Companion shows copyable base URL + token; no personal device inventory in git.
 - **Phase 6 (Done):** Life Events (ADR-006) + Desktop quick-log + Calendar ICS → `MeetingDensity` / `RecoveryBetweenMeetings`. Wearable dogfood verified: iOS Companion → LAN ingest with HealthKit HR (Mi Band via Apple Health).
 - **Phase 7 (Done):** Trust layer — ADR-007 confidence → Explanation factors → `RecoveryScore`.
-- **Phase 8 (active):** Pattern Discovery v1 — ADR-008 history/recompute (**P8-E1-T1** Ready) → baseline Knowledge → Insights surface. Later: more HealthKit types; plugins (IDE/Git/Browser).
-- **Git:** **PR freeze until 2026-09-01** — local branch commits OK; no PRs (`docs/12-development.md`).
-- Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4.
+- **Phase 8 (Done 2026-08-08):** Pattern Discovery v1 — ADR-008 **recompute-on-read** → `focus_vs_recent_baseline_v1` → calm Dashboard Insights surface.
+- **Phase 9 (Done 2026-08-08):** Deterministic Recommendations — ADR-009 → `focus_dip_pace_hint_v1` → `get_recommendations` + Dashboard Suggestions.
+- **Phase 10 (Done 2026-08-10):** Plugin wave-1 — ADR-010 Browser → collector → `DistractionScore`. Later: IDE/Git plugins.
+- **Phase 11 (Done 2026-08-10):** AI coaching polish — ADR-011 → packs (`build_report_with_pack`) → provider UX (`get_local_llm_status` + pack-aware Report). L5 interpret-only.
+- **Phase 12 (Done 2026-08-10):** Ambient + packaging — ADR-012 → Now Playing → `AmbientMediaShare` + `docs/18-packaging-runbook.md`.
+- **Phase 13 (Done 2026-08-10):** Plugin wave-2 — ADR-013 → Git plugin → `GitActivityRate`.
+- **Phase 14 (Done 2026-08-10):** Git path-allowlist — ADR-014 → live probe → dogfood + Menubar **Git folders** IPC.
+- **Phase 15 (Done 2026-08-11):** Companion HRV + autonomy — ADR-016.
+- **Phase 16 (Done 2026-08-11):** Ambient light — ADR-015; collector + `AmbientLightShare`.
+- **Phase 17 (Done 2026-08-11):** Wearable depth + chart ranges — ADR-017 · ADR-018 → Companion emit → `get_feature_series` + wearable Features.
+- **Phase 18 (Done 2026-08-11):** Notification pressure — ADR-019 → collector → `NotificationPressure`.
+- **Phase 19 (Done 2026-08-11):** Live NC OS mapping — ADR-020 → usernoted live probe → dogfood.
+- **Phase 20 (Done 2026-08-11):** CognitiveLoad — **ADR-021** ✅; Feature + dogfood + Dashboard **Combined demand**.
+- **Phase 21 (Done 2026-08-11):** DeepWorkScore — **ADR-022** ✅; Feature + dogfood + Dashboard **Sustained focus**.
+- **Phase 22 (Done 2026-08-11):** AttentionStability — **ADR-023** ✅; Feature + dogfood + Dashboard **Focus stability**.
+- **Phase 23 (Done 2026-08-11):** Personal Context Layer — **ADR-024** ✅; `DeskAwayPresence` + health→prompt + dogfood / **Away from desk**.
+- **Phase 24 (Done 2026-08-12):** CircadianOffset — **ADR-025** ✅; Feature + dogfood / **Schedule alignment**.
+- **Phase 25 (Done 2026-08-12):** SustainedLoadIndicator — **ADR-026** ✅; Feature + dogfood / Dashboard **Prolonged load**.
+- **Phase 26 (Done 2026-08-12):** OSS Public Launch Hygiene — **ADR-027** ✅; SoT `19-oss…` + dry-run checklist. **Public launch not Done** (layers 2–3 after freeze).
+- **Next:** Phase 27 **Pattern Discovery rule expansion** — **ADR-028** ✅ · E2 rules ✅; Ready **P27-E3-T1** (dogfood / optional Insights·Suggestions). Gate **PM-GATE-POST-P26** ✅.
+- **Git:** classic PR flow restored (2026-09-01); CI auto-run on push/PR (`docs/12-development.md`).
+- Menubar alert colors: Phase 3 E3 · Dashboard/Insights: Phase 4 · Suggestions: Phase 9.
 
 Dogfood tip: if `base_url_hints` is empty under `BIOFOCUS_INGEST_LAN=1`, set `BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>` before pairing.
 
@@ -112,19 +131,33 @@ Observation (immutable fact)
 
 ## Horizon ladder (accepted)
 
-Immediate Kanban = **Phase 8** only. Open later via PM (`/docs/14-roadmap.md`, `/docs/00-vision.md` §7).
+Immediate Kanban = **P27-E3-T1** (`/docs/SPRINT_ROADMAP.md`). Phase 0–26 Done · Phase 27 Active · **ADR-028** ✅ · E2 rules ✅ · **public launch not Done**.
 
 | Phase | Focus |
 | :--- | :--- |
 | **5** | Wearable dogfood (LAN → HealthKit) — **done** |
 | **6** | Life Events v1 + Calendar Features — **done** |
 | **7** | Feature confidence + Explanation factors + RecoveryScore — **done** |
-| **8** | Pattern Discovery v1 (ADR history/recompute) — **active** (Ready **P8-E1-T1**) |
-| **9** | Deterministic Recommendations |
-| **9** | Deterministic Recommendations |
-| **10** | Plugin wave-1 (IDE/Git or Browser) |
-| **11** | AI coaching polish (prompts / providers UX) |
-| **12+** | Ambient sources + commercial packaging |
+| **8** | Pattern Discovery v1 (ADR-008 + baseline + Dashboard) — **done** |
+| **9** | Deterministic Recommendations — **done** |
+| **10** | Plugin wave-1 (Browser → DistractionScore) — **done** |
+| **11** | AI coaching polish (ADR-011 → packs → provider UX) — **done** |
+| **12** | Ambient + packaging (ADR-012 → Now Playing → AmbientMediaShare) — **done** |
+| **13** | Plugin wave-2 (Git → GitActivityRate) — **done** |
+| **14** | Git path-allowlist (ADR-014 → live probe → dogfood/UX) — **done** |
+| **15** | Done — Companion HRV + autonomy (ADR-016) |
+| **16** | Done — Ambient light (ADR-015 → plugin → AmbientLightShare); weather deferred |
+| **17** | Done — Wearable depth + chart ranges (ADR-017 · ADR-018) |
+| **18** | Done — Notification pressure (ADR-019 → collector → NotificationPressure) |
+| **19** | Done — Live NC OS mapping (ADR-020 → usernoted probe → dogfood) |
+| **20** | Done — CognitiveLoad (**ADR-021** → Feature + dogfood + Combined demand) |
+| **21** | Done — DeepWorkScore (**ADR-022** → Feature + dogfood + Sustained focus) |
+| **22** | Done — AttentionStability (**ADR-023** → Feature + dogfood + Focus stability) |
+| **23** | Done — Personal Context Layer (**ADR-024** → DeskAwayPresence + health→prompt + Away from desk) |
+| **24** | Done — CircadianOffset (**ADR-025** → Feature + Schedule alignment) |
+| **25** | Done — SustainedLoadIndicator (**ADR-026** → Feature + dogfood + Prolonged load) |
+| **26** | Done — OSS Public Launch Hygiene (**ADR-027** · SoT · dry-run); **public launch not Done** |
+| **27** | Active — Pattern Discovery rule expansion (**ADR-028** ✅ · E2 ✅ · Ready P27-E3); deferred IDE · weather · App Store · TypingRhythm |
 
 **Sequencing:** Features only with real inputs · calm non-clinical copy · Calendar/Life Events before ambient plugins · commercial ≠ secret Core math.
 

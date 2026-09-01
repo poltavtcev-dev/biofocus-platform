@@ -66,11 +66,22 @@ impl FeatureEngine {
         Ok(())
     }
 
-    /// Topological run over an in-memory Observation snapshot.
+    /// Topological run over an in-memory Observation snapshot (1-minute step).
     ///
     /// Empty snapshot and/or empty DAG return [`Ok`] with empty output
     /// (idle-friendly). Does not spin or allocate threads.
     pub fn run(&self, observations: &[Observation]) -> FeatureEngineResult<EngineOutput> {
+        self.run_with_step(observations, crate::catalog::STEP_SECS)
+    }
+
+    /// Topological run with an explicit sliding-window step (ADR-018 series).
+    ///
+    /// `step_secs` is clamped to ≥ 1. Same idle-empty behaviour as [`Self::run`].
+    pub fn run_with_step(
+        &self,
+        observations: &[Observation],
+        step_secs: i64,
+    ) -> FeatureEngineResult<EngineOutput> {
         if self.nodes.is_empty() {
             return Ok(EngineOutput::default());
         }
@@ -78,10 +89,11 @@ impl FeatureEngine {
         let order = self.topological_order()?;
         let mut features: Vec<Feature> = Vec::new();
         let mut signals: Vec<Signal> = Vec::new();
+        let step = step_secs.max(1);
 
         for idx in order {
             let node = &self.nodes[idx];
-            let ctx = ComputeContext::new(observations, &features, &signals);
+            let ctx = ComputeContext::new(observations, &features, &signals, step);
             let NodeOutput {
                 features: node_features,
                 signals: node_signals,

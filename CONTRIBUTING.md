@@ -4,6 +4,8 @@ Thanks for helping improve BioFocus — a **local-first** open-source platform f
 
 By contributing you agree that your work is licensed under **[AGPLv3](./LICENSE)** (see ADR-004 in [`docs/decision-log.md`](docs/decision-log.md)). Product vision: [`docs/00-vision.md`](docs/00-vision.md).
 
+BioFocus is **personal self-tracking** (Local-First) — not workplace monitoring and not a medical device. Maintainer public-launch checklist: [`docs/19-oss-public-launch.md`](docs/19-oss-public-launch.md) (ADR-027; SoT authored — **public launch not Done** until post-freeze layers). Signed-build ops: [`docs/18-packaging-runbook.md`](docs/18-packaging-runbook.md).
+
 ```text
 Clone & run → pick change type → edit the right crate → respect hard rules → tests/CI → PR to main
 ```

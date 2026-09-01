@@ -1,27 +1,93 @@
-//! macOS context collectors — active window + opt-in input aggregates + Calendar.
+//! macOS context collectors — active window + opt-in input aggregates + Calendar
+//! + opt-in Browser categories + opt-in Now Playing ambient + opt-in Git activity.
 //!
 //! Active window: metadata only (`bundle_id`, `app_name`).
 //! Input aggregates: key-down **counts/rates** only — never characters / key codes
 //! that reconstruct text. Opt-in via `BIOFOCUS_INPUT_AGGREGATES=1`.
 //! Calendar: local ICS → `calendar_event` Observations (no titles/bodies). Opt-in via
 //! `BIOFOCUS_CALENDAR=1` + `BIOFOCUS_CALENDAR_ICS=/path/to/file.ics`.
+//! Browser categories: coarse `category` only (no URLs / titles). Opt-in via
+//! `BIOFOCUS_BROWSER_CATEGORIES=1`.
+//! Now Playing: coarse `media_kind` + `is_playing` only (no titles / lyrics). Opt-in via
+//! `BIOFOCUS_NOW_PLAYING=1`.
+//! Git activity: coarse `activity_kind` + optional `event_count` only (no paths /
+//! remotes / diffs). Opt-in via `BIOFOCUS_GIT_ACTIVITY=1`. Watched roots:
+//! `~/.biofocus/git-watched-roots.toml` (ADR-014); optional `BIOFOCUS_GIT_WATCHED_ROOTS`
+//! when the config file is absent.
+//! Ambient light: coarse `light_kind` + optional `level` 0–100 only (no camera /
+//! screen / geo / mic). Opt-in via `BIOFOCUS_AMBIENT_LIGHT=1`.
+//! Notification events: coarse `count` + optional closed-set labels only (no body /
+//! title / message). Opt-in via `BIOFOCUS_NOTIFICATION_EVENTS=1`. Live OS mapping
+//! (ADR-020 / P19-E2): read-only **usernoted** NC SQLite (`group.com.apple.usernoted/db2/db`)
+//! with hard non-content field allowlist; soft-fail when unavailable / TCC denied.
 
-#![cfg_attr(not(target_os = "macos"), forbid(unsafe_code))]
+#![cfg_attr(not(any(test, target_os = "macos")), forbid(unsafe_code))]
 // objc2 / CoreGraphics bindings require `unsafe` only inside macOS probe modules.
 
+mod ambient_light_plugin;
+mod ambient_light_probe;
+mod ambient_light_stream;
+mod browser_plugin;
+mod browser_probe;
+mod browser_stream;
 mod calendar_plugin;
 mod calendar_probe;
 mod calendar_stream;
 mod error;
+mod git_activity_plugin;
+mod git_activity_probe;
+mod git_activity_stream;
+mod git_watched_roots;
 mod ics;
 mod input_plugin;
 mod input_probe;
 mod input_stream;
+mod notification_nc_db;
+mod notification_plugin;
+mod notification_probe;
+mod notification_stream;
+mod now_playing_plugin;
+mod now_playing_probe;
+mod now_playing_stream;
 mod payload;
 mod plugin;
 mod probe;
 mod stream;
 
+pub use ambient_light_plugin::{
+    ambient_light_enabled, AmbientLightPlugin, AMBIENT_LIGHT_ENABLE_ENV,
+    DEFAULT_AMBIENT_LIGHT_POLL_INTERVAL,
+};
+pub use ambient_light_probe::{
+    AmbientLightProbe, AmbientLightSample, ScriptedAmbientLightProbe, SystemAmbientLightProbe,
+};
+pub use ambient_light_stream::{
+    observation_from_ambient_light, spawn_ambient_light_loop, AmbientLightHandle,
+};
+pub use notification_plugin::{
+    notification_events_enabled, NotificationPlugin, DEFAULT_NOTIFICATION_POLL_INTERVAL,
+    NOTIFICATION_ENABLE_ENV,
+};
+pub use notification_probe::{
+    NotificationEventProbe, NotificationEventSample, ScriptedNotificationEventProbe,
+    SystemNotificationEventProbe,
+};
+pub use notification_nc_db::{
+    candidate_nc_db_paths, write_fixture_nc_db, USERNOTED_DB_REL,
+};
+pub use notification_stream::{
+    observation_from_notification_event, spawn_notification_event_loop, NotificationEventHandle,
+};
+pub use browser_plugin::{
+    browser_categories_enabled, BrowserCategoryPlugin, BROWSER_ENABLE_ENV,
+    DEFAULT_BROWSER_POLL_INTERVAL,
+};
+pub use browser_probe::{
+    BrowserCategoryProbe, BrowserCategorySample, ScriptedBrowserProbe, SystemBrowserProbe,
+};
+pub use browser_stream::{
+    observation_from_browser_category, spawn_browser_category_loop, BrowserCategoryHandle,
+};
 pub use calendar_plugin::{
     calendar_enabled, calendar_ics_path_from_env, CalendarPlugin, CALENDAR_ENABLE_ENV,
     CALENDAR_ICS_ENV, DEFAULT_CALENDAR_POLL_INTERVAL,
@@ -32,6 +98,23 @@ pub use calendar_stream::{
     DEFAULT_HORIZON_PAST,
 };
 pub use error::{CollectorError, CollectorResult};
+pub use git_activity_plugin::{
+    git_activity_enabled, GitActivityPlugin, DEFAULT_GIT_ACTIVITY_POLL_INTERVAL,
+    GIT_ACTIVITY_ENABLE_ENV,
+};
+pub use git_activity_probe::{
+    GitActivityProbe, GitActivitySample, ScriptedGitActivityProbe, SystemGitActivityProbe,
+};
+pub use git_activity_stream::{
+    observation_from_git_activity, spawn_git_activity_loop, GitActivityHandle,
+};
+pub use git_watched_roots::{
+    default_watched_roots_path, load_settings_watched_roots, load_watched_roots_file,
+    resolve_watched_roots, set_settings_watched_roots, validate_watched_root_inputs,
+    write_watched_roots_file, WatchedRoots, WatchedRootsSource, BIOFOCUS_CONFIG_DIR_NAME,
+    BIOFOCUS_HOME_ENV, GIT_WATCHED_ROOTS_ENV, GIT_WATCHED_ROOTS_FILE_NAME,
+    WATCHED_ROOTS_FILE_VERSION,
+};
 pub use ics::{parse_ics_events, parse_ics_file};
 pub use input_plugin::{
     input_aggregates_enabled, KeystrokeAggregatePlugin, DEFAULT_AGGREGATE_WINDOW, ENABLE_ENV,
@@ -42,10 +125,24 @@ pub use input_probe::{
 pub use input_stream::{
     observation_from_aggregate, spawn_keystroke_aggregate_loop, KeystrokeAggregateHandle,
 };
+pub use now_playing_plugin::{
+    now_playing_enabled, NowPlayingPlugin, DEFAULT_NOW_PLAYING_POLL_INTERVAL, NOW_PLAYING_ENABLE_ENV,
+};
+pub use now_playing_probe::{
+    NowPlayingProbe, NowPlayingSample, ScriptedNowPlayingProbe, SystemNowPlayingProbe,
+};
+pub use now_playing_stream::{
+    observation_from_now_playing, spawn_now_playing_loop, NowPlayingHandle,
+};
 pub use payload::{
-    calendar_event_payload, context_window_payload, keystrokes_payload, CALENDAR_EVENT_DATA_TYPE,
-    CONTEXT_WINDOW_DATA_TYPE, KEYSTROKES_DATA_TYPE, MACOS_CALENDAR_PROVIDER_ID,
-    MACOS_CONTEXT_PROVIDER_ID, MACOS_INPUT_PROVIDER_ID,
+    ambient_light_payload, browser_category_payload, calendar_event_payload,
+    context_window_payload, git_activity_payload, keystrokes_payload, notification_event_payload,
+    now_playing_payload, AMBIENT_LIGHT_DATA_TYPE, BROWSER_CATEGORY_DATA_TYPE,
+    CALENDAR_EVENT_DATA_TYPE, CONTEXT_WINDOW_DATA_TYPE, GIT_ACTIVITY_DATA_TYPE,
+    KEYSTROKES_DATA_TYPE, MACOS_AMBIENT_LIGHT_PROVIDER_ID, MACOS_BROWSER_PROVIDER_ID,
+    MACOS_CALENDAR_PROVIDER_ID, MACOS_CONTEXT_PROVIDER_ID, MACOS_GIT_PROVIDER_ID,
+    MACOS_INPUT_PROVIDER_ID, MACOS_NOTIFICATIONS_PROVIDER_ID, MACOS_NOW_PLAYING_PROVIDER_ID,
+    NOTIFICATION_EVENT_DATA_TYPE, NOW_PLAYING_DATA_TYPE,
 };
 pub use plugin::{ActiveWindowPlugin, DEFAULT_POLL_INTERVAL};
 pub use probe::{FrontmostApp, FrontmostProbe, SystemFrontmostProbe};

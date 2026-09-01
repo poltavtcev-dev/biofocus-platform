@@ -107,6 +107,30 @@ export function needsLanHintFallback(info: PairingTokenInfo): boolean {
   return isLoopbackBaseUrl(info.ingestBaseUrl);
 }
 
+/** Calm warning when physical phone cannot use the shown base URL. */
+export function companionLoopbackWarning(info: PairingTokenInfo): string | null {
+  if (info.bindMode === "loopback") {
+    return "Physical iPhone needs LAN — enable LAN below, restart BioFocus, then copy the LAN Base URL (not 127.0.0.1).";
+  }
+  return null;
+}
+
+/** Error when LAN is on but no usable address was discovered. */
+export function companionLanAddressError(info: PairingTokenInfo): string | null {
+  if (!needsLanHintFallback(info)) {
+    return null;
+  }
+  return "LAN bind is on, but no usable network address was found. Set this Mac’s LAN IPv4 (Companion → enable LAN, or BIOFOCUS_INGEST_BIND_HOST), restart, then Reload.";
+}
+
+/** Whether the primary base URL is safe to copy for a physical phone. */
+export function isPrimaryUrlCopyable(info: PairingTokenInfo): boolean {
+  if (info.bindMode === "loopback") {
+    return false;
+  }
+  return !needsLanHintFallback(info);
+}
+
 /** Short reachability label under the base URL. */
 export function networkModeLabel(info: PairingTokenInfo): string {
   if (info.bindMode !== "lan") {

@@ -187,6 +187,21 @@ async fn post_ingest(
                 bio_spec::SpecError::InvalidCalendarEventPayload { .. } => {
                     "invalid_calendar_event"
                 }
+                bio_spec::SpecError::InvalidBrowserCategoryPayload { .. } => {
+                    "invalid_browser_category"
+                }
+                bio_spec::SpecError::InvalidNowPlayingPayload { .. } => "invalid_now_playing",
+                bio_spec::SpecError::InvalidGitActivityPayload { .. } => "invalid_git_activity",
+                bio_spec::SpecError::InvalidAmbientLightPayload { .. } => "invalid_ambient_light",
+                bio_spec::SpecError::InvalidNotificationEventPayload { .. } => {
+                    "invalid_notification_event"
+                }
+                bio_spec::SpecError::InvalidStepCountPayload { .. } => "invalid_step_count",
+                bio_spec::SpecError::InvalidActiveEnergyPayload { .. } => "invalid_active_energy",
+                bio_spec::SpecError::InvalidSleepIntervalPayload { .. } => "invalid_sleep_interval",
+                bio_spec::SpecError::InvalidOxygenSaturationPayload { .. } => {
+                    "invalid_oxygen_saturation"
+                }
                 _ => "invalid_life_event",
             };
             return (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response();

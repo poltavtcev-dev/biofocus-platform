@@ -5,8 +5,8 @@ use uuid::Uuid;
 
 use bio_spec::{
     validate_life_event_payload, validate_observation_payload, Confidence, EvidenceRef, Feature,
-    FeatureValue, Insight, Observation, Severity, Signal, SpecError, TimeWindow, UnixTimestamp,
-    DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, V1_LIFE_EVENT_KINDS,
+    FeatureValue, Insight, Observation, Recommendation, Severity, Signal, SpecError, TimeWindow,
+    UnixTimestamp, DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, V1_LIFE_EVENT_KINDS,
 };
 
 /// Sample Observation JSON from `docs/07-contracts.md`.
@@ -112,6 +112,192 @@ fn calendar_event_contract_json_round_trip() {
     let encoded = serde_json::to_value(&parsed).expect("serialize");
     let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
     assert_eq!(again, parsed);
+}
+
+const CONTRACT_BROWSER_CATEGORY_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.browser",
+  "data_type": "browser_category",
+  "payload": {
+    "category": "work",
+    "browser_bundle_id": "com.apple.Safari"
+  },
+  "confidence": 0.9
+}"#;
+
+#[test]
+fn browser_category_contract_json_round_trip() {
+    use bio_spec::{validate_browser_category_payload, DATA_TYPE_BROWSER_CATEGORY};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_BROWSER_CATEGORY_JSON)
+        .expect("browser category contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_BROWSER_CATEGORY);
+    assert_eq!(parsed.payload["category"], json!("work"));
+    validate_browser_category_payload(&parsed.payload).expect("valid browser category");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
+const CONTRACT_NOW_PLAYING_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.now_playing",
+  "data_type": "now_playing",
+  "payload": {
+    "media_kind": "music",
+    "is_playing": true
+  },
+  "confidence": 0.85
+}"#;
+
+#[test]
+fn now_playing_contract_json_round_trip() {
+    use bio_spec::{validate_now_playing_payload, DATA_TYPE_NOW_PLAYING};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_NOW_PLAYING_JSON)
+        .expect("now_playing contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_NOW_PLAYING);
+    assert_eq!(parsed.payload["media_kind"], json!("music"));
+    assert_eq!(parsed.payload["is_playing"], json!(true));
+    validate_now_playing_payload(&parsed.payload).expect("valid now_playing");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
+const CONTRACT_GIT_ACTIVITY_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.git",
+  "data_type": "git_activity",
+  "payload": {
+    "activity_kind": "commit",
+    "event_count": 1
+  },
+  "confidence": 0.9
+}"#;
+
+#[test]
+fn git_activity_contract_json_round_trip() {
+    use bio_spec::{validate_git_activity_payload, DATA_TYPE_GIT_ACTIVITY};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_GIT_ACTIVITY_JSON)
+        .expect("git_activity contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_GIT_ACTIVITY);
+    assert_eq!(parsed.payload["activity_kind"], json!("commit"));
+    assert_eq!(parsed.payload["event_count"], json!(1));
+    validate_git_activity_payload(&parsed.payload).expect("valid git_activity");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
+const CONTRACT_AMBIENT_LIGHT_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789abf0",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.ambient_light",
+  "data_type": "ambient_light",
+  "payload": {
+    "light_kind": "dim",
+    "level": 25
+  },
+  "confidence": 0.8
+}"#;
+
+#[test]
+fn ambient_light_contract_json_round_trip() {
+    use bio_spec::{validate_ambient_light_payload, DATA_TYPE_AMBIENT_LIGHT};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_AMBIENT_LIGHT_JSON)
+        .expect("ambient_light contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_AMBIENT_LIGHT);
+    assert_eq!(parsed.payload["light_kind"], json!("dim"));
+    assert_eq!(parsed.payload["level"], json!(25));
+    validate_ambient_light_payload(&parsed.payload).expect("valid ambient_light");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
+const CONTRACT_NOTIFICATION_EVENT_JSON: &str = r#"{
+  "id": "0190ecb5-7c2a-7123-8901-23456789ab18",
+  "timestamp": 1721990400,
+  "provider_id": "com.biofocus.macos.notifications",
+  "data_type": "notification_event",
+  "payload": {
+    "count": 2,
+    "category": "communication",
+    "interruption_level": "active",
+    "app_kind": "messaging"
+  },
+  "confidence": 0.9
+}"#;
+
+#[test]
+fn notification_event_contract_json_round_trip() {
+    use bio_spec::{validate_notification_event_payload, DATA_TYPE_NOTIFICATION_EVENT};
+
+    let parsed: Observation = serde_json::from_str(CONTRACT_NOTIFICATION_EVENT_JSON)
+        .expect("notification_event contract sample must deserialize");
+
+    assert_eq!(parsed.data_type, DATA_TYPE_NOTIFICATION_EVENT);
+    assert_eq!(parsed.payload["count"], json!(2));
+    assert_eq!(parsed.payload["category"], json!("communication"));
+    assert!(parsed.payload.get("title").is_none());
+    assert!(parsed.payload.get("body").is_none());
+    validate_notification_event_payload(&parsed.payload).expect("valid notification_event");
+    validate_observation_payload(&parsed).expect("via unify validator");
+
+    let encoded = serde_json::to_value(&parsed).expect("serialize");
+    let again: Observation = serde_json::from_value(encoded).expect("re-deserialize");
+    assert_eq!(again, parsed);
+}
+
+#[test]
+fn adr018_wearable_payloads_validate_via_router() {
+    use bio_spec::{
+        DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL,
+        DATA_TYPE_STEP_COUNT,
+    };
+
+    let cases = [
+        (
+            DATA_TYPE_STEP_COUNT,
+            json!({ "count": 100, "window_secs": 60 }),
+        ),
+        (DATA_TYPE_ACTIVE_ENERGY, json!({ "kcal": 12.5 })),
+        (
+            DATA_TYPE_SLEEP_INTERVAL,
+            json!({ "start": 1, "end": 2, "stage": "in_bed" }),
+        ),
+        (DATA_TYPE_OXYGEN_SATURATION, json!({ "spo2_percent": 98 })),
+    ];
+    for (data_type, payload) in cases {
+        let obs = Observation::try_new(
+            Uuid::nil(),
+            UnixTimestamp::from_secs(0),
+            "com.biofocus.applehealth",
+            data_type,
+            payload,
+            1.0,
+        )
+        .expect("obs");
+        validate_observation_payload(&obs).expect(data_type);
+    }
 }
 
 #[test]
@@ -233,6 +419,7 @@ fn signal_feature_insight_serde_smoke() {
         evidence_list: vec![
             EvidenceRef::Feature("FocusScore".into()),
             EvidenceRef::Signal(Uuid::nil()),
+            EvidenceRef::Insight(Uuid::from_u128(7)),
         ],
         action_recommendation: Some("Take a short break.".into()),
     };
@@ -240,4 +427,20 @@ fn signal_feature_insight_serde_smoke() {
         serde_json::from_str(&serde_json::to_string(&insight).expect("insight serialize"))
             .expect("insight deserialize");
     assert_eq!(insight_back, insight);
+
+    let recommendation = Recommendation {
+        id: Uuid::from_u128(3),
+        title: "A gentler pace may help".into(),
+        suggestion: "If it fits your schedule, a short pause may help.".into(),
+        category: "pace".into(),
+        evidence_list: vec![
+            EvidenceRef::Feature("FocusScore".into()),
+            EvidenceRef::Insight(Uuid::from_u128(7)),
+        ],
+    };
+    let recommendation_back: Recommendation = serde_json::from_str(
+        &serde_json::to_string(&recommendation).expect("recommendation serialize"),
+    )
+    .expect("recommendation deserialize");
+    assert_eq!(recommendation_back, recommendation);
 }

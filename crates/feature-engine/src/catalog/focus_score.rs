@@ -7,7 +7,7 @@
 //!   - `keystrokes.rate_per_min` → typing score (`mean_rate / 200 * 100`, clamped 0–100).
 //!   - App category → **not** a taxonomy yet; use upstream [`super::ContextSwitchRateNode`]
 //!     stability: `100 - rate * 50` (clamped). Lower switch rate ⇒ higher stability.
-//!   - `hrv.rmssd_ms` → comfort score (peak 100 at 45 ms, falloff to 0 at 0 / 120 ms).
+//!   - `hrv` → comfort score from mean `rmssd_ms` else `sdnn_ms` (peak 100 at 45 ms, falloff to 0 at 0 / 120 ms; ADR-016).
 //! - **Weights:** typing 0.40, stability 0.35, HRV 0.25 — **renormalized** over
 //!   components that have data in the window.
 //! - **Provenance:** Observation IDs of `keystrokes`, `hrv`, and `context_window`
@@ -25,7 +25,7 @@ use bio_spec::{ExplanationFactor, Feature, FeatureValue, Observation, TimeWindow
 use crate::catalog::confidence::compute_feature_confidence;
 use crate::catalog::context_switch_rate;
 use crate::catalog::window::{
-    in_window, sliding_window_ends, snapshot_time_span, window_ending_at,
+    in_window, sliding_window_ends_for, snapshot_time_span, window_ending_at,
 };
 use crate::{
     ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput,
@@ -90,7 +90,7 @@ impl FeatureNode for FocusScoreNode {
         };
 
         let mut features = Vec::new();
-        for end in sliding_window_ends(min_ts, max_ts) {
+        for end in sliding_window_ends_for(ctx, min_ts, max_ts) {
             let window = window_ending_at(end);
             if let Some(feature) = score_window(ctx, &window) {
                 features.push(feature);
@@ -154,12 +154,12 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
         present_slots += 1;
     }
 
-    if let Some(rmssd) = mean_rmssd_ms(&hrv) {
+    if let Some(hrv_ms) = super::hrv::mean_hrv_ms(&hrv) {
         weighted.push((
             FACTOR_HRV,
             LABEL_HRV,
             WEIGHT_HRV,
-            hrv_comfort_score(rmssd),
+            hrv_comfort_score(hrv_ms),
         ));
         present_slots += 1;
     }
@@ -244,28 +244,7 @@ fn mean_keystroke_rate(obs: &[&Observation]) -> Option<f64> {
     }
 }
 
-fn mean_rmssd_ms(obs: &[&Observation]) -> Option<f64> {
-    let mut sum = 0.0;
-    let mut n = 0usize;
-    for o in obs {
-        if let Some(v) = o
-            .payload
-            .get("rmssd_ms")
-            .and_then(|v| v.as_f64())
-            .filter(|r| r.is_finite() && *r >= 0.0)
-        {
-            sum += v;
-            n += 1;
-        }
-    }
-    if n == 0 {
-        None
-    } else {
-        Some(sum / n as f64)
-    }
-}
-
-/// Peak comfort at 45 ms RMSSD; linear falloff to 0 at 0 ms and 120 ms.
+/// Peak comfort at 45 ms HRV proxy (RMSSD or SDNN); linear falloff to 0 at 0 ms and 120 ms.
 fn hrv_comfort_score(rmssd_ms: f64) -> f64 {
     if !rmssd_ms.is_finite() || rmssd_ms <= 0.0 {
         return 0.0;
@@ -371,6 +350,45 @@ mod tests {
         assert!((last.factors[1].share - 0.35).abs() < 1e-12);
         assert_eq!(last.factors[2].id, "hrv");
         assert!((last.factors[2].share - 0.25).abs() < 1e-12);
+    }
+
+    #[test]
+    fn sdnn_only_fills_hrv_focus_slot() {
+        let batch = vec![
+            obs(
+                1,
+                1000,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                2,
+                1800,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ),
+            obs(
+                3,
+                1200,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 180, "window_secs": 60, "rate_per_min": 180.0 }),
+            ),
+            obs(4, 1500, DATA_TYPE_HRV, json!({ "sdnn_ms": 45.0 })),
+        ];
+        let mut engine = FeatureEngine::new();
+        register_focus_v1(&mut engine).expect("register");
+        let last = engine
+            .run(&batch)
+            .expect("run")
+            .features
+            .into_iter()
+            .rev()
+            .find(|f| f.feature_id == FEATURE_ID)
+            .expect("FocusScore");
+        assert!(
+            last.factors.iter().any(|f| f.id == "hrv"),
+            "SDNN-only HRV should fill hrv factor"
+        );
     }
 
     #[test]

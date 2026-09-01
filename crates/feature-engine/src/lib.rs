@@ -1,9 +1,26 @@
-//! Feature calculation engine (FocusScore, StressIndex, FatigueIndex, MeetingDensity, RecoveryScore).
+//! Feature calculation engine (FocusScore, StressIndex, FatigueIndex, MeetingDensity,
+//! RecoveryScore, DistractionScore, AmbientMediaShare, GitActivityRate, AmbientLightShare,
+//! ActivityBalance, EnergyScore, SleepDebt, NotificationPressure, CognitiveLoad,
+//! DeepWorkScore, AttentionStability, DeskAwayPresence, CircadianOffset,
+//! SustainedLoadIndicator).
 //!
 //! Phase 3 (P3-E2 / E3): DAG scheduler + catalog v1 nodes + alert mapping.
 //! Phase 4 (P4-E1-T1): [`FeatureSnapshot`] for dashboard / IPC (cached read).
 //! Phase 6 (P6-E3-T2): Calendar Features from `calendar_event` Observations.
 //! Phase 7 (P7-E3-T1): `RecoveryScore` from HRV + optional heart_rate.
+//! Phase 8 (P8-E2-T1): [`baseline`] recompute-on-read FocusScore afternoon series (ADR-008).
+//! Phase 10 (P10-E3-T1): `DistractionScore` from `browser_category` (+ optional CSR).
+//! Phase 12 (P12-E3-T1): `AmbientMediaShare` from `now_playing` Observations.
+//! Phase 13 (P13-E3-T1): `GitActivityRate` from `git_activity` Observations.
+//! Phase 16 (P16-E2-T1): `AmbientLightShare` from `ambient_light` Observations.
+//! Phase 17 (P17-E3-T1): Wearable Features + `run_with_step` for chart ranges (ADR-018).
+//! Phase 18 (P18-E3-T1): `NotificationPressure` from `notification_event` Observations.
+//! Phase 20 (P20-E2-T1): `CognitiveLoad` from MeetingDensity + CSR + NotificationPressure (ADR-021).
+//! Phase 21 (P21-E2-T1): `DeepWorkScore` from FocusScore + optional CSR (ADR-022).
+//! Phase 22 (P22-E2-T1): `AttentionStability` from Focus range + optional CSR (ADR-023).
+//! Phase 23 (P23-E2-T1): `DeskAwayPresence` from secondary presence signals (ADR-024).
+//! Phase 24 (P24-E2-T1): `CircadianOffset` from sleep + work/activity timing (ADR-025).
+//! Phase 25 (P25-E2-T1): `SustainedLoadIndicator` from Stress + Fatigue + MeetingDensity (ADR-026).
 //!
 //! # Entrypoint
 //!
@@ -12,8 +29,21 @@
 //! - [`catalog::register_stress_v1`] — `StressIndex` + `FatigueIndex` (v1; needs Focus)
 //! - [`catalog::register_calendar_v1`] — `MeetingDensity` + `RecoveryBetweenMeetings` (v1)
 //! - [`catalog::register_recovery_v1`] — `RecoveryScore` (v1; HRV + optional HR)
-//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar + Recovery
-//! - [`FeatureEngine::run`] — topo compute → [`EngineOutput`]
+//! - [`catalog::register_distraction_v1`] — `DistractionScore` (v1; needs CSR)
+//! - [`catalog::register_ambient_v1`] — `AmbientMediaShare` (v1; `now_playing`)
+//! - [`catalog::register_git_v1`] — `GitActivityRate` (v1; `git_activity`)
+//! - [`catalog::register_ambient_light_v1`] — `AmbientLightShare` (v1; `ambient_light`)
+//! - [`catalog::register_wearable_v1`] — `ActivityBalance` + `EnergyScore` + `SleepDebt` (v1)
+//! - [`catalog::register_notification_v1`] — `NotificationPressure` (v1; `notification_event`)
+//! - [`catalog::register_cognitive_v1`] — `CognitiveLoad` (v1; Feature-level composite)
+//! - [`catalog::register_deep_work_v1`] — `DeepWorkScore` (v1; Feature-level composite)
+//! - [`catalog::register_attention_stability_v1`] — `AttentionStability` (v1; Feature-level composite)
+//! - [`catalog::register_desk_away_v1`] — `DeskAwayPresence` (v1; Observation-level)
+//! - [`catalog::register_circadian_v1`] — `CircadianOffset` (v1; Observation-level timing)
+//! - [`catalog::register_sustained_load_v1`] — `SustainedLoadIndicator` (v1; Feature-level persistence)
+//! - [`catalog::register_catalog_v1`] — Focus + Stress/Fatigue + Calendar + Recovery + Distraction + Ambient media + Git + Ambient light + Wearable + Notification + CognitiveLoad + DeepWorkScore + AttentionStability + DeskAwayPresence + CircadianOffset + SustainedLoadIndicator
+//! - [`baseline::recompute_focus_afternoon_baseline`] — bounded prior-day Focus means
+//! - [`FeatureEngine::run`] / [`FeatureEngine::run_with_step`] — topo compute → [`EngineOutput`]
 //! - [`FeatureSnapshot::from_engine_output`] — Features + Signals for IPC/dashboard
 //! - [`map_alert_level`] — [`EngineOutput`] → [`AlertLevel`] { Green, Yellow, Red }
 //!
@@ -23,6 +53,7 @@
 #![forbid(unsafe_code)]
 
 pub mod alert;
+pub mod baseline;
 pub mod catalog;
 pub mod snapshot;
 
@@ -31,15 +62,31 @@ mod error;
 mod node;
 
 pub use alert::{map_alert_level, AlertLevel, YELLOW_FEATURE_THRESHOLD};
+pub use baseline::{
+    baseline_lookback_start, recompute_focus_afternoon_baseline, utc_day_start,
+    AFTERNOON_END_HOUR_UTC, AFTERNOON_START_HOUR_UTC, BASELINE_CONFIDENCE_GATE,
+    BASELINE_MAX_WINDOWS, BASELINE_MIN_WINDOWS,
+};
 pub use bio_spec::{Feature, FeatureValue, Observation, Signal};
 
 pub use catalog::{
-    register_calendar_v1, register_catalog_v1, register_focus_v1, register_recovery_v1,
-    register_stress_v1, ContextSwitchRateNode, FatigueIndexNode, FocusScoreNode,
-    MeetingDensityNode, RecoveryBetweenMeetingsNode, RecoveryScoreNode, StressIndexNode,
-    CONTEXT_SWITCH_RATE_ID, FATIGUE_INDEX_ID, FOCUS_SCORE_ID, HIGH_STRESS_MIN_DURATION_SECS,
-    HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD, MEETING_DENSITY_ID,
-    RECOVERY_BETWEEN_MEETINGS_ID, RECOVERY_SCORE_ID, STEP_SECS, STRESS_INDEX_ID, WINDOW_SECS,
+    register_ambient_light_v1, register_ambient_v1, register_attention_stability_v1,
+    register_calendar_v1, register_catalog_v1, register_circadian_v1, register_cognitive_v1,
+    register_deep_work_v1, register_desk_away_v1, register_distraction_v1, register_focus_v1,
+    register_git_v1, register_notification_v1, register_recovery_v1, register_stress_v1,
+    register_sustained_load_v1, register_wearable_v1, ActivityBalanceNode, AmbientLightShareNode,
+    AmbientMediaShareNode, AttentionStabilityNode, CircadianOffsetNode, CognitiveLoadNode,
+    ContextSwitchRateNode, DeepWorkScoreNode, DeskAwayPresenceNode, DistractionScoreNode,
+    EnergyScoreNode, FatigueIndexNode, FocusScoreNode, GitActivityRateNode, MeetingDensityNode,
+    NotificationPressureNode, RecoveryBetweenMeetingsNode, RecoveryScoreNode, SleepDebtNode,
+    StressIndexNode, SustainedLoadIndicatorNode, ACTIVITY_BALANCE_ID, AMBIENT_LIGHT_SHARE_ID,
+    AMBIENT_MEDIA_SHARE_ID, ATTENTION_STABILITY_ID, CIRCADIAN_OFFSET_ID, COGNITIVE_LOAD_ID,
+    CONTEXT_SWITCH_RATE_ID, DEEP_WORK_SCORE_ID, DESK_AWAY_PRESENCE_ID, DISTRACTION_SCORE_ID,
+    ENERGY_SCORE_ID, FATIGUE_INDEX_ID, FOCUS_SCORE_ID, GIT_ACTIVITY_RATE_ID,
+    HIGH_STRESS_MIN_DURATION_SECS, HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD,
+    MEETING_DENSITY_ID, MIN_STEPS_AWAY, NOTIFICATION_PRESSURE_ID, RECOVERY_BETWEEN_MEETINGS_ID,
+    RECOVERY_SCORE_ID, SLEEP_DEBT_ID, STEP_SECS, STRESS_INDEX_ID, SUSTAINED_LOAD_INDICATOR_ID,
+    WINDOW_SECS,
 };
 pub use engine::{EngineOutput, FeatureEngine};
 pub use error::{FeatureEngineError, FeatureEngineResult};

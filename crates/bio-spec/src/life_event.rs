@@ -39,12 +39,42 @@ pub fn is_v1_life_event_kind(kind: &str) -> bool {
 ///
 /// - `data_type == "life_event"` → [`validate_life_event_payload`]
 /// - `data_type == "calendar_event"` → [`crate::validate_calendar_event_payload`]
+/// - `data_type == "browser_category"` → [`crate::validate_browser_category_payload`]
+/// - `data_type == "now_playing"` → [`crate::validate_now_playing_payload`]
+/// - `data_type == "git_activity"` → [`crate::validate_git_activity_payload`]
 /// - other types → accepted (no extra payload schema at this layer)
 pub fn validate_observation_payload(obs: &Observation) -> SpecResult<()> {
     match obs.data_type.as_str() {
         DATA_TYPE_LIFE_EVENT => validate_life_event_payload(&obs.payload),
         crate::calendar_event::DATA_TYPE_CALENDAR_EVENT => {
             crate::calendar_event::validate_calendar_event_payload(&obs.payload)
+        }
+        crate::browser_category::DATA_TYPE_BROWSER_CATEGORY => {
+            crate::browser_category::validate_browser_category_payload(&obs.payload)
+        }
+        crate::now_playing::DATA_TYPE_NOW_PLAYING => {
+            crate::now_playing::validate_now_playing_payload(&obs.payload)
+        }
+        crate::git_activity::DATA_TYPE_GIT_ACTIVITY => {
+            crate::git_activity::validate_git_activity_payload(&obs.payload)
+        }
+        crate::ambient_light::DATA_TYPE_AMBIENT_LIGHT => {
+            crate::ambient_light::validate_ambient_light_payload(&obs.payload)
+        }
+        crate::notification_event::DATA_TYPE_NOTIFICATION_EVENT => {
+            crate::notification_event::validate_notification_event_payload(&obs.payload)
+        }
+        crate::step_count::DATA_TYPE_STEP_COUNT => {
+            crate::step_count::validate_step_count_payload(&obs.payload)
+        }
+        crate::active_energy::DATA_TYPE_ACTIVE_ENERGY => {
+            crate::active_energy::validate_active_energy_payload(&obs.payload)
+        }
+        crate::sleep_interval::DATA_TYPE_SLEEP_INTERVAL => {
+            crate::sleep_interval::validate_sleep_interval_payload(&obs.payload)
+        }
+        crate::oxygen_saturation::DATA_TYPE_OXYGEN_SATURATION => {
+            crate::oxygen_saturation::validate_oxygen_saturation_payload(&obs.payload)
         }
         _ => Ok(()),
     }

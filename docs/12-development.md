@@ -61,10 +61,27 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 
 **Companion LAN UI (P5-E2-T1 Done):** Desktop **Companion** section shows copyable primary base URL (`ingestBaseUrl` from `get_pairing_token`), bind-mode / LAN opt-in copy, and existing token Show / Copy / QR. When `bindMode=lan` but primary is still loopback, UI surfaces a calm fallback hint (`BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>`). No pairing busy-loop (load on mount + manual Reload).
 
+**Companion connectivity (P28-E1-T1 / ADR-029):** iOS **Test connection** → `GET /v1/status` (≤5s). Send/Flush preflight before POST. Desktop Companion: loopback warning for physical iPhone, **Enable LAN ingest** checkbox (persists `~/.biofocus/ingest_lan_enabled`, restart required), Copy URL disabled until LAN address is usable.
+
+| Symptom | Likely cause | Checklist |
+| :--- | :--- | :--- |
+| iOS **timeout** (~60s before P28; now ≤5s) | Desktop loopback-only or wrong Base URL | Desktop: enable LAN (UI checkbox or `BIOFOCUS_INGEST_LAN=1`) → **restart** → Reload pairing → copy LAN URL (not `127.0.0.1`) |
+| iOS **loopback on device** message | `127.0.0.1` on physical iPhone | Use `http://192.168.x.x:8787` from Desktop Companion |
+| **LAN on** but no address | Discovery empty / offline NIC | Set `BIOFOCUS_INGEST_BIND_HOST=<mac-lan-ipv4>` → restart → Reload |
+| **401** on Send | Token mismatch | Copy token from Desktop Companion again |
+| **Unreachable** / connection refused | Firewall / AP isolation / Desktop quit | Same Wi‑Fi; allow incoming on `:8787`; keep BioFocus running; iOS **Local Network** permission |
+| curl works on Mac, phone fails | Guest Wi‑Fi client isolation | Try non-guest network or USB tethering (manual URL) |
+
+```bash
+# From Mac (sanity)
+curl -s http://127.0.0.1:8787/v1/status | jq '{bind_mode, base_url_hints, db_status}'
+# After LAN enable + restart — use LAN IP from base_url_hints[0]
+```
+
 **Pipeline (Phase 3 E1):** crate `crates/pipeline`.
 - **Intake (T1):** `pipeline::accept_observations(&[Observation])` → `AcceptedBatch` (`AcceptedForProcessing`). Empty = **Ok**. Helpers: `accept_owned`, `accept_iter`.
 - **Dedupe (T2):** `pipeline::dedupe_observations(&mut DedupeState, &[Observation])` → `DedupedBatch` (`Deduped`); wire `dedupe_accepted`. Rule: drop if same `id` **or** same `(provider_id, data_type, timestamp, payload JSON)` already seen (first wins; in-memory seen-set). SQLite rows never rewritten.
-- **Normalize (T3):** `pipeline::normalize_observations(&[Observation])` → `NormalizedBatch` (`Normalized`); wire `normalize_deduped`. Known types → canonical payload/units (`heart_rate` / `hrv` / `context_window` / `keystrokes`); unknown → pass-through; unparseable known → skip. SQLite rows never rewritten.
+- **Normalize (T3):** `pipeline::normalize_observations(&[Observation])` → `NormalizedBatch` (`Normalized`); wire `normalize_deduped`. Known types → canonical payload/units (`heart_rate` / `hrv` / `context_window` / `keystrokes` / `calendar_event` / `browser_category` / `now_playing` / `git_activity` / `ambient_light`); unknown → pass-through; unparseable known → skip. SQLite rows never rewritten.
 - **Quality chain helper:** `pipeline::run_quality_pipeline(batch, &mut DedupeState)` → accept → dedupe → normalize.
 - **Feature Worker (T4):** `runtime::spawn_feature_worker(source, hook, config)` — idle-safe poll (`recv_timeout` ≥1s when empty); desktop `feature_host::{start,stop}_feature_host` with app lifecycle. Hook stub: `NoopFeatureHook` until Feature Engine (E2). Storage cursor: `ObservationRepository::list_after_created_cursor` (no new schema; launch at DB tip).
 
@@ -73,21 +90,52 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 - **Focus catalog (T2):** `feature_engine::register_focus_v1(&mut engine)` — `ContextSwitchRate` → `FocusScore` (window 15m / step 1m; see `/docs/06-feature-catalog.md`).
 - **Stress/Fatigue (T3):** `feature_engine::register_stress_v1(&mut engine)` — `StressIndex` + `FatigueIndex` (needs FocusScore already registered); contiguous StressIndex > 75 for > 5m → transient `Signal` `High_Stress` (`Severity::High`).
 - **Calendar Features (P6-E3-T2):** `feature_engine::register_calendar_v1(&mut engine)` — `MeetingDensity` (busy overlap fraction 0–1) + `RecoveryBetweenMeetings` (mean free gap minutes) from `calendar_event` Observations.
-- **RecoveryScore (P7-E3-T1):** `feature_engine::register_recovery_v1(&mut engine)` — short-term physiological recovery proxy from `hrv` (+ optional `heart_rate`); confidence (ADR-007) + explanation factors. Full catalog: `feature_engine::register_catalog_v1` = focus + stress + calendar + recovery.
+- **RecoveryScore (P7-E3-T1):** `feature_engine::register_recovery_v1(&mut engine)` — short-term physiological recovery proxy from `hrv` (+ optional `heart_rate`); confidence (ADR-007) + explanation factors. Full catalog: `feature_engine::register_catalog_v1` = focus + stress + calendar + recovery + distraction + ambient + git + ambient light + wearable.
 - **Alert level (E3-T1):** `feature_engine::map_alert_level(&EngineOutput) → AlertLevel` — Red if `High_Stress`; Yellow if latest StressIndex or FatigueIndex > 60; else Green (empty → Green).
 - **IPC alert (E3-T2):** Desktop `get_status` includes `alertLevel` (`green`/`yellow`/`red`). Feature Worker hook runs catalog → map → shared `AlertState`. Idle/Ready/Error (`dbStatus`) unchanged. UI reads via IPC only.
 - **Menubar alert UX (E3-T3):** Shell shows calm Steady/Elevated/High indicator (color + copy) from `alertLevel`; tray tooltip includes the label. Poll ~5s. QA: `?mockAlert=green|yellow|red`.
-- **Feature snapshot IPC (P4-E1-T1):** `feature_engine::FeatureSnapshot` from last `EngineOutput`; desktop caches via `SnapshotState` + `invoke("get_feature_snapshot")` (pure read). `get_status` stays lean. Contract: `docs/09-api.md`.
+- **Feature snapshot IPC (P4-E1-T1):** `feature_engine::FeatureSnapshot` from last `EngineOutput`; desktop caches via `SnapshotState` + `invoke("get_feature_snapshot")` (pure read; **latest per featureId**). `get_status` stays lean. Contract: `docs/09-api.md`.
 - **Feature confidence (P7-E1-T1 / ADR-007):** domain `Feature.confidence` ∈ `[0.0, 1.0]` = coverage × mean evidence `Observation.confidence`; catalog nodes compute it; snapshot IPC exposes `confidence`. No Feature SQLite schema.
-- **Explanation factors (P7-E2-T1 / P7-E3-T1):** optional `Feature.factors` `{ id, label, share }` — calm input-share breakdown; `FocusScore` and `RecoveryScore` emit renormalized shares (sum 1.0); IPC omits key when empty. No ADR (additive optional field); no SQLite schema.
+- **Explanation factors (P7-E2-T1 / P7-E3-T1 / P10-E3-T1 / P12-E3-T1 / P13-E3-T1 / P16-E2-T1 / P17-E3-T1):** optional `Feature.factors` `{ id, label, share }` — calm input-share breakdown; includes wearable `ActivityBalance` / `EnergyScore` / `SleepDebt`; IPC omits key when empty. No ADR (additive optional field); no SQLite schema.
 - **Dashboard shell (P4-E1-T2):** separate Tauri window `label: dashboard` (`index.html?view=dashboard`); Menubar **Open Dashboard** → `invoke("open_dashboard")` (show/focus; CloseRequested → hide). Calm loading/empty/error via snapshot IPC. QA mocks: `?view=dashboard&mockSnapshot=empty|ready|error` (see `apps/desktop/README.md`).
-- **Recharts Feature series (P4-E1-T3):** Dashboard `ChartSlot` — LineChart for `FocusScore` / `StressIndex` / `FatigueIndex` (+ `ContextSwitchRate` secondary axis when present); calm labels; refresh on open + ~30s. Dep: `recharts` in `apps/desktop`.
+- **Recharts Feature series (P4-E1-T3 / P17-E3):** Dashboard `ChartSlot` — range picker `1h`/`8h`/`12h`/`1d`/`1w` → `invoke("get_feature_series")` recompute-on-read; LineChart for catalog scores (+ `ContextSwitchRate` secondary axis when present); Snapshot list stays on `get_feature_snapshot` (latest). Calm empty/loading. Dep: `recharts` in `apps/desktop`.
 - **knowledge-engine skeleton (P4-E2-T1):** pluggable `InsightRule` + `KnowledgeEngine::evaluate(&[Feature], &[Signal]) → Result<Vec<Insight>>`; types `Insight` / `EvidenceRef` from `bio-spec`; empty/no-match → `Ok([])`.
 - **Rule Insights v1 (P4-E2-T2):** `knowledge_engine::register_insights_v1` — `High_Stress` Signal + elevated `ContextSwitchRate` (≥1.0) rules with calm copy / `EvidenceRef`; host must register (empty engine still `Ok([])`). IPC/UI → T3.
 - **Insights IPC + Dashboard list (P4-E2-T3):** Desktop `invoke("get_insights")` — evaluate-on-read over cached `FeatureSnapshot`; host `KnowledgeEngine::new()` + `register_insights_v1` at startup. Dashboard Insights list (evidence refs) + calm empty state; refresh on open + ~30s. Contract: `docs/09-api.md`.
+- **Pattern Discovery baseline (P8-E2-T1 / ADR-008):** `focus_vs_recent_baseline_v1` — live `FocusScore` vs mean of ≤7 prior **UTC afternoon** windows (13:00–17:00 UTC; local-TZ afternoon deferred); emit when `|Δ| ≥ 10` and confidence ≥ 0.4. Host `pattern_host` loads Observations, recomputes via `feature_engine::baseline`, optional in-process memo (TTL + watermark) — not SQLite. Thin history → omit.
+- **Pattern Insights UX (P8-E3-T1):** Same `get_insights` → Dashboard Insights list; calm category label for `pattern` / `focus` / `stress`; title/description as Core returns; empty/thin history stays calm. QA mocks: `?mockInsights=empty|ready|pattern|error` (see `apps/desktop/README.md`). UI ↛ SQLite.
+- **Recommendations shape (P9-E1-T1 / ADR-009):** First-class `Recommendation` + `RecommendationRule` in `knowledge-engine` (evaluate-on-read after Insights); Evidence may cite Feature / Signal / Insight; **no** Recommendation SQLite store; thin `Insight.actionRecommendation` stays optional hint only. Engine → P9-E2; IPC `get_recommendations` → P9-E3. Contract sketch: `docs/09-api.md`.
+- **Recommendations v1 engine (P9-E2-T1):** `bio-spec::{Recommendation, EvidenceRef::Insight}`; `register_recommendations_v1` + `focus_dip_pace_hint_v1` (Focus-below-baseline pattern Insight + FocusScore confidence ≥ 0.4 → calm pace hint); `KnowledgeEngine::evaluate_recommendations` / `evaluate_insights_and_recommendations`. IPC/UX → P9-E3.
+- **Recommendations IPC / UX (P9-E3-T1):** Desktop `invoke("get_recommendations")` — host registers Recommendations alongside Insights; evaluate-on-read after Insights on Feature snapshot + pattern inputs. Dashboard **Suggestions** section (Insights-adjacent); calm empty state. QA mocks: `?mockRecommendations=empty|ready|pace|error`. UI ↛ SQLite. Contract: `docs/09-api.md`.
+- **Plugin wave-1 (P10-E1-T1 / ADR-010):** Chosen source = **Browser categories** (`data_type: "browser_category"`; coarse labels only; opt-in `BIOFOCUS_BROWSER_CATEGORIES`; default off). Persist via existing `observations` store — **no** migration / plugin registry table. IDE/Git deferred. Collector → **P10-E2**; `DistractionScore` → **P10-E3**. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md`.
+- **Phase 12 ambient + packaging (P12-E1-T1 / ADR-012):** Primary = opt-in **Now Playing** Observations (`data_type: "now_playing"`; `BIOFOCUS_NOW_PLAYING`; default off; coarse `media_kind` + `is_playing` only). Existing `observations` store — **no** migration. Weather/light deferred. Secondary = signed-build / notarization / update **runbook** (E3 shipped); optional sync stance off by default (no sync product in P12). Collector = **P12-E2**; Feature `AmbientMediaShare` + packaging runbook = **P12-E3**. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md`.
+- **Now Playing collector (P12-E2-T1):** `NowPlayingPlugin` (`com.biofocus.macos.now_playing`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_NOW_PLAYING=1`. Emit on change / poll ≥5s; `stop_stream` joins. System probe soft-fails idle (no titles). Validation: `bio_spec::validate_now_playing_payload`. Tests: `collector_integration` + bio-spec contracts. Feature companion: `AmbientMediaShare` (P12-E3 shipped).
+- **AmbientMediaShare + packaging (P12-E3-T1):** `feature_engine::register_ambient_v1` / `register_catalog_v1` — share of window samples with `is_playing && media_kind ∈ {music,podcast,other}` (0–100); **omit** empty / only-`none` / only-`unknown`; ADR-007 confidence + optional kind factors. Pipeline normalizes `now_playing` (strips title/artist/album/lyrics/playlist ids). Catalog: `docs/06-feature-catalog.md` §1.9. Packaging companion: [`docs/18-packaging-runbook.md`](18-packaging-runbook.md) (signed `.app`/`.dmg`, notarization, update-channel stance; optional sync off by default; AGPLv3 Core stays open).
+- **Plugin wave-2 (P13-E1-T1 / ADR-013):** Chosen source = **Git activity aggregates** (`data_type: "git_activity"`; coarse `activity_kind` + optional `event_count`; opt-in `BIOFOCUS_GIT_ACTIVITY`; default off). Existing `observations` store — **no** migration. IDE deferred (no additive privacy-safe session kind beyond `context_window` for v1). Weather/light + App Store packaging product deferred. Collector = **P13-E2**; Feature `GitActivityRate` = **P13-E3**. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md`.
+- **Git activity collector (P13-E2-T1):** `GitActivityPlugin` (`com.biofocus.macos.git`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_GIT_ACTIVITY=1`. Emit on change / poll ≥5s; `stop_stream` joins. System probe soft-fails idle (no path-allowlist table in v1). Validation: `bio_spec::validate_git_activity_payload`. Pipeline normalizes `git_activity` (strips paths/remotes/branch/SHA/message/diff/author). Tests: `collector_integration` + bio-spec contracts. Feature companion: `GitActivityRate` (P13-E3).
+- **GitActivityRate (P13-E3-T1):** `feature_engine::register_git_v1` / `register_catalog_v1` — sum of `event_count` (default 1) for `activity_kind ∈ {commit,checkout,sync,other}` → events per 15m window; **omit** empty / only-`idle` / only-`unknown`; ADR-007 confidence + kind factors. Distinct from `DistractionScore`. Catalog: `docs/06-feature-catalog.md` §1.10.
+- **Git watched-roots allowlist (P14-E1-T1 / ADR-014):** v1 durable store = local file `~/.biofocus/git-watched-roots.toml` (absolute roots only). Observation payload unchanged (ADR-013). **No** SQLite allowlist table / **no** migration. Optional Settings/IPC / dogfood gate = **P14-E3**.
+- **Git live probe + allowlist (P14-E2-T1):** `SystemGitActivityProbe` loads allowlist (file SoT; `BIOFOCUS_GIT_WATCHED_ROOTS` only if file absent); discovers nested repos under roots; emits coarse `git_activity` on HEAD/reflog/FETCH_HEAD/index change; empty allowlist → idle. Still opt-in `BIOFOCUS_GIT_ACTIVITY`. Feature `GitActivityRate` unchanged. Tests: empty allowlist no emit; fixture root commit → channel → persist; `stop_stream` freezes. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md` / `docs/10-security.md`.
+- **Git allowlist Settings + dogfood (P14-E3-T1):** Menubar **Git folders** — `invoke("get_git_watched_roots")` / `invoke("set_git_watched_roots")` read/write ADR-014 TOML (`BIOFOCUS_HOME` for tests). UI ↛ SQLite. No `GitActivityRate` rewrite. Browser QA: `?mockGitRoots=empty|ready|error`. Dogfood runbook: below § Git activity dogfood.
+- **Phase 15 companion HRV + autonomy (P15-E1–E3 / ADR-016):** iOS Auto-sync — HealthKit HR + HRV SDNN → local queue → Desktop ingest; Core `normalize_hrv` / Features accept **rmssd_ms OR sdnn_ms**. ADR-015 ambient light resumed in **Phase 16**. Dogfood: below § Companion autonomy.
+- **Phase 16 ambient light (ADR-015 / P16-E1–E2):** Opt-in `AmbientLightPlugin` (`com.biofocus.macos.ambient_light`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_AMBIENT_LIGHT=1`. Emit on light-band change / poll ≥5s; `stop_stream` joins. System probe soft-fails idle (no camera / screen / geo / mic). Validation: `bio_spec::validate_ambient_light_payload`. Tests: `collector_integration` + bio-spec contracts. Feature: `AmbientLightShare` via `register_ambient_light_v1` / `register_catalog_v1` (P16-E2) — closed-set sample share 0–100; omit empty / only-`unknown`. Branch `phase/16-ambient-light`. **Phase 16 Done** (2026-08-11).
+- **Phase 17 wearable + charts (ADR-017 · ADR-018) ✅ Done 2026-08-11:** Contracts (E1) · Companion emit (E2) · Chart path live (E3) — Desktop `invoke("get_feature_series")` recompute-on-read (ranges `1h`/`8h`/`12h`/`1d`/`1w`; default steps 60/300/300/900/3600); Snapshot = latest-per-id; catalog `register_wearable_v1` — `ActivityBalance` / `EnergyScore` / `SleepDebt` (omit when inputs absent; no clinical SpO2 Features). `FeatureEngine::run_with_step` for coarser series. Optional in-process series memo — **no** Feature-history SQLite. Branch `phase/17-wearable-charts` (cluster PR after freeze). Dogfood: § Companion autonomy (wearable depth); physical-device check recommended.
+- **Phase 18 notification pressure (ADR-019) ✅ Done 2026-08-11:** Observation `data_type: "notification_event"` (coarse `count` + optional closed-set labels; **no** body/title content) → existing `observations` store; opt-in `BIOFOCUS_NOTIFICATION_EVENTS` default **off**; `NotificationPlugin` (`com.biofocus.macos.notifications`) in `macos-collector`; Desktop `ingest_host` arms only when env set. Soft-fail system probe idle; scripted probe for tests. Validation: `bio_spec::validate_notification_event_payload`; ingest `invalid_notification_event`; pipeline strips content keys. Catalog Feature **`NotificationPressure`** via `register_notification_v1` / `register_catalog_v1` — sum `count` → 0–100 (saturation 20/15m); omit empty; ADR-007 confidence. Branch `phase/18-notification-pressure` (cluster PR after freeze). **PM-GATE-POST-P18** ✅ chose Live NC OS mapping for Phase 19.
+- **Phase 19 live NC OS mapping (ADR-020) ✅ Done 2026-08-11:** Live `SystemNotificationEventProbe` → **usernoted** SQLite allowlist (`delivered_date` + `app.identifier` only). Soft-fail when missing / TCC denied. ADR-019 payload unchanged; **no** Feature rewrite. Dogfood runbook: below § Notification events dogfood. Branch `phase/19-live-nc-mapping` (cluster PR after freeze). **PM-GATE-POST-P19** ✅ chose `CognitiveLoad` for Phase 20.
+- **Phase 20 CognitiveLoad (ADR-021 ✅ Done 2026-08-11):** Catalog Feature **`CognitiveLoad`** via `register_cognitive_v1` / `register_catalog_v1` — Feature-level composite of **MeetingDensity + ContextSwitchRate + NotificationPressure**; window **15m / 1m**; output 0–100; **renormalize** present inputs (omit only when none); ADR-007 expected slots = 3; explanation factors. Calm framing: “combined demand in this window”. Dashboard chart series label **Combined demand** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.16. Dogfood: below § CognitiveLoad dogfood. Branch `phase/20-cognitive-load` (cluster PR after freeze). **PM-GATE-POST-P20** ✅ chose `DeepWorkScore` for Phase 21.
+- **Phase 21 DeepWorkScore (ADR-022 ✅ Done 2026-08-11):** Catalog Feature **`DeepWorkScore`** via `register_deep_work_v1` / `register_catalog_v1` — Feature-level composite of **FocusScore (required) + ContextSwitchRate (optional)**; idle **dropped** for v1; window **15m / 1m**; output 0–100; omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “sustained focus in this window”. Dashboard chart series label **Sustained focus** when present (omit stays quiet). **No** new Observation family / **no** migration; leaf Feature formulas untouched. Catalog: `docs/06-feature-catalog.md` §1.17. Dogfood: below § DeepWorkScore dogfood. Branch `phase/21-deep-work-score` (cluster PR after freeze).
+- **Phase 22 AttentionStability (ADR-023 ✅ Done 2026-08-11):** Catalog Feature **`AttentionStability`** via `register_attention_stability_v1` / `register_catalog_v1` — Feature-level **variance/stability** composite of **FocusScore (required) + ContextSwitchRate (optional)**; window **15m / 1m**; output 0–100; Focus term from **in-window Focus range** (not Focus level); omit without Focus; **renormalize** when CSR absent; ADR-007 expected slots = 2; explanation factors. Calm framing: “focus stability in this window” — not ADHD / “you can’t focus”. **Distinct from DeepWorkScore** (intensity). Dashboard chart series label **Focus stability** when present (omit stays quiet). **No** new Observation family / **no** migration; **do not** rewrite FocusScore / CSR / DeepWorkScore. Catalog: `docs/06-feature-catalog.md` §1.18. Dogfood: below § AttentionStability dogfood. Branch `phase/22-attention-stability` (cluster PR after freeze). **Next:** Phase 23 **Personal Context Layer** — Ready **P23-E1-T1** (**ADR-024**). Gate **PM-GATE-POST-P22** ✅.
+- **Phase 23 Personal Context Layer (ADR-024 ✅ Done 2026-08-11):** **`DeskAwayPresence`** via `register_desk_away_v1` / `register_catalog_v1` — secondary signals only (walk Life Event and/or steps ≥ 40); omit without positive away evidence; quiet alone insufficient; **no** GPS; ADR-007 slots = 3. Calm framing: “away from desk in this window”. Dashboard chart series label **Away from desk** when present (omit stays quiet). **Health context:** opt-in `~/.biofocus/health-context.toml` → `report_engine::build_report_with_pack` injects “User-declared context” (L5; Feature math does **not** branch on labels). Declare via editing that file (no Dashboard health editor in v1). Large literature-band library **deferred**. Catalog §1.19. Dogfood: below § DeskAwayPresence / health-context dogfood. Branch `phase/23-personal-context` (cluster PR after freeze).
+- **Phase 24 CircadianOffset (ADR-025 ✅ Done 2026-08-12):** Catalog Feature **`CircadianOffset`** via `register_circadian_v1` / `register_catalog_v1` — **Observation-level timing** of **`sleep_interval`** vs work/activity (`keystrokes` / `context_window`, optional `step_count` / `active_energy` / workout `life_event`); Feature cadence **15m / 1m** with **24h lookback**; output **0–100** alignment (not signed chronotype hours); **omit** unless both sleep + work/activity timing present; ADR-007 expected slots = 2; explanation factors. Calm framing: “schedule alignment in this window” — not chronotype / sleep-disorder / “night owl so you fail”. **Distinct from SleepDebt** (debt ≠ timing) and **DeskAwayPresence** (away ≠ circadian). Dashboard chart series label **Schedule alignment** when present (omit stays quiet). **No** new Observation family / **no** migration; **do not** rewrite SleepDebt / EnergyScore / ActivityBalance / FocusScore / DeskAwayPresence. Catalog: `docs/06-feature-catalog.md` §1.20. Dogfood: below § CircadianOffset dogfood. Branch `phase/24-circadian-offset` (cluster PR after freeze).
+- **Phase 25 SustainedLoadIndicator (ADR-026 ✅ Done 2026-08-12):** Catalog Feature **`SustainedLoadIndicator`** via `register_sustained_load_v1` / `register_catalog_v1` — **Feature-level persistence** of **`StressIndex` + `FatigueIndex` + `MeetingDensity`** (schedule proxy); Feature cadence **15m / 1m** with **4h lookback**; output **0–100**; **omit** when both Stress and Fatigue absent; **renormalize** when MeetingDensity absent; ADR-007 expected slots = 3; explanation factors. Calm framing: “prolonged load in this window” — not burnout / “you are burned out”. **Distinct from CognitiveLoad** (current demand ≠ prolonged persistence). Dashboard chart series label **Prolonged load** when present (omit stays quiet). **No** new Observation family / **no** migration; **do not** rewrite Stress / Fatigue / MeetingDensity / CognitiveLoad; **do not** use CognitiveLoad as input. Catalog: `docs/06-feature-catalog.md` §1.21. Dogfood: below § SustainedLoadIndicator dogfood. Branch `phase/25-sustained-load` (cluster PR after freeze). Deferred: IDE · weather · App Store · Companion polish · TypingRhythm · DeepFocusLikelihood · precise GPS.
+- **Phase 26 OSS Public Launch Hygiene (ADR-027 ✅ Done 2026-08-12):** Phase 26 primary = **OSS launch hygiene** (not Feature math). SoT **[`docs/19-oss-public-launch.md`](19-oss-public-launch.md)** + **§ Dry-run release checklist** — **public launch not Done** (layers 2–3 wait until after PR freeze + notarized Release). Packaging ops stay in **[`docs/18-packaging-runbook.md`](18-packaging-runbook.md)** (signed/notarized distribution — do not duplicate secrets). Locked layers: (1) repo/docs honesty; (2) post–**2026-09-01** `main` catch-up / cluster merges; (3) notarized GitHub Release **before** flipping public visibility. During freeze: docs + local unsigned dry-run **notes** OK; no PR / no public Release flip. AGPLv3 Core open; personal self-tracking framing; **no** migration / **no** new Observation / Feature math. Branch `phase/26-oss-public-launch` (cluster PR after freeze).
+- **Phase 27 Pattern Discovery rule expansion (ADR-028 ✅ / P27-E2 Done · E3 Ready):** Phase 27 primary = additional deterministic Knowledge rules on **shipped** Features (extend ADR-008 / ADR-009 evaluate-on-read). **Shipped E2 slate** via `register_insights_v1` / `register_recommendations_v1`: InsightRules `cognitive_load_elevated_v1` (`CognitiveLoad` ≥ 60 → category `demand`) + `sustained_load_elevated_v1` (`SustainedLoadIndicator` ≥ 60 → category `prolonged_load`); RecommendationRule `combined_demand_pace_hint_v1` (after cognitive-load Insight; category `pace`). Thresholds locked ±10 band; omit when required Feature absent / non-scalar / below threshold. Calm personal framing; L5 LLM interpret-only. **No** new Feature catalog math / Observation families / migration / Insight SQLite store. Existing v1 rules unchanged. Next → **P27-E3-T1** dogfood / optional Dashboard Insights·Suggestions surface. Branch `phase/27-pattern-rules` (cluster PR after freeze). **Public launch not Done** (OSS layers 2–3 parked).
+- **Browser categories collector (P10-E2-T1):** `BrowserCategoryPlugin` (`com.biofocus.macos.browser`) in `macos-collector`; Desktop `ingest_host` starts only when `BIOFOCUS_BROWSER_CATEGORIES=1`. Emit on change / poll ≥5s; `stop_stream` joins. OS probe: known browser → `unknown` + bundle (no URLs). Validation: `bio_spec::validate_browser_category_payload`. Tests: `collector_integration` + bio-spec contracts. `DistractionScore` → P10-E3.
+- **DistractionScore (P10-E3-T1):** `feature_engine::register_distraction_v1` / `register_catalog_v1` — context fragmentation from `browser_category` (+ optional CSR); omit only-`unknown`/empty; ADR-007 confidence + explanation factors. Pipeline normalizes `browser_category` (strips url/title/href). Catalog: `docs/06-feature-catalog.md` §1.8.
 - **report-engine builder (P4-E3-T1):** `report_engine::build_report(&[Feature], &[Insight]) → Result<ReportDocument>` — deterministic offline `markdown` + `llm_prompt` (no HTTP). Empty inputs → calm minimal report. LLM interpret-only; Feature math stays in `feature-engine`. Format: `docs/09-api.md` § report-engine.
-- **Optional local LLM (P4-E3-T2):** **Off by default.** Set `BIOFOCUS_LOCAL_LLM=1` to opt in. Then `report_engine::interpret_report(&doc, &LocalLlmConfig::from_env()).await` POSTs only `ReportDocument::llm_prompt` to an OpenAI-compatible base URL (default `http://127.0.0.1:11434/v1` — local Ollama). Optional: `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL` (default `llama3.2`), `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS` (default `30`). HTTP timeout applies. **Never auto-called on app startup** — hosts must invoke only on explicit user action. Privacy: when disabled, no network. When enabled, the prompt text (offline report facts + interpret-only instructions) leaves the BioFocus process toward the configured base URL only — prefer localhost; a remote URL is the operator’s choice/responsibility. No Feature math in this path; no vendor cloud telemetry by default.
-- **Report UX (P4-E3-T3):** Dashboard `ReportSlot` — explicit «Generate report» → `invoke("generate_report")`. Host assembles offline `build_report` from cached Feature snapshot + evaluate-on-read Insights; optional `interpret_report` only when `LocalLlmConfig::from_env().enabled`. Soft `llmStatus` / `llmError` on timeout or failure. Never called on Dashboard open or 30s Feature/Insights poll. Contract: `docs/09-api.md` § `generate_report`. QA mocks: `?mockReport=…`.
+- **report-engine prompt packs (P11-E2-T1 / ADR-011):** `build_report_with_pack(id, version, features, insights, recommendations) → Result<ReportDocument>` — in-process named/versioned packs (default `biofocus.default` @ `1`). No Feature math; no SQLite; no network from pack builder. See `docs/09-api.md` § Prompt packs.
+- **Optional local LLM (P4-E3-T2):** **Off by default.** Set `BIOFOCUS_LOCAL_LLM=1` to opt in. Then `report_engine::interpret_report(&doc, &LocalLlmConfig::from_env()).await` POSTs only `ReportDocument::llm_prompt` to an OpenAI-compatible base URL (default `http://127.0.0.1:11434/v1` — local Ollama). Optional: `BIOFOCUS_LOCAL_LLM_BASE_URL`, `BIOFOCUS_LOCAL_LLM_MODEL` (default `llama3.2`), `BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS` (default `30`), `BIOFOCUS_LOCAL_LLM_API_KEY` (optional Bearer for remote OpenAI-compatible providers — empty/missing = no auth header; **never** logged or returned by `get_local_llm_status`). HTTP timeout applies. **Never auto-called on app startup** — hosts must invoke only on explicit user action. Privacy: when disabled, no network. When enabled, the prompt text (offline report facts + interpret-only instructions) leaves the BioFocus process toward the configured base URL only — prefer localhost; a remote URL + API key is the operator’s choice/responsibility (e.g. Gemini OpenAI-compat gateway). No Feature math in this path; no vendor cloud telemetry by default.
+- **Report UX (P4-E3-T3 / P11-E3-T1):** Dashboard `ReportSlot` — calm **Local AI** provider status via `invoke("get_local_llm_status")` (config-only: `disabled` / `ready` / `error`; no HTTP probe). Explicit «Generate report» → `invoke("generate_report")`. Host assembles offline `build_report_with_pack("biofocus.default", "1", …)` from cached Feature snapshot + evaluate-on-read Insights + Recommendations; optional `interpret_report` only when `LocalLlmConfig::from_env().enabled`. Soft `llmStatus` / `llmError` on timeout or failure. Never called on Dashboard open or 30s Feature/Insights poll. Contract: `docs/09-api.md` § `get_local_llm_status` / `generate_report`. QA mocks: `?mockReport=…`, `?mockLlmStatus=disabled|ready|error`.
 - **Life Events quick-log (P6-E2-T1):** Menubar Life events — `invoke("log_life_event")` / `invoke("list_recent_life_events")`. Host validates via `bio_spec` and inserts into the existing Observation store (`data_type: "life_event"`). No UI→SQLite; no life-event poll. Contract: `docs/09-api.md`. Browser QA: `?mockLifeEvents=…` (see `apps/desktop/README.md`).
 ```bash
 cargo test -p feature-engine
@@ -128,6 +176,27 @@ export BIOFOCUS_CALENDAR_ICS="$HOME/Desktop/biofocus-dogfood.ics"
 ```
 Emits `calendar_event` Observations (`uid` / `start` / `end` / `all_day` / `busy`) via rare poll ≥60s on the same channel → persist. No Google/Outlook OAuth. Titles/bodies are not stored or logged. Default off.
 
+**Browser categories (P10-E2-T1, opt-in):**
+```bash
+export BIOFOCUS_BROWSER_CATEGORIES=1
+# restart Desktop
+```
+Emits `browser_category` Observations (`category` + optional `browser_bundle_id`) on change / poll ≥5s → same channel → persist. **Never** stores URLs or page titles. OS probe v1 emits `unknown` for known browsers (no URL mapping). Default off.
+
+**Now Playing ambient (P12-E2-T1, opt-in):**
+```bash
+export BIOFOCUS_NOW_PLAYING=1
+# restart Desktop
+```
+Arms `NowPlayingPlugin` (poll ≥5s; emit on change). System probe soft-fails idle without titles; use scripted probes in tests. Default off. Catalog Feature: `AmbientMediaShare` (see packaging bullet above / `docs/06-feature-catalog.md` §1.9).
+
+**Ambient light (P16-E1-T1, opt-in):**
+```bash
+export BIOFOCUS_AMBIENT_LIGHT=1
+# restart Desktop
+```
+Arms `AmbientLightPlugin` (poll ≥5s; emit on light-band change). System probe soft-fails idle without camera/screen/geo/mic; use scripted probes in tests. Default off. Catalog Feature: `AmbientLightShare` (`docs/06-feature-catalog.md` §1.11).
+
 ### Collector test suite (P2-E2-T3)
 
 ```bash
@@ -141,7 +210,7 @@ cargo test -p macos-collector --test collector_integration
 cargo test -p ingest
 ```
 
-Integration coverage (`tests/collector_integration.rs`): `context_window`, `keystrokes`, and synthetic / ICS `calendar_event` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
+Integration coverage (`tests/collector_integration.rs`): `context_window`, `keystrokes`, synthetic / ICS `calendar_event`, mock `browser_category` / `now_playing` / `git_activity` / `ambient_light` land in storage via `spawn_persist_worker`; after `stop_stream`, probe call counts freeze (no busy-loop). Pause for collectors = `stop_stream` (plugin trait has no separate pause API).
 
 ### Companion sample path (P2-E3-T1)
 
@@ -175,6 +244,228 @@ IPC: `invoke("get_pairing_token")` — see `docs/09-api.md`. No cloud account; U
 - Share path: Desktop Companion UI (copy / QR) — do not commit the token
 - Details: `docs/10-security.md`
 
+### Companion autonomy dogfood (P15-E3 / ADR-016 · P17-E2 / ADR-018)
+
+1. Desktop LAN: `export BIOFOCUS_INGEST_LAN=1` (and `BIOFOCUS_INGEST_BIND_HOST` if needed) → `pnpm tauri dev`.
+2. Confirm `curl -s http://<lan-ip>:8787/v1/status` shows `"bind_mode":"lan"`.
+3. Rebuild/run iOS companion from Xcode; paste Base URL + token; leave **Auto-sync** on.
+4. Tap **Send latest wearable samples now** once (authorizes HealthKit reads for HR/HRV/steps/energy/sleep/SpO2).
+5. Verify rows:
+```bash
+sqlite3 ~/.biofocus/data/biofocus_main.db \
+  "SELECT data_type, COUNT(*) FROM observations
+   WHERE provider_id='com.biofocus.applehealth' GROUP BY 1;"
+```
+6. Expect `heart_rate` always when present; `hrv` / `oxygen_saturation` / sleep may be sparse (Mi via Apple Health) — soft-omit, calm/expected; never invent SpO2. Chart ranges + Features shipped in P17-E3. Not clinical.
+
+### Git activity dogfood (P14-E3-T1 / ADR-014)
+
+Personal self-tracking only — not workplace monitoring.
+
+1. **Enable collector:** `export BIOFOCUS_GIT_ACTIVITY=1` (default off).
+2. **Allowlist (required for live emit):** non-empty absolute roots in `~/.biofocus/git-watched-roots.toml`, **or** use Menubar **Git folders** (`get_git_watched_roots` / `set_git_watched_roots`) to save the same file.
+3. **Expect:** coarse `git_activity` Observations (`activity_kind` + optional `event_count`) → existing Feature `GitActivityRate`. Empty / missing allowlist → soft-fail idle (no whole-disk scan).
+4. **CI / tests without a home file:** when the config file is **absent**, optional `BIOFOCUS_GIT_WATCHED_ROOTS=/abs/a:/abs/b` (colon or comma). File remains SoT when present (no env merge). Tests may set `BIOFOCUS_HOME=/tmp/…` so the TOML lands under `$BIOFOCUS_HOME/git-watched-roots.toml`.
+5. **Privacy:** roots stay in config / Settings IPC only — **never** in Observation payloads or default logs. See `docs/08-plugin-sdk.md` §7.1 / `docs/10-security.md`.
+
+Example file:
+
+```toml
+version = 1
+roots = [
+  "/Users/you/Developer/AI Project/BioFocus",
+]
+```
+
+### Notification events dogfood (P19-E3-T1 / ADR-019 · ADR-020)
+
+Personal self-tracking only — **not** workplace / employer notification monitoring.
+
+1. **Enable collector:** `export BIOFOCUS_NOTIFICATION_EVENTS=1` (default **off**). Restart Desktop so `ingest_host` arms `NotificationPlugin`.
+2. **Full Disk Access (often required):** macOS may block read of  
+   `~/Library/Group Containers/group.com.apple.usernoted/db2/db`  
+   without **System Settings → Privacy & Security → Full Disk Access** for BioFocus (or your terminal when dogfooding CLI). Without access the live probe **soft-fails idle** (no emit) — expected, not a crash.
+3. **Privacy bar:** Observations are coarse `count` + optional closed-set `category` / `interruption_level` / `app_kind` only. The probe **never** `SELECT`s `record.data` / title / body / subtitle / message / userInfo / attachments. Do not grant Accessibility “for richer text” — that is out of scope.
+4. **Expect live path:** after a new Notification Center delivery (and ≥5s poll / identity change), SQLite gains `data_type = 'notification_event'` rows from `com.biofocus.macos.notifications`. Existing catalog Feature **`NotificationPressure`** (0–100; omit when empty) consumes those rows — **no** formula rewrite in Phase 19.
+5. **Verify Feature (no UI→SQLite):**
+   - **Live:** Menubar / Dashboard via IPC `get_feature_snapshot` (and optional `get_feature_series`) — look for `NotificationPressure` after live emits exist.
+   - **Counts only (debug):**  
+     `sqlite3 ~/.biofocus/data/biofocus_main.db "SELECT COUNT(*) FROM observations WHERE data_type='notification_event';"`  
+     (operator check; product UI must not open SQLite.)
+   - **Fixture / CI path:** scripted probe / `write_fixture_nc_db` + `SystemNotificationEventProbe::with_db_path` in `macos-collector` tests — proves emit→channel→persist and Feature registration without FDA.
+6. **Calm soft-fail note:** if the env is on but no `notification_event` rows appear, treat mapping as **unavailable** (FDA / missing DB / schema) — idle is correct. Re-check Full Disk Access; keep personal framing (“interruption intensity in this window”), never clinical / workplace copy.
+7. Contracts: `docs/07-contracts.md` / `docs/08-plugin-sdk.md` / `docs/10-security.md`.
+
+### CognitiveLoad dogfood (P20-E3-T1 / ADR-021)
+
+Personal self-tracking only — **not** workplace / employer demand scoring. Calm framing: **“combined demand in this window”** — never “you are overloaded”, burnout, ADHD, or clinical cognitive-load diagnosis.
+
+1. **Prerequisite:** Phase 20 E2 shipped `CognitiveLoad` in `feature-engine` (`register_cognitive_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf formulas (`MeetingDensity` / `ContextSwitchRate` / `NotificationPressure`) unchanged.
+2. **Inputs (Feature-level):** the composite reads upstream Features for the same window:
+   - **MeetingDensity** — opt-in calendar (`BIOFOCUS_CALENDAR` / ICS dogfood as elsewhere).
+   - **ContextSwitchRate** — live `context_window` from macOS context collector (usual Desktop path).
+   - **NotificationPressure** — optional; enable `BIOFOCUS_NOTIFICATION_EVENTS=1` (+ FDA for live NC — § Notification events dogfood). When notifications opt-in is **off**, CognitiveLoad still **emits from present leaves** (renormalize) with lower ADR-007 confidence.
+3. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine cognitive_load
+   ```
+   Covers rich all-three emit, partial (notifications-only / meeting-only), empty omit, confidence, and `register_catalog_v1`.
+4. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure at least one leaf input family has data (calendar busy meetings and/or app switches; notifications optional).
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`CognitiveLoad`**. Chart calm label: **Combined demand** (0–100). Empty / omit → quiet (no error row).
+5. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic CognitiveLoad series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+6. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+7. Contracts / catalog: `docs/06-feature-catalog.md` §1.16 · ADR-021 in `docs/decision-log.md`.
+
+### DeepWorkScore dogfood (P21-E3-T1 / ADR-022)
+
+Personal self-tracking only — **not** workplace / employer focus scoring. Calm framing: **“sustained focus in this window”** — never “you are in flow”, burnout, ADHD, or clinical flow-state diagnosis.
+
+1. **Prerequisite:** Phase 21 E2 shipped `DeepWorkScore` in `feature-engine` (`register_deep_work_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf formulas (`FocusScore` / `ContextSwitchRate`) unchanged; idle remains dropped for v1.
+2. **Inputs (Feature-level):** the composite reads upstream Features for the same window:
+   - **FocusScore** (**required**) — usual Desktop path (keystrokes / context / HRV as Focus already uses). Without Focus → DeepWorkScore **omits**.
+   - **ContextSwitchRate** (**optional**) — live `context_window`. When CSR is absent for the window, DeepWorkScore still **emits Focus-only** (renormalize) with lower ADR-007 confidence.
+3. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine deep_work_score
+   ```
+   Covers Focus+CSR emit, Focus-only renormalize, omit without Focus, confidence, factors, and `register_catalog_v1`.
+4. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure FocusScore evidence exists (typing and/or context and/or HRV); CSR optional.
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`DeepWorkScore`**. Chart calm label: **Sustained focus** (0–100). Empty / omit → quiet (no error row).
+5. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic DeepWorkScore series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+6. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+7. Contracts / catalog: `docs/06-feature-catalog.md` §1.17 · ADR-022 in `docs/decision-log.md`.
+
+### AttentionStability dogfood (P22-E3-T1 / ADR-023)
+
+Personal self-tracking only — **not** workplace / employer attention scoring. Calm framing: **“focus stability in this window”** — never ADHD, “you can’t focus”, burnout, or attention-deficit diagnosis. **Distinct from DeepWorkScore** (“sustained focus in this window” = intensity; this Feature = consistency / low Focus range).
+
+1. **Prerequisite:** Phase 22 E2 shipped `AttentionStability` in `feature-engine` (`register_attention_stability_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf / DeepWorkScore formulas unchanged.
+2. **Inputs (Feature-level):** the composite reads upstream Features:
+   - **FocusScore** (**required**) — usual Desktop path (keystrokes / context / HRV). Without Focus → AttentionStability **omits**.
+   - **ContextSwitchRate** (**optional**) — live `context_window`. When CSR is absent, AttentionStability still **emits Focus-stability-only** (renormalize) with lower ADR-007 confidence.
+3. **Focus sample behavior (ADR-023):**
+   - Exactly **one** FocusScore sample with end in the window → `focus_stability = 100` (no swing observed — **not** DeepWorkScore Focus-level intensity).
+   - **≥2** FocusScore samples with ends in the window → `focus_stability = clamp(100 − (max−min), 0, 100)` (low range → high stability).
+4. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine attention_stability
+   ```
+   Covers Focus+CSR emit, Focus-only renormalize, single-vs-multi Focus range, omit without Focus, confidence, factors, sibling distinctness vs DeepWorkScore, and `register_catalog_v1`.
+5. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure FocusScore evidence exists (typing and/or context and/or HRV); CSR optional.
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`AttentionStability`**. Chart calm label: **Focus stability** (0–100). Empty / omit → quiet (no error row). Do not confuse with **Sustained focus** (`DeepWorkScore`).
+6. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic AttentionStability series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+7. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+8. Contracts / catalog: `docs/06-feature-catalog.md` §1.18 · ADR-023 in `docs/decision-log.md`.
+
+### DeskAwayPresence / health-context dogfood (P23-E3-T1 / ADR-024)
+
+Personal self-tracking only — **not** workplace / employer presence monitoring. Calm framing: **“away from desk in this window”** — never GPS tracking, surveillance scoring, or clinical claims. Health context is **user-declared only** — never “you have X from HRV”.
+
+#### A. DeskAwayPresence
+
+1. **Prerequisite:** Phase 23 E2 shipped `DeskAwayPresence` in `feature-engine` (`register_desk_away_v1` / `register_catalog_v1`). No new Observation `data_type`; no migration; no GPS; leaf formulas unchanged.
+2. **Inputs (existing Observations):** quiet/absent keystrokes; quiet/absent `context_window`; optional `step_count`; optional `life_event` `walk`.
+3. **Emit / omit (ADR-024):**
+   - **Emit** with positive away evidence — `walk` Life Event **and/or** step sum ≥ 40.
+   - **Omit** quiet-alone (idle-at-desk vs away indistinguishable); omit active typing + weak steps without walk; never emit from geo.
+4. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine desk_away
+   ```
+   Covers walk/steps emit, quiet-alone omit, typing+weak-steps omit, factors, `register_catalog_v1`, no geo payload keys.
+5. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Log a Walk Life Event and/or ensure Companion/`step_count` evidence; quiet desktop alone will **not** emit.
+   - Open Dashboard → IPC `get_feature_snapshot` and/or `get_feature_series`.
+   - Look for Feature id **`DeskAwayPresence`**. Chart calm label: **Away from desk** (0–100). Empty / omit → quiet (no error row).
+6. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic DeskAwayPresence series; `mockSnapshot=empty` stays calm empty.
+
+#### B. Health context → prompt packs
+
+1. **Prerequisite:** E2 shipped `~/.biofocus/health-context.toml` loader + pack injection (`report_engine::build_report_with_pack` / `build_report_with_pack_and_health`).
+2. **Declare (docs-only UI — edit the file):**
+   ```toml
+   [health_context]
+   conditions = ["sleep_sensitive", "caffeine_sensitive"]  # closed-set: sleep_sensitive | migraine_prone | caffeine_sensitive
+   note = "I already know late caffeine hits me"
+   ```
+   Path: `$HOME/.biofocus/health-context.toml` (or `$BIOFOCUS_HOME/health-context.toml`). Missing / empty conditions+note → **no** injection.
+3. **Verify pack path:**
+   ```bash
+   cargo test -p report-engine health_context
+   cargo test -p report-engine packs::
+   ```
+   Generate a report via Desktop **Generate report** (uses `build_report_with_pack`) — markdown / LLM prompt should include **User-declared context** when the file is non-empty. Feature numeric values must be unchanged by health labels.
+4. **Important:** Phase 4 `build_report` (non-pack) does **not** auto-inject health — only the **pack** path does.
+5. **No cloud sync**; **no** SQLite profile store; UI ↛ SQLite (file edit is operator config, not product DB access).
+
+#### C. Contracts
+
+- Catalog: `docs/06-feature-catalog.md` §1.19 · ADR-024 in `docs/decision-log.md`.
+- Glossary: Personal Context Layer / DeskAwayPresence / Health context.
+
+### CircadianOffset dogfood (P24-E3-T1 / ADR-025)
+
+Personal self-tracking only — **not** workplace schedule surveillance. Calm framing: **“schedule alignment in this window”** — never chronotype class, circadian-disorder / sleep-disorder diagnosis, or “night owl so you fail”. **Distinct from SleepDebt** (“sleep shortfall” = debt magnitude) and **DeskAwayPresence** (“away from desk” = break/walk presence).
+
+1. **Prerequisite:** Phase 24 E2 shipped `CircadianOffset` in `feature-engine` (`register_circadian_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf / sibling Feature formulas unchanged.
+2. **Inputs (Observation-level timing):**
+   - **Sleep timing (required slot):** qualifying `sleep_interval` — rest stages `asleep` / `in_bed` / missing stage; `awake` / `unknown` do **not** contribute. Lookback = **24h ending at Feature window end**.
+   - **Work/activity timing (required slot):** preferred `keystrokes` / `context_window`; optional reinforcement when desk is thin — `step_count` / `active_energy` / workout `life_event`.
+3. **Emit / omit (ADR-025):**
+   - **Emit** only when **both** sleep timing and work/activity timing are present in the lookback — **do not** renormalize a single slot.
+   - **Omit** sleep-only, work-only, awake-only sleep, or empty snapshot.
+   - High-level behavior: work/activity centroid near expected mid-wake (`sleep_mid + 12h`) → high alignment (~100); large circular offset (toward ~6h+) → alignment saturates toward 0. Primary units stay **0–100** (not signed chronotype hours).
+4. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine circadian
+   ```
+   Covers both-slots emit, sleep+activity-only reinforcement, omit without sleep, omit without work/activity, awake-only omit, confidence, calm factors, no Feature-level magnitude proxy, and `register_catalog_v1`.
+5. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure a recent qualifying `sleep_interval` plus desk activity (`keystrokes` and/or `context_window`) — or activity reinforcement if desk is thin — within the same ~24h lookback.
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`CircadianOffset`**. Chart calm label: **Schedule alignment** (0–100). Empty / omit → quiet (no error row). Do not confuse with **Sleep shortfall** (`SleepDebt`) or **Away from desk** (`DeskAwayPresence`).
+6. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic CircadianOffset series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+7. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+8. Contracts / catalog: `docs/06-feature-catalog.md` §1.20 · ADR-025 in `docs/decision-log.md`.
+
+### SustainedLoadIndicator dogfood (P25-E3-T1 / ADR-026)
+
+Personal self-tracking only — **not** workplace / employer load scoring. Calm framing: **“prolonged load in this window”** — never burnout, “you are burned out”, or clinical exhaustion diagnosis. **Distinct from CognitiveLoad** (“combined demand in this window” = current demand; this Feature = persistence over a longer lookback).
+
+1. **Prerequisite:** Phase 25 E2 shipped `SustainedLoadIndicator` in `feature-engine` (`register_sustained_load_v1` / `register_catalog_v1`). No new Observation family; no migration; leaf / CognitiveLoad formulas unchanged; CognitiveLoad is **not** an input.
+2. **Inputs (Feature-level persistence over 4h lookback):**
+   - **StressIndex** — usual Desktop path (FocusScore / stress registration).
+   - **FatigueIndex** — same stress/fatigue path.
+   - **MeetingDensity** (**optional**) — opt-in calendar (`BIOFOCUS_CALENDAR` / ICS dogfood as elsewhere). When meetings are absent, SustainedLoad still **emits from present Stress and/or Fatigue** (renormalize) with lower ADR-007 confidence.
+3. **Emit / omit (ADR-026):**
+   - **Emit** when StressIndex and/or FatigueIndex have evidence in the **4h lookback** ending at the Feature window end (cadence **15m / 1m**).
+   - **Omit** when **both** Stress and Fatigue are absent — **meetings-alone must not emit**.
+   - High-level: means of present leaf scores over the lookback, weighted Stress/Fatigue/Meeting (MeetingDensity 0–1 → ×100); output **0–100**.
+4. **Fixture / unit path (no app):**
+   ```bash
+   cargo test -p feature-engine sustained_load
+   ```
+   Covers all-three emit, Stress+Fatigue renormalize, meetings-alone omit, empty omit, confidence, factors, no CognitiveLoad-as-input, and `register_catalog_v1`.
+5. **Live / app path (UI ↛ SQLite):**
+   - Run Desktop so Feature Worker uses `register_catalog_v1`.
+   - Ensure StressIndex and/or FatigueIndex evidence over ~4h (Focus/stress path); MeetingDensity optional.
+   - Open Dashboard → IPC `get_feature_snapshot` (Snapshot list) and/or `get_feature_series` (chart).
+   - Look for Feature id **`SustainedLoadIndicator`**. Chart calm label: **Prolonged load** (0–100). Empty / omit → quiet (no error row). Do not confuse with **Combined demand** (`CognitiveLoad`).
+6. **Browser smoke (no Core):** `?view=dashboard&mockSnapshot=ready` includes a synthetic SustainedLoadIndicator series for chart layout QA; `mockSnapshot=empty` stays calm empty.
+7. **Operator DB check (optional, not product UI):** counts of leaf Observations only — product UI must not open SQLite.
+8. Contracts / catalog: `docs/06-feature-catalog.md` §1.21 · ADR-026 in `docs/decision-log.md`.
+
 ## CI
 
 GitHub Actions (no CD): `.github/workflows/ci.yml`
@@ -188,46 +479,22 @@ GitHub Actions (no CD): `.github/workflows/ci.yml`
 
 - **rust-core:** `cargo check --workspace --exclude desktop`, `cargo test -p bio-spec -p runtime -p storage -p ingest -p pipeline -p feature-engine -p plugin-sdk -p macos-collector -p companion`
 - **desktop:** `cargo test -p desktop`, `pnpm install` + `pnpm build`, UI↛DB boundary grep
-- **Manual full suite:** Actions → CI → **Run workflow** (`workflow_dispatch`) — only while auto-CI is off, or anytime for a full check
-- **Local before ship** (required while Actions auto-run is off): `cargo test` on touched crates; if IPC/Tauri/`apps/desktop` touched → `cargo test -p desktop` + `pnpm build`
-
-### TEMP — Actions auto-run OFF (billing limit, 2026-08-06)
-
-`push` / `pull_request` triggers are **commented out** in `ci.yml`. Workflow starts only via **Run workflow**.  
-Until minutes reset: **local tests = gate**; agents may **commit + push straight to `main`** (no PR). When limit returns: restore triggers in `ci.yml` and resume classic PR flow below.
+- **Manual full suite:** Actions → CI → **Run workflow** (`workflow_dispatch`) anytime for a full check
+- **Local before ship:** `cargo test` on touched crates; if IPC/Tauri/`apps/desktop` touched → `cargo test -p desktop` + `pnpm build`
 
 ## Git workflow (related work → PR)
 
-**Default (when Actions minutes available):** не пушить напрямую в `main`. Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
+**Default:** не пушить напрямую в `main`. Агенты: `.cursor/rules/06-git-agent-policy.mdc`.
 
-<<<<<<< HEAD
-**TEMP override (Actions off):** related code cluster → local verify → commit on `main` (or short-lived branch fast-forwarded) → `git push origin main`. No PR required.
-
-Классика (после возврата лимита): **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
-=======
-### PR freeze (active until 2026-09-01)
-
-До **2026-09-01 включительно** агенты **не открывают PR** и **не мержат в `main` через PR**.  
-Работаем на feature-ветках; handoffs + локальные коммиты — ок. Классический flow ниже — **после** этой даты (или если пользователь явно снял freeze).
-
-Классика (после freeze): **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
->>>>>>> 291c699 (P7-E3-T1: RecoveryScore catalog Feature (HRV + optional HR).)
+Классика: **связанный код** → одна ветка → **мало коммитов** → **один PR** на код-кластер.  
 Не коммит/PR на каждый handoff. **Docs / roadmap / canvas** — отдельно позже или в следующий code PR.
 
 | Уровень | Правило |
 | :--- | :--- |
-<<<<<<< HEAD
-| **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. TEMP: можно работать на `main`. |
-| **Commit** | Когда код-единица готова (batch Task IDs ок). Handoffs на диске — не триггерят PR. |
-| **Push / PR** | Default: substantive code + (кластер готов \| явный «PR»). **TEMP:** push to `main` after local green. |
-| **Не PR** | handoffs-only, roadmap/canvas-only, второй PR на тот же tip. |
-=======
-| **Freeze** | Нет PR / merge в `main` до **2026-09-01** (если не сняли раньше). |
 | **Ветка** | Кластер связанного кода: `phase/N-…`, `epic/P?-E?-…`, `feat/…`. |
 | **Commit** | Когда код-единица готова (batch Task IDs ок). Handoffs на диске — не триггерят PR. |
-| **Push / PR** | Только **после freeze** + substantive code vs `main` **и** (кластер готов **или** явный «PR»). Один PR на ветку. Squash preferred. |
-| **Не PR** | до 2026-09-01; handoffs-only; roadmap/canvas-only; второй PR на тот же tip. |
->>>>>>> 291c699 (P7-E3-T1: RecoveryScore catalog Feature (HRV + optional HR).)
+| **Push / PR** | Substantive code vs `main` **и** (кластер готов **или** явный «PR»). Один PR на ветку. Squash preferred. |
+| **Не PR** | handoffs-only; roadmap/canvas-only; второй PR на тот же tip. |
 | **Спринт** | Лучше мало содержательных PR, чем много пустых. |
 
 ```bash
@@ -252,4 +519,4 @@ Phase 1 landed as direct push to `main` (foundation exception); do not repeat.
 ## Status
 
 **Status (2026-08-05):** Phase 1–4 **Done** (Menubar via [PR #24](https://github.com/poltavtcev-dev/biofocus-platform/pull/24); Phase 4 E1–E3 on `phase/4-dashboard-ai`, cluster PR pending). **Phase 5 active** — Wearable dogfood; **P5-E1 + P5-E2 Done** (LAN bind ADR-005 + advertise hints + Companion LAN UI); Ready **P5-E3-T1** (runnable iOS HealthKit companion). Branch: `phase/5-wearable-dogfood`. Brief: `docs/handoffs/P5-E3-T1-pm-brief.md`. Platform vision (L1–L5, Personal Pattern Discovery, horizon P6–P12+) accepted in `/docs/00-vision.md`.  
-**Git policy:** **PR freeze until 2026-09-01** (no agent PRs); then few **code** PRs; commit messages describe the change only — no personal device inventories.
+**Git policy:** classic PR flow; few **code** PRs; commit messages describe the change only — no personal device inventories.

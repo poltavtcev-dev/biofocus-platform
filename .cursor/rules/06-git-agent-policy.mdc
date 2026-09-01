@@ -4,24 +4,10 @@ alwaysApply: true
 ---
 # Git policy (agents)
 
-<<<<<<< HEAD
-**Classic flow:** related tasks share a branch → few meaningful commits → **one PR when the code cluster is ready**. 
-Never push directly to `main` (**except TEMP** below). Prefer **squash merge** so `main` stays readable.
-
-**TEMP (Actions billing limit, see `docs/12-development.md` § CI):** auto CI off (`workflow_dispatch` only). After local tests pass, agents **may push related clusters straight to `main`** — no PR. Revert to classic PR flow when Actions minutes return and `ci.yml` triggers are restored.
-=======
-## PR freeze (active)
-
-**Until at least 2026-09-01 inclusive:** do **not** open PRs (`gh pr create`), do **not** push/merge to `main` via PR, and do **not** treat dirty trees / cluster Done as a signal to open a PR.  
-Allowed: local branches, local commits (when user asks or cluster commit makes sense), handoffs on disk, docs/canvas updates.  
-Resume classic PR flow only **after 2026-09-01** (or earlier if the user explicitly lifts the freeze).  
-Even after the freeze, never push directly to `main`.
-
-## Classic flow (after freeze)
+## Classic flow
 
 Related tasks share a branch → few meaningful commits → **one PR when the code cluster is ready**.  
-Prefer **squash merge** so `main` stays readable.
->>>>>>> 291c699 (P7-E3-T1: RecoveryScore catalog Feature (HRV + optional HR).)
+Never push directly to `main`. Prefer **squash merge** so `main` stays readable.
 
 ## Branch
 
@@ -35,17 +21,15 @@ Prefer **squash merge** so `main` stays readable.
 - Leave the tree dirty across Dev→QA→PM on the same cluster until the unit is ready to commit.
 - Still commit before any future push/PR (no huge unreviewed dump).
 
-## When to open a PR (after 2026-09-01 only)
+## When to open a PR
 
 Open **push + `gh pr create --base main`** only when **all** of these hold:
 
-0. **Today’s date is on or after 2026-09-01** (or user explicitly ended the PR freeze), **and**
 1. There is **substantive code** (crates / apps) in the branch vs `main`, **and**
 2. Either the **code cluster is Done** (QA Pass + enough to ship), **or** the user explicitly says «PR» / «открой PR» / «закрой epic», **and**
 3. There is **no open PR** already for this head branch.
 
 **Do not open a PR for:**
-- anything before the freeze ends (unless user lifts it)
 - handoffs only (`docs/handoffs/*`)
 - roadmap / canvas / status docs only
 - a second PR that duplicates an existing open/merged PR on the same branch tip
@@ -57,14 +41,14 @@ Open **push + `gh pr create --base main`** only when **all** of these hold:
 
 | Role | Git expectation |
 | :--- | :--- |
-| Dev/UX | Handoff on disk. Commit with the code unit — not after every build. **No PR until freeze ends.** |
-| QA | Handoff on disk. Usually no commit; fold test fixes into the cluster. **No PR until freeze ends.** |
-| PM | Docs/canvas on disk. No PR just to mark Done; ride next code PR after freeze (or docs batch when asked). |
+| Dev/UX | Handoff on disk. Commit with the code unit — not after every build. PR when cluster ready. |
+| QA | Handoff on disk. Usually no commit; fold test fixes into the cluster. PR when cluster ready. |
+| PM | Docs/canvas on disk. No PR just to mark Done; ride next code PR (or docs batch when asked). |
 
 ## Orchestrated multi-role runs
 
-`прогони pipeline` / `сделай сам`: emit handoff files per role. Git: **one (or few) commits** for the finished **code** cluster. **Do not open a PR during the freeze** — at most one PR after 2026-09-01.
+`прогони pipeline` / `сделай сам`: emit handoff files per role. Git: **one (or few) commits** for the finished **code** cluster → **one PR** when ready.
 
 ## Hook
 
-`.cursor/hooks/git-policy-stop.sh` may nudge on a **very dirty** tree with **code** changes (commit reminder only during freeze). It must **not** ask to open a PR before 2026-09-01, and must **not** treat handoff-only dirt or archived gates as «open a PR now».
+`.cursor/hooks/git-policy-stop.sh` may nudge on a **very dirty** tree with **code** changes (commit reminder). It must **not** treat handoff-only dirt or archived gates as «open a PR now».

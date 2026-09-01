@@ -28,6 +28,7 @@ impl InsightRule for HighStressPeriodRule {
         &self,
         features: &[Feature],
         signals: &[Signal],
+        _pattern: &crate::PatternInputs,
     ) -> KnowledgeEngineResult<Vec<Insight>> {
         let matching: Vec<&Signal> = signals
             .iter()

@@ -1,39 +1,75 @@
-//! Product Insight rules (P4-E2-T2) — deterministic, no LLM / SQLite.
+//! Product Insight + Recommendation rules — deterministic, no LLM / SQLite.
 //!
 //! | Rule id | Trigger | Evidence |
 //! | :--- | :--- | :--- |
 //! | [`RULE_HIGH_STRESS_PERIOD`] | Signal `High_Stress` | Signal id(s); optional `StressIndex` |
 //! | [`RULE_CONTEXT_SWITCH_ELEVATED`] | latest `ContextSwitchRate` ≥ threshold | `ContextSwitchRate`; optional `FocusScore` |
+//! | [`RULE_FOCUS_VS_RECENT_BASELINE`] | live FocusScore vs afternoon baseline | `FocusScore` |
+//! | [`RULE_COGNITIVE_LOAD_ELEVATED`] | latest `CognitiveLoad` ≥ threshold | `CognitiveLoad`; optional demand inputs |
+//! | [`RULE_SUSTAINED_LOAD_ELEVATED`] | latest `SustainedLoadIndicator` ≥ threshold | `SustainedLoadIndicator`; optional load inputs |
+//! | [`RULE_FOCUS_DIP_PACE_HINT`] | Focus-below-baseline pattern Insight | `FocusScore` + Insight id |
+//! | [`RULE_COMBINED_DEMAND_PACE_HINT`] | elevated combined-demand Insight | Insight id; optional `CognitiveLoad` |
 //!
 //! Host registration:
 //! ```ignore
 //! let mut engine = KnowledgeEngine::new();
 //! register_insights_v1(&mut engine)?;
-//! let insights = engine.evaluate(&features, &signals)?;
+//! register_recommendations_v1(&mut engine)?;
+//! let (insights, recommendations) =
+//!     engine.evaluate_insights_and_recommendations(&features, &signals, &pattern)?;
 //! ```
 //!
-//! Default [`crate::KnowledgeEngine::new`] stays empty — call [`register_insights_v1`]
-//! (or register rules individually) before expecting product Insights.
+//! Default [`crate::KnowledgeEngine::new`] stays empty — call the register helpers
+//! (or register rules individually) before expecting product Insights / Recommendations.
 
+mod cognitive_load_elevated;
+mod combined_demand_pace;
 mod context_switch;
+mod focus_baseline;
+mod focus_dip_pace;
 mod high_stress;
+mod sustained_load_elevated;
 
+pub use cognitive_load_elevated::{
+    CognitiveLoadElevatedRule, COGNITIVE_LOAD_ELEVATED_THRESHOLD, COGNITIVE_LOAD_ID,
+    DEMAND_CATEGORY, MEETING_DENSITY_ID, NOTIFICATION_PRESSURE_ID, RULE_COGNITIVE_LOAD_ELEVATED,
+};
+pub use combined_demand_pace::{CombinedDemandPaceHintRule, RULE_COMBINED_DEMAND_PACE_HINT};
 pub use context_switch::{
     ContextSwitchElevatedRule, CONTEXT_SWITCH_ELEVATED_THRESHOLD, CONTEXT_SWITCH_RATE_ID,
     FOCUS_SCORE_ID, RULE_CONTEXT_SWITCH_ELEVATED,
 };
+pub use focus_baseline::{
+    FocusVsRecentBaselineRule, FOCUS_BASELINE_CONFIDENCE_GATE, FOCUS_BASELINE_DELTA,
+    FOCUS_BASELINE_MAX_WINDOWS, FOCUS_BASELINE_MIN_WINDOWS, RULE_FOCUS_VS_RECENT_BASELINE,
+};
+pub use focus_dip_pace::{FocusDipPaceHintRule, RULE_FOCUS_DIP_PACE_HINT};
 pub use high_stress::{
     HighStressPeriodRule, HIGH_STRESS_SIGNAL_TYPE, RULE_HIGH_STRESS_PERIOD, STRESS_INDEX_ID,
+};
+pub use sustained_load_elevated::{
+    SustainedLoadElevatedRule, FATIGUE_INDEX_ID, PROLONGED_LOAD_CATEGORY,
+    RULE_SUSTAINED_LOAD_ELEVATED, SUSTAINED_LOAD_ELEVATED_THRESHOLD, SUSTAINED_LOAD_INDICATOR_ID,
 };
 
 use bio_spec::{Feature, FeatureValue};
 
 use crate::{KnowledgeEngine, KnowledgeEngineResult};
 
-/// Registers v1 product Insight rules (≥2): High_Stress period + elevated ContextSwitch.
+/// Registers v1 product Insight rules (ADR-008 + ADR-028 / P27-E2).
 pub fn register_insights_v1(engine: &mut KnowledgeEngine) -> KnowledgeEngineResult<()> {
     engine.register(HighStressPeriodRule)?;
     engine.register(ContextSwitchElevatedRule)?;
+    engine.register(FocusVsRecentBaselineRule)?;
+    engine.register(CognitiveLoadElevatedRule)?;
+    engine.register(SustainedLoadElevatedRule)?;
+    Ok(())
+}
+
+/// Registers v1 product Recommendation rules (ADR-009 + ADR-028 / P27-E2).
+pub fn register_recommendations_v1(engine: &mut KnowledgeEngine) -> KnowledgeEngineResult<()> {
+    engine.register_recommendation(FocusDipPaceHintRule)?;
+    engine.register_recommendation(CombinedDemandPaceHintRule)?;
     Ok(())
 }
 
@@ -60,7 +96,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::KnowledgeEngine;
+    use crate::{KnowledgeEngine, PatternInputs};
 
     fn feature(id: &str, end: i64, value: f64) -> Feature {
         let start = end.saturating_sub(900);
@@ -87,10 +123,17 @@ mod tests {
     }
 
     #[test]
-    fn register_insights_v1_adds_two_rules() {
+    fn register_insights_v1_adds_five_rules() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
-        assert_eq!(engine.rule_count(), 2);
+        assert_eq!(engine.rule_count(), 5);
+    }
+
+    #[test]
+    fn register_recommendations_v1_adds_two_rules() {
+        let mut engine = KnowledgeEngine::new();
+        register_recommendations_v1(&mut engine).expect("register");
+        assert_eq!(engine.recommendation_rule_count(), 2);
     }
 
     #[test]
@@ -168,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn both_rules_can_fire_together() {
+    fn both_snapshot_rules_can_fire_together() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
         let csr = feature(CONTEXT_SWITCH_RATE_ID, 1800, 2.0);
@@ -180,15 +223,56 @@ mod tests {
     }
 
     #[test]
+    fn baseline_rule_fires_with_pattern_series() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("register");
+        let current = feature(FOCUS_SCORE_ID, 10_000, 85.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 60.0),
+            feature(FOCUS_SCORE_ID, 2_000, 58.0),
+            feature(FOCUS_SCORE_ID, 3_000, 62.0),
+        ]);
+        let out = engine
+            .evaluate_with_pattern(std::slice::from_ref(&current), &[], &pattern)
+            .expect("evaluate");
+        let insight = out
+            .iter()
+            .find(|i| i.category == "pattern")
+            .expect("pattern insight");
+        assert!(insight.description.contains("higher"));
+    }
+
+    #[test]
     fn copy_avoids_clinical_words() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
         let csr = feature(CONTEXT_SWITCH_RATE_ID, 1800, 2.0);
         let signal = high_stress_signal(1);
+        let focus = feature(FOCUS_SCORE_ID, 10_000, 90.0);
+        let load = feature(COGNITIVE_LOAD_ID, 1800, 70.0);
+        let sustained = feature(SUSTAINED_LOAD_INDICATOR_ID, 1800, 70.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 50.0),
+            feature(FOCUS_SCORE_ID, 2_000, 52.0),
+        ]);
         let out = engine
-            .evaluate(std::slice::from_ref(&csr), std::slice::from_ref(&signal))
+            .evaluate_with_pattern(
+                &[csr, focus, load, sustained],
+                std::slice::from_ref(&signal),
+                &pattern,
+            )
             .expect("evaluate");
-        let banned = ["diagnos", "disorder", "patholog", "unhealthy", "dangerous", "medical"];
+        let banned = [
+            "diagnos",
+            "disorder",
+            "patholog",
+            "unhealthy",
+            "dangerous",
+            "medical",
+            "burnout",
+            "burned out",
+            "overload",
+        ];
         for insight in &out {
             let blob = format!(
                 "{} {} {}",
@@ -204,5 +288,92 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn focus_dip_recommendation_fires_after_lower_baseline_insight() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("insights");
+        register_recommendations_v1(&mut engine).expect("recommendations");
+        // Current Focus well below afternoon baseline → pattern Insight + pace Recommendation.
+        let current = feature(FOCUS_SCORE_ID, 10_000, 40.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 70.0),
+            feature(FOCUS_SCORE_ID, 2_000, 72.0),
+            feature(FOCUS_SCORE_ID, 3_000, 68.0),
+        ]);
+        let (insights, recommendations) = engine
+            .evaluate_insights_and_recommendations(std::slice::from_ref(&current), &[], &pattern)
+            .expect("evaluate");
+        let pattern_insight = insights
+            .iter()
+            .find(|i| i.category == "pattern")
+            .expect("pattern insight");
+        assert!(pattern_insight.description.contains("lower"));
+        let focus_dip = recommendations
+            .iter()
+            .find(|r| {
+                r.evidence_list
+                    .contains(&EvidenceRef::Insight(pattern_insight.id))
+            })
+            .expect("focus dip recommendation");
+        assert!(focus_dip
+            .evidence_list
+            .contains(&EvidenceRef::Feature(FOCUS_SCORE_ID.into())));
+    }
+
+    #[test]
+    fn combined_demand_recommendation_fires_after_cognitive_load_insight() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("insights");
+        register_recommendations_v1(&mut engine).expect("recommendations");
+        let load = feature(COGNITIVE_LOAD_ID, 1800, COGNITIVE_LOAD_ELEVATED_THRESHOLD);
+        let (insights, recommendations) = engine
+            .evaluate_insights_and_recommendations(std::slice::from_ref(&load), &[], &PatternInputs::default())
+            .expect("evaluate");
+        let demand = insights
+            .iter()
+            .find(|i| i.category == DEMAND_CATEGORY)
+            .expect("demand insight");
+        assert!(demand.description.contains("Combined demand"));
+        assert_eq!(recommendations.len(), 1);
+        assert!(recommendations[0]
+            .evidence_list
+            .contains(&EvidenceRef::Insight(demand.id)));
+        assert!(recommendations[0]
+            .evidence_list
+            .contains(&EvidenceRef::Feature(COGNITIVE_LOAD_ID.into())));
+    }
+
+    #[test]
+    fn adr028_rules_fire_together_and_stay_distinct() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("register");
+        let features = [
+            feature(COGNITIVE_LOAD_ID, 1800, 70.0),
+            feature(SUSTAINED_LOAD_INDICATOR_ID, 1800, 70.0),
+        ];
+        let out = engine.evaluate(&features, &[]).expect("evaluate");
+        assert!(out.iter().any(|i| i.category == DEMAND_CATEGORY));
+        assert!(out.iter().any(|i| i.category == PROLONGED_LOAD_CATEGORY));
+        assert!(out.iter().all(|i| i.category != "stress"));
+    }
+
+    #[test]
+    fn recommendations_empty_without_registration() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("insights");
+        let current = feature(FOCUS_SCORE_ID, 10_000, 40.0);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            feature(FOCUS_SCORE_ID, 1_000, 70.0),
+            feature(FOCUS_SCORE_ID, 2_000, 72.0),
+        ]);
+        let insights = engine
+            .evaluate_with_pattern(std::slice::from_ref(&current), &[], &pattern)
+            .expect("insights");
+        let recommendations = engine
+            .evaluate_recommendations(std::slice::from_ref(&current), &[], &insights)
+            .expect("recommendations");
+        assert!(recommendations.is_empty());
     }
 }

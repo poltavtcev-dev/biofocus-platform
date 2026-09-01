@@ -45,12 +45,15 @@
 //! }
 //! ```
 //!
-//! ## `get_insights` (P4-E2-T3)
+//! ## `get_insights` (P4-E2-T3 / P8-E2-T1)
 //!
 //! Evaluates product Insight rules against the latest cached Feature snapshot
 //! (same in-memory path as `get_feature_snapshot`). Host registers
-//! `knowledge_engine::register_insights_v1` once at startup. Idle / no match /
-//! evaluate soft-fail → `{ "insights": [] }`. No SQLite, no LLM.
+//! `knowledge_engine::register_insights_v1` once at startup. Pattern Discovery
+//! baseline rules (ADR-008) may recompute a bounded FocusScore series from local
+//! Observations on read (Core only — UI ↛ SQLite); optional in-process memo.
+//! Idle / thin history / no match / soft-fail → omit pattern Insight / `{ "insights": [] }`.
+//! No Feature-history table, no always-on worker, no LLM.
 //!
 //! Example (camelCase JSON):
 //! ```json
@@ -68,11 +71,44 @@
 //! }
 //! ```
 //!
-//! ## `generate_report` (P4-E3-T3)
+//! ## `get_recommendations` (P9-E3-T1 / ADR-009)
+//!
+//! Evaluate-on-read Recommendations **after** Insights on the same Feature
+//! snapshot (+ pattern baseline inputs). Host registers
+//! `register_recommendations_v1` alongside Insights at startup. Soft-fail /
+//! idle / no match → `{ "recommendations": [] }`. No Recommendation SQLite,
+//! no busy-loop, no LLM inventing actions. UI ↛ SQLite.
+//!
+//! Example (camelCase JSON):
+//! ```json
+//! {
+//!   "recommendations": [
+//!     {
+//!       "id": "…uuid…",
+//!       "title": "A gentler pace may help",
+//!       "suggestion": "If it fits your schedule…",
+//!       "category": "pace",
+//!       "evidenceList": [
+//!         { "kind": "feature", "id": "FocusScore" },
+//!         { "kind": "insight", "id": "…uuid…" }
+//!       ]
+//!     }
+//!   ]
+//! }
+//! ```
+//!
+//! ## `get_local_llm_status` (P11-E3-T1)
+//!
+//! Calm local-AI provider status from host env (`BIOFOCUS_LOCAL_LLM*`):
+//! `disabled` / `ready` / `error`. Reflects config only — **no** HTTP probe,
+//! no secrets/tokens. Safe to read on Dashboard open; never invokes interpret.
+//!
+//! ## `generate_report` (P4-E3-T3 / P11-E3-T1)
 //!
 //! Explicit user action only — never call on app / Dashboard open. Builds an
 //! offline report from the cached Feature snapshot + evaluate-on-read Insights
-//! via `report_engine::build_report`. When `BIOFOCUS_LOCAL_LLM` is enabled,
+//! + Recommendations via `report_engine::build_report_with_pack`
+//! (`biofocus.default` @ `1`). When `BIOFOCUS_LOCAL_LLM` is enabled,
 //! optionally runs `interpret_report` (local HTTP). When disabled, returns
 //! deterministic markdown/prompt with `llmStatus: "disabled"` and **no**
 //! network. Soft-fails LLM errors into typed status so markdown still returns.
@@ -107,6 +143,12 @@
 //! `bio_spec`, appends through [`storage::ObservationRepository`] (same store
 //! as ingest — no parallel table). UI never opens SQLite.
 //!
+//! ## `get_git_watched_roots` / `set_git_watched_roots` (P14-E3-T1 / ADR-014)
+//!
+//! Menubar editor for personal Git watched folders. Host reads/writes
+//! `git-watched-roots.toml` only (`BIOFOCUS_HOME` for tests). Paths stay in
+//! config — never copied into Observation payloads or default logs. UI ↛ SQLite.
+//!
 //! ## Local ingest HTTP (Phase 2)
 //!
 //! On startup the host opens the default DB, loads [`ingest::IngestConfig`],
@@ -128,18 +170,25 @@
 
 mod alert_state;
 mod feature_host;
+mod git_watched_roots_ipc;
 mod ingest_host;
 mod life_event_ipc;
+mod pattern_host;
+mod series_host;
 
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use bio_spec::{EvidenceRef, Insight};
+use bio_spec::{EvidenceRef, Insight, Recommendation};
 use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal};
-use knowledge_engine::{register_insights_v1, KnowledgeEngine};
+use knowledge_engine::{
+    register_insights_v1, register_recommendations_v1, KnowledgeEngine, PatternInputs,
+};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use report_engine::{
-    build_report, interpret_report, LocalLlmConfig, ReportDocument, ReportEngineError,
+    build_report_with_pack, interpret_report, LocalLlmConfig, ReportDocument, ReportEngineError,
+    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
 };
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -149,20 +198,30 @@ use thiserror::Error;
 use tracing::warn;
 
 use crate::alert_state::{AlertState, SnapshotState};
+use crate::pattern_host::{load_focus_baseline_series, BaselineMemoState};
+use crate::series_host::{
+    latest_features_per_id, load_feature_series, FeatureSeriesResult, SeriesMemoState,
+};
 
-/// Process-lifetime Knowledge Engine with v1 product rules (P4-E2-T3).
+/// Process-lifetime Knowledge Engine with v1 Insight + Recommendation rules.
 struct InsightsEngineState {
     engine: KnowledgeEngine,
 }
 
 impl InsightsEngineState {
-    /// Registers [`register_insights_v1`]; soft-fails to an empty engine.
+    /// Registers Insights + Recommendations v1; soft-fails per registry.
     fn new() -> Self {
         let mut engine = KnowledgeEngine::new();
         if let Err(err) = register_insights_v1(&mut engine) {
             warn!(
                 error = %err,
                 "insights: register_insights_v1 failed; get_insights returns []"
+            );
+        }
+        if let Err(err) = register_recommendations_v1(&mut engine) {
+            warn!(
+                error = %err,
+                "recommendations: register_recommendations_v1 failed; get_recommendations returns []"
             );
         }
         Self { engine }
@@ -318,13 +377,37 @@ fn severity_wire(severity: bio_spec::Severity) -> String {
 }
 
 fn snapshot_to_dto(snapshot: &FeatureSnapshot) -> FeatureSnapshotDto {
+    // Snapshot surfaces stay latest-oriented (ADR-018); chart uses series IPC.
+    let latest = latest_features_per_id(&snapshot.features);
     FeatureSnapshotDto {
-        features: snapshot.features.iter().map(FeatureDto::from).collect(),
+        features: latest.iter().map(FeatureDto::from).collect(),
         signals: snapshot.signals.iter().map(SignalDto::from).collect(),
     }
 }
 
-/// Evidence ref on the IPC wire (`feature` | `signal` + id string).
+/// IPC payload for [`get_feature_series`] (ADR-018 / P17-E3).
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct FeatureSeriesDto {
+    range: String,
+    step_secs: i64,
+    window: TimeWindowDto,
+    features: Vec<FeatureDto>,
+}
+
+fn series_to_dto(series: &FeatureSeriesResult) -> FeatureSeriesDto {
+    FeatureSeriesDto {
+        range: series.range.clone(),
+        step_secs: series.step_secs,
+        window: TimeWindowDto {
+            start: series.window_start,
+            end: series.window_end,
+        },
+        features: series.features.iter().map(FeatureDto::from).collect(),
+    }
+}
+
+/// Evidence ref on the IPC wire (`feature` | `signal` | `insight` + id string).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct EvidenceRefDto {
@@ -341,6 +424,10 @@ impl From<&EvidenceRef> for EvidenceRefDto {
             },
             EvidenceRef::Signal(id) => Self {
                 kind: "signal".into(),
+                id: id.to_string(),
+            },
+            EvidenceRef::Insight(id) => Self {
+                kind: "insight".into(),
                 id: id.to_string(),
             },
         }
@@ -386,8 +473,32 @@ fn insights_to_dto(insights: &[Insight]) -> InsightsDto {
     }
 }
 
-fn evaluate_insights_list(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> Vec<Insight> {
-    match engine.evaluate(&snapshot.features, &snapshot.signals) {
+fn unix_now_secs() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+fn pattern_inputs_for_insights(app: &AppHandle, snapshot: &FeatureSnapshot) -> PatternInputs {
+    let reference_ts = snapshot
+        .features
+        .iter()
+        .filter(|f| f.feature_id == "FocusScore")
+        .map(|f| f.time_window.end.as_secs())
+        .max()
+        .unwrap_or_else(unix_now_secs);
+    let memo = app.try_state::<BaselineMemoState>();
+    let series = load_focus_baseline_series(memo.as_deref(), reference_ts);
+    PatternInputs::with_baseline_series(series)
+}
+
+fn evaluate_insights_list(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    pattern: &PatternInputs,
+) -> Vec<Insight> {
+    match engine.evaluate_with_pattern(&snapshot.features, &snapshot.signals, pattern) {
         Ok(insights) => insights,
         Err(err) => {
             warn!(error = %err, "insights: evaluate failed; returning empty list");
@@ -396,11 +507,138 @@ fn evaluate_insights_list(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) 
     }
 }
 
-fn evaluate_insights(engine: &KnowledgeEngine, snapshot: &FeatureSnapshot) -> InsightsDto {
-    insights_to_dto(&evaluate_insights_list(engine, snapshot))
+fn evaluate_insights(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    pattern: &PatternInputs,
+) -> InsightsDto {
+    insights_to_dto(&evaluate_insights_list(engine, snapshot, pattern))
 }
 
-/// IPC payload for [`generate_report`] (P4-E3-T3).
+/// One Recommendation in the IPC list (camelCase; evidence ids only).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct RecommendationDto {
+    id: String,
+    title: String,
+    suggestion: String,
+    category: String,
+    evidence_list: Vec<EvidenceRefDto>,
+}
+
+impl From<&Recommendation> for RecommendationDto {
+    fn from(recommendation: &Recommendation) -> Self {
+        Self {
+            id: recommendation.id.to_string(),
+            title: recommendation.title.clone(),
+            suggestion: recommendation.suggestion.clone(),
+            category: recommendation.category.clone(),
+            evidence_list: recommendation
+                .evidence_list
+                .iter()
+                .map(EvidenceRefDto::from)
+                .collect(),
+        }
+    }
+}
+
+/// IPC payload for [`get_recommendations`].
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct RecommendationsDto {
+    recommendations: Vec<RecommendationDto>,
+}
+
+fn recommendations_to_dto(recommendations: &[Recommendation]) -> RecommendationsDto {
+    RecommendationsDto {
+        recommendations: recommendations
+            .iter()
+            .map(RecommendationDto::from)
+            .collect(),
+    }
+}
+
+fn evaluate_recommendations_list(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    insights: &[Insight],
+) -> Vec<Recommendation> {
+    match engine.evaluate_recommendations(&snapshot.features, &snapshot.signals, insights) {
+        Ok(recommendations) => recommendations,
+        Err(err) => {
+            warn!(
+                error = %err,
+                "recommendations: evaluate failed; returning empty list"
+            );
+            Vec::new()
+        }
+    }
+}
+
+fn evaluate_recommendations_dto(
+    engine: &KnowledgeEngine,
+    snapshot: &FeatureSnapshot,
+    insights: &[Insight],
+) -> RecommendationsDto {
+    recommendations_to_dto(&evaluate_recommendations_list(
+        engine, snapshot, insights,
+    ))
+}
+
+/// IPC payload for [`get_local_llm_status`] (P11-E3-T1).
+///
+/// Config-only status — no HTTP probe, no tokens, no filesystem paths.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct LocalLlmProviderStatusDto {
+    /// `"disabled"` | `"ready"` | `"error"`.
+    status: String,
+    /// Calm one-liner for Dashboard.
+    detail: String,
+    /// Model id when enabled and usable (not a secret).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    model: Option<String>,
+    /// Default pack used by [`generate_report`].
+    pack_id: String,
+    pack_version: String,
+}
+
+fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusDto {
+    let pack_id = DEFAULT_PROMPT_PACK_ID.to_owned();
+    let pack_version = DEFAULT_PROMPT_PACK_VERSION.to_owned();
+    if !config.enabled {
+        return LocalLlmProviderStatusDto {
+            status: "disabled".into(),
+            detail: "Local AI is optional and currently off.".into(),
+            model: None,
+            pack_id,
+            pack_version,
+        };
+    }
+
+    let url_ok = config.base_url.starts_with("http://") || config.base_url.starts_with("https://");
+    let model_ok = !config.model.trim().is_empty();
+    if url_ok && model_ok {
+        LocalLlmProviderStatusDto {
+            status: "ready".into(),
+            detail: "Local AI is configured. Interpretation runs only when you generate a report."
+                .into(),
+            model: Some(config.model.clone()),
+            pack_id,
+            pack_version,
+        }
+    } else {
+        LocalLlmProviderStatusDto {
+            status: "error".into(),
+            detail: "Local AI is enabled but the endpoint config looks unusable.".into(),
+            model: None,
+            pack_id,
+            pack_version,
+        }
+    }
+}
+
+/// IPC payload for [`generate_report`] (P4-E3-T3 / P11-E3-T1).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct ReportDto {
@@ -439,15 +677,26 @@ fn calm_llm_error(err: &ReportEngineError) -> String {
             "Local AI is optional and currently off.".into()
         }
         ReportEngineError::BuildFailed { .. } => "Could not build the report.".into(),
+        ReportEngineError::UnknownPromptPack { .. } => {
+            "That report pack is not available.".into()
+        }
     }
 }
 
 async fn assemble_report_dto(
     features: &[Feature],
     insights: &[Insight],
+    recommendations: &[Recommendation],
     config: &LocalLlmConfig,
 ) -> Result<ReportDto, String> {
-    let doc = build_report(features, insights).map_err(|err| err.to_string())?;
+    let doc = build_report_with_pack(
+        DEFAULT_PROMPT_PACK_ID,
+        DEFAULT_PROMPT_PACK_VERSION,
+        features,
+        insights,
+        recommendations,
+    )
+    .map_err(|err| err.to_string())?;
 
     if !config.enabled {
         // No network when off — explicit offline path for the Dashboard.
@@ -489,6 +738,58 @@ struct CorePing {
     storage: &'static str,
     db_file: &'static str,
     schema_version: u32,
+}
+
+/// IPC payload for ingest LAN preference (P28-E1-T1 / ADR-029).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct IngestLanPreferenceDto {
+    /// User persisted opt-in via `~/.biofocus/ingest_lan_enabled`.
+    persisted: bool,
+    /// Env overrides persisted file for this process.
+    from_env: bool,
+    /// Current running bind is LAN (may lag persisted until restart).
+    effective_lan: bool,
+    /// After `set_ingest_lan_preference`, host must restart ingest bind.
+    needs_restart: bool,
+}
+
+fn build_ingest_lan_preference(needs_restart: bool) -> Result<IngestLanPreferenceDto, String> {
+    let from_env = ingest::lan_preference_overridden_by_env();
+    let persisted = ingest::read_persisted_lan_enabled();
+    let effective_lan = ingest::resolve_bind_host()
+        .map(|host| !host.is_loopback())
+        .map_err(|_| "Could not resolve ingest bind host.".to_string())?;
+    Ok(IngestLanPreferenceDto {
+        persisted,
+        from_env,
+        effective_lan,
+        needs_restart,
+    })
+}
+
+/// Reads persisted LAN opt-in and effective bind mode (no SQLite).
+#[tauri::command]
+fn get_ingest_lan_preference() -> Result<IngestLanPreferenceDto, String> {
+    build_ingest_lan_preference(false)
+}
+
+/// Persists LAN opt-in for next launch (ADR-005 — still explicit opt-in).
+#[tauri::command]
+fn set_ingest_lan_preference(enabled: bool) -> Result<IngestLanPreferenceDto, String> {
+    if ingest::lan_preference_overridden_by_env() {
+        return Err(
+            "LAN bind is controlled by environment variables for this launch.".into(),
+        );
+    }
+    ingest::write_persisted_lan_enabled(enabled).map_err(|err| match err {
+        ingest::IngestError::HomeDirUnavailable => {
+            "Could not locate local BioFocus config.".into()
+        }
+        ingest::IngestError::TokenIo { .. } => "Could not save LAN preference.".into(),
+        other => other.to_string(),
+    })?;
+    build_ingest_lan_preference(true)
 }
 
 /// IPC payload for [`get_pairing_token`]. Local secret only — no cloud, no paths.
@@ -634,14 +935,38 @@ fn get_status(app: AppHandle) -> CoreStatus {
 }
 
 /// Latest cached Feature snapshot for Dashboard (P4-E1-T1). Pure cache read.
+///
+/// Features are collapsed to **latest per `featureId`** (ADR-018). Chart series
+/// use [`get_feature_series`].
 #[tauri::command]
 fn get_feature_snapshot(app: AppHandle) -> FeatureSnapshotDto {
     snapshot_to_dto(&current_feature_snapshot(&app))
 }
 
+/// Recompute-on-read Feature series for a Dashboard chart range (ADR-018 / P17-E3).
+///
+/// Host loads Observations for the span and runs FeatureEngine with the range
+/// step. Soft-fails to empty `features`. No Feature-history SQLite; UI ↛ DB.
+#[tauri::command]
+fn get_feature_series(
+    app: AppHandle,
+    range: String,
+    feature_ids: Option<Vec<String>>,
+) -> FeatureSeriesDto {
+    let memo = app.try_state::<SeriesMemoState>();
+    let series = load_feature_series(
+        memo.as_deref(),
+        &range,
+        feature_ids.as_deref(),
+        unix_now_secs(),
+    );
+    series_to_dto(&series)
+}
+
 /// Insights from v1 product rules over the cached Feature snapshot (P4-E2-T3).
 ///
-/// Evaluate-on-read — no separate Insights cache / SQLite. Soft-fails to `[]`.
+/// Evaluate-on-read — pattern baseline may recompute from Observations (ADR-008).
+/// Soft-fails to `[]`. UI never opens SQLite.
 #[tauri::command]
 fn get_insights(app: AppHandle) -> InsightsDto {
     let snapshot = current_feature_snapshot(&app);
@@ -650,20 +975,58 @@ fn get_insights(app: AppHandle) -> InsightsDto {
             insights: Vec::new(),
         };
     };
-    evaluate_insights(&state.engine, &snapshot)
+    let pattern = pattern_inputs_for_insights(&app, &snapshot);
+    evaluate_insights(&state.engine, &snapshot, &pattern)
+}
+
+/// Recommendations from v1 rules after Insights (P9-E3-T1 / ADR-009).
+///
+/// Evaluate-on-read on the same Feature snapshot + pattern inputs as Insights.
+/// Soft-fails to `[]`. UI never opens SQLite; no Recommendation persistence.
+#[tauri::command]
+fn get_recommendations(app: AppHandle) -> RecommendationsDto {
+    let snapshot = current_feature_snapshot(&app);
+    let Some(state) = app.try_state::<InsightsEngineState>() else {
+        return RecommendationsDto {
+            recommendations: Vec::new(),
+        };
+    };
+    let pattern = pattern_inputs_for_insights(&app, &snapshot);
+    let insights = evaluate_insights_list(&state.engine, &snapshot, &pattern);
+    evaluate_recommendations_dto(&state.engine, &snapshot, &insights)
+}
+
+/// Calm local-AI provider status from host env (P11-E3-T1).
+///
+/// Config-only — no HTTP probe, no interpret, no SQLite. Safe on Dashboard open.
+#[tauri::command]
+fn get_local_llm_status() -> LocalLlmProviderStatusDto {
+    local_llm_provider_status(&LocalLlmConfig::from_env())
 }
 
 /// Offline report (+ optional local LLM) for Dashboard — **explicit invoke only**
-/// (P4-E3-T3). Never auto-called on app / Dashboard open.
+/// (P4-E3-T3 / P11-E3-T1). Never auto-called on app / Dashboard open.
 #[tauri::command]
 async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
     let snapshot = current_feature_snapshot(&app);
-    let insights = match app.try_state::<InsightsEngineState>() {
-        Some(state) => evaluate_insights_list(&state.engine, &snapshot),
-        None => Vec::new(),
+    let pattern = pattern_inputs_for_insights(&app, &snapshot);
+    let (insights, recommendations) = match app.try_state::<InsightsEngineState>() {
+        Some(state) => {
+            let insights = evaluate_insights_list(&state.engine, &snapshot, &pattern);
+            let recommendations =
+                evaluate_recommendations_list(&state.engine, &snapshot, &insights);
+            (insights, recommendations)
+        }
+        None => (Vec::new(), Vec::new()),
     };
     let config = LocalLlmConfig::from_env();
-    assemble_report_dto(&snapshot.features, &insights, &config).await
+    assemble_report_dto(
+        &snapshot.features,
+        &insights,
+        &recommendations,
+        &config,
+    )
+    .await
 }
 
 /// Shows the Dashboard window (P4-E1-T2). Soft-fail if the window is missing.
@@ -715,6 +1078,20 @@ fn list_recent_life_events(
     life_event_ipc::list_recent_life_events(limit)
 }
 
+/// Load personal Git watched folders from the ADR-014 config file (P14-E3-T1).
+#[tauri::command]
+fn get_git_watched_roots() -> Result<git_watched_roots_ipc::GitWatchedRootsDto, String> {
+    git_watched_roots_ipc::get_git_watched_roots()
+}
+
+/// Save personal Git watched folders to the ADR-014 config file (P14-E3-T1).
+#[tauri::command]
+fn set_git_watched_roots(
+    roots: Vec<String>,
+) -> Result<git_watched_roots_ipc::GitWatchedRootsDto, String> {
+    git_watched_roots_ipc::set_git_watched_roots(roots)
+}
+
 /// Starts the Tauri event loop (window + tray shell + local ingest).
 pub fn run() -> DesktopResult<()> {
     let _ = runtime::init_tracing(Some("info"));
@@ -764,19 +1141,28 @@ pub fn run() -> DesktopResult<()> {
             ingest_host::start_ingest_host(app.handle());
             feature_host::start_feature_host(app.handle());
             app.manage(InsightsEngineState::new());
+            app.manage(BaselineMemoState::new());
+            app.manage(SeriesMemoState::new());
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_status,
             get_feature_snapshot,
+            get_feature_series,
             get_insights,
+            get_recommendations,
+            get_local_llm_status,
             generate_report,
             open_dashboard,
             core_ping,
             get_pairing_token,
+            get_ingest_lan_preference,
+            set_ingest_lan_preference,
             log_life_event,
-            list_recent_life_events
+            list_recent_life_events,
+            get_git_watched_roots,
+            set_git_watched_roots
         ])
         .build(tauri::generate_context!())?;
 
@@ -800,6 +1186,8 @@ mod tests {
     use bio_spec::{Severity, TimeWindow, UnixTimestamp};
     use feature_engine::FeatureValue;
     use uuid::Uuid;
+
+    use super::FeatureSeriesResult;
 
     /// Serializes env-mutating pairing tests.
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -1010,10 +1398,104 @@ mod tests {
     }
 
     #[test]
+    fn snapshot_dto_collapses_to_latest_per_feature_id() {
+        let older =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let newer =
+            TimeWindow::try_new(UnixTimestamp::from_secs(1100), UnixTimestamp::from_secs(2000))
+                .expect("window");
+        let snap = FeatureSnapshot {
+            features: vec![
+                Feature {
+                    feature_id: "FocusScore".into(),
+                    time_window: older,
+                    value: FeatureValue::Scalar(10.0),
+                    provenance: vec![Uuid::from_u128(1)],
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
+                },
+                Feature {
+                    feature_id: "FocusScore".into(),
+                    time_window: newer,
+                    value: FeatureValue::Scalar(90.0),
+                    provenance: vec![Uuid::from_u128(2)],
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
+                },
+            ],
+            signals: vec![],
+        };
+        let dto = snapshot_to_dto(&snap);
+        assert_eq!(dto.features.len(), 1);
+        assert_eq!(dto.features[0].feature_id, "FocusScore");
+        assert_eq!(dto.features[0].time_window.end, 2000);
+    }
+
+    #[test]
+    fn empty_feature_series_dto_is_calm() {
+        let series = FeatureSeriesResult::empty("1d", 900, 1000, 2000);
+        let dto = series_to_dto(&series);
+        assert!(dto.features.is_empty());
+        assert_eq!(dto.range, "1d");
+        assert_eq!(dto.step_secs, 900);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.get("range").and_then(|v| v.as_str()), Some("1d"));
+        assert_eq!(obj.get("stepSecs").and_then(|v| v.as_i64()), Some(900));
+        assert_eq!(
+            obj.get("features")
+                .and_then(|v| v.as_array())
+                .map(|a| a.len()),
+            Some(0)
+        );
+        assert!(!serde_json::to_string(&dto).expect("s").contains("payload"));
+        assert!(!serde_json::to_string(&dto).expect("s").contains("rmssd"));
+    }
+
+    #[test]
+    fn non_empty_feature_series_dto_has_wire_shape_no_biometrics() {
+        let window =
+            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
+                .expect("window");
+        let series = FeatureSeriesResult {
+            range: "1h".into(),
+            step_secs: 60,
+            window_start: 0,
+            window_end: 3600,
+            features: vec![Feature {
+                feature_id: "ActivityBalance".into(),
+                time_window: window,
+                value: FeatureValue::Scalar(55.0),
+                provenance: vec![Uuid::from_u128(7)],
+                confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
+            }],
+        };
+        let dto = series_to_dto(&series);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.get("range").and_then(|v| v.as_str()), Some("1h"));
+        assert_eq!(obj.get("stepSecs").and_then(|v| v.as_i64()), Some(60));
+        let tw = obj.get("window").and_then(|v| v.as_object()).expect("window");
+        assert_eq!(tw.get("start").and_then(|v| v.as_i64()), Some(0));
+        assert_eq!(tw.get("end").and_then(|v| v.as_i64()), Some(3600));
+        let features = obj.get("features").and_then(|v| v.as_array()).expect("features");
+        assert_eq!(features.len(), 1);
+        assert_eq!(
+            features[0].get("featureId").and_then(|v| v.as_str()),
+            Some("ActivityBalance")
+        );
+        let raw = serde_json::to_string(&dto).expect("string");
+        assert!(!raw.contains("rmssd"));
+        assert!(!raw.contains("/Users"));
+    }
+
+    #[test]
     fn empty_snapshot_insights_dto_is_idle() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
-        let dto = evaluate_insights(&engine, &FeatureSnapshot::empty());
+        let dto = evaluate_insights(&engine, &FeatureSnapshot::empty(), &PatternInputs::empty());
         assert!(dto.insights.is_empty());
         let json = serde_json::to_value(&dto).expect("serialize");
         let obj = json.as_object().expect("object");
@@ -1050,7 +1532,7 @@ mod tests {
                 severity: Severity::High,
             }],
         };
-        let dto = evaluate_insights(&engine, &snap);
+        let dto = evaluate_insights(&engine, &snap, &PatternInputs::empty());
         assert!(dto.insights.is_empty());
     }
 
@@ -1089,7 +1571,7 @@ mod tests {
                 severity: Severity::High,
             }],
         };
-        let dto = evaluate_insights(&engine, &snap);
+        let dto = evaluate_insights(&engine, &snap, &PatternInputs::empty());
         assert!(
             dto.insights.len() >= 2,
             "expected stress + context insights, got {}",
@@ -1128,9 +1610,79 @@ mod tests {
         assert!(!raw.contains("rmssd"));
     }
 
+    #[test]
+    fn registered_engine_emits_pace_recommendation_with_insight_evidence() {
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("insights");
+        register_recommendations_v1(&mut engine).expect("recommendations");
+
+        let focus = |end: i64, value: f64| {
+            let start = end.saturating_sub(900);
+            let window =
+                TimeWindow::try_new(UnixTimestamp::from_secs(start), UnixTimestamp::from_secs(end))
+                    .expect("window");
+            Feature {
+                feature_id: "FocusScore".into(),
+                time_window: window,
+                value: FeatureValue::Scalar(value),
+                provenance: vec![],
+                confidence: bio_spec::Confidence::ONE,
+                factors: Vec::new(),
+            }
+        };
+
+        let snap = FeatureSnapshot {
+            features: vec![focus(10_000, 40.0)],
+            signals: vec![],
+        };
+        let pattern = PatternInputs::with_baseline_series(vec![
+            focus(1_000, 70.0),
+            focus(2_000, 72.0),
+            focus(3_000, 68.0),
+        ]);
+        let insights = evaluate_insights_list(&engine, &snap, &pattern);
+        let pattern_insight = insights
+            .iter()
+            .find(|i| i.category == "pattern")
+            .expect("pattern insight");
+        assert!(pattern_insight.description.contains("lower"));
+
+        let dto = evaluate_recommendations_dto(&engine, &snap, &insights);
+        assert_eq!(dto.recommendations.len(), 1);
+        assert_eq!(dto.recommendations[0].category, "pace");
+
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let list = json
+            .get("recommendations")
+            .and_then(|v| v.as_array())
+            .expect("recommendations");
+        let obj = list[0].as_object().expect("rec obj");
+        assert!(obj.contains_key("title"));
+        assert!(obj.contains_key("suggestion"));
+        let evidence = obj
+            .get("evidenceList")
+            .and_then(|v| v.as_array())
+            .expect("evidenceList");
+        let kinds: Vec<&str> = evidence
+            .iter()
+            .filter_map(|e| e.get("kind").and_then(|k| k.as_str()))
+            .collect();
+        assert!(kinds.contains(&"feature"));
+        assert!(kinds.contains(&"insight"));
+        let pattern_id = pattern_insight.id.to_string();
+        assert!(
+            evidence.iter().any(|e| {
+                e.get("kind").and_then(|k| k.as_str()) == Some("insight")
+                    && e.get("id").and_then(|i| i.as_str()) == Some(pattern_id.as_str())
+            }),
+            "evidence should cite pattern Insight id"
+        );
+        assert!(!serde_json::to_string(&dto).expect("s").contains("payload"));
+    }
+
     #[tokio::test]
     async fn assemble_report_disabled_has_no_interpretation() {
-        let dto = assemble_report_dto(&[], &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&[], &[], &[], &LocalLlmConfig::disabled())
             .await
             .expect("offline report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1138,6 +1690,9 @@ mod tests {
         assert!(dto.llm_error.is_none());
         assert!(dto.markdown.contains("BioFocus"));
         assert!(!dto.llm_prompt.is_empty());
+        // Empty Evidence → calm minimal default-pack summary (not an error).
+        assert!(dto.markdown.contains("Nothing to summarize"));
+        assert!(dto.llm_prompt.contains("Do not invent"));
 
         let json = serde_json::to_value(&dto).expect("serialize");
         let obj = json.as_object().expect("object");
@@ -1163,9 +1718,9 @@ mod tests {
             value: FeatureValue::Scalar(72.5),
             provenance: vec![Uuid::from_u128(1)],
             confidence: bio_spec::Confidence::ONE,
-                factors: Vec::new(),
+            factors: Vec::new(),
         }];
-        let dto = assemble_report_dto(&features, &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&features, &[], &[], &LocalLlmConfig::disabled())
             .await
             .expect("report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1174,6 +1729,74 @@ mod tests {
         let raw = serde_json::to_string(&dto).expect("string");
         assert!(!raw.contains("/Users"));
         assert!(!raw.contains(".biofocus"));
+    }
+
+    #[tokio::test]
+    async fn assemble_report_includes_recommendations_section() {
+        let rec = Recommendation {
+            id: Uuid::from_u128(42),
+            title: "A gentler pace may help".into(),
+            suggestion: "If it fits your schedule, take a short break.".into(),
+            category: "pace".into(),
+            evidence_list: vec![EvidenceRef::Feature("FocusScore".into())],
+        };
+        let dto = assemble_report_dto(&[], &[], &[rec], &LocalLlmConfig::disabled())
+            .await
+            .expect("report");
+        assert!(dto.markdown.contains("## Recommendations"));
+        assert!(dto.markdown.contains("A gentler pace may help"));
+        assert!(dto.llm_prompt.contains("A gentler pace may help"));
+        assert_eq!(dto.llm_status, "disabled");
+    }
+
+    #[test]
+    fn local_llm_provider_status_disabled_by_default() {
+        let dto = local_llm_provider_status(&LocalLlmConfig::disabled());
+        assert_eq!(dto.status, "disabled");
+        assert!(dto.model.is_none());
+        assert_eq!(dto.pack_id, DEFAULT_PROMPT_PACK_ID);
+        assert_eq!(dto.pack_version, DEFAULT_PROMPT_PACK_VERSION);
+        let json = serde_json::to_value(&dto).expect("serialize");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.get("status").and_then(|v| v.as_str()), Some("disabled"));
+        assert_eq!(
+            obj.get("packId").and_then(|v| v.as_str()),
+            Some(DEFAULT_PROMPT_PACK_ID)
+        );
+        assert!(!serde_json::to_string(&dto).expect("s").contains("token"));
+        assert!(!serde_json::to_string(&dto).expect("s").contains("Bearer"));
+    }
+
+    #[test]
+    fn local_llm_provider_status_ready_when_enabled() {
+        let cfg = LocalLlmConfig {
+            enabled: true,
+            base_url: "http://127.0.0.1:11434/v1".into(),
+            model: "llama3.2".into(),
+            timeout: std::time::Duration::from_secs(30),
+            api_key: Some("must-not-leak".into()),
+        };
+        let dto = local_llm_provider_status(&cfg);
+        assert_eq!(dto.status, "ready");
+        assert_eq!(dto.model.as_deref(), Some("llama3.2"));
+        let wire = serde_json::to_string(&dto).expect("s");
+        assert!(!wire.contains("must-not-leak"));
+        assert!(!wire.contains("api_key"));
+        assert!(!wire.contains("Bearer"));
+    }
+
+    #[test]
+    fn local_llm_provider_status_error_on_bad_url() {
+        let cfg = LocalLlmConfig {
+            enabled: true,
+            base_url: "not-a-url".into(),
+            model: "llama3.2".into(),
+            timeout: std::time::Duration::from_secs(30),
+            api_key: None,
+        };
+        let dto = local_llm_provider_status(&cfg);
+        assert_eq!(dto.status, "error");
+        assert!(dto.model.is_none());
     }
 
     #[test]
