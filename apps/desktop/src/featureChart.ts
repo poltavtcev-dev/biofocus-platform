@@ -183,3 +183,44 @@ export function formatChartTime(unixSecs: number): string {
     minute: "2-digit",
   });
 }
+
+/** Distinct, calm series colours for dark + light surfaces (design system v2). */
+export const SERIES_COLORS: Partial<Record<ChartFeatureId, string>> = {
+  FocusScore: "#8f9bff",
+  CognitiveLoad: "#d9ad62",
+  StressIndex: "#e08c8c",
+  ContextSwitchRate: "#6fc3c9",
+  DeepWorkScore: "#6fbf98",
+  RecoveryScore: "#b493e6",
+  FatigueIndex: "#c9a27a",
+  AttentionStability: "#7fb1e8",
+  EnergyScore: "#e6c25c",
+  ActivityBalance: "#8cc76f",
+  SleepDebt: "#9aa0c8",
+  DeskAwayPresence: "#a3a8b3",
+  CircadianOffset: "#d39bc4",
+  SustainedLoadIndicator: "#d08a6a",
+};
+
+export function seriesColor(id: ChartFeatureId): string {
+  return SERIES_COLORS[id] ?? CHART_SERIES_META[id].color;
+}
+
+/** Shown by default (first up to 3 present, in this order). */
+export const DEFAULT_SERIES_ORDER: ChartFeatureId[] = [
+  "FocusScore",
+  "CognitiveLoad",
+  "StressIndex",
+  "DeepWorkScore",
+  "RecoveryScore",
+];
+
+export const MAX_DEFAULT_SERIES = 3;
+
+export function defaultSelectedSeries(present: ChartFeatureId[]): ChartFeatureId[] {
+  const picks = DEFAULT_SERIES_ORDER.filter((id) => present.includes(id)).slice(
+    0,
+    MAX_DEFAULT_SERIES,
+  );
+  return picks.length > 0 ? picks : present.slice(0, MAX_DEFAULT_SERIES);
+}

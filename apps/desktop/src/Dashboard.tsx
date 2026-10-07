@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -11,10 +10,11 @@ import {
 } from "recharts";
 import {
   buildChartPoints,
-  CHART_SERIES_META,
+  defaultSelectedSeries,
   formatChartTime,
   presentSeriesIds,
   SCORE_SERIES_IDS,
+  seriesColor,
   type ChartFeatureId,
   type ChartPoint,
 } from "./featureChart";
@@ -75,6 +75,26 @@ import {
 /** Soft refresh — idle-safe; no busy-loop. Does not regenerate reports. */
 const SNAPSHOT_POLL_MS = 30_000;
 
+const SERIES_PREF_KEY = "biofocus.chartSeries.v1";
+
+function loadSeriesPref(): ChartFeatureId[] | null {
+  try {
+    const raw = window.localStorage.getItem(SERIES_PREF_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? (parsed.filter((x) => typeof x === "string") as ChartFeatureId[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSeriesPref(ids: ChartFeatureId[]) {
+  try {
+    window.localStorage.setItem(SERIES_PREF_KEY, JSON.stringify(ids));
+  } catch {
+    // Storage unavailable — selection just won't persist.
+  }
+}
+
 function ChartSlot({
   seriesView,
   range,
@@ -90,30 +110,40 @@ function ChartSlot({
     seriesView.kind === "error" ||
     seriesView.kind === "empty";
   const points = empty ? [] : buildChartPoints(features);
-  const series = presentSeriesIds(points);
-  const scoreSeries = series.filter((id) => SCORE_SERIES_IDS.includes(id));
-  const showCsr = series.includes("ContextSwitchRate");
+  const present = presentSeriesIds(points);
+  const [picked, setPicked] = useState<ChartFeatureId[] | null>(() => loadSeriesPref());
+  const selected = (picked ?? defaultSelectedSeries(present)).filter((id) =>
+    present.includes(id),
+  );
+  const effective = selected.length > 0 ? selected : defaultSelectedSeries(present);
+  const scoreSeries = effective.filter((id) => SCORE_SERIES_IDS.includes(id));
+  const showCsr = effective.includes("ContextSwitchRate");
 
-  let placeholder = "No Feature series yet.";
+  const toggle = (id: ChartFeatureId) => {
+    const next = effective.includes(id)
+      ? effective.filter((x) => x !== id)
+      : [...effective, id];
+    if (next.length === 0) {
+      return; // keep at least one line
+    }
+    setPicked(next);
+    saveSeriesPref(next);
+  };
+
+  let placeholder = "No data to chart yet.";
   if (seriesView.kind === "loading") {
-    placeholder = "Loading Feature series…";
+    placeholder = "Loading…";
   } else if (seriesView.kind === "error") {
     placeholder = seriesView.detail;
   } else if (seriesView.kind === "empty") {
-    placeholder = "No Feature series for this range yet.";
-  } else if (points.length === 0) {
-    placeholder = "No chartable Feature values in this series.";
+    placeholder = "No data for this range yet. Keep BioFocus running for a few minutes.";
   }
 
   return (
-    <section className="chart-slot" aria-label="Feature charts">
+    <section className="chart-slot" aria-label="Trends">
       <div className="chart-slot-header">
-        <p className="chart-slot-title">Features</p>
-        <div
-          className="range-picker"
-          role="group"
-          aria-label="Chart range"
-        >
+        <p className="chart-slot-title">Trends</p>
+        <div className="range-picker" role="group" aria-label="Chart range">
           {CHART_RANGES.map((r) => (
             <button
               key={r}
@@ -127,23 +157,48 @@ function ChartSlot({
           ))}
         </div>
       </div>
+      {present.length > 0 && (
+        <div className="series-chips" role="group" aria-label="Lines to show">
+          {present.map((id) => {
+            const on = effective.includes(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`series-chip${on ? " series-chip--on" : ""}`}
+                aria-pressed={on}
+                onClick={() => toggle(id)}
+                title={metricInfo(id).what}
+              >
+                <span
+                  className="series-swatch"
+                  style={{
+                    background: on ? seriesColor(id) : "transparent",
+                    borderColor: seriesColor(id),
+                    borderStyle: id === "ContextSwitchRate" ? "dashed" : "solid",
+                  }}
+                  aria-hidden
+                />
+                {metricInfo(id).name}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div
         className={`chart-slot-body${points.length > 0 ? " chart-slot-body--chart" : ""}`}
       >
         {points.length === 0 ? (
           <p className="chart-slot-placeholder">{placeholder}</p>
         ) : (
-          <FeatureSeriesChart
-            points={points}
-            scoreSeries={scoreSeries}
-            showCsr={showCsr}
-          />
+          <FeatureSeriesChart points={points} scoreSeries={scoreSeries} showCsr={showCsr} />
         )}
       </div>
       {points.length > 0 && (
         <p className="chart-slot-units" aria-hidden>
-          Scores 0–100
-          {showCsr ? " · Context switches per window minute (right)" : ""}
+          Left axis: score 0–100
+          {showCsr ? " · Right axis (dashed): app switches per minute" : ""} · Tap a
+          name above to show or hide it.
         </p>
       )}
     </section>
@@ -159,26 +214,25 @@ function FeatureSeriesChart({
   scoreSeries: ChartFeatureId[];
   showCsr: boolean;
 }) {
+  const axisTick = { fill: "var(--c-fg-3)", fontSize: 11 };
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart
-        data={points}
-        margin={{ top: 8, right: showCsr ? 12 : 4, left: 0, bottom: 0 }}
-      >
-        <CartesianGrid stroke="var(--bf-bg-accent)" strokeDasharray="3 3" />
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart data={points} margin={{ top: 8, right: showCsr ? 4 : 12, left: -4, bottom: 0 }}>
+        <CartesianGrid stroke="var(--c-border)" vertical={false} />
         <XAxis
           dataKey="t"
           tickFormatter={formatChartTime}
-          tick={{ fill: "var(--bf-meta)", fontSize: 11 }}
-          axisLine={{ stroke: "var(--bf-retry-border)" }}
+          tick={axisTick}
+          axisLine={{ stroke: "var(--c-border-strong)" }}
           tickLine={false}
-          minTickGap={28}
+          minTickGap={48}
         />
         <YAxis
           yAxisId="score"
           domain={[0, 100]}
-          width={36}
-          tick={{ fill: "var(--bf-meta)", fontSize: 11 }}
+          ticks={[0, 25, 50, 75, 100]}
+          width={34}
+          tick={axisTick}
           axisLine={false}
           tickLine={false}
         />
@@ -186,41 +240,36 @@ function FeatureSeriesChart({
           <YAxis
             yAxisId="csr"
             orientation="right"
-            width={36}
-            tick={{ fill: "var(--bf-meta)", fontSize: 11 }}
+            width={34}
+            tick={axisTick}
             axisLine={false}
             tickLine={false}
             allowDecimals
+            tickFormatter={(v: number) => `${v}/m`}
           />
         )}
         <Tooltip
           contentStyle={{
-            background: "var(--bf-bg)",
-            border: "1px solid var(--bf-retry-border)",
+            background: "var(--c-surface-2)",
+            border: "1px solid var(--c-border-strong)",
             borderRadius: 8,
             fontSize: 12,
+            color: "var(--c-fg)",
           }}
+          labelStyle={{ color: "var(--c-fg-3)", marginBottom: 4 }}
           labelFormatter={(label) =>
             typeof label === "number" ? formatChartTime(label) : String(label)
           }
           formatter={(value: number, name: string) => {
             const id = name as ChartFeatureId;
-            const meta = CHART_SERIES_META[id];
             const display =
               typeof value === "number"
                 ? Number.isInteger(value)
                   ? String(value)
                   : value.toFixed(1)
                 : String(value);
-            return [display, meta?.label ?? name];
+            return [display, metricInfo(id).name];
           }}
-        />
-        <Legend
-          formatter={(value) => {
-            const id = value as ChartFeatureId;
-            return CHART_SERIES_META[id]?.label ?? value;
-          }}
-          wrapperStyle={{ fontSize: 12, color: "var(--bf-muted)" }}
         />
         {scoreSeries.map((id) => (
           <Line
@@ -229,10 +278,10 @@ function FeatureSeriesChart({
             type="monotone"
             dataKey={id}
             name={id}
-            stroke={CHART_SERIES_META[id].color}
-            strokeWidth={2}
-            dot={{ r: 2.5, strokeWidth: 0 }}
-            activeDot={{ r: 4 }}
+            stroke={seriesColor(id)}
+            strokeWidth={2.25}
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0 }}
             connectNulls
             isAnimationActive={false}
           />
@@ -243,11 +292,11 @@ function FeatureSeriesChart({
             type="monotone"
             dataKey="ContextSwitchRate"
             name="ContextSwitchRate"
-            stroke={CHART_SERIES_META.ContextSwitchRate.color}
-            strokeWidth={2}
-            strokeDasharray="4 3"
-            dot={{ r: 2.5, strokeWidth: 0 }}
-            activeDot={{ r: 4 }}
+            stroke={seriesColor("ContextSwitchRate")}
+            strokeWidth={1.75}
+            strokeDasharray="5 4"
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0 }}
             connectNulls
             isAnimationActive={false}
           />

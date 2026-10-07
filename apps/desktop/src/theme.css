@@ -456,3 +456,82 @@ input[type="checkbox"] {
   color: var(--c-fg-2);
   font-size: var(--t-sm);
 }
+
+/* ---------- chart ---------- */
+
+.chart-slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+
+.chart-slot-header .chart-slot-title {
+  margin: 0;
+}
+
+.series-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--s-3);
+}
+
+.series-chip {
+  appearance: none;
+  font: inherit;
+  font-size: var(--t-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-fg-3);
+  cursor: pointer;
+}
+
+.series-chip:hover {
+  border-color: var(--c-border-strong);
+  color: var(--c-fg-2);
+}
+
+.series-chip--on {
+  background: var(--c-surface-2);
+  border-color: var(--c-border-strong);
+  color: var(--c-fg);
+}
+
+.series-chip:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+
+.series-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border-width: 1.5px;
+}
+
+.chart-slot-body {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 120px;
+}
+
+.chart-slot-placeholder {
+  color: var(--c-fg-3);
+  font-size: var(--t-sm);
+  text-align: center;
+  padding: var(--s-6) var(--s-4);
+}
+
+.chart-slot-units {
+  margin: var(--s-2) 0 0;
+  font-size: var(--t-xs);
+  color: var(--c-fg-3);
+}
