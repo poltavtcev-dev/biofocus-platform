@@ -1,47 +1,96 @@
 import { useEffect, useRef, useState } from "react";
+import "./lifeEventsActions.css";
 import {
+  BACKDATE_OPTIONS,
   fetchRecentLifeEvents,
-  formatAbsoluteTime,
+  formatClock,
   formatRelativeTime,
+  isBackdated,
   LIFE_EVENT_KINDS,
   lifeEventIcon,
   lifeEventLabel,
+  lifeEventWhen,
   logLifeEvent,
+  mockLifeEventsUiFromLocation,
+  RECENT_LIMIT,
+  restoreLifeEvent,
+  retimeLifeEvent,
+  retractLifeEvent,
+  RETIME_OPTIONS,
+  type LifeEventInfo,
   type LifeEventKind,
   type LifeEventsListView,
 } from "./lifeEvents";
 
 /** How long a button shows its "Logged" state. */
 const LOGGED_FLASH_MS = 1600;
+/** How long the "Logged … Undo" toast stays. */
+const UNDO_TOAST_MS = 6000;
+/** How long a removed row offers "Undo" in place. */
+const REMOVED_ROW_MS = 10_000;
 /** Re-render relative times ("5 min ago") — cheap, no IPC. */
 const RELATIVE_TICK_MS = 30_000;
 
 type BtnState = { kind: LifeEventKind; phase: "logging" | "logged" | "error" } | null;
+type Toast = { event: LifeEventInfo; phase: "shown" | "busy" | "removed" } | null;
 
 /**
- * Menubar "Life events": one-tap logging with instant feedback and a short
- * recent list. Life events are append-only in Core (no delete/undo IPC).
+ * Menubar "Life events": one-tap logging (optionally back-dated), an Undo toast
+ * for the latest tap, and a recent list with remove / undo / change-time.
+ * Core is append-only: remove = retraction marker, nothing is deleted.
  */
 export function LifeEventsBlock() {
   const [list, setList] = useState<LifeEventsListView>({ kind: "loading" });
   const [btn, setBtn] = useState<BtnState>(null);
   const [error, setError] = useState<string | null>(null);
+  const [minutesAgo, setMinutesAgo] = useState(0);
+  const [toast, setToast] = useState<Toast>(null);
+  const [removed, setRemoved] = useState<LifeEventInfo[]>([]);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [, setTick] = useState(0);
   const flashTimer = useRef<number | undefined>(undefined);
+  const toastTimer = useRef<number | undefined>(undefined);
+  const qaApplied = useRef(false);
+
+  const refresh = () => fetchRecentLifeEvents().then(setList);
 
   const reload = () => {
     setList((prev) => (prev.kind === "ready" ? prev : { kind: "loading" }));
-    void fetchRecentLifeEvents().then(setList);
+    void refresh();
   };
 
   useEffect(() => {
-    void fetchRecentLifeEvents().then(setList);
+    void refresh();
     const tick = window.setInterval(() => setTick((t) => t + 1), RELATIVE_TICK_MS);
     return () => {
       window.clearInterval(tick);
       window.clearTimeout(flashTimer.current);
+      window.clearTimeout(toastTimer.current);
     };
   }, []);
+
+  // QA screenshot state (?mockLifeEventsUi=actions): toast + removed row + picker.
+  useEffect(() => {
+    if (qaApplied.current || list.kind !== "ready" || list.events.length < 3) return;
+    if (mockLifeEventsUiFromLocation() !== "actions") return;
+    qaApplied.current = true;
+    const [first, second, third] = list.events;
+    setToast({ event: first, phase: "shown" });
+    setEditing(second.id);
+    void retractLifeEvent(third.id).then((r) => {
+      if (r.ok) {
+        setRemoved([third]);
+        void refresh();
+      }
+    });
+  }, [list]);
+
+  const showToast = (next: Toast, ms = UNDO_TOAST_MS) => {
+    window.clearTimeout(toastTimer.current);
+    setToast(next);
+    if (next) toastTimer.current = window.setTimeout(() => setToast(null), ms);
+  };
 
   const onLog = (kind: LifeEventKind) => {
     if (btn?.phase === "logging") {
@@ -49,17 +98,24 @@ export function LifeEventsBlock() {
     }
     setError(null);
     setBtn({ kind, phase: "logging" });
-    void logLifeEvent(kind).then((result) => {
+    void logLifeEvent(kind, minutesAgo).then((result) => {
       window.clearTimeout(flashTimer.current);
       if (result.kind === "ok") {
         setBtn({ kind, phase: "logged" });
-        // Optimistic prepend, then confirm with a fresh list.
+        setMinutesAgo(0);
+        showToast({ event: result.event, phase: "shown" });
+        // Optimistic insert, then confirm with a fresh list.
         setList((prev) =>
           prev.kind === "ready"
-            ? { kind: "ready", events: [result.event, ...prev.events.filter((e) => e.id !== result.event.id)] }
+            ? {
+                kind: "ready",
+                events: [result.event, ...prev.events.filter((e) => e.id !== result.event.id)].sort(
+                  (a, b) => b.timestamp - a.timestamp,
+                ),
+              }
             : { kind: "ready", events: [result.event] },
         );
-        void fetchRecentLifeEvents().then(setList);
+        void refresh();
       } else if (result.kind === "error") {
         setBtn({ kind, phase: "error" });
         setError(result.detail);
@@ -68,7 +124,76 @@ export function LifeEventsBlock() {
     });
   };
 
-  const events = list.kind === "ready" ? list.events.slice(0, 5) : [];
+  const onToastUndo = () => {
+    if (!toast || toast.phase !== "shown") return;
+    const { event } = toast;
+    setToast({ event, phase: "busy" });
+    void retractLifeEvent(event.id).then((r) => {
+      if (r.ok) {
+        showToast({ event, phase: "removed" }, 2500);
+        void refresh();
+      } else {
+        setError(r.detail);
+        setToast(null);
+      }
+    });
+  };
+
+  const onRemove = (event: LifeEventInfo) => {
+    setBusyId(event.id);
+    setError(null);
+    setEditing(null);
+    void retractLifeEvent(event.id).then((r) => {
+      setBusyId(null);
+      if (!r.ok) {
+        setError(r.detail);
+        return;
+      }
+      if (toast?.event.id === event.id) setToast(null);
+      setRemoved((prev) => [event, ...prev.filter((e) => e.id !== event.id)]);
+      window.setTimeout(
+        () => setRemoved((prev) => prev.filter((e) => e.id !== event.id)),
+        REMOVED_ROW_MS,
+      );
+      void refresh();
+    });
+  };
+
+  const onRestore = (event: LifeEventInfo) => {
+    setBusyId(event.id);
+    setError(null);
+    void restoreLifeEvent(event.id).then((r) => {
+      setBusyId(null);
+      if (!r.ok) {
+        setError(r.detail);
+        return;
+      }
+      setRemoved((prev) => prev.filter((e) => e.id !== event.id));
+      void refresh();
+    });
+  };
+
+  const onRetime = (event: LifeEventInfo, minutes: number) => {
+    setBusyId(event.id);
+    setError(null);
+    void retimeLifeEvent(event.id, minutes).then((r) => {
+      setBusyId(null);
+      if (!r.ok) {
+        setError(r.detail);
+        return;
+      }
+      setEditing(null);
+      void refresh();
+    });
+  };
+
+  const events = list.kind === "ready" ? list.events.slice(0, RECENT_LIMIT) : [];
+  type Row = { event: LifeEventInfo; removed: boolean };
+  const rows: Row[] = [
+    ...events.map((event) => ({ event, removed: false })),
+    ...removed.map((event) => ({ event, removed: true })),
+  ].sort((a, b) => b.event.timestamp - a.event.timestamp);
+  const newestId = events[0]?.id;
 
   return (
     <section className="life-events-block le" aria-label="Life events">
@@ -85,7 +210,26 @@ export function LifeEventsBlock() {
           <span aria-hidden>↻</span>
         </button>
       </div>
-      <p className="le-help">One tap to note a moment. It shows up in your timeline — never scored.</p>
+      <p className="le-help">
+        One tap to note a moment. It appears on your Trends chart and in reports — never scored.
+      </p>
+
+      <div className="le-when" role="radiogroup" aria-label="When did it happen?">
+        <span className="le-when-label">When</span>
+        {BACKDATE_OPTIONS.map((opt) => (
+          <button
+            key={opt.minutes}
+            type="button"
+            role="radio"
+            aria-checked={minutesAgo === opt.minutes}
+            className={`le-chip${minutesAgo === opt.minutes ? " le-chip--on" : ""}`}
+            onClick={() => setMinutesAgo(opt.minutes)}
+            title={opt.minutes === 0 ? "Happened just now" : `Happened ${opt.label} ago`}
+          >
+            {opt.minutes === 0 ? opt.label : `−${opt.label}`}
+          </button>
+        ))}
+      </div>
 
       <div className="le-grid" role="group" aria-label="Log a life event">
         {LIFE_EVENT_KINDS.map((kind) => {
@@ -113,6 +257,27 @@ export function LifeEventsBlock() {
           );
         })}
       </div>
+
+      {toast && (
+        <div className={`le-toast le-toast--${toast.phase}`} role="status" aria-live="polite">
+          <span className="le-toast-text">
+            {toast.phase === "removed"
+              ? `Removed ${lifeEventLabel(toast.event.kind).toLowerCase()}.`
+              : `Logged ${lifeEventLabel(toast.event.kind).toLowerCase()} · ${formatClock(toast.event.timestamp)}`}
+          </span>
+          {toast.phase !== "removed" && (
+            <button
+              type="button"
+              className="le-toast-undo"
+              onClick={onToastUndo}
+              disabled={toast.phase === "busy"}
+            >
+              {toast.phase === "busy" ? "Undoing…" : "Undo"}
+            </button>
+          )}
+        </div>
+      )}
+
       {error && (
         <p className="le-error" role="alert">
           {error}
@@ -129,30 +294,96 @@ export function LifeEventsBlock() {
           </button>
         </p>
       )}
-      {list.kind === "ready" && events.length === 0 && (
+      {list.kind === "ready" && rows.length === 0 && (
         <div className="le-empty">
           <span aria-hidden>🌱</span>
           <p>Nothing logged yet. Tap a button above after your next coffee or walk.</p>
         </div>
       )}
-      {events.length > 0 && (
+      {rows.length > 0 && (
         <ul className="le-list">
-          {events.map((event, i) => (
-            <li
-              key={event.id}
-              className={`le-row${i === 0 && btn?.phase === "logged" ? " le-row--new" : ""}`}
-              title={formatAbsoluteTime(event.timestamp)}
-            >
-              <span className="le-row-icon" aria-hidden>
-                {lifeEventIcon(event.kind)}
-              </span>
-              <span className="le-row-text">
-                <span className="le-row-kind">{lifeEventLabel(event.kind)}</span>
-                <span className="le-row-abs">{formatAbsoluteTime(event.timestamp)}</span>
-              </span>
-              <span className="le-row-rel">{formatRelativeTime(event.timestamp)}</span>
-            </li>
-          ))}
+          {rows.map(({ event, removed: isRemoved }) =>
+            isRemoved ? (
+              <li key={`rm-${event.id}`} className="le-row le-row--removed">
+                <span className="le-row-icon" aria-hidden>
+                  {lifeEventIcon(event.kind)}
+                </span>
+                <span className="le-row-text">
+                  <span className="le-row-kind">{lifeEventLabel(event.kind)} removed</span>
+                  <span className="le-row-abs">Hidden from charts, insights and reports</span>
+                </span>
+                <button
+                  type="button"
+                  className="le-row-undo"
+                  onClick={() => onRestore(event)}
+                  disabled={busyId === event.id}
+                >
+                  Undo
+                </button>
+              </li>
+            ) : (
+              <li
+                key={event.id}
+                className={`le-row-wrap${event.id === newestId && btn?.phase === "logged" ? " le-row--new" : ""}`}
+              >
+                <div className="le-row" title={lifeEventWhen(event)}>
+                  <span className="le-row-icon" aria-hidden>
+                    {lifeEventIcon(event.kind)}
+                  </span>
+                  <span className="le-row-text">
+                    <span className="le-row-kind">{lifeEventLabel(event.kind)}</span>
+                    <span className="le-row-abs">
+                      <span className="le-row-rel">{formatRelativeTime(event.timestamp)}</span>
+                      {isBackdated(event) ? ` · logged ${formatClock(event.loggedAt)}` : ""}
+                      {event.edited ? " · edited" : ""}
+                    </span>
+                  </span>
+                  <span className="le-row-actions">
+                    <button
+                      type="button"
+                      className={`icon-btn le-act${editing === event.id ? " le-act--on" : ""}`}
+                      onClick={() => setEditing(editing === event.id ? null : event.id)}
+                      disabled={busyId === event.id}
+                      aria-label={`Change time of ${lifeEventLabel(event.kind)}`}
+                      aria-expanded={editing === event.id}
+                      title="Change time"
+                    >
+                      <span aria-hidden>🕑</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn le-act le-act--remove"
+                      onClick={() => onRemove(event)}
+                      disabled={busyId === event.id}
+                      aria-label={`Remove ${lifeEventLabel(event.kind)}`}
+                      title="Remove"
+                    >
+                      <span aria-hidden>✕</span>
+                    </button>
+                  </span>
+                </div>
+                {editing === event.id && (
+                  <div className="le-retime" role="group" aria-label="When did it happen?">
+                    <span className="le-when-label">Happened</span>
+                    {RETIME_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.minutes}
+                        type="button"
+                        className="le-chip"
+                        onClick={() => onRetime(event, opt.minutes)}
+                        disabled={busyId === event.id}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                    <button type="button" className="link-btn le-retime-cancel" onClick={() => setEditing(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </li>
+            ),
+          )}
         </ul>
       )}
     </section>

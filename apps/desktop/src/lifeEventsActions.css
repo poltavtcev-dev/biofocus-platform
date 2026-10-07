@@ -1,0 +1,180 @@
+/* Life events: back-date chips, Undo toast, row actions (tokens from theme.css). */
+
+.le-when,
+.le-retime {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1);
+  margin: 0 0 var(--s-2);
+}
+
+.le-when-label {
+  font-size: var(--t-xs);
+  color: var(--c-fg-3);
+  margin-right: var(--s-1);
+}
+
+.le-chip {
+  appearance: none;
+  font: inherit;
+  font-size: var(--t-xs);
+  line-height: 1;
+  padding: 5px var(--s-2);
+  color: var(--c-fg-2);
+  background: transparent;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.le-chip:hover:not(:disabled) {
+  color: var(--c-fg);
+  border-color: var(--c-border-strong);
+}
+
+.le-chip--on {
+  color: var(--c-fg);
+  background: var(--c-accent-soft);
+  border-color: var(--c-accent);
+}
+
+.le-chip:focus-visible,
+.le-toast-undo:focus-visible,
+.le-row-undo:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+
+.le-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.le-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--t-sm);
+  color: var(--c-fg);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+}
+
+.le-toast--removed {
+  color: var(--c-fg-2);
+}
+
+.le-toast-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.le-toast-undo,
+.le-row-undo {
+  appearance: none;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  padding: 2px var(--s-2);
+  color: var(--c-accent);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.le-toast-undo:hover:not(:disabled),
+.le-row-undo:hover:not(:disabled) {
+  background: var(--c-accent-soft);
+}
+
+.le-toast-undo:disabled,
+.le-row-undo:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.le-row-wrap {
+  border-bottom: 1px solid var(--c-border);
+}
+
+.le-row-wrap:last-child {
+  border-bottom: 0;
+}
+
+.le-row-wrap > .le-row {
+  border-bottom: 0;
+}
+
+.le-row-wrap .le-row-abs {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.le-row-wrap .le-row-rel {
+  font-size: inherit;
+  color: var(--c-fg-2);
+}
+
+.le-row-actions {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.le-act {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  color: var(--c-fg-3);
+}
+
+.le-act--on {
+  color: var(--c-fg);
+  background: var(--c-surface-2);
+  border-color: var(--c-border);
+}
+
+.le-act--remove:hover:not(:disabled) {
+  color: var(--c-bad);
+  border-color: var(--c-bad);
+  background: var(--c-bad-soft);
+}
+
+.le-retime {
+  margin: 0 0 var(--s-2) 40px;
+}
+
+.le-retime-cancel {
+  font-size: var(--t-xs);
+  margin-left: var(--s-1);
+}
+
+.le-row--removed {
+  opacity: 0.75;
+}
+
+.le-row--removed .le-row-kind {
+  text-decoration: line-through;
+  text-decoration-color: var(--c-fg-3);
+}
+
+/* Trends chart: life-event marker legend under the chart. */
+.chart-events-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+  margin: var(--s-1) 0 0;
+  font-size: var(--t-xs);
+  color: var(--c-fg-3);
+}

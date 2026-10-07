@@ -5,11 +5,16 @@ export const LIFE_EVENT_KINDS = ["coffee", "walk", "lunch", "workout"] as const;
 
 export type LifeEventKind = (typeof LIFE_EVENT_KINDS)[number];
 
-/** Mirrors desktop `log_life_event` / `list_recent_life_events` IPC. */
+/**
+ * Mirrors desktop `log_life_event` / `list_recent_life_events` IPC.
+ * `timestamp` = when it happened (what the data uses); `loggedAt` = when tapped.
+ */
 export type LifeEventInfo = {
   id: string;
   kind: string;
   timestamp: number;
+  loggedAt: number;
+  edited: boolean;
   providerId: string;
 };
 
@@ -17,9 +22,29 @@ type LifeEventPayload = {
   id?: string;
   kind?: string;
   timestamp?: number;
+  loggedAt?: number;
+  edited?: boolean;
   providerId?: string;
   provider_id?: string;
 };
+
+/** "When did it happen?" presets (minutes before now). */
+export const BACKDATE_OPTIONS = [
+  { minutes: 0, label: "Now" },
+  { minutes: 15, label: "15m" },
+  { minutes: 30, label: "30m" },
+  { minutes: 60, label: "1h" },
+] as const;
+
+/** Re-time presets for an existing row (minutes before now). */
+export const RETIME_OPTIONS = [
+  { minutes: 15, label: "15 min ago" },
+  { minutes: 30, label: "30 min ago" },
+  { minutes: 60, label: "1 h ago" },
+  { minutes: 120, label: "2 h ago" },
+] as const;
+
+export type ActionResult<T> = { ok: true; value: T } | { ok: false; detail: string };
 
 export type LifeEventsListView =
   | { kind: "idle" }
@@ -98,6 +123,29 @@ export function loggedMessage(kind: string): string {
   return `Logged ${lifeEventLabel(kind).toLowerCase()}.`;
 }
 
+/** Local clock time only (e.g. "14:05"). */
+export function formatClock(timestamp: number): string {
+  try {
+    return new Date(timestamp * 1000).toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
+/** True when the event was back-dated / re-timed by at least a minute. */
+export function isBackdated(event: LifeEventInfo): boolean {
+  return Math.abs(event.loggedAt - event.timestamp) >= 60;
+}
+
+/** Secondary row text: "Today, 14:05" or "Today, 14:05 · logged 14:20". */
+export function lifeEventWhen(event: LifeEventInfo, now = new Date()): string {
+  const abs = formatAbsoluteTime(event.timestamp, now);
+  return isBackdated(event) ? `${abs} · logged ${formatClock(event.loggedAt)}` : abs;
+}
+
 function normalize(payload: LifeEventPayload): LifeEventInfo | null {
   const id = payload.id?.trim();
   const kind = payload.kind?.trim();
@@ -110,15 +158,32 @@ function normalize(payload: LifeEventPayload): LifeEventInfo | null {
   if (!id || !kind || typeof timestamp !== "number" || !Number.isFinite(timestamp)) {
     return null;
   }
+  const loggedAt =
+    typeof payload.loggedAt === "number" && Number.isFinite(payload.loggedAt)
+      ? payload.loggedAt
+      : timestamp;
   return {
     id,
     kind,
     timestamp,
+    loggedAt,
+    edited: payload.edited === true,
     providerId: providerId || "com.biofocus.desktop",
   };
 }
 
 let mockStore: LifeEventInfo[] | null = null;
+/** Mock: removed rows (id → row) so "Undo" can restore them. */
+const mockRemoved = new Map<string, LifeEventInfo>();
+let mockSeq = 0;
+
+function nowSecs(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+function sortNewestFirst(rows: LifeEventInfo[]): void {
+  rows.sort((a, b) => b.timestamp - a.timestamp || b.id.localeCompare(a.id));
+}
 
 function mockFromQuery(): LifeEventInfo[] | null {
   if (typeof window === "undefined") {
@@ -137,18 +202,21 @@ function mockFromQuery(): LifeEventInfo[] | null {
   }
   if (raw === "ready") {
     const now = Math.floor(Date.now() / 1000);
-    const rows: [LifeEventKind, number][] = [
-      ["coffee", 5 * 60],
-      ["walk", 52 * 60],
-      ["lunch", 3 * 3600],
-      ["coffee", 5 * 3600],
-      ["workout", 26 * 3600],
-      ["walk", 2 * 86400],
+    // [kind, happened ago, logged ago]
+    const rows: [LifeEventKind, number, number][] = [
+      ["coffee", 5 * 60, 5 * 60],
+      ["walk", 52 * 60, 22 * 60],
+      ["lunch", 3 * 3600, 3 * 3600],
+      ["coffee", 5 * 3600, 5 * 3600],
+      ["workout", 26 * 3600, 26 * 3600],
+      ["walk", 2 * 86400, 2 * 86400],
     ];
-    mockStore = rows.map(([kind, ago], i) => ({
+    mockStore = rows.map(([kind, ago, loggedAgo], i) => ({
       id: `mock-${i}`,
       kind,
       timestamp: now - ago,
+      loggedAt: now - loggedAgo,
+      edited: false,
       providerId: "com.biofocus.desktop",
     }));
     return mockStore;
@@ -195,27 +263,40 @@ export async function fetchRecentLifeEvents(
   }
 }
 
-/** Log one v1 Life Event via IPC. Mock mode returns a synthetic row. */
+/**
+ * Log one v1 Life Event via IPC. `minutesAgo` back-dates "happened at"
+ * (Core keeps `loggedAt` = now). Mock mode returns a synthetic row.
+ */
 export async function logLifeEvent(
   kind: LifeEventKind,
+  minutesAgo = 0,
 ): Promise<LogLifeEventView> {
   if (mockErrorFromQuery()) {
     return { kind: "error", detail: "Could not log that event." };
   }
+  const now = nowSecs();
+  const happenedAt = minutesAgo > 0 ? now - minutesAgo * 60 : undefined;
   const mocked = mockFromQuery();
   if (mocked) {
+    mockSeq += 1;
     const event: LifeEventInfo = {
-      id: `mock-${kind}-${Date.now()}`,
+      id: `mock-${kind}-${now}-${mockSeq}`,
       kind,
-      timestamp: Math.floor(Date.now() / 1000),
+      timestamp: happenedAt ?? now,
+      loggedAt: now,
+      edited: false,
       providerId: "com.biofocus.desktop",
     };
     mocked.unshift(event);
+    sortNewestFirst(mocked);
     return { kind: "ok", event, message: loggedMessage(kind) };
   }
 
   try {
-    const payload = await invoke<LifeEventPayload>("log_life_event", { kind });
+    const payload = await invoke<LifeEventPayload>(
+      "log_life_event",
+      happenedAt === undefined ? { kind } : { kind, happenedAt },
+    );
     const event = normalize(payload);
     if (!event) {
       return { kind: "error", detail: "Could not log that event." };
@@ -228,6 +309,123 @@ export async function logLifeEvent(
         : "Could not log that event.";
     return { kind: "error", detail };
   }
+}
+
+function errorDetail(err: unknown, fallback: string): string {
+  return typeof err === "string" && err.trim() ? err.trim() : fallback;
+}
+
+/** Remove (retract) a Life Event. Core appends a marker; nothing is deleted. */
+export async function retractLifeEvent(id: string): Promise<ActionResult<string>> {
+  const mocked = mockFromQuery();
+  if (mocked) {
+    const idx = mocked.findIndex((e) => e.id === id);
+    if (idx < 0) return { ok: false, detail: "That life event wasn’t found." };
+    const [row] = mocked.splice(idx, 1);
+    mockRemoved.set(id, row);
+    return { ok: true, value: id };
+  }
+  try {
+    await invoke("retract_life_event", { id });
+    return { ok: true, value: id };
+  } catch (err) {
+    return { ok: false, detail: errorDetail(err, "Could not remove that event.") };
+  }
+}
+
+/** Undo a removal (Core appends a copy with the same times). */
+export async function restoreLifeEvent(id: string): Promise<ActionResult<LifeEventInfo>> {
+  const mocked = mockFromQuery();
+  if (mocked) {
+    const row = mockRemoved.get(id);
+    if (!row) return { ok: false, detail: "That life event is still logged." };
+    mockRemoved.delete(id);
+    mockSeq += 1;
+    const copy = { ...row, id: `${row.id}-r${mockSeq}`, edited: true };
+    mocked.push(copy);
+    sortNewestFirst(mocked);
+    return { ok: true, value: copy };
+  }
+  try {
+    const payload = await invoke<LifeEventPayload>("restore_life_event", { id });
+    const event = normalize(payload);
+    return event ? { ok: true, value: event } : { ok: false, detail: "Could not restore that event." };
+  } catch (err) {
+    return { ok: false, detail: errorDetail(err, "Could not restore that event.") };
+  }
+}
+
+/** Change when an event happened (minutes before now). Keeps `loggedAt`. */
+export async function retimeLifeEvent(
+  id: string,
+  minutesAgo: number,
+): Promise<ActionResult<LifeEventInfo>> {
+  const happenedAt = nowSecs() - Math.max(0, minutesAgo) * 60;
+  const mocked = mockFromQuery();
+  if (mocked) {
+    const idx = mocked.findIndex((e) => e.id === id);
+    if (idx < 0) return { ok: false, detail: "That life event wasn’t found." };
+    mockSeq += 1;
+    const moved = { ...mocked[idx], id: `${id}-t${mockSeq}`, timestamp: happenedAt, edited: true };
+    mocked.splice(idx, 1, moved);
+    sortNewestFirst(mocked);
+    return { ok: true, value: moved };
+  }
+  try {
+    const payload = await invoke<LifeEventPayload>("retime_life_event", { id, happenedAt });
+    const event = normalize(payload);
+    return event ? { ok: true, value: event } : { ok: false, detail: "Could not change the time." };
+  } catch (err) {
+    return { ok: false, detail: errorDetail(err, "Could not change the time.") };
+  }
+}
+
+/**
+ * Life Events with happened-at in `[start, end]` for chart markers.
+ * Soft-fails to `[]`. QA: with `?mockLifeEvents=ready` returns a few
+ * synthetic events spread across the requested window.
+ */
+export async function fetchLifeEventsBetween(start: number, end: number): Promise<LifeEventInfo[]> {
+  if (!(end > start)) return [];
+  if (typeof window !== "undefined") {
+    const raw = new URLSearchParams(window.location.search).get("mockLifeEvents");
+    if (raw === "ready") {
+      const span = end - start;
+      const at: [LifeEventKind, number][] = [
+        ["coffee", 0.22],
+        ["walk", 0.5],
+        ["lunch", 0.64],
+        ["coffee", 0.83],
+      ];
+      return at.map(([kind, f], i) => {
+        const t = Math.round(start + span * f);
+        return { id: `mock-range-${i}`, kind, timestamp: t, loggedAt: t, edited: false, providerId: "com.biofocus.desktop" };
+      });
+    }
+    if (raw) return [];
+  }
+  try {
+    const payload = await invoke<LifeEventPayload[]>("list_life_events_between", {
+      start: Math.floor(start),
+      end: Math.ceil(end),
+    });
+    return Array.isArray(payload)
+      ? payload.map(normalize).filter((row): row is LifeEventInfo => row !== null)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * QA only: `?mockLifeEventsUi=actions` pre-opens the Undo toast, a removed row
+ * and the re-time picker so screenshots can show them without clicks.
+ */
+export function mockLifeEventsUiFromLocation(): "actions" | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("mockLifeEventsUi") === "actions"
+    ? "actions"
+    : null;
 }
 
 /** Local time for a Unix-seconds timestamp (Menubar meta). */
