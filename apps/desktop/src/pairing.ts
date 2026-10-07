@@ -10,9 +10,21 @@ export type PairingTokenInfo = {
   baseUrlHints: string[];
   fromEnv: boolean;
   qrSvg: string;
+  /** Saved settings ask for LAN (may need a restart to take effect). */
+  lanConfigured: boolean;
+  /** Saved settings differ from the running listener — restart BioFocus. */
+  restartRequired: boolean;
+  /** Ingest listener is up. */
+  ingestRunning: boolean;
+  /** Why ingest is not running (UI-safe). */
+  ingestError: string | null;
 };
 
 type PairingPayload = {
+  lanConfigured?: boolean;
+  restartRequired?: boolean;
+  ingestRunning?: boolean;
+  ingestError?: string | null;
   token?: string;
   ingestBaseUrl?: string;
   ingest_base_url?: string;
@@ -62,6 +74,10 @@ function normalize(payload: PairingPayload): PairingTokenInfo | null {
     baseUrlHints: baseUrlHints.length > 0 ? baseUrlHints : [ingestBaseUrl],
     fromEnv: Boolean(payload.fromEnv ?? payload.from_env),
     qrSvg,
+    lanConfigured: Boolean(payload.lanConfigured ?? bindMode === "lan"),
+    restartRequired: Boolean(payload.restartRequired),
+    ingestRunning: payload.ingestRunning ?? true,
+    ingestError: payload.ingestError?.trim() || null,
   };
 }
 
@@ -107,28 +123,108 @@ export function needsLanHintFallback(info: PairingTokenInfo): boolean {
   return isLoopbackBaseUrl(info.ingestBaseUrl);
 }
 
-/** Calm warning when physical phone cannot use the shown base URL. */
-export function companionLoopbackWarning(info: PairingTokenInfo): string | null {
-  if (info.bindMode === "loopback") {
-    return "Physical iPhone needs LAN — enable LAN below, restart BioFocus, then copy the LAN Base URL (not 127.0.0.1).";
+/** One clear phone-connection state for the Companion panel. */
+export type CompanionNetworkStatus =
+  | "ingest_off"
+  | "restart_needed"
+  | "lan_off"
+  | "lan_no_address"
+  | "lan_ready";
+
+export function companionNetworkStatus(info: PairingTokenInfo): CompanionNetworkStatus {
+  if (!info.ingestRunning) {
+    return "ingest_off";
   }
-  return null;
+  if (info.restartRequired) {
+    return "restart_needed";
+  }
+  if (info.bindMode !== "lan") {
+    return "lan_off";
+  }
+  if (needsLanHintFallback(info)) {
+    return "lan_no_address";
+  }
+  return "lan_ready";
 }
 
-/** Error when LAN is on but no usable address was discovered. */
-export function companionLanAddressError(info: PairingTokenInfo): string | null {
-  if (!needsLanHintFallback(info)) {
-    return null;
+/** Plain-language headline + next step for each state. */
+export function companionStatusCopy(info: PairingTokenInfo): {
+  tone: "ok" | "info" | "warn" | "error";
+  title: string;
+  detail: string;
+} {
+  switch (companionNetworkStatus(info)) {
+    case "ingest_off":
+      return {
+        tone: "error",
+        title: "Phone sync is not running",
+        detail:
+          info.ingestError ??
+          "The local sync server did not start. Restart BioFocus; if it persists, report it (see TESTING.md).",
+      };
+    case "restart_needed":
+      return {
+        tone: "warn",
+        title: "Restart BioFocus to apply",
+        detail: info.lanConfigured
+          ? "LAN is enabled in settings, but this Mac is still listening only on itself. Quit and reopen BioFocus, then press Reload."
+          : "LAN was turned off in settings, but this Mac is still reachable on the network until you quit and reopen BioFocus.",
+      };
+    case "lan_off":
+      return {
+        tone: "info",
+        title: "LAN is off — this Mac only",
+        detail:
+          "The iOS Simulator on this Mac can connect. To pair a real iPhone, tick “Enable LAN” below, restart BioFocus, then press Reload.",
+      };
+    case "lan_no_address":
+      return {
+        tone: "error",
+        title: "LAN is on, but no network address was found",
+        detail:
+          "Check that Wi‑Fi is connected, then press Reload. If it still fails, set BIOFOCUS_INGEST_BIND_HOST to this Mac’s Wi‑Fi IPv4 (System Settings → Wi‑Fi → Details) and restart.",
+      };
+    case "lan_ready":
+      return {
+        tone: "ok",
+        title: "Ready to pair",
+        detail:
+          "Your iPhone must be on the same Wi‑Fi. Enter this Base URL and the token in the BioFocus Companion app.",
+      };
   }
-  return "LAN bind is on, but no usable network address was found. Set this Mac’s LAN IPv4 (Companion → enable LAN, or BIOFOCUS_INGEST_BIND_HOST), restart, then Reload.";
+}
+
+/** @deprecated Use {@link companionStatusCopy}. Kept for older imports. */
+export function companionLoopbackWarning(info: PairingTokenInfo): string | null {
+  return companionNetworkStatus(info) === "lan_off" ? companionStatusCopy(info).detail : null;
+}
+
+/** @deprecated Use {@link companionStatusCopy}. */
+export function companionLanAddressError(info: PairingTokenInfo): string | null {
+  return companionNetworkStatus(info) === "lan_no_address"
+    ? companionStatusCopy(info).detail
+    : null;
 }
 
 /** Whether the primary base URL is safe to copy for a physical phone. */
 export function isPrimaryUrlCopyable(info: PairingTokenInfo): boolean {
-  if (info.bindMode === "loopback") {
-    return false;
+  return companionNetworkStatus(info) === "lan_ready";
+}
+
+/** Text shown in place of the Base URL when it is not usable for a phone. */
+export function baseUrlPlaceholder(info: PairingTokenInfo): string {
+  switch (companionNetworkStatus(info)) {
+    case "lan_ready":
+      return primaryBaseUrl(info);
+    case "lan_off":
+      return `${primaryBaseUrl(info)} (this Mac / Simulator only)`;
+    case "restart_needed":
+      return "Restart BioFocus, then Reload.";
+    case "lan_no_address":
+      return "No network address found — check Wi‑Fi, then Reload.";
+    case "ingest_off":
+      return "Phone sync is not running.";
   }
-  return !needsLanHintFallback(info);
 }
 
 /** Short reachability label under the base URL. */
@@ -144,13 +240,10 @@ export function networkModeLabel(info: PairingTokenInfo): string {
 
 /** Calm, non-evaluative network copy (LAN opt-in / local only). */
 export function networkModeDetail(info: PairingTokenInfo): string {
-  if (needsLanHintFallback(info)) {
-    return "LAN bind is on, but no usable network address was found. Showing loopback for Simulator. Restart Desktop with BIOFOCUS_INGEST_BIND_HOST set to this Mac’s LAN IPv4, then reload pairing.";
-  }
   if (info.bindMode === "lan") {
-    return "LAN reachability is opt-in on this Mac. Use this URL on a phone on the same Wi‑Fi — local network only.";
+    return "Local network only — nothing leaves your Wi‑Fi. Every request still needs the token.";
   }
-  return "Same-machine / Simulator. For a physical phone, enable LAN bind on Desktop, restart, then reload pairing.";
+  return "Nothing is reachable from other devices while LAN is off.";
 }
 
 export async function fetchPairingToken(): Promise<PairingView> {

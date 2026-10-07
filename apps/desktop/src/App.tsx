@@ -11,9 +11,9 @@ import {
 import { Dashboard } from "./Dashboard";
 import { isDashboardSurface, openDashboardWindow } from "./dashboardWindow";
 import {
+  baseUrlPlaceholder,
+  companionStatusCopy,
   copyText,
-  companionLanAddressError,
-  companionLoopbackWarning,
   fetchPairingToken,
   isPrimaryUrlCopyable,
   maskToken,
@@ -208,7 +208,7 @@ function MenubarShell() {
 
   const onCopyBaseUrl = async () => {
     if (pairing.kind !== "ready" || !isPrimaryUrlCopyable(pairing.info)) {
-      setCopyNote("Enable LAN and restart before copying a phone Base URL.");
+      setCopyNote("Not ready for a phone yet — follow the message above.");
       return;
     }
     const ok = await copyText(primaryBaseUrl(pairing.info));
@@ -228,12 +228,14 @@ function MenubarShell() {
       return;
     }
     setLanPref(result.pref);
+    // Refresh the status card so "Restart needed" shows immediately.
+    void fetchPairingToken().then(setPairing);
     setLanNote(
       result.pref.needsRestart
-        ? "Restart BioFocus to apply LAN bind on this Mac."
+        ? "Saved. Quit and reopen BioFocus to apply, then press Reload."
         : enabled
           ? "LAN preference saved."
-          : "LAN preference cleared — restart to return to loopback-only.",
+          : "LAN turned off. Quit and reopen BioFocus to stop listening on the network.",
     );
   };
 
@@ -554,16 +556,21 @@ function MenubarShell() {
 
         {pairing.kind === "ready" && (
           <>
-            {companionLoopbackWarning(pairing.info) && (
-              <p className="companion-warning" role="status">
-                {companionLoopbackWarning(pairing.info)}
-              </p>
-            )}
-            {companionLanAddressError(pairing.info) && (
-              <p className="companion-warning companion-warning--error" role="alert">
-                {companionLanAddressError(pairing.info)}
-              </p>
-            )}
+            {(() => {
+              const st = companionStatusCopy(pairing.info);
+              const cls =
+                st.tone === "error"
+                  ? "companion-warning companion-warning--error"
+                  : st.tone === "ok"
+                    ? "companion-status companion-status--ok"
+                    : "companion-warning";
+              return (
+                <div className={cls} role={st.tone === "error" ? "alert" : "status"}>
+                  <strong>{st.title}</strong>
+                  <p>{st.detail}</p>
+                </div>
+              );
+            })()}
 
             <div className="pairing-lan-toggle">
               <label className="pairing-lan-label">
@@ -586,9 +593,7 @@ function MenubarShell() {
             <div className="pairing-url-block">
               <p className="pairing-subtitle">Base URL</p>
               <p className="pairing-url" aria-live="polite">
-                {isPrimaryUrlCopyable(pairing.info)
-                  ? primaryBaseUrl(pairing.info)
-                  : "LAN address unavailable — fix bind, then Reload."}
+                {baseUrlPlaceholder(pairing.info)}
               </p>
               <div className="pairing-actions">
                 <button

@@ -687,3 +687,17 @@ body {
 .pairing-lan-label input {
   margin-top: 0.15rem;
 }
+
+.companion-status {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #2a8 35%, var(--bf-retry-border));
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.companion-warning p,
+.companion-status p {
+  margin: 0.25rem 0 0;
+}

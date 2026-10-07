@@ -757,9 +757,15 @@ struct IngestLanPreferenceDto {
 fn build_ingest_lan_preference(needs_restart: bool) -> Result<IngestLanPreferenceDto, String> {
     let from_env = ingest::lan_preference_overridden_by_env();
     let persisted = ingest::read_persisted_lan_enabled();
-    let effective_lan = ingest::resolve_bind_host()
+    let configured_lan = ingest::resolve_bind_host()
         .map(|host| !host.is_loopback())
         .map_err(|_| "Could not resolve ingest bind host.".to_string())?;
+    // Prefer what is actually listening; fall back to config before startup.
+    let effective_lan = match ingest_host::ingest_run_state() {
+        ingest_host::IngestRunState::Running { bind_host } => !bind_host.is_loopback(),
+        _ => configured_lan,
+    };
+    let needs_restart = needs_restart || configured_lan != effective_lan;
     Ok(IngestLanPreferenceDto {
         persisted,
         from_env,
@@ -808,6 +814,22 @@ struct PairingTokenInfo {
     from_env: bool,
     /// SVG markup for a QR encoding the token (phone camera → paste / scan).
     qr_svg: String,
+    /// Settings (env / saved toggle) ask for LAN on the next launch.
+    lan_configured: bool,
+    /// Saved settings differ from the running listener → restart BioFocus.
+    restart_required: bool,
+    /// Ingest listener is up (false if it failed or has not started).
+    ingest_running: bool,
+    /// Short UI-safe reason when ingest is not running.
+    ingest_error: Option<String>,
+}
+
+/// Running listener vs. configured bind (pure; unit-tested).
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PairingRuntime {
+    running_bind: Option<std::net::Ipv4Addr>,
+    configured_bind: std::net::Ipv4Addr,
+    ingest_error: Option<String>,
 }
 
 /// Maps token resolve errors to short UI-safe strings (no filesystem paths).
@@ -840,10 +862,29 @@ fn bind_mode_label(mode: ingest::BindMode) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn build_pairing_info(
     token: String,
     from_env: bool,
     advertise: &ingest::AdvertiseInfo,
+) -> Result<PairingTokenInfo, String> {
+    let runtime = PairingRuntime {
+        running_bind: None,
+        configured_bind: if advertise.bind_mode == ingest::BindMode::Lan {
+            ingest::INGEST_LAN_BIND_HOST
+        } else {
+            ingest::INGEST_BIND_HOST
+        },
+        ingest_error: None,
+    };
+    build_pairing_info_with(token, from_env, advertise, &runtime)
+}
+
+fn build_pairing_info_with(
+    token: String,
+    from_env: bool,
+    advertise: &ingest::AdvertiseInfo,
+    runtime: &PairingRuntime,
 ) -> Result<PairingTokenInfo, String> {
     let qr_svg = render_token_qr_svg(&token)?;
     // Prefer primary LAN/loopback hint; fall back to loopback so Simulator path stays usable.
@@ -860,29 +901,55 @@ fn build_pairing_info(
         base_url_hints: advertise.base_url_hints.clone(),
         from_env,
         qr_svg,
+        lan_configured: !runtime.configured_bind.is_loopback(),
+        restart_required: runtime
+            .running_bind
+            .is_some_and(|running| running.is_loopback() != runtime.configured_bind.is_loopback()),
+        ingest_running: runtime.ingest_error.is_none(),
+        ingest_error: runtime.ingest_error.clone(),
     })
 }
 
-fn resolve_pairing_advertise() -> Result<ingest::AdvertiseInfo, String> {
-    let bind_host = ingest::resolve_bind_host().map_err(|err| match err {
+fn resolve_configured_bind() -> Result<std::net::Ipv4Addr, String> {
+    ingest::resolve_bind_host().map_err(|err| match err {
         ingest::IngestError::InvalidBindHost { value } => {
             format!("Invalid ingest bind host: {value}")
         }
         _ => "Could not resolve ingest bind host.".into(),
-    })?;
+    })
+}
+
+/// Advertise hints from the **configured** bind (tests).
+#[cfg(test)]
+fn resolve_pairing_advertise() -> Result<ingest::AdvertiseInfo, String> {
     Ok(ingest::AdvertiseInfo::for_bind(
-        bind_host,
+        resolve_configured_bind()?,
         ingest::DEFAULT_INGEST_PORT,
     ))
 }
 
+/// Builds pairing info from the listener that is actually running. LAN address
+/// discovery runs fresh on every call, so the UI "Reload" re-detects it.
 fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
     let from_env = std::env::var(ingest::INGEST_TOKEN_ENV)
         .map(|value| !value.trim().is_empty())
         .unwrap_or(false);
     let token = ingest::resolve_ingest_token().map_err(pairing_error_message)?;
-    let advertise = resolve_pairing_advertise()?;
-    build_pairing_info(token, from_env, &advertise)
+    let configured_bind = resolve_configured_bind()?;
+    let (running_bind, ingest_error) = match ingest_host::ingest_run_state() {
+        ingest_host::IngestRunState::Running { bind_host } => (Some(bind_host), None),
+        ingest_host::IngestRunState::Failed { reason } => (None, Some(reason)),
+        ingest_host::IngestRunState::NotStarted => (None, None),
+    };
+    let advertise_bind = running_bind.unwrap_or(configured_bind);
+    let advertise =
+        ingest::AdvertiseInfo::for_bind(advertise_bind, ingest::DEFAULT_INGEST_PORT);
+    let runtime = PairingRuntime {
+        running_bind,
+        configured_bind,
+        ingest_error,
+    };
+    build_pairing_info_with(token, from_env, &advertise, &runtime)
 }
 
 /// Probes a DB path (create + WAL + migrate-on-open). Soft-fail via `Err`.
@@ -1892,6 +1959,37 @@ mod tests {
         unsafe {
             std::env::remove_var(ingest::INGEST_LAN_ENV);
         }
+    }
+
+    #[test]
+    fn pairing_flags_restart_when_lan_enabled_but_running_loopback() {
+        let advertise =
+            ingest::AdvertiseInfo::for_bind(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT);
+        let runtime = PairingRuntime {
+            running_bind: Some(ingest::INGEST_BIND_HOST),
+            configured_bind: ingest::INGEST_LAN_BIND_HOST,
+            ingest_error: None,
+        };
+        let info = build_pairing_info_with("tok".into(), false, &advertise, &runtime).expect("qr");
+        assert_eq!(info.bind_mode, "loopback");
+        assert!(info.lan_configured);
+        assert!(info.restart_required);
+        assert!(info.ingest_running);
+    }
+
+    #[test]
+    fn pairing_reports_ingest_failure_reason() {
+        let advertise =
+            ingest::AdvertiseInfo::for_bind(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT);
+        let runtime = PairingRuntime {
+            running_bind: None,
+            configured_bind: ingest::INGEST_BIND_HOST,
+            ingest_error: Some("Phone sync is off: port 8787 is already in use.".into()),
+        };
+        let info = build_pairing_info_with("tok".into(), false, &advertise, &runtime).expect("qr");
+        assert!(!info.ingest_running);
+        assert!(!info.restart_required);
+        assert!(info.ingest_error.unwrap().contains("8787"));
     }
 
     #[test]

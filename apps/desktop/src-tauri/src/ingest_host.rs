@@ -30,6 +30,33 @@ use tauri::{AppHandle, Manager, Runtime};
 use tokio::sync::oneshot;
 use tracing::{error, info, warn};
 
+/// What the running ingest listener actually is (vs. what prefs say for next launch).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IngestRunState {
+    /// Startup has not reached the bind step yet.
+    NotStarted,
+    /// Listener requested on this host (loopback or LAN).
+    Running { bind_host: std::net::Ipv4Addr },
+    /// Ingest did not start; short UI-safe reason (no paths / secrets).
+    Failed { reason: String },
+}
+
+static RUN_STATE: Mutex<IngestRunState> = Mutex::new(IngestRunState::NotStarted);
+
+fn set_run_state(state: IngestRunState) {
+    if let Ok(mut guard) = RUN_STATE.lock() {
+        *guard = state;
+    }
+}
+
+/// Current ingest run state (for pairing / status IPC).
+pub fn ingest_run_state() -> IngestRunState {
+    RUN_STATE
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or(IngestRunState::NotStarted)
+}
+
 /// Managed handle so the Tauri exit path can stop accept + persist worker.
 pub struct IngestHost {
     shutdown_tx: Mutex<Option<oneshot::Sender<()>>>,
@@ -167,6 +194,16 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         Ok(cfg) => cfg,
         Err(err) => {
             error!(error = %err, "IngestConfig::load failed; ingest HTTP not started");
+            let reason = match err {
+                ingest::IngestError::InsecureToken { reason } => {
+                    format!("Phone sync is off: {reason}.")
+                }
+                ingest::IngestError::InvalidBindHost { value } => {
+                    format!("Phone sync is off: invalid BIOFOCUS_INGEST_BIND_HOST ({value}).")
+                }
+                _ => "Phone sync is off: could not load ingest settings.".to_owned(),
+            };
+            set_run_state(IngestRunState::Failed { reason });
             return;
         }
     };
@@ -217,6 +254,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         .with_db_path(db_path)
         .with_bind(config.bind_host, config.port);
 
+    set_run_state(IngestRunState::Running { bind_host });
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
     let (done_tx, done_rx) = std::sync::mpsc::channel();
 
@@ -227,6 +265,13 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
             }
             Err(err) => {
                 error!(error = %err, port, "ingest HTTP serve failed");
+                let reason = match err {
+                    ingest::IngestError::Bind { .. } => format!(
+                        "Phone sync is off: port {port} is already in use (is another BioFocus running?)."
+                    ),
+                    _ => "Phone sync stopped unexpectedly. Restart BioFocus.".to_owned(),
+                };
+                set_run_state(IngestRunState::Failed { reason });
             }
         }
         let _ = done_tx.send(());
