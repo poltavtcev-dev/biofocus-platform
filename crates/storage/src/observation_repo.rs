@@ -1,6 +1,9 @@
 //! Immutable append/read API for `observations` (`docs/04-storage.md`).
 
-use bio_spec::{Confidence, DataType, Observation, ObservationId, UnixTimestamp};
+use bio_spec::{
+    Confidence, DataType, Observation, ObservationId, UnixTimestamp, DATA_TYPE_LIFE_EVENT,
+    DATA_TYPE_LIFE_EVENT_RETRACTION,
+};
 use rusqlite::{params, Connection, ErrorCode, OptionalExtension, Row};
 use uuid::Uuid;
 
@@ -12,6 +15,21 @@ use crate::{Database, StorageError, StorageResult};
 /// Inserts are append-only; duplicates of primary key are rejected (no UPSERT).
 pub struct ObservationRepository<'db> {
     conn: &'db Connection,
+}
+
+/// SQL predicate (alias-free) hiding retracted Life Events and the retraction
+/// markers themselves. Rows are never deleted — this is a read-side filter.
+///
+/// Data type names are inlined bio-spec constants (closed set, never user input).
+fn retraction_filter_sql() -> String {
+    format!(
+        "data_type <> '{r}'
+         AND NOT (data_type = '{l}' AND id IN (
+             SELECT json_extract(payload, '$.target_id') FROM observations
+             WHERE data_type = '{r}'))",
+        r = DATA_TYPE_LIFE_EVENT_RETRACTION,
+        l = DATA_TYPE_LIFE_EVENT,
+    )
 }
 
 impl<'db> ObservationRepository<'db> {
@@ -75,10 +93,32 @@ impl<'db> ObservationRepository<'db> {
     }
 
     /// Lists Observations with `timestamp` in inclusive `[start, end]`, ordered by time then id.
+    ///
+    /// Retracted Life Events and `life_event_retraction` markers are excluded
+    /// (append-only undo; see [`Self::list_by_time_range_raw`] for every row).
     pub fn list_by_time_range(
         &self,
         start: UnixTimestamp,
         end: UnixTimestamp,
+    ) -> StorageResult<Vec<Observation>> {
+        self.list_by_time_range_inner(start, end, true)
+    }
+
+    /// Like [`Self::list_by_time_range`] but returns every stored row,
+    /// including retracted Life Events and retraction markers (audit/export).
+    pub fn list_by_time_range_raw(
+        &self,
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+    ) -> StorageResult<Vec<Observation>> {
+        self.list_by_time_range_inner(start, end, false)
+    }
+
+    fn list_by_time_range_inner(
+        &self,
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+        hide_retracted: bool,
     ) -> StorageResult<Vec<Observation>> {
         if end.as_secs() < start.as_secs() {
             return Err(StorageError::InvalidTimeRange {
@@ -87,26 +127,52 @@ impl<'db> ObservationRepository<'db> {
             });
         }
 
-        let mut stmt = self.conn.prepare(
+        let filter = if hide_retracted {
+            format!(" AND {}", retraction_filter_sql())
+        } else {
+            String::new()
+        };
+        let sql = format!(
             "SELECT id, timestamp, provider_id, data_type, payload, confidence
              FROM observations
-             WHERE timestamp >= ?1 AND timestamp <= ?2
-             ORDER BY timestamp ASC, id ASC",
-        )?;
+             WHERE timestamp >= ?1 AND timestamp <= ?2{filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
         let rows = stmt.query_map(params![start.as_secs(), end.as_secs()], read_observation_columns)?;
         collect_observations(rows)
     }
 
     /// Lists Observations matching `data_type`, ordered by time then id.
+    ///
+    /// For `life_event`, retracted events are excluded. Asking for
+    /// `life_event_retraction` explicitly returns the markers.
     pub fn list_by_data_type(&self, data_type: &str) -> StorageResult<Vec<Observation>> {
-        let mut stmt = self.conn.prepare(
+        let filter = if data_type == DATA_TYPE_LIFE_EVENT_RETRACTION {
+            String::new()
+        } else {
+            format!(" AND {}", retraction_filter_sql())
+        };
+        let sql = format!(
             "SELECT id, timestamp, provider_id, data_type, payload, confidence
              FROM observations
-             WHERE data_type = ?1
-             ORDER BY timestamp ASC, id ASC",
-        )?;
+             WHERE data_type = ?1{filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
         let rows = stmt.query_map(params![data_type], read_observation_columns)?;
         collect_observations(rows)
+    }
+
+    /// `true` when a `life_event_retraction` marker targets `id`.
+    pub fn is_retracted(&self, id: ObservationId) -> StorageResult<bool> {
+        let n: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM observations
+             WHERE data_type = ?1 AND json_extract(payload, '$.target_id') = ?2",
+            params![DATA_TYPE_LIFE_EVENT_RETRACTION, id.to_string()],
+            |row| row.get(0),
+        )?;
+        Ok(n > 0)
     }
 
     /// Highest `(created_at, id)` cursor in the table, if any rows exist.
@@ -130,7 +196,8 @@ impl<'db> ObservationRepository<'db> {
     ///
     /// Empty when no newer rows (idle-friendly). `limit == 0` → empty `Ok`.
     /// Does not mutate rows. Enables incremental Feature Worker polls without
-    /// a new SQLite table.
+    /// a new SQLite table. **Raw**: retraction markers are returned so the
+    /// worker can drop the target from its in-memory window.
     pub fn list_after_created_cursor(
         &self,
         after_created_at: i64,

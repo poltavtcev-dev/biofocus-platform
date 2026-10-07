@@ -324,3 +324,88 @@ fn list_after_created_cursor_incremental_and_idle_empty() {
         .expect("limit 0")
         .is_empty());
 }
+
+fn life_event(id: u128, timestamp: i64, kind: &str) -> Observation {
+    Observation::try_new(
+        Uuid::from_u128(id),
+        UnixTimestamp::from_secs(timestamp),
+        "com.biofocus.desktop",
+        bio_spec::DATA_TYPE_LIFE_EVENT,
+        json!({ "kind": kind, "logged_at": timestamp }),
+        1.0,
+    )
+    .expect("life event")
+}
+
+fn retraction(id: u128, timestamp: i64, target: u128) -> Observation {
+    Observation::try_new(
+        Uuid::from_u128(id),
+        UnixTimestamp::from_secs(timestamp),
+        "com.biofocus.desktop",
+        bio_spec::DATA_TYPE_LIFE_EVENT_RETRACTION,
+        json!({ "target_id": Uuid::from_u128(target).to_string() }),
+        1.0,
+    )
+    .expect("retraction")
+}
+
+#[test]
+fn retracted_life_event_is_hidden_but_never_deleted() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+    repo.insert(&life_event(1, 1_000, "coffee")).expect("coffee");
+    repo.insert(&life_event(2, 1_100, "walk")).expect("walk");
+    repo.insert(&sample_observation("0190ecb5-7c2a-7123-8901-23456789abcd", 1_050, "heart_rate"))
+        .expect("hr");
+    assert!(!repo.is_retracted(Uuid::from_u128(1)).expect("q"));
+
+    repo.insert(&retraction(3, 1_200, 1)).expect("retract");
+
+    // Hidden from the normal readers…
+    let ranged = repo
+        .list_by_time_range(UnixTimestamp::from_secs(0), UnixTimestamp::from_secs(2_000))
+        .expect("range");
+    let ids: Vec<String> = ranged.iter().map(|o| o.data_type.clone()).collect();
+    assert_eq!(ids, vec!["heart_rate", "life_event"]);
+    assert_eq!(ranged[1].id, Uuid::from_u128(2));
+    let by_type = repo.list_by_data_type(bio_spec::DATA_TYPE_LIFE_EVENT).expect("type");
+    assert_eq!(by_type.len(), 1);
+    assert_eq!(by_type[0].id, Uuid::from_u128(2));
+    assert!(repo.is_retracted(Uuid::from_u128(1)).expect("q"));
+
+    // …but the original row and the marker are still stored (append-only).
+    assert!(repo.get_by_id(Uuid::from_u128(1)).expect("get").is_some());
+    let raw = repo
+        .list_by_time_range_raw(UnixTimestamp::from_secs(0), UnixTimestamp::from_secs(2_000))
+        .expect("raw");
+    assert_eq!(raw.len(), 4);
+    let markers = repo
+        .list_by_data_type(bio_spec::DATA_TYPE_LIFE_EVENT_RETRACTION)
+        .expect("markers");
+    assert_eq!(markers.len(), 1);
+    // Incremental worker cursor sees the marker (raw).
+    let after = repo.list_after_created_cursor(0, "", 10).expect("cursor");
+    assert_eq!(after.len(), 4);
+}
+
+#[test]
+fn retraction_only_hides_life_events() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+    let hr_id = "0190ecb5-7c2a-7123-8901-23456789abcd";
+    repo.insert(&sample_observation(hr_id, 1_050, "heart_rate")).expect("hr");
+    let bogus = Observation::try_new(
+        Uuid::from_u128(9),
+        UnixTimestamp::from_secs(1_060),
+        "com.biofocus.desktop",
+        bio_spec::DATA_TYPE_LIFE_EVENT_RETRACTION,
+        json!({ "target_id": hr_id }),
+        1.0,
+    )
+    .expect("marker");
+    repo.insert(&bogus).expect("insert marker");
+    let ranged = repo
+        .list_by_time_range(UnixTimestamp::from_secs(0), UnixTimestamp::from_secs(2_000))
+        .expect("range");
+    assert_eq!(ranged.len(), 1, "heart_rate must not be hidden by a retraction");
+}
