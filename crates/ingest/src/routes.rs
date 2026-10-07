@@ -35,6 +35,9 @@ pub struct IngestState {
     pub db_probe: DbProbe,
     /// Bind mode + base URL hints for `GET /v1/status` (P5-E1-T2).
     pub advertise: AdvertiseInfo,
+    /// Actual bind (host, port) when known — hints are re-derived per request so
+    /// a Wi-Fi change after startup is picked up without restarting.
+    pub bind: Option<(Ipv4Addr, u16)>,
 }
 
 impl IngestState {
@@ -47,6 +50,7 @@ impl IngestState {
             version: Arc::from(env!("CARGO_PKG_VERSION")),
             db_probe: Arc::new(|| Ok(())),
             advertise: AdvertiseInfo::for_bind(INGEST_BIND_HOST, DEFAULT_INGEST_PORT),
+            bind: None,
         }
     }
 
@@ -66,7 +70,8 @@ impl IngestState {
 
     /// Sets advertise from bind host + port (derives hints on call; no spin).
     #[must_use]
-    pub fn with_bind(self, bind_host: Ipv4Addr, port: u16) -> Self {
+    pub fn with_bind(mut self, bind_host: Ipv4Addr, port: u16) -> Self {
+        self.bind = Some((bind_host, port));
         self.with_advertise(AdvertiseInfo::for_bind(bind_host, port))
     }
 
@@ -152,7 +157,12 @@ pub fn ingest_router(state: IngestState) -> Router {
 
 async fn get_status(State(state): State<IngestState>) -> impl IntoResponse {
     let probe = (state.db_probe)();
-    let body = StatusResponse::from_probe(state.version.as_ref(), probe, &state.advertise);
+    let advertise = match state.bind {
+        // LAN wildcard bind: re-detect the address (cheap, no spin) on each status call.
+        Some((host, port)) if host.is_unspecified() => AdvertiseInfo::for_bind(host, port),
+        _ => state.advertise.clone(),
+    };
+    let body = StatusResponse::from_probe(state.version.as_ref(), probe, &advertise);
     (StatusCode::OK, Json(body))
 }
 
