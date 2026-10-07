@@ -8,6 +8,7 @@
 //! | [`RULE_COGNITIVE_LOAD_ELEVATED`] | latest `CognitiveLoad` ≥ threshold | `CognitiveLoad`; optional demand inputs |
 //! | [`RULE_SUSTAINED_LOAD_ELEVATED`] | latest `SustainedLoadIndicator` ≥ threshold | `SustainedLoadIndicator`; optional load inputs |
 //! | [`RULE_FOCUS_DIP_PACE_HINT`] | Focus-below-baseline pattern Insight | `FocusScore` + Insight id |
+//! | [`RULE_LIFE_EVENT_BEFORE_AFTER`] | coffee/walk with Focus or CognitiveLoad Δ ≥ 5 (45 min before vs 15–60 min after) | `FocusScore` / `CognitiveLoad` + Observation ids |
 //! | [`RULE_COMBINED_DEMAND_PACE_HINT`] | elevated combined-demand Insight | Insight id; optional `CognitiveLoad` |
 //!
 //! Host registration:
@@ -28,6 +29,7 @@ mod context_switch;
 mod focus_baseline;
 mod focus_dip_pace;
 mod high_stress;
+mod life_event_effect;
 mod sustained_load_elevated;
 
 pub use cognitive_load_elevated::{
@@ -47,6 +49,10 @@ pub use focus_dip_pace::{FocusDipPaceHintRule, RULE_FOCUS_DIP_PACE_HINT};
 pub use high_stress::{
     HighStressPeriodRule, HIGH_STRESS_SIGNAL_TYPE, RULE_HIGH_STRESS_PERIOD, STRESS_INDEX_ID,
 };
+pub use life_event_effect::{
+    LifeEventBeforeAfterRule, LIFE_EVENT_AFTER_END_SECS, LIFE_EVENT_AFTER_START_SECS, LIFE_EVENT_BEFORE_SECS,
+    LIFE_EVENT_CATEGORY, LIFE_EVENT_DELTA, LIFE_EVENT_EFFECT_KINDS, RULE_LIFE_EVENT_BEFORE_AFTER,
+};
 pub use sustained_load_elevated::{
     SustainedLoadElevatedRule, FATIGUE_INDEX_ID, PROLONGED_LOAD_CATEGORY,
     RULE_SUSTAINED_LOAD_ELEVATED, SUSTAINED_LOAD_ELEVATED_THRESHOLD, SUSTAINED_LOAD_INDICATOR_ID,
@@ -63,6 +69,7 @@ pub fn register_insights_v1(engine: &mut KnowledgeEngine) -> KnowledgeEngineResu
     engine.register(FocusVsRecentBaselineRule)?;
     engine.register(CognitiveLoadElevatedRule)?;
     engine.register(SustainedLoadElevatedRule)?;
+    engine.register(LifeEventBeforeAfterRule)?;
     Ok(())
 }
 
@@ -123,10 +130,10 @@ mod tests {
     }
 
     #[test]
-    fn register_insights_v1_adds_five_rules() {
+    fn register_insights_v1_adds_six_rules() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
-        assert_eq!(engine.rule_count(), 5);
+        assert_eq!(engine.rule_count(), 6);
     }
 
     #[test]

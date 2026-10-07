@@ -36,12 +36,15 @@ pub use bio_spec::{
 
 pub use engine::{generate_insights, KnowledgeEngine};
 pub use error::{KnowledgeEngineError, KnowledgeEngineResult};
-pub use pattern::PatternInputs;
+pub use pattern::{LifeEventMark, PatternInputs};
 pub use recommendation_rule::RecommendationRule;
 pub use rule::InsightRule;
 pub use rules::{
     register_insights_v1, register_recommendations_v1, CognitiveLoadElevatedRule,
     CombinedDemandPaceHintRule, ContextSwitchElevatedRule, FocusDipPaceHintRule,
+    LifeEventBeforeAfterRule, LIFE_EVENT_AFTER_END_SECS, LIFE_EVENT_AFTER_START_SECS,
+    LIFE_EVENT_BEFORE_SECS, LIFE_EVENT_CATEGORY, LIFE_EVENT_DELTA, LIFE_EVENT_EFFECT_KINDS,
+    RULE_LIFE_EVENT_BEFORE_AFTER,
     FocusVsRecentBaselineRule, HighStressPeriodRule, SustainedLoadElevatedRule,
     COGNITIVE_LOAD_ELEVATED_THRESHOLD, COGNITIVE_LOAD_ID, CONTEXT_SWITCH_ELEVATED_THRESHOLD,
     CONTEXT_SWITCH_RATE_ID, DEMAND_CATEGORY, FATIGUE_INDEX_ID, FOCUS_BASELINE_CONFIDENCE_GATE,
