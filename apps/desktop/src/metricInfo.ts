@@ -230,3 +230,44 @@ export function directionHint(d: MetricDirection): string {
       return "Neither good nor bad — context only.";
   }
 }
+
+export type StatTone = "ok" | "elevated" | "rough" | "neutral";
+
+/** Calm tone + word for a headline stat card. */
+export function statTone(
+  f: { featureId: string; value: unknown; confidence?: number; factors?: { id: string }[] },
+): { tone: StatTone; word: string } {
+  if (reliabilityOf(f) !== "ok") {
+    return { tone: "rough", word: "rough estimate" };
+  }
+  const v = typeof f.value === "number" ? f.value : NaN;
+  const dir = metricInfo(f.featureId).direction;
+  if (!Number.isFinite(v) || dir === "neutral") {
+    if (f.featureId === "ContextSwitchRate" && Number.isFinite(v)) {
+      return v >= 2 ? { tone: "elevated", word: "busy" } : { tone: "ok", word: "settled" };
+    }
+    return { tone: "neutral", word: "context" };
+  }
+  if (dir === "higher_better") {
+    return v >= 55 ? { tone: "ok", word: "steady" } : { tone: "elevated", word: "lower" };
+  }
+  return v <= 55 ? { tone: "ok", word: "calm" } : { tone: "elevated", word: "elevated" };
+}
+
+/** Keep only the newest window per metric (snapshot lists every sliding window). */
+export function latestPerFeature<T extends { featureId: string; timeWindow: { end: number } }>(
+  features: T[],
+): T[] {
+  const best = new Map<string, T>();
+  for (const f of features) {
+    const cur = best.get(f.featureId);
+    if (!cur || f.timeWindow.end > cur.timeWindow.end) {
+      best.set(f.featureId, f);
+    }
+  }
+  return [...best.values()];
+}
+
+/** Headline metrics, in display order; first three always, fourth = first available. */
+export const HEADLINE_IDS = ["FocusScore", "CognitiveLoad", "ContextSwitchRate"];
+export const HEADLINE_FOURTH = ["RecoveryScore", "StressIndex", "DeepWorkScore"];

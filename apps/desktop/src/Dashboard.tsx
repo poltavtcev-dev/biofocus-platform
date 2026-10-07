@@ -27,9 +27,13 @@ import {
 } from "./featureSnapshot";
 import {
   directionHint,
+  HEADLINE_FOURTH,
+  HEADLINE_IDS,
+  latestPerFeature,
   metricInfo,
   reliabilityOf,
   reliabilityText,
+  statTone,
 } from "./metricInfo";
 import {
   CHART_RANGES,
@@ -536,18 +540,18 @@ export function Dashboard() {
     setChartRange(next);
   };
 
-  const features = view.snapshot?.features ?? [];
+  const features = latestPerFeature(view.snapshot?.features ?? []);
   const signals = view.snapshot?.signals ?? [];
   const isReady = view.kind === "ready";
 
   return (
     <main className="shell shell--dashboard" data-snapshot={view.kind}>
-      <header className="brand brand--dashboard">
-        <h1>BioFocus</h1>
-        <p className="brand-sub">Dashboard</p>
-      </header>
-
-      <section className="status-block" aria-live="polite">
+      <header className="dash-header">
+        <div className="brand brand--dashboard">
+          <h1>BioFocus</h1>
+          <p className="brand-sub">Last 15 minutes · everything stays on this Mac</p>
+        </div>
+      <section className="status-block status-block--inline" aria-live="polite">
         <div className="status-row">
           <span
             className={`status-dot status-dot--${
@@ -565,6 +569,9 @@ export function Dashboard() {
         </div>
         <p className="status-detail">{view.detail}</p>
       </section>
+      </header>
+
+      {isReady && features.length > 0 && <StatCards features={features} />}
 
       {view.kind === "error" && (
         <button
@@ -591,7 +598,9 @@ export function Dashboard() {
             marked “rough” or “one source” are hints, not conclusions.
           </p>
           <ul className="feature-rows">
-            {features.map((f) => (
+            {[...features]
+              .sort((a, b) => metricInfo(a.featureId).name.localeCompare(metricInfo(b.featureId).name))
+              .map((f) => (
               <FeatureRow key={`${f.featureId}-${f.timeWindow.end}`} f={f} />
             ))}
           </ul>
@@ -662,5 +671,41 @@ function FeatureRow({ f }: { f: FeatureDto }) {
         </div>
       </details>
     </li>
+  );
+}
+
+function StatCards({ features }: { features: FeatureDto[] }) {
+  const byId = new Map(features.map((f) => [f.featureId, f]));
+  const fourth = HEADLINE_FOURTH.find((id) => byId.has(id));
+  const ids = [...HEADLINE_IDS, ...(fourth ? [fourth] : [])];
+  return (
+    <section className="stat-cards" aria-label="Key metrics">
+      {ids.map((id) => {
+        const f = byId.get(id);
+        const info = metricInfo(id);
+        if (!f) {
+          return (
+            <div key={id} className="stat-card stat-card--empty">
+              <p className="stat-name">{info.name}</p>
+              <p className="stat-value">—</p>
+              <p className="stat-foot">No data yet</p>
+            </div>
+          );
+        }
+        const { tone, word } = statTone(f);
+        return (
+          <div key={id} className={`stat-card stat-card--${tone}`} title={info.what}>
+            <p className="stat-name">{info.name}</p>
+            <p className="stat-value">
+              {formatFeatureValue(f.value)}
+              {info.unit && <span className="stat-unit">{info.unit === "0–100" ? "/100" : info.unit}</span>}
+            </p>
+            <p className="stat-foot">
+              <span className={`tone-chip tone-chip--${tone}`}>{word}</span>
+            </p>
+          </div>
+        );
+      })}
+    </section>
   );
 }

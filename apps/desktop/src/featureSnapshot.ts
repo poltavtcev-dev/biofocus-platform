@@ -124,6 +124,8 @@ export function mockSnapshotFromLocation(
           featureId: "StressIndex",
           timeWindow: tw,
           value: stress[i],
+          // QA: one thin metric so the "rough" marking is visible in mocks.
+          confidence: 0.35,
           provenance: ["00000000-0000-0000-0000-000000000002"],
         },
         {
