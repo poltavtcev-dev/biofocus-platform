@@ -741,3 +741,267 @@ input[type="checkbox"] {
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* ---------- life events (menubar) ---------- */
+
+.le-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-1);
+}
+
+.le-head .pairing-title {
+  margin: 0;
+}
+
+.icon-btn {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--c-fg-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover:not(:disabled) {
+  color: var(--c-fg);
+  background: var(--c-surface-2);
+  border-color: var(--c-border);
+}
+
+.icon-btn:focus-visible,
+.le-btn:focus-visible,
+.link-btn:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.le-help {
+  margin: 0 0 var(--s-3);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+  color: var(--c-fg-2);
+}
+
+.le-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+/* 4-across only when the block itself is wide (panel stays 2×2 at 320px). */
+.le {
+  container-type: inline-size;
+}
+
+@container (min-width: 440px) {
+  .le-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.le-btn {
+  appearance: none;
+  font: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 40px;
+  padding: var(--s-2) var(--s-3);
+  color: var(--c-fg);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, transform 80ms ease;
+}
+
+.le-btn:hover:not(:disabled) {
+  border-color: var(--c-accent);
+}
+
+.le-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.le-btn:disabled {
+  cursor: default;
+}
+
+.le-btn:disabled:not(.le-btn--logging) {
+  opacity: 0.55;
+}
+
+.le-btn-icon {
+  font-size: 16px;
+  line-height: 1;
+  width: 18px;
+  text-align: center;
+}
+
+.le-btn-label {
+  font-size: var(--t-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.le-btn--logging {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+.le-btn--logged {
+  border-color: var(--c-ok);
+  background: var(--c-ok-soft);
+  color: var(--c-ok);
+}
+
+.le-btn--error {
+  border-color: var(--c-bad);
+  background: var(--c-bad-soft);
+}
+
+.le-error {
+  margin: var(--s-2) 0 0;
+  font-size: var(--t-sm);
+  color: var(--c-bad);
+}
+
+.le-recent-title {
+  margin-top: var(--s-4);
+}
+
+.le-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.le-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--c-border);
+  min-width: 0;
+}
+
+.le-row:last-child {
+  border-bottom: 0;
+}
+
+.le-row--new {
+  animation: le-flash 1.6s ease-out;
+}
+
+@keyframes le-flash {
+  from { background: var(--c-ok-soft); }
+  to { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .le-row--new { animation: none; }
+  .le-btn { transition: none; }
+}
+
+.le-row-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  background: var(--c-surface-2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.le-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.le-row-kind {
+  font-size: var(--t-md);
+  font-weight: 500;
+  color: var(--c-fg);
+}
+
+.le-row-abs {
+  font-size: var(--t-xs);
+  color: var(--c-fg-3);
+}
+
+.le-row-rel {
+  font-size: var(--t-xs);
+  color: var(--c-fg-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.le-empty {
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+  padding: var(--s-3);
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--r-md);
+  color: var(--c-fg-2);
+  font-size: var(--t-sm);
+}
+
+.le-empty p {
+  margin: 0;
+}
+
+.link-btn {
+  appearance: none;
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Fix: `.dashboard-entry` is the wrapping <section>, not the button. */
+section.dashboard-entry {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-weight: inherit;
+  cursor: auto;
+}
+
+section.dashboard-entry .retry {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  section.dashboard-entry .retry {
+    color: #12131a;
+  }
+}
