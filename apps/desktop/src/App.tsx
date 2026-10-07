@@ -27,16 +27,7 @@ import {
   setIngestLanPreference,
   type IngestLanPreference,
 } from "./ingestLan";
-import {
-  fetchRecentLifeEvents,
-  formatLifeEventTime,
-  LIFE_EVENT_KINDS,
-  lifeEventLabel,
-  logLifeEvent,
-  type LifeEventKind,
-  type LifeEventsListView,
-  type LogLifeEventView,
-} from "./lifeEvents";
+import { LifeEventsBlock } from "./LifeEventsBlock";
 import {
   fetchGitWatchedRoots,
   saveGitWatchedRoots,
@@ -88,10 +79,6 @@ function MenubarShell() {
   const [lanNote, setLanNote] = useState<string | null>(null);
   const [lanBusy, setLanBusy] = useState(false);
   const [dashNote, setDashNote] = useState<string | null>(null);
-  const [lifeEvents, setLifeEvents] = useState<LifeEventsListView>({
-    kind: "idle",
-  });
-  const [logView, setLogView] = useState<LogLifeEventView>({ kind: "idle" });
   const [gitRoots, setGitRoots] = useState<GitWatchedRootsView>({ kind: "idle" });
   const [gitSave, setGitSave] = useState<GitWatchedRootsSaveView>({
     kind: "idle",
@@ -146,19 +133,6 @@ function MenubarShell() {
     void fetchIngestLanPreference().then((next) => {
       if (!cancelled) {
         setLanPref(next);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLifeEvents({ kind: "loading" });
-    void fetchRecentLifeEvents().then((next) => {
-      if (!cancelled) {
-        setLifeEvents(next);
       }
     });
     return () => {
@@ -249,24 +223,6 @@ function MenubarShell() {
     });
   };
 
-  const onLogLifeEvent = (kind: LifeEventKind) => {
-    if (logView.kind === "logging") {
-      return;
-    }
-    setLogView({ kind: "logging", eventKind: kind });
-    void logLifeEvent(kind).then((result) => {
-      setLogView(result);
-      if (result.kind === "ok") {
-        void fetchRecentLifeEvents().then(setLifeEvents);
-      }
-    });
-  };
-
-  const onReloadLifeEvents = () => {
-    setLifeEvents({ kind: "loading" });
-    void fetchRecentLifeEvents().then(setLifeEvents);
-  };
-
   const onReloadGitRoots = () => {
     setGitRoots({ kind: "loading" });
     setGitSave({ kind: "idle" });
@@ -312,7 +268,6 @@ function MenubarShell() {
   };
 
   const alertLevel = view.alertLevel ?? "green";
-  const logging = logView.kind === "logging";
   const gitSaving = gitSave.kind === "saving";
 
   return (
@@ -351,77 +306,7 @@ function MenubarShell() {
         {dashNote && <p className="status-meta">{dashNote}</p>}
       </section>
 
-      <section className="life-events-block" aria-label="Life events">
-        <h2 className="pairing-title">Life events</h2>
-        <p className="pairing-detail">
-          Note what happened — coffee, a walk, lunch, or a workout. No scores.
-        </p>
-        <div className="life-event-actions">
-          {LIFE_EVENT_KINDS.map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              className="retry"
-              disabled={logging}
-              onClick={() => onLogLifeEvent(kind)}
-            >
-              {lifeEventLabel(kind)}
-            </button>
-          ))}
-        </div>
-        {logView.kind === "ok" && (
-          <p className="status-meta" aria-live="polite">
-            {logView.message}
-          </p>
-        )}
-        {logView.kind === "error" && (
-          <p className="status-meta" aria-live="polite">
-            {logView.detail}
-          </p>
-        )}
-        {logView.kind === "logging" && (
-          <p className="status-meta" aria-live="polite">
-            Logging {lifeEventLabel(logView.eventKind).toLowerCase()}…
-          </p>
-        )}
-
-        <div className="life-event-recent">
-          <div className="life-event-recent-head">
-            <p className="pairing-subtitle">Recent</p>
-            <button
-              type="button"
-              className="retry"
-              onClick={onReloadLifeEvents}
-              disabled={lifeEvents.kind === "loading"}
-            >
-              Refresh
-            </button>
-          </div>
-          {lifeEvents.kind === "loading" && (
-            <p className="status-meta">Loading recent…</p>
-          )}
-          {lifeEvents.kind === "error" && (
-            <p className="status-meta">{lifeEvents.detail}</p>
-          )}
-          {lifeEvents.kind === "ready" && lifeEvents.events.length === 0 && (
-            <p className="status-meta">Nothing logged yet.</p>
-          )}
-          {lifeEvents.kind === "ready" && lifeEvents.events.length > 0 && (
-            <ul className="life-event-rows">
-              {lifeEvents.events.map((event) => (
-                <li key={event.id} className="life-event-row">
-                  <span className="life-event-kind">
-                    {lifeEventLabel(event.kind)}
-                  </span>
-                  <span className="life-event-time">
-                    {formatLifeEventTime(event.timestamp)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
+      <LifeEventsBlock />
 
       <section className="git-roots-block" aria-label="Git watched folders">
         <h2 className="pairing-title">Git folders</h2>

@@ -40,6 +40,51 @@ const LABELS: Record<LifeEventKind, string> = {
   workout: "Workout",
 };
 
+const ICONS: Record<LifeEventKind, string> = {
+  coffee: "☕",
+  walk: "🚶",
+  lunch: "🍽️",
+  workout: "🏋️",
+};
+
+/** Simple emoji icon for a kind (decorative; label is always shown too). */
+export function lifeEventIcon(kind: string): string {
+  if ((LIFE_EVENT_KINDS as readonly string[]).includes(kind)) {
+    return ICONS[kind as LifeEventKind];
+  }
+  return "•";
+}
+
+/** How many recent events the panel shows. */
+export const RECENT_LIMIT = 5;
+
+/** "just now", "5 min ago", "2 h ago", "yesterday", "3 days ago". */
+export function formatRelativeTime(timestamp: number, nowSecs = Date.now() / 1000): string {
+  const diff = Math.max(0, Math.round(nowSecs - timestamp));
+  if (diff < 45) return "just now";
+  const min = Math.round(diff / 60);
+  if (min < 60) return `${min} min ago`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = Math.round(h / 24);
+  if (d === 1) return "yesterday";
+  return `${d} days ago`;
+}
+
+/** Absolute local time; adds the date when not today. */
+export function formatAbsoluteTime(timestamp: number, now = new Date()): string {
+  try {
+    const d = new Date(timestamp * 1000);
+    const sameDay = d.toDateString() === now.toDateString();
+    const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    if (sameDay) return `Today, ${time}`;
+    const date = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    return `${date}, ${time}`;
+  } catch {
+    return "";
+  }
+}
+
 /** Calm, non-evaluative label for a v1 kind. */
 export function lifeEventLabel(kind: string): string {
   if ((LIFE_EVENT_KINDS as readonly string[]).includes(kind)) {
@@ -73,36 +118,40 @@ function normalize(payload: LifeEventPayload): LifeEventInfo | null {
   };
 }
 
+let mockStore: LifeEventInfo[] | null = null;
+
 function mockFromQuery(): LifeEventInfo[] | null {
   if (typeof window === "undefined") {
     return null;
   }
   const raw = new URLSearchParams(window.location.search).get("mockLifeEvents");
-  if (!raw) {
+  if (!raw || raw === "error") {
     return null;
   }
+  if (mockStore) {
+    return mockStore;
+  }
   if (raw === "empty") {
-    return [];
+    mockStore = [];
+    return mockStore;
   }
   if (raw === "ready") {
     const now = Math.floor(Date.now() / 1000);
-    return [
-      {
-        id: "0190ecb5-7c2a-7123-8901-23456789abcf",
-        kind: "coffee",
-        timestamp: now - 120,
-        providerId: "com.biofocus.desktop",
-      },
-      {
-        id: "0190ecb5-7c2a-7123-8901-23456789abd0",
-        kind: "walk",
-        timestamp: now - 3600,
-        providerId: "com.biofocus.desktop",
-      },
+    const rows: [LifeEventKind, number][] = [
+      ["coffee", 5 * 60],
+      ["walk", 52 * 60],
+      ["lunch", 3 * 3600],
+      ["coffee", 5 * 3600],
+      ["workout", 26 * 3600],
+      ["walk", 2 * 86400],
     ];
-  }
-  if (raw === "error") {
-    return null;
+    mockStore = rows.map(([kind, ago], i) => ({
+      id: `mock-${i}`,
+      kind,
+      timestamp: now - ago,
+      providerId: "com.biofocus.desktop",
+    }));
+    return mockStore;
   }
   return null;
 }
@@ -116,14 +165,14 @@ function mockErrorFromQuery(): boolean {
 
 /** Load recent Life Events via IPC (or QA mock). No busy-loop. */
 export async function fetchRecentLifeEvents(
-  limit = 8,
+  limit = RECENT_LIMIT,
 ): Promise<LifeEventsListView> {
   if (mockErrorFromQuery()) {
     return { kind: "error", detail: "Could not load recent life events." };
   }
   const mocked = mockFromQuery();
   if (mocked) {
-    return { kind: "ready", events: mocked };
+    return { kind: "ready", events: mocked.slice(0, limit) };
   }
 
   try {
@@ -161,6 +210,7 @@ export async function logLifeEvent(
       timestamp: Math.floor(Date.now() / 1000),
       providerId: "com.biofocus.desktop",
     };
+    mocked.unshift(event);
     return { kind: "ok", event, message: loggedMessage(kind) };
   }
 
