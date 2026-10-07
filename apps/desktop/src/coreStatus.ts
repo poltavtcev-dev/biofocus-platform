@@ -27,15 +27,15 @@ const COPY: Record<
 > = {
   idle: {
     label: "Idle",
-    detail: "Waiting for Core.",
+    detail: "Starting the local analysis engine…",
   },
   ready: {
     label: "Ready",
-    detail: "Core is available.",
+    detail: "Running locally. Nothing leaves this Mac.",
   },
   error: {
     label: "Error",
-    detail: "Could not reach Core.",
+    detail: "The local analysis engine is not responding. Click Try again or restart BioFocus.",
   },
 };
 
@@ -65,11 +65,11 @@ export function trayTooltipFor(view: CoreStatusView): string {
 export function alertCopy(level: AlertLevel): { label: string; detail: string } {
   switch (level) {
     case "green":
-      return { label: "Steady", detail: "Load looks steady." };
+      return { label: "Steady", detail: "Recent demand on your attention looks steady." };
     case "yellow":
-      return { label: "Elevated", detail: "Load is elevated." };
+      return { label: "Elevated", detail: "Demand on your attention is higher than usual — maybe take a short break." };
     case "red":
-      return { label: "High", detail: "Load is high right now." };
+      return { label: "High", detail: "Demand on your attention has been high for a while. Open the Dashboard to see why." };
   }
 }
 

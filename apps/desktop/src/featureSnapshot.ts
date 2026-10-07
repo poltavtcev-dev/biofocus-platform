@@ -6,6 +6,10 @@ export type FeatureDto = {
   timeWindow: { start: number; end: number };
   value: number | Record<string, unknown>;
   provenance: string[];
+  /** Data-quality confidence 0–1 (not clinical). */
+  confidence?: number;
+  /** "Why this value" factors; shares sum to 1. */
+  factors?: { id: string; label: string; share: number }[];
 };
 
 /** Wire Signal from `get_feature_snapshot`. */
@@ -41,16 +45,16 @@ const COPY: Record<
   { label: string; detail: string }
 > = {
   empty: {
-    label: "No features yet",
-    detail: "Waiting for Feature evidence from Core.",
+    label: "No metrics yet",
+    detail: "No data yet. Keep BioFocus running and use your Mac normally — metrics appear after a few minutes.",
   },
   ready: {
-    label: "Features available",
-    detail: "Latest snapshot from Core.",
+    label: "Metrics available",
+    detail: "Latest values from the last 15 minutes.",
   },
   error: {
     label: "Could not load",
-    detail: "Could not reach the Feature snapshot.",
+    detail: "Could not load metrics from the local engine. Try again; if it persists, restart BioFocus.",
   },
 };
 

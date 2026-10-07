@@ -22,8 +22,15 @@ import {
   fetchFeatureSnapshot,
   formatFeatureValue,
   loadingView,
+  type FeatureDto,
   type SnapshotView,
 } from "./featureSnapshot";
+import {
+  directionHint,
+  metricInfo,
+  reliabilityOf,
+  reliabilityText,
+} from "./metricInfo";
 import {
   CHART_RANGES,
   fetchFeatureSeries,
@@ -579,12 +586,13 @@ export function Dashboard() {
       {isReady && features.length > 0 && (
         <section className="feature-list" aria-label="Feature snapshot">
           <p className="chart-slot-title">Snapshot</p>
+          <p className="status-meta">
+            Latest 15-minute window. Click a metric to see what it means. Values
+            marked “rough” or “one source” are hints, not conclusions.
+          </p>
           <ul className="feature-rows">
             {features.map((f) => (
-              <li key={`${f.featureId}-${f.timeWindow.end}`} className="feature-row">
-                <span className="feature-id">{f.featureId}</span>
-                <span className="feature-value">{formatFeatureValue(f.value)}</span>
-              </li>
+              <FeatureRow key={`${f.featureId}-${f.timeWindow.end}`} f={f} />
             ))}
           </ul>
           {signals.length > 0 && (
@@ -606,5 +614,53 @@ export function Dashboard() {
         llmProvider={llmProvider}
       />
     </main>
+  );
+}
+
+function FeatureRow({ f }: { f: FeatureDto }) {
+  const info = metricInfo(f.featureId);
+  const rel = reliabilityOf(f);
+  const relText = reliabilityText(rel, f.factors);
+  return (
+    <li
+      className={`feature-row${rel === "ok" ? "" : " feature-row--weak"}`}
+      title={info.what}
+    >
+      <details className="feature-details">
+        <summary>
+          <span className="feature-id">
+            {info.name}
+            {rel === "low" && <span className="feature-badge">rough</span>}
+            {rel === "single_input" && (
+              <span className="feature-badge">one source</span>
+            )}
+          </span>
+          <span className="feature-value">
+            {formatFeatureValue(f.value)}
+            {info.unit ? <span className="feature-unit"> {info.unit}</span> : null}
+          </span>
+        </summary>
+        <div className="feature-explain">
+          <p>{info.what}</p>
+          <p className="status-meta">From: {info.from}</p>
+          <p className="status-meta">{directionHint(info.direction)}</p>
+          {f.factors && f.factors.length > 0 && (
+            <p className="status-meta">
+              This window:{" "}
+              {f.factors
+                .map((x) => `${x.label} ${Math.round(x.share * 100)}%`)
+                .join(" · ")}
+            </p>
+          )}
+          {typeof f.confidence === "number" && (
+            <p className="status-meta">
+              Data coverage: {Math.round(f.confidence * 100)}%
+            </p>
+          )}
+          {relText && <p className="status-meta">{relText}</p>}
+          <p className="status-meta feature-tech-id">Metric id: {f.featureId}</p>
+        </div>
+      </details>
+    </li>
   );
 }
