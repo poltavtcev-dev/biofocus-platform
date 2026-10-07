@@ -143,6 +143,11 @@
 //! `bio_spec`, appends through [`storage::ObservationRepository`] (same store
 //! as ingest — no parallel table). UI never opens SQLite.
 //!
+//! `retract_life_event` / `restore_life_event` / `retime_life_event` are
+//! append-only: removal writes a `life_event_retraction` marker that storage
+//! readers honour; nothing is deleted. `list_life_events_between` feeds chart
+//! markers. `timestamp` = happened at, payload `logged_at` = when tapped.
+//!
 //! ## `get_git_watched_roots` / `set_git_watched_roots` (P14-E3-T1 / ADR-014)
 //!
 //! Menubar editor for personal Git watched folders. Host reads/writes
@@ -1136,9 +1141,45 @@ fn get_pairing_token() -> Result<PairingTokenInfo, String> {
 /// Logs a v1 Life Event Observation from the Menubar (P6-E2-T1 / ADR-006).
 ///
 /// Persists via [`storage::ObservationRepository`] — UI ↛ SQLite. Calm errors.
+///
+/// `happened_at` (Unix secs, optional) back-dates the event up to 24 h; payload
+/// keeps `logged_at` = now.
 #[tauri::command]
-fn log_life_event(kind: String) -> Result<life_event_ipc::LifeEventDto, String> {
-    life_event_ipc::log_life_event(&kind)
+fn log_life_event(
+    kind: String,
+    happened_at: Option<i64>,
+) -> Result<life_event_ipc::LifeEventDto, String> {
+    life_event_ipc::log_life_event(&kind, happened_at)
+}
+
+/// Removes a Life Event by appending a retraction marker (append-only; nothing deleted).
+#[tauri::command]
+fn retract_life_event(id: String) -> Result<life_event_ipc::LifeEventRetractionDto, String> {
+    life_event_ipc::retract_life_event(&id)
+}
+
+/// Undo a removal (appends a copy with the same happened-at / logged-at).
+#[tauri::command]
+fn restore_life_event(id: String) -> Result<life_event_ipc::LifeEventDto, String> {
+    life_event_ipc::restore_life_event(&id)
+}
+
+/// Change when a Life Event happened (re-timed copy + retraction of the old row).
+#[tauri::command]
+fn retime_life_event(
+    id: String,
+    happened_at: i64,
+) -> Result<life_event_ipc::LifeEventDto, String> {
+    life_event_ipc::retime_life_event(&id, happened_at)
+}
+
+/// Non-retracted Life Events with happened-at in `[start, end]` (chart markers).
+#[tauri::command]
+fn list_life_events_between(
+    start: i64,
+    end: i64,
+) -> Result<Vec<life_event_ipc::LifeEventDto>, String> {
+    life_event_ipc::list_life_events_between(start, end)
 }
 
 /// Recent Life Events for Menubar confirmation (newest first). Soft-fails to Err string.
@@ -1232,6 +1273,10 @@ pub fn run() -> DesktopResult<()> {
             set_ingest_lan_preference,
             log_life_event,
             list_recent_life_events,
+            retract_life_event,
+            restore_life_event,
+            retime_life_event,
+            list_life_events_between,
             get_git_watched_roots,
             set_git_watched_roots
         ])

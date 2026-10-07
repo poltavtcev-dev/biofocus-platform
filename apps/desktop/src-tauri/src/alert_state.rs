@@ -130,11 +130,29 @@ impl CatalogAlertHook {
     }
 }
 
+/// Appends a normalized batch to the in-memory window, honouring
+/// `life_event_retraction` markers: the target leaves the window and the
+/// marker itself is never fed to the Feature Engine.
+pub(crate) fn absorb_batch(recent: &mut Vec<Observation>, batch: &[Observation]) {
+    let retracted: std::collections::HashSet<uuid::Uuid> = batch
+        .iter()
+        .filter_map(bio_spec::life_event_retraction_target)
+        .collect();
+    recent.extend(
+        batch
+            .iter()
+            .filter(|o| o.data_type != bio_spec::DATA_TYPE_LIFE_EVENT_RETRACTION)
+            .cloned(),
+    );
+    if !retracted.is_empty() {
+        recent.retain(|o| !retracted.contains(&o.id));
+    }
+}
+
 impl FeatureHook for CatalogAlertHook {
     fn on_normalized(&mut self, batch: &NormalizedBatch) {
         if !batch.is_empty() {
-            self.recent
-                .extend(batch.observations().iter().cloned());
+            absorb_batch(&mut self.recent, batch.observations());
             self.prune_recent();
         }
 
@@ -238,5 +256,34 @@ mod tests {
             .signals
             .iter()
             .any(|s| s.signal_type == HIGH_STRESS_SIGNAL_TYPE));
+    }
+
+    #[test]
+    fn absorb_batch_drops_retracted_life_event_and_marker() {
+        let walk = Observation::try_new(
+            Uuid::from_u128(500),
+            UnixTimestamp::from_secs(1_000),
+            "com.biofocus.desktop",
+            bio_spec::DATA_TYPE_LIFE_EVENT,
+            json!({ "kind": "walk" }),
+            1.0,
+        )
+        .expect("walk");
+        let mut recent = vec![hrv(1, 990, 40.0)];
+        absorb_batch(&mut recent, &[walk]);
+        assert_eq!(recent.len(), 2);
+
+        let marker = Observation::try_new(
+            Uuid::from_u128(501),
+            UnixTimestamp::from_secs(1_010),
+            "com.biofocus.desktop",
+            bio_spec::DATA_TYPE_LIFE_EVENT_RETRACTION,
+            json!({ "target_id": Uuid::from_u128(500).to_string() }),
+            1.0,
+        )
+        .expect("marker");
+        absorb_batch(&mut recent, &[marker]);
+        assert_eq!(recent.len(), 1, "walk + marker gone, HRV kept");
+        assert_eq!(recent[0].id, Uuid::from_u128(1));
     }
 }

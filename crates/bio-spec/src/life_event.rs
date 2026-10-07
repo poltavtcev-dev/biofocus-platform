@@ -130,7 +130,7 @@ pub fn validate_life_event_payload(payload: &JsonValue) -> SpecResult<()> {
 
     // When the user back-dates an event, `Observation.timestamp` is "happened at"
     // and `logged_at` keeps the moment it was recorded (Unix secs).
-    for key in ["logged_at", "edited_from_logged_at"] {
+    for key in ["logged_at", "edited_at"] {
         if let Some(v) = obj.get(key) {
             if !v.as_i64().is_some_and(|n| n >= 0) {
                 return Err(SpecError::InvalidLifeEventPayload {
@@ -253,7 +253,7 @@ mod retraction_tests {
 
     #[test]
     fn life_event_accepts_logged_at_and_edited_from() {
-        let ok = json!({ "kind": "walk", "logged_at": 1700000000, "edited_from": Uuid::from_u128(5).to_string(), "edited_from_logged_at": 1699999000 });
+        let ok = json!({ "kind": "walk", "logged_at": 1700000000, "edited_from": Uuid::from_u128(5).to_string(), "edited_at": 1700000100 });
         assert!(validate_life_event_payload(&ok).is_ok());
         assert!(validate_life_event_payload(&json!({ "kind": "walk", "logged_at": "x" })).is_err());
         assert!(validate_life_event_payload(&json!({ "kind": "walk", "edited_from": "x" })).is_err());
