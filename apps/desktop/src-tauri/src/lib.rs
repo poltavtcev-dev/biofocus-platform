@@ -1854,13 +1854,19 @@ mod tests {
 
     #[test]
     fn resolve_pairing_advertise_loopback_by_default() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = ENV_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        // Isolate from the developer's real ~/.biofocus (LAN opt-in file).
+        let home = tempfile::tempdir().expect("tempdir");
         // SAFETY: serialized by ENV_LOCK; restore LAN knobs before unlock.
         unsafe {
             std::env::remove_var(ingest::INGEST_LAN_ENV);
             std::env::remove_var(ingest::INGEST_BIND_HOST_ENV);
+            std::env::set_var("BIOFOCUS_HOME", home.path());
         }
         let advertise = resolve_pairing_advertise().expect("advertise");
+        unsafe {
+            std::env::remove_var("BIOFOCUS_HOME");
+        }
         assert_eq!(advertise.bind_mode, ingest::BindMode::Loopback);
         assert_eq!(
             advertise.base_url_hints,
@@ -1870,7 +1876,7 @@ mod tests {
 
     #[test]
     fn resolve_pairing_advertise_lan_flag_is_lan_mode() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = ENV_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         unsafe {
             std::env::set_var(ingest::INGEST_LAN_ENV, "1");
             std::env::remove_var(ingest::INGEST_BIND_HOST_ENV);
@@ -1901,7 +1907,7 @@ mod tests {
 
     #[test]
     fn resolve_pairing_info_from_env_override() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = ENV_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         // SAFETY: serialized by ENV_LOCK; restored before unlock.
         unsafe {
             std::env::set_var(ingest::INGEST_TOKEN_ENV, "ux-test-pairing-token");
