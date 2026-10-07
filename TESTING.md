@@ -64,6 +64,14 @@ metrics use 15-minute windows, so nothing shows up in the first few minutes.
 5. **Charts**: switch the chart range (1h / 8h / 1d …). Anything empty or odd?
 6. **Insights / Suggestions**: do they cite evidence and feel calm (not preachy)?
 7. **Life events**: log one (e.g. a walk) and check it appears under *Recent*.
+   - Pick **−15m / −30m / −1h** before tapping to back-date it; the row shows
+     "logged HH:MM" so both times are kept.
+   - Tap **Undo** in the "Logged …" toast, or **✕** on a row, to remove it
+     (the row offers **Undo** for ~10 s). **🕑** changes when it happened.
+   - Removed events disappear from the Trends chart markers, Insights and the
+     report; nothing is deleted from the database (an "undo" marker is added).
+   - After a coffee or walk with ≥ 1 h of data afterwards, Insights may show
+     "Around your walks / coffee breaks" (Focus / combined demand before vs after).
 8. **Report**: click **Generate report**. A local AI section only appears if a
    local model is configured. Without one, the offline report should still work.
 9. **Quit & reopen**: is your data still there?
