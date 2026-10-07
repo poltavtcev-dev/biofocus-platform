@@ -108,6 +108,9 @@ export function formatInsightCategory(category: string): string {
   if (key === "stress") {
     return "Stress";
   }
+  if (key === "life_event") {
+    return "Life events";
+  }
   if (!key) {
     return "";
   }
@@ -123,6 +126,20 @@ const MOCK_PATTERN_INSIGHT: InsightDto = {
   evidenceList: [{ kind: "feature", id: "FocusScore" }],
   actionRecommendation:
     "Noticing a stronger focus stretch than recent afternoons — keep the setup that is working if it still feels right.",
+};
+
+/** Sample `life_event_before_after_v1` Insight (mirrors Core copy). */
+const MOCK_LIFE_EVENT_INSIGHT: InsightDto = {
+  id: "01900000-0000-7000-8000-000000000004",
+  title: "Around your walks",
+  description:
+    "Across 2 recent logged walks, Focus averaged 68 after vs 59 before (higher by 9 points). Compared: 45 min before vs 15–60 min after. A personal pattern, not a rule. Confidence: medium.",
+  category: "life_event",
+  evidenceList: [
+    { kind: "feature", id: "FocusScore" },
+    { kind: "observation", id: "0190f2a1-7c00-7000-8000-00000000a001" },
+    { kind: "observation", id: "0190f2a1-9d00-7000-8000-00000000a002" },
+  ],
 };
 
 /** QA: `?mockInsights=empty|ready|pattern|error` forces Insights state without Core. */
@@ -142,6 +159,7 @@ export function mockInsightsFromLocation(
   if (raw === "ready") {
     return insightsView("ready", "mock", [
       MOCK_PATTERN_INSIGHT,
+      MOCK_LIFE_EVENT_INSIGHT,
       {
         id: "01900000-0000-7000-8000-000000000001",
         title: "Sustained stress pattern",

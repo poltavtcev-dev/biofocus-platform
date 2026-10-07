@@ -3,6 +3,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -65,6 +66,14 @@ import {
   type ReportView,
 } from "./report";
 import {
+  fetchLifeEventsBetween,
+  formatClock,
+  lifeEventIcon,
+  lifeEventLabel,
+  type LifeEventInfo,
+} from "./lifeEvents";
+import "./lifeEventsActions.css";
+import {
   fetchLocalLlmStatus,
   loadingLlmProviderView,
   llmProviderDotKind,
@@ -99,10 +108,12 @@ function ChartSlot({
   seriesView,
   range,
   onRangeChange,
+  lifeEvents,
 }: {
   seriesView: SeriesView;
   range: ChartRange;
   onRangeChange: (next: ChartRange) => void;
+  lifeEvents: LifeEventInfo[];
 }) {
   const features = seriesView.series?.features ?? [];
   const empty =
@@ -191,7 +202,12 @@ function ChartSlot({
         {points.length === 0 ? (
           <p className="chart-slot-placeholder">{placeholder}</p>
         ) : (
-          <FeatureSeriesChart points={points} scoreSeries={scoreSeries} showCsr={showCsr} />
+          <FeatureSeriesChart
+            points={points}
+            scoreSeries={scoreSeries}
+            showCsr={showCsr}
+            lifeEvents={markersInRange(points, lifeEvents)}
+          />
         )}
       </div>
       {points.length > 0 && (
@@ -201,26 +217,55 @@ function ChartSlot({
           name above to show or hide it.
         </p>
       )}
+      {points.length > 0 && markersInRange(points, lifeEvents).length > 0 && (
+        <p className="chart-events-legend" aria-label="Life events on the chart">
+          <span>Dotted lines = life events you logged:</span>
+          {markersInRange(points, lifeEvents).map((e) => (
+            <span key={e.id}>
+              {lifeEventIcon(e.kind)} {lifeEventLabel(e.kind)} {formatClock(e.timestamp)}
+            </span>
+          ))}
+        </p>
+      )}
     </section>
   );
+}
+
+/** Life Events inside the plotted x-range (oldest first, max 40 to stay readable). */
+function markersInRange(points: ChartPoint[], events: LifeEventInfo[]): LifeEventInfo[] {
+  if (points.length === 0) return [];
+  const lo = points[0].t;
+  const hi = points[points.length - 1].t;
+  return events
+    .filter((e) => e.timestamp >= lo && e.timestamp <= hi)
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .slice(-40);
 }
 
 function FeatureSeriesChart({
   points,
   scoreSeries,
   showCsr,
+  lifeEvents,
 }: {
   points: ChartPoint[];
   scoreSeries: ChartFeatureId[];
   showCsr: boolean;
+  lifeEvents: LifeEventInfo[];
 }) {
   const axisTick = { fill: "var(--c-fg-3)", fontSize: 11 };
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={points} margin={{ top: 8, right: showCsr ? 4 : 12, left: -4, bottom: 0 }}>
+      <LineChart
+        data={points}
+        margin={{ top: lifeEvents.length > 0 ? 22 : 8, right: showCsr ? 4 : 12, left: -4, bottom: 0 }}
+      >
         <CartesianGrid stroke="var(--c-border)" vertical={false} />
         <XAxis
           dataKey="t"
+          type="number"
+          scale="time"
+          domain={["dataMin", "dataMax"]}
           tickFormatter={formatChartTime}
           tick={axisTick}
           axisLine={{ stroke: "var(--c-border-strong)" }}
@@ -271,6 +316,17 @@ function FeatureSeriesChart({
             return [display, metricInfo(id).name];
           }}
         />
+        {lifeEvents.map((e) => (
+          <ReferenceLine
+            key={e.id}
+            x={e.timestamp}
+            yAxisId="score"
+            stroke="var(--c-fg-3)"
+            strokeDasharray="2 3"
+            ifOverflow="discard"
+            label={{ value: lifeEventIcon(e.kind), position: "top", fontSize: 14 }}
+          />
+        ))}
         {scoreSeries.map((id) => (
           <Line
             key={id}
@@ -477,6 +533,7 @@ export function Dashboard() {
     loadingSeriesView(),
   );
   const [chartRange, setChartRange] = useState<ChartRange>("1d");
+  const [chartEvents, setChartEvents] = useState<LifeEventInfo[]>([]);
   const [insightsView, setInsightsView] = useState<InsightsView>(() =>
     loadingInsightsView(),
   );
@@ -536,17 +593,18 @@ export function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     setSeriesView(loadingSeriesView());
-    void fetchFeatureSeries(chartRange).then((next) => {
-      if (!cancelled) {
+    // Series first, then the Life Events inside the same window (chart markers).
+    const loadSeries = () =>
+      fetchFeatureSeries(chartRange).then(async (next) => {
+        if (cancelled) return;
         setSeriesView(next);
-      }
-    });
-    const timer = window.setInterval(() => {
-      void fetchFeatureSeries(chartRange).then((next) => {
-        if (!cancelled) {
-          setSeriesView(next);
-        }
+        const w = next.series?.window;
+        const events = w ? await fetchLifeEventsBetween(w.start, w.end) : [];
+        if (!cancelled) setChartEvents(events);
       });
+    void loadSeries();
+    const timer = window.setInterval(() => {
+      void loadSeries();
     }, SNAPSHOT_POLL_MS);
     return () => {
       cancelled = true;
@@ -637,6 +695,7 @@ export function Dashboard() {
         seriesView={seriesView}
         range={chartRange}
         onRangeChange={onRangeChange}
+        lifeEvents={chartEvents}
       />
 
       {isReady && features.length > 0 && (
