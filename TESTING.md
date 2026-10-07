@@ -91,7 +91,7 @@ Team under *Signing & Capabilities*, then press ⌘R.
 5. In the Companion app, enter the **Base URL** (`http://192.168.x.x:8787`) and the
    **token** (use **Copy**, or **Show QR** to scan it). Allow **Local Network** and
    **Health** access when iOS asks.
-6. Tap **Test connection**, then sync. Within a few minutes, *Recovery* /
+6. Tap **Test connection**, then **Send latest wearable samples now**. Within a few minutes, *Recovery* /
    *Stress index* should appear in the Dashboard.
 
 If it can't connect, allow incoming connections for BioFocus in
