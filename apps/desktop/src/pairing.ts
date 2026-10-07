@@ -246,7 +246,35 @@ export function networkModeDetail(info: PairingTokenInfo): string {
   return "Nothing is reachable from other devices while LAN is off.";
 }
 
+/** QA: `?mockPairing=ready|lan_off|restart|no_address|ingest_off` (layout / screenshots). */
+export function mockPairingFromLocation(
+  search: string = typeof window !== "undefined" ? window.location.search : "",
+): PairingView | null {
+  const raw = new URLSearchParams(search).get("mockPairing");
+  if (!raw) {
+    return null;
+  }
+  const lan = raw !== "lan_off";
+  const info: PairingTokenInfo = {
+    token: "0000000000000000000000000000000000000000000000000000000000mock",
+    ingestBaseUrl: lan && raw !== "no_address" ? "http://192.168.0.37:8787" : "http://127.0.0.1:8787",
+    bindMode: raw === "lan_off" || raw === "restart" ? "loopback" : "lan",
+    baseUrlHints: raw === "no_address" ? [] : [lan ? "http://192.168.0.37:8787" : "http://127.0.0.1:8787"],
+    fromEnv: false,
+    qrSvg: "<svg xmlns='http://www.w3.org/2000/svg' width='168' height='168'/>",
+    lanConfigured: lan,
+    restartRequired: raw === "restart",
+    ingestRunning: raw !== "ingest_off",
+    ingestError: raw === "ingest_off" ? "Phone sync is off: port 8787 is already in use." : null,
+  };
+  return { kind: "ready", info };
+}
+
 export async function fetchPairingToken(): Promise<PairingView> {
+  const mocked = mockPairingFromLocation();
+  if (mocked) {
+    return mocked;
+  }
   try {
     const payload = await invoke<PairingPayload>("get_pairing_token");
     const info = normalize(payload);
