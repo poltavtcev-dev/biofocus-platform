@@ -365,7 +365,7 @@ function RecommendationsSlot({ view }: { view: RecommendationsView }) {
           {view.recommendations.map((item) => {
             const categoryLabel = formatRecommendationCategory(item.category);
             return (
-              <li key={item.id} className="insight-row">
+              <li key={item.id} className="insight-row insight-row--suggestion">
                 {categoryLabel && (
                   <p className="insight-category">{categoryLabel}</p>
                 )}
@@ -661,9 +661,10 @@ export function Dashboard() {
         </section>
       )}
 
-      <InsightsSlot view={insightsView} />
-
-      <RecommendationsSlot view={recommendationsView} />
+      <div className="dash-two-col">
+        <InsightsSlot view={insightsView} />
+        <RecommendationsSlot view={recommendationsView} />
+      </div>
 
       <ReportSlot
         view={reportView}

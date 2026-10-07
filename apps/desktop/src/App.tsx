@@ -559,12 +559,7 @@ function MenubarShell() {
           <>
             {(() => {
               const st = companionStatusCopy(pairing.info);
-              const cls =
-                st.tone === "error"
-                  ? "companion-warning companion-warning--error"
-                  : st.tone === "ok"
-                    ? "companion-status companion-status--ok"
-                    : "companion-warning";
+              const cls = `companion-card companion-card--${st.tone}`;
               return (
                 <div className={cls} role={st.tone === "error" ? "alert" : "status"}>
                   <strong>{st.title}</strong>

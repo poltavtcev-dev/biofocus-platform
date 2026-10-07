@@ -535,3 +535,209 @@ input[type="checkbox"] {
   font-size: var(--t-xs);
   color: var(--c-fg-3);
 }
+
+/* ---------- insights + suggestions ---------- */
+
+.dash-two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--s-4);
+  align-items: start;
+}
+
+.insight-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.insight-row {
+  margin: 0;
+  padding: var(--s-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+
+.insight-row--suggestion {
+  border-left: 3px solid var(--c-accent);
+}
+
+.insight-category {
+  margin: 0 0 var(--s-1);
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.insight-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--t-md);
+  color: var(--c-fg);
+}
+
+.insight-description {
+  margin: var(--s-1) 0 0;
+  color: var(--c-fg-2);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
+.insight-evidence {
+  margin: var(--s-2) 0 0;
+  color: var(--c-fg-3);
+  font-size: var(--t-xs);
+  overflow-wrap: anywhere;
+}
+
+.insight-action {
+  margin: var(--s-2) 0 0;
+  padding-top: var(--s-2);
+  border-top: 1px dashed var(--c-border-strong);
+  color: var(--c-fg);
+  font-size: var(--t-sm);
+}
+
+/* ---------- report ---------- */
+
+.report-markdown {
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+  color: var(--c-fg-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- menubar panel / companion ---------- */
+
+.life-event-actions,
+.pairing-actions,
+.git-roots-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--s-2);
+}
+
+.git-roots-path,
+.life-event-row {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.git-roots-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.git-roots-add {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.git-roots-add input {
+  flex: 1;
+}
+
+.companion-card {
+  margin: 0 0 var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
+  border-left-width: 3px;
+  background: var(--c-surface-2);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--c-fg-2);
+}
+
+.companion-card strong {
+  display: block;
+  color: var(--c-fg);
+  font-size: var(--t-md);
+  margin-bottom: 2px;
+}
+
+.companion-card p {
+  margin: 0;
+}
+
+.companion-card--ok { border-left-color: var(--c-ok); background: var(--c-ok-soft); }
+.companion-card--info { border-left-color: var(--c-accent); }
+.companion-card--warn { border-left-color: var(--c-warn); background: var(--c-warn-soft); }
+.companion-card--error { border-left-color: var(--c-bad); background: var(--c-bad-soft); }
+
+.pairing-lan-toggle {
+  padding: var(--s-2) 0;
+  border-top: 1px solid var(--c-border);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.pairing-lan-label {
+  font-size: var(--t-sm);
+  gap: var(--s-2);
+}
+
+.pairing-url,
+.pairing-token {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  color: var(--c-fg);
+  overflow-wrap: anywhere;
+}
+
+.pairing-qr {
+  margin-top: var(--s-3);
+  padding: var(--s-2);
+  background: #f5f5f7;
+  border-radius: var(--r-md);
+  display: inline-block;
+}
+
+.insight-category {
+  width: fit-content;
+}
+
+/* Narrow menubar panel (320px): never overflow horizontally. */
+.shell > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.shell code,
+.shell p,
+.shell li {
+  overflow-wrap: anywhere;
+}
+
+.retry,
+.dashboard-entry,
+.range-picker-btn,
+.series-chip {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
