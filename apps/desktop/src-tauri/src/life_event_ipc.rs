@@ -385,6 +385,33 @@ pub fn list_life_events_between(start: i64, end: i64) -> Result<Vec<LifeEventDto
     list_life_events_between_in(&db, start, end)
 }
 
+/// Non-retracted Life Events as Knowledge Engine marks (`[start, end]`).
+/// Soft-fails to empty (insights stay calm on DB errors).
+pub fn life_event_marks_between(start: i64, end: i64) -> Vec<knowledge_engine::LifeEventMark> {
+    let Ok(db) = open_default_db() else {
+        return Vec::new();
+    };
+    life_event_marks_between_in(&db, start, end)
+}
+
+pub(crate) fn life_event_marks_between_in(
+    db: &Database,
+    start: i64,
+    end: i64,
+) -> Vec<knowledge_engine::LifeEventMark> {
+    list_life_events_between_in(db, start, end)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|dto| {
+            Some(knowledge_engine::LifeEventMark {
+                id: Uuid::parse_str(&dto.id).ok()?,
+                kind: dto.kind,
+                timestamp: UnixTimestamp(dto.timestamp),
+            })
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -512,5 +539,45 @@ mod tests {
             .expect("raw");
         assert_eq!(raw.len(), 3);
         assert!(retime_life_event_in(&db, &walk.id, NOW, NOW + 40).is_err(), "old id is gone");
+    }
+
+    #[test]
+    fn retracted_event_is_excluded_from_insight_marks_and_insights() {
+        use bio_spec::{Confidence, Feature, FeatureValue, TimeWindow};
+        use knowledge_engine::{register_insights_v1, KnowledgeEngine, PatternInputs};
+
+        let db = Database::open_in_memory().expect("db");
+        let t = NOW - 3 * 3600;
+        let walk = log_life_event_in(&db, "walk", Some(t), t + 10).expect("walk");
+        let series: Vec<Feature> = (-12..=12)
+            .map(|k| {
+                let end = t + k * 300;
+                Feature {
+                    feature_id: "FocusScore".into(),
+                    time_window: TimeWindow::try_new(UnixTimestamp(end - 900), UnixTimestamp(end))
+                        .expect("w"),
+                    value: FeatureValue::Scalar(if end <= t { 50.0 } else { 70.0 }),
+                    provenance: vec![],
+                    confidence: Confidence::try_new(0.9).expect("c"),
+                    factors: Vec::new(),
+                }
+            })
+            .collect();
+        let mut engine = KnowledgeEngine::new();
+        register_insights_v1(&mut engine).expect("rules");
+        let insights_for = |db: &Database| {
+            let marks = life_event_marks_between_in(db, NOW - 8 * 3600, NOW);
+            let pattern = PatternInputs::empty().with_life_events(marks, series.clone());
+            engine
+                .evaluate_with_pattern(&[], &[], &pattern)
+                .expect("eval")
+                .into_iter()
+                .filter(|i| i.category == "life_event")
+                .count()
+        };
+        assert_eq!(insights_for(&db), 1, "walk produces before/after insight");
+        retract_life_event_in(&db, &walk.id, NOW).expect("retract");
+        assert!(life_event_marks_between_in(&db, NOW - 8 * 3600, NOW).is_empty());
+        assert_eq!(insights_for(&db), 0, "retracted walk no longer produces an insight");
     }
 }

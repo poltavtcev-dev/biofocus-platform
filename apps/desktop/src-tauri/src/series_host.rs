@@ -163,7 +163,15 @@ pub fn load_feature_series(
             sorted.join(",")
         })
         .unwrap_or_default();
-    let memo_key = format!("{}|{}|{}", spec.range, spec.step_secs, filter_key);
+    // Row count in the key: retracting an older Life Event leaves the max
+    // timestamp unchanged but must still invalidate the memo.
+    let memo_key = format!(
+        "{}|{}|{}|{}",
+        spec.range,
+        spec.step_secs,
+        filter_key,
+        observations.len()
+    );
 
     if let Some(memo) = memo {
         if let Some(cached) = memo.get_if_fresh(&memo_key, watermark) {

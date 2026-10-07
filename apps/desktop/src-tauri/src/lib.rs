@@ -499,8 +499,32 @@ fn pattern_inputs_for_insights(app: &AppHandle, snapshot: &FeatureSnapshot) -> P
         .unwrap_or_else(unix_now_secs);
     let memo = app.try_state::<BaselineMemoState>();
     let series = load_focus_baseline_series(memo.as_deref(), reference_ts);
-    PatternInputs::with_baseline_series(series)
+    let pattern = PatternInputs::with_baseline_series(series);
+
+    // Life Events (retracted ones already hidden by storage) + recent stepped
+    // Focus / CognitiveLoad series for the before/after rule. Only recompute the
+    // 8h series when a comparable event exists.
+    let now = unix_now_secs();
+    let marks = life_event_ipc::life_event_marks_between(now - LIFE_EVENT_LOOKBACK_SECS, now);
+    let comparable = marks
+        .iter()
+        .any(|m| knowledge_engine::LIFE_EVENT_EFFECT_KINDS.contains(&m.kind.as_str()));
+    let recent = if comparable {
+        let memo = app.try_state::<LifeEventSeriesMemo>();
+        let ids = ["FocusScore".to_string(), "CognitiveLoad".to_string()];
+        load_feature_series(memo.as_deref().map(|m| &m.0), "8h", Some(&ids), now).features
+    } else {
+        Vec::new()
+    };
+    pattern.with_life_events(marks, recent)
 }
+
+/// Life Event lookback for insights + report (matches the 8h chart range).
+const LIFE_EVENT_LOOKBACK_SECS: i64 = 8 * 3600;
+
+/// Separate single-entry memo so the Life Event series does not evict the
+/// chart's memo entry.
+struct LifeEventSeriesMemo(SeriesMemoState);
 
 fn evaluate_insights_list(
     engine: &KnowledgeEngine,
@@ -1255,6 +1279,7 @@ pub fn run() -> DesktopResult<()> {
             app.manage(InsightsEngineState::new());
             app.manage(BaselineMemoState::new());
             app.manage(SeriesMemoState::new());
+            app.manage(LifeEventSeriesMemo(SeriesMemoState::new()));
 
             Ok(())
         })
