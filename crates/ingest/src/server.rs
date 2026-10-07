@@ -54,6 +54,8 @@ pub async fn serve_with_shutdown(
     state: IngestState,
     shutdown: oneshot::Receiver<()>,
 ) -> IngestResult<SocketAddr> {
+    // Never expose an insecure token on the LAN, whatever path built the config.
+    config.validate()?;
     let (listener, addr) = bind_host(config.bind_host, config.port).await?;
     // Refresh hints with the actual bound port (ephemeral `0` in tests).
     let state = state.with_advertise(AdvertiseInfo::for_bind(config.bind_host, addr.port()));

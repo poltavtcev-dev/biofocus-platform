@@ -28,13 +28,12 @@ pub const INGEST_LAN_ENV: &str = "BIOFOCUS_INGEST_LAN";
 /// local-only bind. Takes precedence over [`INGEST_LAN_ENV`].
 pub const INGEST_BIND_HOST_ENV: &str = "BIOFOCUS_INGEST_BIND_HOST";
 
-/// Explicit Bearer token for unit tests / [`IngestConfig::with_token`].
-///
-/// Production / host startup should use [`IngestConfig::load`] (persisted or env).
-pub const DEFAULT_TEST_TOKEN: &str = "biofocus-dev-ingest-token";
+/// Former hard-coded dev token. It is **not** used by any production path and
+/// is rejected for LAN binds (see [`IngestConfig::validate`]).
+pub(crate) const KNOWN_DEV_TOKEN: &str = "biofocus-dev-ingest-token";
 
-/// T1 name for [`DEFAULT_TEST_TOKEN`] (kept for existing imports).
-pub const DEFAULT_SKELETON_TOKEN: &str = DEFAULT_TEST_TOKEN;
+/// Minimum token length accepted for a LAN-reachable bind.
+pub const MIN_LAN_TOKEN_LEN: usize = 32;
 
 /// Configuration for the local ingest HTTP server.
 #[derive(Debug, Clone)]
@@ -47,16 +46,6 @@ pub struct IngestConfig {
     pub bind_host: Ipv4Addr,
 }
 
-impl Default for IngestConfig {
-    fn default() -> Self {
-        Self {
-            port: DEFAULT_INGEST_PORT,
-            token: DEFAULT_TEST_TOKEN.to_owned(),
-            bind_host: INGEST_BIND_HOST,
-        }
-    }
-}
-
 impl IngestConfig {
     /// Loads port default, bind host (env knobs), and token from env / pairing file.
     ///
@@ -65,11 +54,40 @@ impl IngestConfig {
     ///
     /// Bind host: see [`resolve_bind_host`].
     pub fn load() -> IngestResult<Self> {
-        Ok(Self {
+        let cfg = Self {
             port: DEFAULT_INGEST_PORT,
             token: resolve_ingest_token()?,
             bind_host: resolve_bind_host()?,
-        })
+        };
+        cfg.validate()?;
+        Ok(cfg)
+    }
+
+    /// Refuses insecure token / bind combinations.
+    ///
+    /// A LAN-reachable bind must not use the old dev token or a short token
+    /// (anyone on the same Wi-Fi could otherwise post data). Loopback is allowed
+    /// any non-empty token so local tests keep working.
+    pub fn validate(&self) -> IngestResult<()> {
+        let token = self.token.trim();
+        if token.is_empty() {
+            return Err(IngestError::InsecureToken {
+                reason: "token is empty",
+            });
+        }
+        if self.is_lan_bind() {
+            if token == KNOWN_DEV_TOKEN {
+                return Err(IngestError::InsecureToken {
+                    reason: "the built-in dev token is not allowed with a LAN bind",
+                });
+            }
+            if token.len() < MIN_LAN_TOKEN_LEN {
+                return Err(IngestError::InsecureToken {
+                    reason: "token is too short for a LAN bind",
+                });
+            }
+        }
+        Ok(())
     }
 
     /// Alias for [`Self::load`] (T1 name). Prefer `load` in new code.
@@ -147,13 +165,34 @@ mod tests {
     use std::collections::HashMap;
     use std::ffi::OsString;
 
+    /// Resolves with an empty temp `BIOFOCUS_HOME` so the developer's real
+    /// `~/.biofocus/ingest_lan_enabled` cannot leak into results.
+    fn resolve_isolated<F>(getenv: F) -> IngestResult<Ipv4Addr>
+    where
+        F: FnMut(&str) -> Option<OsString>,
+    {
+        let _lock = crate::test_lock::ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let dir = tempfile::tempdir().expect("tempdir");
+        // SAFETY: serialized by ENV_LOCK; restored before unlock.
+        unsafe {
+            std::env::set_var(crate::token::BIOFOCUS_HOME_ENV, dir.path());
+        }
+        let out = resolve_bind_host_from_env(getenv);
+        unsafe {
+            std::env::remove_var(crate::token::BIOFOCUS_HOME_ENV);
+        }
+        out
+    }
+
     fn with_env(map: HashMap<&'static str, &str>) -> impl FnMut(&str) -> Option<OsString> {
         move |key| map.get(key).map(|v| OsString::from(*v))
     }
 
     #[test]
     fn resolve_bind_host_defaults_to_loopback() {
-        let host = resolve_bind_host_from_env(with_env(HashMap::new())).expect("ok");
+        let host = resolve_isolated(with_env(HashMap::new())).expect("ok");
         assert_eq!(host, INGEST_BIND_HOST);
         assert!(host.is_loopback());
     }
@@ -162,7 +201,7 @@ mod tests {
     fn resolve_bind_host_lan_flag_binds_unspecified() {
         let mut map = HashMap::new();
         map.insert(INGEST_LAN_ENV, "1");
-        let host = resolve_bind_host_from_env(with_env(map)).expect("ok");
+        let host = resolve_isolated(with_env(map)).expect("ok");
         assert_eq!(host, INGEST_LAN_BIND_HOST);
         assert!(!host.is_loopback());
     }
@@ -171,7 +210,7 @@ mod tests {
     fn resolve_bind_host_lan_flag_case_insensitive() {
         let mut map = HashMap::new();
         map.insert(INGEST_LAN_ENV, "True");
-        let host = resolve_bind_host_from_env(with_env(map)).expect("ok");
+        let host = resolve_isolated(with_env(map)).expect("ok");
         assert_eq!(host, INGEST_LAN_BIND_HOST);
     }
 
@@ -180,7 +219,7 @@ mod tests {
         let mut map = HashMap::new();
         map.insert(INGEST_LAN_ENV, "1");
         map.insert(INGEST_BIND_HOST_ENV, "192.168.1.40");
-        let host = resolve_bind_host_from_env(with_env(map)).expect("ok");
+        let host = resolve_isolated(with_env(map)).expect("ok");
         assert_eq!(host, Ipv4Addr::new(192, 168, 1, 40));
     }
 
@@ -188,7 +227,7 @@ mod tests {
     fn resolve_bind_host_explicit_loopback_keeps_local_only() {
         let mut map = HashMap::new();
         map.insert(INGEST_BIND_HOST_ENV, "127.0.0.1");
-        let host = resolve_bind_host_from_env(with_env(map)).expect("ok");
+        let host = resolve_isolated(with_env(map)).expect("ok");
         assert_eq!(host, INGEST_BIND_HOST);
     }
 
@@ -196,7 +235,7 @@ mod tests {
     fn resolve_bind_host_rejects_invalid_override() {
         let mut map = HashMap::new();
         map.insert(INGEST_BIND_HOST_ENV, "not-an-ip");
-        let err = resolve_bind_host_from_env(with_env(map)).expect_err("invalid");
+        let err = resolve_isolated(with_env(map)).expect_err("invalid");
         assert!(matches!(err, IngestError::InvalidBindHost { .. }));
     }
 
@@ -205,15 +244,47 @@ mod tests {
         for value in ["0", "false", "no", "off", ""] {
             let mut map = HashMap::new();
             map.insert(INGEST_LAN_ENV, value);
-            let host = resolve_bind_host_from_env(with_env(map)).expect("ok");
+            let host = resolve_isolated(with_env(map)).expect("ok");
             assert_eq!(host, INGEST_BIND_HOST, "value={value:?}");
         }
     }
 
     #[test]
-    fn default_config_is_loopback() {
-        let cfg = IngestConfig::default();
+    fn with_token_config_is_loopback() {
+        let cfg = IngestConfig::with_token("t");
         assert!(!cfg.is_lan_bind());
         assert_eq!(cfg.bind_host, INGEST_BIND_HOST);
+    }
+
+    #[test]
+    fn lan_bind_refuses_dev_token() {
+        let mut cfg = IngestConfig::with_token(KNOWN_DEV_TOKEN);
+        cfg.bind_host = INGEST_LAN_BIND_HOST;
+        let err = cfg.validate().expect_err("dev token on LAN must be refused");
+        assert!(matches!(err, IngestError::InsecureToken { .. }));
+    }
+
+    #[test]
+    fn lan_bind_refuses_short_token() {
+        let mut cfg = IngestConfig::with_token("short");
+        cfg.bind_host = Ipv4Addr::new(192, 168, 0, 10);
+        assert!(cfg.validate().is_err());
+    }
+
+    #[test]
+    fn lan_bind_accepts_strong_token() {
+        let mut cfg = IngestConfig::with_token("a".repeat(64));
+        cfg.bind_host = INGEST_LAN_BIND_HOST;
+        cfg.validate().expect("64-char token ok");
+    }
+
+    #[test]
+    fn loopback_allows_dev_token_for_local_tests() {
+        IngestConfig::with_token(KNOWN_DEV_TOKEN).validate().expect("loopback ok");
+    }
+
+    #[test]
+    fn empty_token_always_refused() {
+        assert!(IngestConfig::with_token("  ").validate().is_err());
     }
 }

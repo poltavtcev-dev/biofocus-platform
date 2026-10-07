@@ -22,7 +22,7 @@ mod token;
 
 pub use advertise::{http_base_url, AdvertiseInfo, BindMode};
 pub use config::{
-    resolve_bind_host, IngestConfig, DEFAULT_INGEST_PORT, DEFAULT_SKELETON_TOKEN, DEFAULT_TEST_TOKEN,
+    resolve_bind_host, IngestConfig, DEFAULT_INGEST_PORT, MIN_LAN_TOKEN_LEN,
     INGEST_BIND_HOST, INGEST_BIND_HOST_ENV, INGEST_LAN_BIND_HOST, INGEST_LAN_ENV, INGEST_TOKEN_ENV,
 };
 pub use error::{IngestError, IngestResult};

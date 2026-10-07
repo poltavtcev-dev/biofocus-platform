@@ -435,13 +435,25 @@ async fn live_server_accepts_over_loopback_http() {
 }
 
 #[test]
-fn default_config_documents_port_and_test_token() {
-    let cfg = IngestConfig::default();
+fn with_token_config_documents_port_and_loopback() {
+    let cfg = IngestConfig::with_token("local-test-token");
     assert_eq!(cfg.port, ingest::DEFAULT_INGEST_PORT);
-    assert_eq!(cfg.token, ingest::DEFAULT_TEST_TOKEN);
     assert_eq!(cfg.bind_host, INGEST_BIND_HOST);
     assert!(!cfg.is_lan_bind());
-    assert_eq!(ingest::DEFAULT_SKELETON_TOKEN, ingest::DEFAULT_TEST_TOKEN);
+}
+
+#[tokio::test]
+async fn lan_bind_refuses_dev_token_before_listening() {
+    let (tx, _rx) = runtime::observation_channel(4).expect("channel");
+    let mut cfg = IngestConfig::with_token("biofocus-dev-ingest-token");
+    cfg.port = 0;
+    cfg.bind_host = ingest::INGEST_LAN_BIND_HOST;
+    let state = ingest::IngestState::new(cfg.token.clone(), tx);
+    let (_shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+    let err = ingest::serve_with_shutdown(cfg, state, shutdown_rx)
+        .await
+        .expect_err("LAN + dev token must refuse to serve");
+    assert!(matches!(err, ingest::IngestError::InsecureToken { .. }), "{err:?}");
 }
 
 #[tokio::test]

@@ -53,4 +53,11 @@ pub enum IngestError {
         /// Raw env value (trimmed).
         value: String,
     },
+
+    /// Token / bind combination is unsafe (e.g. dev token on a LAN bind).
+    #[error("insecure ingest token: {reason}")]
+    InsecureToken {
+        /// Short, secret-free reason.
+        reason: &'static str,
+    },
 }
