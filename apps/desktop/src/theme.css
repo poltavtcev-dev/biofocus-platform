@@ -1,0 +1,295 @@
+/*
+ * BioFocus design system v2 (tester-ready polish).
+ * Loaded after App.css; overrides legacy tokens + component styles.
+ *
+ * Scale: spacing 4/8/12/16/24/32 · radius 6/10/14 · type 11/12/13/15/20/28.
+ * Calm palette: muted surfaces, one indigo accent, soft status colours.
+ */
+
+:root {
+  /* spacing */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  /* radius */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  /* type */
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-md: 13px;
+  --t-lg: 15px;
+  --t-xl: 20px;
+  --t-stat: 28px;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-num: "SF Pro Rounded", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* light (fallback) */
+  --c-bg: #f4f5f7;
+  --c-surface: #ffffff;
+  --c-surface-2: #f0f1f4;
+  --c-border: #e2e4e9;
+  --c-border-strong: #cfd2d9;
+  --c-fg: #1d1f24;
+  --c-fg-2: #5b616e;
+  --c-fg-3: #8a909c;
+  --c-accent: #5865c7;
+  --c-accent-soft: rgba(88, 101, 199, 0.12);
+  --c-ok: #3f8f6b;
+  --c-ok-soft: rgba(63, 143, 107, 0.12);
+  --c-warn: #b5832f;
+  --c-warn-soft: rgba(181, 131, 47, 0.13);
+  --c-bad: #b85c5c;
+  --c-bad-soft: rgba(184, 92, 92, 0.12);
+  --c-rough: #8a909c;
+  --shadow-card: 0 1px 2px rgba(16, 18, 24, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #141518;
+    --c-surface: #1c1d21;
+    --c-surface-2: #23252a;
+    --c-border: #2a2c32;
+    --c-border-strong: #3a3d45;
+    --c-fg: #ecedf0;
+    --c-fg-2: #a4a8b2;
+    --c-fg-3: #737884;
+    --c-accent: #8f9bff;
+    --c-accent-soft: rgba(143, 155, 255, 0.14);
+    --c-ok: #6fbf98;
+    --c-ok-soft: rgba(111, 191, 152, 0.13);
+    --c-warn: #d9ad62;
+    --c-warn-soft: rgba(217, 173, 98, 0.13);
+    --c-bad: #e08c8c;
+    --c-bad-soft: rgba(224, 140, 140, 0.13);
+    --c-rough: #737884;
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  }
+}
+
+/* Map legacy tokens onto the new palette so untouched rules stay consistent. */
+:root {
+  --bf-fg: var(--c-fg);
+  --bf-muted: var(--c-fg-2);
+  --bf-meta: var(--c-fg-3);
+  --bf-bg: var(--c-bg);
+  --bf-bg-accent: var(--c-surface-2);
+  --bf-retry-fg: var(--c-fg);
+  --bf-retry-border: var(--c-border-strong);
+  --bf-focus: var(--c-accent);
+  --bf-dot-ready: var(--c-ok);
+  --bf-dot-error: var(--c-bad);
+  --bf-alert-green: var(--c-ok);
+  --bf-alert-yellow: var(--c-warn);
+  --bf-alert-red: var(--c-bad);
+
+  font-family: var(--font-ui);
+  font-size: var(--t-md);
+  line-height: 1.45;
+  color: var(--c-fg);
+  background-color: var(--c-bg);
+}
+
+body {
+  background: var(--c-bg);
+}
+
+/* ---------- layout ---------- */
+
+.shell {
+  padding: var(--s-4);
+  gap: var(--s-3);
+  background: var(--c-bg);
+  overflow-x: hidden;
+}
+
+.shell--dashboard {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--s-5);
+  gap: var(--s-4);
+}
+
+/* Section cards */
+.chart-slot,
+.feature-list,
+.insights-slot,
+.recommendations-slot,
+.report-slot,
+.life-events-block,
+.git-roots-block,
+.pairing-block {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: var(--s-4);
+  box-shadow: var(--shadow-card);
+  margin: 0;
+}
+
+/* ---------- typography ---------- */
+
+.brand h1 {
+  font-size: var(--t-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.brand--dashboard h1 {
+  font-size: var(--t-xl);
+}
+
+.brand-sub {
+  margin: 2px 0 0;
+  color: var(--c-fg-3);
+  font-size: var(--t-sm);
+}
+
+.chart-slot-title,
+.pairing-title {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-fg-3);
+}
+
+.pairing-subtitle {
+  margin: var(--s-3) 0 var(--s-1);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-fg-3);
+}
+
+.status-label {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--t-md);
+}
+
+.status-detail,
+.pairing-detail {
+  margin: var(--s-1) 0 0;
+  color: var(--c-fg-2);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
+.status-meta {
+  margin: var(--s-1) 0 0;
+  color: var(--c-fg-3);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- buttons ---------- */
+
+.retry,
+.dashboard-entry,
+.range-picker-btn {
+  appearance: none;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--c-fg);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.retry:hover:not(:disabled),
+.dashboard-entry:hover:not(:disabled),
+.range-picker-btn:hover {
+  border-color: var(--c-accent);
+}
+
+.retry:focus-visible,
+.dashboard-entry:focus-visible,
+.range-picker-btn:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+
+.retry:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dashboard-entry {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #fff;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dashboard-entry {
+    color: #12131a;
+  }
+}
+
+.range-picker {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+}
+
+.range-picker-btn {
+  border: 0;
+  background: transparent;
+  padding: 3px 9px;
+  color: var(--c-fg-2);
+}
+
+.range-picker-btn--active {
+  background: var(--c-surface);
+  color: var(--c-fg);
+  box-shadow: 0 0 0 1px var(--c-border-strong);
+}
+
+/* ---------- status dots ---------- */
+
+.status-dot,
+.alert-dot {
+  width: 8px;
+  height: 8px;
+}
+
+/* ---------- focus ring for inputs ---------- */
+
+input[type="text"],
+.git-roots-input {
+  font: inherit;
+  color: var(--c-fg);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  padding: 6px 8px;
+  min-width: 0;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 0;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--c-accent);
+}

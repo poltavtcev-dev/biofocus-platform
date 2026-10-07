@@ -45,6 +45,7 @@ import {
   type GitWatchedRootsView,
 } from "./gitWatchedRoots";
 import "./App.css";
+import "./theme.css";
 
 const TRAY_ID = "main";
 /** Soft refresh so Menubar alert tracks Core without busy-loop. */
