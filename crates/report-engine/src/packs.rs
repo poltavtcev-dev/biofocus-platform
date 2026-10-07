@@ -199,7 +199,10 @@ fn render_default_llm_prompt(markdown: &str) -> String {
     );
     wrap_markdown_for_llm(&mut out, markdown);
     out.push_str(
-        "Write a short natural-language summary the user can skim. \
+        "Write the summary in Russian, in a few short paragraphs. \
+         Use the clock times from the schedule. \
+         Say which sources are present and which are missing. \
+         Do not invent watch, phone, or computer data. \
          Prefer gentle observations over advice. \
          This is optional personal interpretation, not medical advice.\n",
     );

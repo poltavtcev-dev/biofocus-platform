@@ -33,15 +33,15 @@
 	<string>BioFocus does not write health data; this key is required by HealthKit tooling.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>BioFocus Companion sends heart-rate and HRV Observations to your Desktop on the local network only.</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>processing</string>
-	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

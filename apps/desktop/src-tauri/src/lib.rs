@@ -175,6 +175,7 @@ mod ingest_host;
 mod life_event_ipc;
 mod pattern_host;
 mod series_host;
+mod source_report;
 
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -662,6 +663,21 @@ fn report_dto_offline(doc: ReportDocument) -> ReportDto {
     }
 }
 
+fn append_source_section(doc: &mut ReportDocument, source_section: &str) {
+    if source_section.is_empty() {
+        return;
+    }
+    if !doc.markdown.ends_with('\n') {
+        doc.markdown.push('\n');
+    }
+    doc.markdown.push_str(source_section);
+    if let Some(idx) = doc.llm_prompt.rfind("---\n\n") {
+        doc.llm_prompt.insert_str(idx, source_section);
+    } else {
+        doc.llm_prompt.push_str(source_section);
+    }
+}
+
 fn calm_llm_error(err: &ReportEngineError) -> String {
     match err {
         ReportEngineError::LocalLlmTimeout { .. } => {
@@ -688,8 +704,9 @@ async fn assemble_report_dto(
     insights: &[Insight],
     recommendations: &[Recommendation],
     config: &LocalLlmConfig,
+    source_section: &str,
 ) -> Result<ReportDto, String> {
-    let doc = build_report_with_pack(
+    let mut doc = build_report_with_pack(
         DEFAULT_PROMPT_PACK_ID,
         DEFAULT_PROMPT_PACK_VERSION,
         features,
@@ -697,6 +714,7 @@ async fn assemble_report_dto(
         recommendations,
     )
     .map_err(|err| err.to_string())?;
+    append_source_section(&mut doc, source_section);
 
     if !config.enabled {
         // No network when off — explicit offline path for the Dashboard.
@@ -1025,6 +1043,7 @@ async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
         &insights,
         &recommendations,
         &config,
+        &source_report::render_source_section(),
     )
     .await
 }
@@ -1682,7 +1701,7 @@ mod tests {
 
     #[tokio::test]
     async fn assemble_report_disabled_has_no_interpretation() {
-        let dto = assemble_report_dto(&[], &[], &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&[], &[], &[], &LocalLlmConfig::disabled(), "")
             .await
             .expect("offline report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1720,7 +1739,7 @@ mod tests {
             confidence: bio_spec::Confidence::ONE,
             factors: Vec::new(),
         }];
-        let dto = assemble_report_dto(&features, &[], &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&features, &[], &[], &LocalLlmConfig::disabled(), "")
             .await
             .expect("report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1740,7 +1759,7 @@ mod tests {
             category: "pace".into(),
             evidence_list: vec![EvidenceRef::Feature("FocusScore".into())],
         };
-        let dto = assemble_report_dto(&[], &[], &[rec], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&[], &[], &[rec], &LocalLlmConfig::disabled(), "")
             .await
             .expect("report");
         assert!(dto.markdown.contains("## Recommendations"));

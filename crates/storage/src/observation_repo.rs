@@ -154,6 +154,42 @@ impl<'db> ObservationRepository<'db> {
         )?;
         collect_observations_created(rows)
     }
+
+    /// Counts Observations with `timestamp >= since`, grouped by `data_type`.
+    ///
+    /// No payload is read. Used to show which devices reached the Mac.
+    pub fn summarize_types_since(
+        &self,
+        since: UnixTimestamp,
+    ) -> StorageResult<Vec<ObservationTypeSummary>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT data_type, COUNT(*), MAX(timestamp)
+             FROM observations
+             WHERE timestamp >= ?1
+             GROUP BY data_type
+             ORDER BY data_type ASC",
+        )?;
+        let rows = stmt.query_map(params![since.as_secs()], |row| {
+            Ok(ObservationTypeSummary {
+                data_type: row.get(0)?,
+                count: row.get(1)?,
+                latest_timestamp: row.get(2)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
+    }
+}
+
+/// How many Observations of one `data_type` arrived since a cutoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObservationTypeSummary {
+    pub data_type: String,
+    pub count: i64,
+    pub latest_timestamp: i64,
 }
 
 /// Observation plus append-time `created_at` (not part of [`Observation`]).

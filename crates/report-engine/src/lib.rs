@@ -24,7 +24,7 @@
 //! `feature-engine` / `knowledge-engine`. The LLM path interprets
 //! [`ReportDocument::llm_prompt`] only — hosts must not call it on app startup.
 
-#![forbid(unsafe_code)]
+#![cfg_attr(not(test), forbid(unsafe_code))]
 
 mod builder;
 mod error;
@@ -37,7 +37,7 @@ pub use bio_spec::{
     RecommendationId, TimeWindow,
 };
 
-pub use builder::{build_report, ReportDocument};
+pub use builder::{build_report, format_unix_local, ReportDocument};
 pub use error::{ReportEngineError, ReportResult};
 pub use health_context::{
     default_health_context_path, is_v1_health_condition, load_health_context,
