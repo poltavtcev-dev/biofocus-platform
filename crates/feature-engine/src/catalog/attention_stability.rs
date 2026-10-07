@@ -43,7 +43,6 @@ const WEIGHT_SWITCH_STAB: f64 = 0.50;
 /// Catalog input families for ADR-007 coverage (Focus / CSR).
 const EXPECTED_INPUT_SLOTS: usize = 2;
 /// Maps CSR (switches/min) onto the switch-stability component (ADR-023).
-const CSR_SCORE_SCALE: f64 = 50.0;
 
 const FACTOR_FOCUS_STAB: &str = "focus_stability";
 const FACTOR_SWITCH_STAB: &str = "switch_stability";
@@ -136,7 +135,7 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
 
     if let Some(csr_feat) = upstream_feature(ctx, context_switch_rate::FEATURE_ID, window) {
         let rate = scalar_value(csr_feat)?;
-        let switch_stability = (100.0 - rate * CSR_SCORE_SCALE).clamp(0.0, 100.0);
+        let switch_stability = crate::catalog::switch_curve::switch_stability(rate);
         weighted.push((
             FACTOR_SWITCH_STAB,
             LABEL_SWITCH_STAB,
@@ -421,7 +420,7 @@ mod tests {
             panic!("attn scalar");
         };
         let focus_stab = expected_focus_stability(&focus_feats, &attn.time_window);
-        let switch_stab = (100.0 - rate * CSR_SCORE_SCALE).clamp(0.0, 100.0);
+        let switch_stab = crate::catalog::switch_curve::switch_stability(rate);
         let expected = WEIGHT_FOCUS_STAB * focus_stab + WEIGHT_SWITCH_STAB * switch_stab;
         assert!((v - expected).abs() < 1e-9, "expected {expected}, got {v}");
         assert_eq!(attn.factors.len(), 2);

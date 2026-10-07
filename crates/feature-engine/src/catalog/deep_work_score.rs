@@ -39,7 +39,6 @@ const WEIGHT_STABILITY: f64 = 0.40;
 /// Catalog input families for ADR-007 coverage (Focus / CSR).
 const EXPECTED_INPUT_SLOTS: usize = 2;
 /// Maps CSR (switches/min) onto the stability component (ADR-022).
-const CSR_SCORE_SCALE: f64 = 50.0;
 
 const FACTOR_FOCUS: &str = "focus";
 const FACTOR_STABILITY: &str = "stability";
@@ -114,7 +113,7 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
 
     if let Some(csr_feat) = upstream_feature(ctx, context_switch_rate::FEATURE_ID, window) {
         let rate = scalar_value(csr_feat)?;
-        let stability = (100.0 - rate * CSR_SCORE_SCALE).clamp(0.0, 100.0);
+        let stability = crate::catalog::switch_curve::switch_stability(rate);
         weighted.push((
             FACTOR_STABILITY,
             LABEL_STABILITY,
@@ -344,7 +343,7 @@ mod tests {
         let FeatureValue::Scalar(v) = deep.value else {
             panic!("deep scalar");
         };
-        let stability = (100.0 - rate * CSR_SCORE_SCALE).clamp(0.0, 100.0);
+        let stability = crate::catalog::switch_curve::switch_stability(rate);
         let expected = WEIGHT_FOCUS * f + WEIGHT_STABILITY * stability;
         assert!((v - expected).abs() < 1e-9, "expected {expected}, got {v}");
         assert_eq!(deep.factors.len(), 2);

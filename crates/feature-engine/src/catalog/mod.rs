@@ -64,6 +64,7 @@ mod recovery_score;
 mod sleep_debt;
 mod stress_index;
 mod sustained_load_indicator;
+mod switch_curve;
 mod window;
 
 pub use confidence::{
