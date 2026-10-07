@@ -49,8 +49,9 @@ pub use llm::{
     LOCAL_LLM_BASE_URL_ENV, LOCAL_LLM_ENV, LOCAL_LLM_MODEL_ENV, LOCAL_LLM_TIMEOUT_SECS_ENV,
 };
 pub use packs::{
-    build_report_with_pack, build_report_with_pack_and_health, default_prompt_pack,
-    list_prompt_packs, PromptPackRef, DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
+    build_report_with_pack, build_report_with_pack_and_health,
+    build_report_with_pack_and_life_events, build_report_with_pack_full, default_prompt_pack,
+    list_prompt_packs, PromptPackRef, ReportLifeEvent, DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
 };
 
 /// Crate identity used by dependents and status payloads.

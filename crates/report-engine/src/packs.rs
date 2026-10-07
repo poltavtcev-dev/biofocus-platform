@@ -73,6 +73,28 @@ pub fn build_report_with_pack(
     )
 }
 
+/// Like [`build_report_with_pack`] plus a "Life events" section (user-logged
+/// coffee / walk / lunch / workout; retracted events must already be removed
+/// by the host). Empty slice → identical output to [`build_report_with_pack`].
+pub fn build_report_with_pack_and_life_events(
+    pack_id: &str,
+    version: &str,
+    features: &[Feature],
+    insights: &[Insight],
+    recommendations: &[Recommendation],
+    life_events: &[ReportLifeEvent],
+) -> ReportResult<ReportDocument> {
+    build_report_with_pack_full(
+        pack_id,
+        version,
+        features,
+        insights,
+        recommendations,
+        life_events,
+        load_health_context().as_ref(),
+    )
+}
+
 /// Builds a pack report with an explicit health-context override (tests / hosts).
 ///
 /// `health = None` → no health section (same as missing/empty config file).
@@ -84,9 +106,22 @@ pub fn build_report_with_pack_and_health(
     recommendations: &[Recommendation],
     health: Option<&HealthContext>,
 ) -> ReportResult<ReportDocument> {
+    build_report_with_pack_full(pack_id, version, features, insights, recommendations, &[], health)
+}
+
+/// Full-control variant (tests / hosts): Life Events + explicit health context.
+pub fn build_report_with_pack_full(
+    pack_id: &str,
+    version: &str,
+    features: &[Feature],
+    insights: &[Insight],
+    recommendations: &[Recommendation],
+    life_events: &[ReportLifeEvent],
+    health: Option<&HealthContext>,
+) -> ReportResult<ReportDocument> {
     match (pack_id, version) {
         (DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION) => {
-            build_default_pack(features, insights, recommendations, health)
+            build_default_pack(features, insights, recommendations, life_events, health)
         }
         _ => Err(ReportEngineError::UnknownPromptPack {
             id: pack_id.to_owned(),
@@ -99,9 +134,11 @@ fn build_default_pack(
     features: &[Feature],
     insights: &[Insight],
     recommendations: &[Recommendation],
+    life_events: &[ReportLifeEvent],
     health: Option<&HealthContext>,
 ) -> ReportResult<ReportDocument> {
-    let markdown = render_default_markdown(features, insights, recommendations, health)?;
+    let markdown =
+        render_default_markdown(features, insights, recommendations, life_events, health)?;
     let llm_prompt = render_default_llm_prompt(&markdown);
     Ok(ReportDocument {
         markdown,
@@ -113,6 +150,7 @@ fn render_default_markdown(
     features: &[Feature],
     insights: &[Insight],
     recommendations: &[Recommendation],
+    life_events: &[ReportLifeEvent],
     health: Option<&HealthContext>,
 ) -> ReportResult<String> {
     let mut out = String::new();
@@ -124,7 +162,11 @@ fn render_default_markdown(
 
     render_health_context_section(&mut out, health);
 
-    if features.is_empty() && insights.is_empty() && recommendations.is_empty() {
+    if features.is_empty()
+        && insights.is_empty()
+        && recommendations.is_empty()
+        && life_events.is_empty()
+    {
         out.push_str("## Summary\n\n");
         out.push_str("Nothing to summarize for this period yet.\n");
         return Ok(out);
@@ -135,8 +177,47 @@ fn render_default_markdown(
     if !out.ends_with("\n\n") {
         out.push('\n');
     }
+    render_life_events_section(&mut out, life_events);
     render_recommendations_section(&mut out, recommendations);
     Ok(out)
+}
+
+/// One user-logged Life Event for the report (host-filtered, non-retracted).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReportLifeEvent {
+    /// Observation id (cited by Insights as `observation:<id>`).
+    pub id: bio_spec::ObservationId,
+    /// v1 kind.
+    pub kind: String,
+    /// When it happened (Unix secs, UTC).
+    pub happened_at: i64,
+    /// When the user logged it (Unix secs, UTC).
+    pub logged_at: i64,
+}
+
+fn render_life_events_section(out: &mut String, life_events: &[ReportLifeEvent]) {
+    if life_events.is_empty() {
+        return;
+    }
+    out.push_str("## Life events\n\n");
+    out.push_str(
+        "_Logged by the user. Removed events are excluded. \
+         Times are Unix seconds (UTC); \"logged\" differs when back-dated._\n\n",
+    );
+    let mut sorted: Vec<&ReportLifeEvent> = life_events.iter().collect();
+    sorted.sort_by(|a, b| (a.happened_at, a.id).cmp(&(b.happened_at, b.id)));
+    out.push_str("| Event | Happened (UTC s) | Logged (UTC s) | Id |\n");
+    out.push_str("| :--- | :--- | :--- | :--- |\n");
+    for ev in sorted {
+        out.push_str(&format!(
+            "| {} | {} | {} | observation:{} |\n",
+            ev.kind.replace('|', "\\|"),
+            ev.happened_at,
+            ev.logged_at,
+            ev.id
+        ));
+    }
+    out.push('\n');
 }
 
 fn render_health_context_section(out: &mut String, health: Option<&HealthContext>) {
@@ -309,5 +390,86 @@ mod tests {
         .expect("ok");
         assert!(with_h.markdown.contains("72"));
         assert!(without.markdown.contains("72"));
+    }
+
+    #[test]
+    fn life_events_section_lists_events_sorted_with_both_timestamps() {
+        let events = vec![
+            ReportLifeEvent {
+                id: Uuid::from_u128(2),
+                kind: "walk".into(),
+                happened_at: 2_000,
+                logged_at: 2_900,
+            },
+            ReportLifeEvent {
+                id: Uuid::from_u128(1),
+                kind: "coffee".into(),
+                happened_at: 1_000,
+                logged_at: 1_000,
+            },
+        ];
+        let doc = build_report_with_pack_full(
+            DEFAULT_PROMPT_PACK_ID,
+            DEFAULT_PROMPT_PACK_VERSION,
+            &[sample_feature()],
+            &[],
+            &[],
+            &events,
+            None,
+        )
+        .expect("build");
+        let md = &doc.markdown;
+        assert!(md.contains("## Life events"));
+        let coffee = md.find("| coffee | 1000 | 1000 |").expect("coffee row");
+        let walk = md.find("| walk | 2000 | 2900 |").expect("walk row");
+        assert!(coffee < walk, "sorted by happened-at");
+        assert!(md.find("## Life events").unwrap() < md.find("## Recommendations").unwrap());
+        assert!(doc.llm_prompt.contains("## Life events"));
+    }
+
+    #[test]
+    fn no_life_events_keeps_report_unchanged() {
+        let a = build_report_with_pack_and_health(
+            DEFAULT_PROMPT_PACK_ID,
+            DEFAULT_PROMPT_PACK_VERSION,
+            &[sample_feature()],
+            &[],
+            &[],
+            None,
+        )
+        .expect("a");
+        let b = build_report_with_pack_full(
+            DEFAULT_PROMPT_PACK_ID,
+            DEFAULT_PROMPT_PACK_VERSION,
+            &[sample_feature()],
+            &[],
+            &[],
+            &[],
+            None,
+        )
+        .expect("b");
+        assert_eq!(a, b);
+        assert!(!a.markdown.contains("Life events"));
+    }
+
+    #[test]
+    fn life_events_alone_are_not_an_empty_summary() {
+        let doc = build_report_with_pack_full(
+            DEFAULT_PROMPT_PACK_ID,
+            DEFAULT_PROMPT_PACK_VERSION,
+            &[],
+            &[],
+            &[],
+            &[ReportLifeEvent {
+                id: Uuid::from_u128(3),
+                kind: "lunch".into(),
+                happened_at: 5,
+                logged_at: 5,
+            }],
+            None,
+        )
+        .expect("build");
+        assert!(!doc.markdown.contains("Nothing to summarize"));
+        assert!(doc.markdown.contains("| lunch | 5 | 5 |"));
     }
 }

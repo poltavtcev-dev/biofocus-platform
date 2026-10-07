@@ -107,7 +107,8 @@
 //!
 //! Explicit user action only — never call on app / Dashboard open. Builds an
 //! offline report from the cached Feature snapshot + evaluate-on-read Insights
-//! + Recommendations via `report_engine::build_report_with_pack`
+//! + Recommendations (+ last 8h of non-retracted Life Events) via
+//! `report_engine::build_report_with_pack_and_life_events`
 //! (`biofocus.default` @ `1`). When `BIOFOCUS_LOCAL_LLM` is enabled,
 //! optionally runs `interpret_report` (local HTTP). When disabled, returns
 //! deterministic markdown/prompt with `llmStatus: "disabled"` and **no**
@@ -192,7 +193,8 @@ use knowledge_engine::{
 use qrcode::render::svg;
 use qrcode::QrCode;
 use report_engine::{
-    build_report_with_pack, interpret_report, LocalLlmConfig, ReportDocument, ReportEngineError,
+    build_report_with_pack_and_life_events, interpret_report, LocalLlmConfig, ReportDocument,
+    ReportEngineError, ReportLifeEvent,
     DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
 };
 use serde::Serialize;
@@ -519,6 +521,22 @@ fn pattern_inputs_for_insights(app: &AppHandle, snapshot: &FeatureSnapshot) -> P
     pattern.with_life_events(marks, recent)
 }
 
+/// Non-retracted Life Events for the offline report (soft-fails to empty).
+fn report_life_events(start: i64, end: i64) -> Vec<ReportLifeEvent> {
+    life_event_ipc::list_life_events_between(start, end)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|dto| {
+            Some(ReportLifeEvent {
+                id: uuid::Uuid::parse_str(&dto.id).ok()?,
+                kind: dto.kind,
+                happened_at: dto.timestamp,
+                logged_at: dto.logged_at,
+            })
+        })
+        .collect()
+}
+
 /// Life Event lookback for insights + report (matches the 8h chart range).
 const LIFE_EVENT_LOOKBACK_SECS: i64 = 8 * 3600;
 
@@ -720,14 +738,16 @@ async fn assemble_report_dto(
     features: &[Feature],
     insights: &[Insight],
     recommendations: &[Recommendation],
+    life_events: &[ReportLifeEvent],
     config: &LocalLlmConfig,
 ) -> Result<ReportDto, String> {
-    let doc = build_report_with_pack(
+    let doc = build_report_with_pack_and_life_events(
         DEFAULT_PROMPT_PACK_ID,
         DEFAULT_PROMPT_PACK_VERSION,
         features,
         insights,
         recommendations,
+        life_events,
     )
     .map_err(|err| err.to_string())?;
 
@@ -1120,10 +1140,13 @@ async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
         None => (Vec::new(), Vec::new()),
     };
     let config = LocalLlmConfig::from_env();
+    let now = unix_now_secs();
+    let life_events = report_life_events(now - LIFE_EVENT_LOOKBACK_SECS, now);
     assemble_report_dto(
         &snapshot.features,
         &insights,
         &recommendations,
+        &life_events,
         &config,
     )
     .await
@@ -1823,7 +1846,7 @@ mod tests {
 
     #[tokio::test]
     async fn assemble_report_disabled_has_no_interpretation() {
-        let dto = assemble_report_dto(&[], &[], &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&[], &[], &[], &[], &LocalLlmConfig::disabled())
             .await
             .expect("offline report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1861,7 +1884,7 @@ mod tests {
             confidence: bio_spec::Confidence::ONE,
             factors: Vec::new(),
         }];
-        let dto = assemble_report_dto(&features, &[], &[], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&features, &[], &[], &[], &LocalLlmConfig::disabled())
             .await
             .expect("report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1873,6 +1896,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn assemble_report_includes_life_events_section() {
+        let ev = ReportLifeEvent {
+            id: Uuid::from_u128(77),
+            kind: "coffee".into(),
+            happened_at: 1_700_000_000,
+            logged_at: 1_700_000_900,
+        };
+        let dto = assemble_report_dto(&[], &[], &[], &[ev], &LocalLlmConfig::disabled())
+            .await
+            .expect("report");
+        assert!(dto.markdown.contains("## Life events"));
+        assert!(dto.markdown.contains("| coffee | 1700000000 | 1700000900 |"));
+    }
+
+    #[tokio::test]
     async fn assemble_report_includes_recommendations_section() {
         let rec = Recommendation {
             id: Uuid::from_u128(42),
@@ -1881,7 +1919,7 @@ mod tests {
             category: "pace".into(),
             evidence_list: vec![EvidenceRef::Feature("FocusScore".into())],
         };
-        let dto = assemble_report_dto(&[], &[], &[rec], &LocalLlmConfig::disabled())
+        let dto = assemble_report_dto(&[], &[], &[rec], &[], &LocalLlmConfig::disabled())
             .await
             .expect("report");
         assert!(dto.markdown.contains("## Recommendations"));
