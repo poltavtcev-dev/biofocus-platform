@@ -87,6 +87,9 @@ export function formatEvidenceRef(ref: EvidenceRefDto): string {
   if (ref.kind === "insight") {
     return `Insight ${ref.id}`;
   }
+  if (ref.kind === "observation") {
+    return `Event ${ref.id.slice(0, 8)}`;
+  }
   return `${ref.kind} ${ref.id}`;
 }
 

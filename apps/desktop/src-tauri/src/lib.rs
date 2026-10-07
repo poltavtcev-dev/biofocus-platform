@@ -407,7 +407,7 @@ fn series_to_dto(series: &FeatureSeriesResult) -> FeatureSeriesDto {
     }
 }
 
-/// Evidence ref on the IPC wire (`feature` | `signal` | `insight` + id string).
+/// Evidence ref on the IPC wire (`feature` | `signal` | `insight` | `observation` + id string).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct EvidenceRefDto {
@@ -428,6 +428,10 @@ impl From<&EvidenceRef> for EvidenceRefDto {
             },
             EvidenceRef::Insight(id) => Self {
                 kind: "insight".into(),
+                id: id.to_string(),
+            },
+            EvidenceRef::Observation(id) => Self {
+                kind: "observation".into(),
                 id: id.to_string(),
             },
         }

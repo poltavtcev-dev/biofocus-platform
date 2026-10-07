@@ -55,8 +55,9 @@ pub use git_activity::{
 };
 pub use insight::{EvidenceRef, Insight, InsightId};
 pub use life_event::{
-    is_v1_life_event_kind, validate_life_event_payload, validate_observation_payload,
-    DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, LIFE_EVENT_KIND_LUNCH, LIFE_EVENT_KIND_WALK,
+    apply_life_event_retractions, is_v1_life_event_kind, life_event_retraction_target,
+    validate_life_event_payload, validate_life_event_retraction_payload,
+    validate_observation_payload, DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, LIFE_EVENT_KIND_COFFEE, LIFE_EVENT_KIND_LUNCH, LIFE_EVENT_KIND_WALK,
     LIFE_EVENT_KIND_WORKOUT, V1_LIFE_EVENT_KINDS,
 };
 pub use notification_event::{

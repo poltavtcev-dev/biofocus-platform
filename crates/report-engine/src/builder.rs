@@ -173,6 +173,7 @@ pub(crate) fn format_evidence(list: &[EvidenceRef]) -> String {
             EvidenceRef::Feature(id) => format!("feature:{id}"),
             EvidenceRef::Signal(id) => format!("signal:{id}"),
             EvidenceRef::Insight(id) => format!("insight:{id}"),
+            EvidenceRef::Observation(id) => format!("observation:{id}"),
         })
         .collect::<Vec<_>>()
         .join(", ")
