@@ -67,6 +67,28 @@ const COMPANION_HEALTH_TYPES: &[&str] = &[
     DATA_TYPE_SOURCE_DELETION,
 ];
 
+/// Health types the data-sources screen counts. Markers and life events stay out.
+pub const WEARABLE_SUMMARY_TYPES: &[&str] = &[
+    DATA_TYPE_HEART_RATE,
+    DATA_TYPE_RESTING_HEART_RATE,
+    DATA_TYPE_WALKING_HEART_RATE_AVERAGE,
+    DATA_TYPE_HRV,
+    DATA_TYPE_RESPIRATORY_RATE,
+    DATA_TYPE_SLEEPING_WRIST_TEMPERATURE,
+    DATA_TYPE_VO2_MAX,
+    crate::oxygen_saturation::DATA_TYPE_OXYGEN_SATURATION,
+    crate::sleep_interval::DATA_TYPE_SLEEP_INTERVAL,
+    DATA_TYPE_WORKOUT,
+    DATA_TYPE_EXERCISE_TIME,
+    DATA_TYPE_STAND_TIME,
+    DATA_TYPE_STAND_HOUR,
+    DATA_TYPE_MINDFUL_SESSION,
+    DATA_TYPE_DISTANCE_WALKING_RUNNING,
+    DATA_TYPE_BASAL_ENERGY,
+    crate::step_count::DATA_TYPE_STEP_COUNT,
+    crate::active_energy::DATA_TYPE_ACTIVE_ENERGY,
+];
+
 /// `true` when `kind` is a documented `src.kind`.
 #[must_use]
 pub fn is_src_kind(kind: &str) -> bool {

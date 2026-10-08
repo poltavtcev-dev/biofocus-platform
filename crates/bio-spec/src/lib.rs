@@ -96,8 +96,9 @@ pub use wearable::{
     DATA_TYPE_STAND_HOUR, DATA_TYPE_STAND_TIME, DATA_TYPE_VO2_MAX,
     DATA_TYPE_WALKING_HEART_RATE_AVERAGE, DATA_TYPE_WORKOUT, PROVIDER_APPLE_HEALTH,
     SRC_KIND_APPLE_WATCH, SRC_KIND_IPHONE, SRC_KIND_MANUAL, SRC_KIND_OTHER_APP,
-    SRC_KIND_XIAOMI_MI_FITNESS, SRC_KIND_ZEPP_LIFE, apply_source_deletions,
-    companion_ingest_allowed, is_src_kind, validate_wearable_observation,
+    SRC_KIND_XIAOMI_MI_FITNESS, SRC_KIND_ZEPP_LIFE, WEARABLE_SUMMARY_TYPES,
+    apply_source_deletions, companion_ingest_allowed, is_src_kind,
+    validate_wearable_observation,
 };
 
 /// Crate identity used by dependents and IPC status payloads.

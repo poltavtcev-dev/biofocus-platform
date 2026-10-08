@@ -471,3 +471,32 @@ fn source_deletion_hides_same_provider_only() {
         .expect("raw");
     assert!(raw.len() >= 4);
 }
+
+#[test]
+fn list_with_created_returns_receipt_time_for_the_asked_types() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+    let hr = sample_observation(
+        "0190ecb5-7c2a-7123-8901-23456789abcd",
+        1_700_000_000,
+        "heart_rate",
+    );
+    repo.insert(&hr).expect("insert");
+    let other = sample_observation(
+        "0190ecb5-7c2a-7123-8901-23456789abce",
+        1_700_000_100,
+        "keystrokes",
+    );
+    repo.insert(&other).expect("insert");
+
+    let rows = repo
+        .list_with_created_in_range(
+            &["heart_rate"],
+            UnixTimestamp::from_secs(1_600_000_000),
+            UnixTimestamp::from_secs(1_800_000_000),
+        )
+        .expect("list");
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].observation.data_type, "heart_rate");
+    assert!(rows[0].created_at > 0);
+}

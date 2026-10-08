@@ -92,6 +92,44 @@ impl SourcePriority {
         Self::from_toml_str(&text)
     }
 
+    /// Highest priority first. Always the full closed set.
+    #[must_use]
+    pub fn order(&self) -> &[String] {
+        &self.order
+    }
+
+    /// `order = ["apple_watch", ...]` for `source-priority.toml`.
+    #[must_use]
+    pub fn to_toml(&self) -> String {
+        let mut out = String::from("order = [");
+        for (index, name) in self.order.iter().enumerate() {
+            if index > 0 {
+                out.push_str(", ");
+            }
+            out.push('"');
+            out.push_str(name);
+            out.push('"');
+        }
+        out.push_str("]\n");
+        out
+    }
+
+    /// Writes [`Self::to_toml`] and creates the parent directory when needed.
+    pub fn write_to(&self, path: &Path) -> std::io::Result<()> {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        fs::write(path, self.to_toml())
+    }
+
+    /// Path the desktop host reads and writes. `None` when home is unset.
+    #[must_use]
+    pub fn installed_path() -> Option<PathBuf> {
+        default_priority_path()
+    }
+
     fn rank(&self, kind: Option<&str>) -> usize {
         let Some(kind) = kind else {
             return self.order.len();

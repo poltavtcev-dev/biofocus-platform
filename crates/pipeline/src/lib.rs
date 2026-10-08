@@ -28,6 +28,7 @@
 
 #![forbid(unsafe_code)]
 
+mod data_sources;
 mod dedupe;
 mod error;
 mod intake;
@@ -35,6 +36,7 @@ mod normalize;
 mod quality;
 mod source_select;
 
+pub use data_sources::{SourceSample, SourceSummary, SourcesReport, summarize_sources};
 pub use dedupe::{DedupeState, DedupedBatch, dedupe_accepted, dedupe_observations, dedupe_owned};
 pub use error::{PipelineError, PipelineResult};
 pub use intake::{AcceptedBatch, accept_iter, accept_observations, accept_owned};

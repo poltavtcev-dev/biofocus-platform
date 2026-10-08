@@ -1,10 +1,10 @@
 //! Immutable append/read API for `observations` (`docs/04-storage.md`).
 
 use bio_spec::{
-    Confidence, DataType, Observation, ObservationId, UnixTimestamp, DATA_TYPE_LIFE_EVENT,
-    DATA_TYPE_LIFE_EVENT_RETRACTION, DATA_TYPE_SOURCE_DELETION,
+    Confidence, DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, DATA_TYPE_SOURCE_DELETION,
+    DataType, Observation, ObservationId, UnixTimestamp,
 };
-use rusqlite::{params, Connection, ErrorCode, OptionalExtension, Row};
+use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, params};
 use uuid::Uuid;
 
 use crate::clock::unix_now_secs;
@@ -255,6 +255,55 @@ impl<'db> ObservationRepository<'db> {
             })
             .optional()?;
         Ok(row)
+    }
+
+    /// Wearable rows in `[start, end]` plus the append-time `created_at`.
+    ///
+    /// `source_deletion` targets are hidden. Schema is unchanged: this only reads
+    /// the existing `created_at` column. `data_types` are bound parameters.
+    pub fn list_with_created_in_range(
+        &self,
+        data_types: &[&str],
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+    ) -> StorageResult<Vec<ObservationCreated>> {
+        if data_types.is_empty() {
+            return Ok(Vec::new());
+        }
+        if end.as_secs() < start.as_secs() {
+            return Err(StorageError::InvalidTimeRange {
+                start: start.as_secs(),
+                end: end.as_secs(),
+            });
+        }
+        let placeholders = (0..data_types.len())
+            .map(|index| format!("?{}", index + 3))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let filter = source_deletion_filter_sql();
+        let sql = format!(
+            "SELECT id, timestamp, provider_id, data_type, payload, confidence, created_at
+             FROM observations
+             WHERE timestamp >= ?1 AND timestamp <= ?2
+               AND data_type IN ({placeholders})
+               AND {filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let start_secs = start.as_secs();
+        let end_secs = end.as_secs();
+        let mut params: Vec<rusqlite::types::Value> = vec![
+            rusqlite::types::Value::Integer(start_secs),
+            rusqlite::types::Value::Integer(end_secs),
+        ];
+        for data_type in data_types {
+            params.push(rusqlite::types::Value::Text((*data_type).to_owned()));
+        }
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(
+            rusqlite::params_from_iter(params.iter()),
+            read_observation_created_columns,
+        )?;
+        collect_observations_created(rows)
     }
 
     /// Lists Observations strictly after `(after_created_at, after_id)` in
