@@ -38,6 +38,25 @@ import {
 import "./App.css";
 import "./theme.css";
 
+function GitRootPath({ path }: { path: string }) {
+  const shown = shortenRootPath(path);
+  const bits = shown.split("/");
+  return (
+    <span className="git-roots-path" title={path}>
+      {bits.map((bit, i) => (
+        <span key={`${i}-${bit}`}>
+          {bit}
+          {i < bits.length - 1 ? (
+            <>
+              /<wbr />
+            </>
+          ) : null}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const TRAY_ID = "main";
 /** Soft refresh so Menubar alert tracks Core without busy-loop. */
 const STATUS_POLL_MS = 5_000;
@@ -367,9 +386,7 @@ function MenubarShell() {
               <ul className="git-roots-rows">
                 {gitLocalRoots.map((path) => (
                   <li key={path} className="git-roots-row">
-                    <span className="git-roots-path" title={path}>
-                      {shortenRootPath(path)}
-                    </span>
+                    <GitRootPath path={path} />
                     <button
                       type="button"
                       className="retry"

@@ -634,15 +634,22 @@ input[type="checkbox"] {
   margin-top: var(--s-2);
 }
 
-.git-roots-path,
 .life-event-row {
   overflow-wrap: anywhere;
   min-width: 0;
 }
 
+.git-roots-path {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  line-height: 1.35;
+}
+
 .git-roots-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--s-2);
   min-width: 0;

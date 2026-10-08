@@ -154,11 +154,18 @@ export async function saveGitWatchedRoots(
   }
 }
 
-/** Short display path for Menubar (keep end of path readable). */
-export function shortenRootPath(path: string, max = 48): string {
-  const trimmed = path.trim();
-  if (trimmed.length <= max) {
-    return trimmed;
+/** Menubar label: home as `~`, shortened only on a `/` so names stay whole. */
+export function shortenRootPath(path: string, max = 42): string {
+  let shown = path.trim().replace(/\/+$/, "");
+  if (!shown) {
+    return path.trim();
   }
-  return `…${trimmed.slice(-(max - 1))}`;
+  shown = shown.replace(/^\/Users\/[^/]+/, "~").replace(/^\/home\/[^/]+/, "~");
+  if (shown.length <= max) {
+    return shown;
+  }
+  const tail = shown.slice(-(max - 1));
+  const slash = tail.indexOf("/");
+  const cut = slash >= 0 ? tail.slice(slash) : `/${tail}`;
+  return `…${cut}`;
 }
