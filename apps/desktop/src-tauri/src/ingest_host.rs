@@ -253,6 +253,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         .with_version(env!("CARGO_PKG_VERSION"))
         .with_db_path(db_path)
         .with_bind(config.bind_host, config.port);
+    ingest::install_live_token(state.token.clone());
     ingest::publish_companion_status(state.companion_status.clone());
 
     set_run_state(IngestRunState::Running { bind_host });

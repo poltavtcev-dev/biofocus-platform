@@ -16,6 +16,7 @@ import {
   copyText,
   fetchPairingToken,
   isPrimaryUrlCopyable,
+  rotatePairingToken,
   maskToken,
   networkModeDetail,
   networkModeLabel,
@@ -190,6 +191,21 @@ function MenubarShell() {
     setPairing({ kind: "loading" });
     setCopyNote(null);
     void fetchPairingToken().then(setPairing);
+  };
+
+  const onRotateToken = async () => {
+    if (pairing.kind !== "ready" || pairing.info.fromEnv) {
+      return;
+    }
+    const ok = window.confirm(
+      "Rotate the pairing token? The phone will need the new QR before it can sync.",
+    );
+    if (!ok) {
+      return;
+    }
+    const next = await rotatePairingToken();
+    setPairing(next);
+    setCopyNote(next.kind === "ready" ? "Token rotated. Scan the QR again." : null);
   };
 
   const onCopyToken = async () => {
@@ -546,12 +562,31 @@ function MenubarShell() {
                 >
                   {qrVisible ? "Hide QR" : "Show QR"}
                 </button>
+                <button
+                  type="button"
+                  className="retry"
+                  disabled={pairing.info.fromEnv}
+                  onClick={() => void onRotateToken()}
+                >
+                  Rotate token
+                </button>
               </div>
+              {pairing.info.certFingerprint && (
+                <>
+                  <p className="pairing-subtitle">Certificate fingerprint</p>
+                  <p className="pairing-token" aria-live="polite">
+                    {pairing.info.certFingerprint}
+                  </p>
+                  <p className="pairing-detail">
+                    The QR includes this fingerprint. The phone rejects a different certificate.
+                  </p>
+                </>
+              )}
               {qrVisible && (
                 <div
                   className="pairing-qr"
                   role="img"
-                  aria-label="QR code for pairing token"
+                  aria-label="QR code for pairing"
                   dangerouslySetInnerHTML={{ __html: pairing.info.qrSvg }}
                 />
               )}

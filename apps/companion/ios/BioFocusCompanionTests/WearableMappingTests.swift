@@ -6,6 +6,38 @@ import XCTest
 final class WearableMappingTests: XCTestCase {
     private let salt = Data("biofocus-test-salt".utf8)
 
+    func testPairingQrKeepsPinAndLoopbackDash() {
+        let pin = String(repeating: "ab", count: 32)
+        let text = "biofocus:1\nhttps://10.0.0.8:8787/\n" + "tok\n" + pin + "\n"
+        let parsed = PairingQr.parse(text)
+        XCTAssertEqual(parsed?.url, "https://10.0.0.8:8787")
+        XCTAssertEqual(parsed?.token, "tok")
+        XCTAssertEqual(parsed?.pin, pin)
+        let local = PairingQr.parse("biofocus:1\nhttp://127.0.0.1:8787\ntok\n-\n")
+        XCTAssertNil(local?.pin)
+    }
+
+    func testPinMismatchOnCertificateBytes() {
+        let der = Data("not-a-cert".utf8)
+        let right = TlsPin.sha256Hex(der)
+        XCTAssertTrue(TlsPin.matches(der: der, expectedHex: right))
+        XCTAssertFalse(TlsPin.matches(der: der, expectedHex: String(repeating: "cd", count: 32)))
+        XCTAssertFalse(TlsPin.matches(der: der, expectedHex: "abcd"))
+    }
+
+    func testPlainHttpOffLoopbackIsRejected() {
+        let lan = URL(string: "http://192.168.1.20:8787")!
+        XCTAssertThrowsError(try IngestURLPolicy.validate(url: lan, pin: "")) { error in
+            XCTAssertEqual(error as? IngestClientError, .plainHttpOffLoopback)
+        }
+        let loopback = URL(string: "http://127.0.0.1:8787")!
+        XCTAssertNoThrow(try IngestURLPolicy.validate(url: loopback, pin: ""))
+        let https = URL(string: "https://192.168.1.20:8787")!
+        XCTAssertThrowsError(try IngestURLPolicy.validate(url: https, pin: "  ")) { error in
+            XCTAssertEqual(error as? IngestClientError, .pinRequired)
+        }
+    }
+
     func testKindTable() {
         XCTAssertEqual(
             WearableKind.classify(bundleId: "com.xiaomi.wearable", productType: nil, hardwareVersion: nil, wasUserEntered: false),

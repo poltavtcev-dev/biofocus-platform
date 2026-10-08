@@ -855,8 +855,10 @@ struct PairingTokenInfo {
     base_url_hints: Vec<String>,
     /// `true` when `BIOFOCUS_INGEST_TOKEN` overrides the on-disk file.
     from_env: bool,
-    /// SVG markup for a QR encoding the token (phone camera → paste / scan).
+    /// SVG markup for a QR encoding URL, token, and certificate fingerprint.
     qr_svg: String,
+    /// SHA-256 of the LAN certificate, when this listener speaks TLS. Absent on loopback.
+    cert_fingerprint: Option<String>,
     /// Settings (env / saved toggle) ask for LAN on the next launch.
     lan_configured: bool,
     /// Saved settings differ from the running listener → restart BioFocus.
@@ -882,6 +884,10 @@ fn pairing_error_message(err: ingest::IngestError) -> String {
         ingest::IngestError::TokenIo { .. } => "Could not read pairing token.".into(),
         ingest::IngestError::EmptyTokenFile { .. } => "Pairing token is empty.".into(),
         ingest::IngestError::TokenEntropy(_) => "Could not create pairing token.".into(),
+        ingest::IngestError::TokenFromEnv => {
+            "Token is set by the environment for this launch.".into()
+        }
+        ingest::IngestError::Tls(_) => "Could not prepare the LAN certificate.".into(),
         _ => "Could not load pairing token.".into(),
     }
 }
@@ -918,7 +924,7 @@ fn build_pairing_info(
         },
         ingest_error: None,
     };
-    build_pairing_info_with(token, from_env, advertise, &runtime)
+    build_pairing_info_with(token, from_env, advertise, &runtime, None)
 }
 
 fn build_pairing_info_with(
@@ -926,8 +932,8 @@ fn build_pairing_info_with(
     from_env: bool,
     advertise: &ingest::AdvertiseInfo,
     runtime: &PairingRuntime,
+    cert_fingerprint: Option<String>,
 ) -> Result<PairingTokenInfo, String> {
-    let qr_svg = render_token_qr_svg(&token)?;
     // Prefer primary LAN/loopback hint; fall back to loopback so Simulator path stays usable.
     let ingest_base_url = advertise
         .primary_base_url()
@@ -935,6 +941,11 @@ fn build_pairing_info_with(
         .unwrap_or_else(|| {
             ingest::http_base_url(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT)
         });
+    let qr_svg = render_token_qr_svg(&ingest::pairing_qr_payload(
+        &ingest_base_url,
+        &token,
+        cert_fingerprint.as_deref(),
+    ))?;
     Ok(PairingTokenInfo {
         token,
         ingest_base_url,
@@ -942,6 +953,7 @@ fn build_pairing_info_with(
         base_url_hints: advertise.base_url_hints.clone(),
         from_env,
         qr_svg,
+        cert_fingerprint,
         lan_configured: !runtime.configured_bind.is_loopback(),
         restart_required: runtime
             .running_bind
@@ -984,12 +996,21 @@ fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
     };
     let advertise_bind = running_bind.unwrap_or(configured_bind);
     let advertise = ingest::AdvertiseInfo::for_bind(advertise_bind, ingest::DEFAULT_INGEST_PORT);
+    let cert_fingerprint = if advertise_bind.is_loopback() {
+        None
+    } else {
+        Some(
+            ingest::load_or_create_tls_identity()
+                .map_err(pairing_error_message)?
+                .fingerprint_hex,
+        )
+    };
     let runtime = PairingRuntime {
         running_bind,
         configured_bind,
         ingest_error,
     };
-    build_pairing_info_with(token, from_env, &advertise, &runtime)
+    build_pairing_info_with(token, from_env, &advertise, &runtime, cert_fingerprint)
 }
 
 /// Probes a DB path (create + WAL + migrate-on-open). Soft-fail via `Err`.
@@ -1170,6 +1191,13 @@ fn get_pairing_token() -> Result<PairingTokenInfo, String> {
     resolve_pairing_info()
 }
 
+/// Replaces the on-disk pairing token and the live bearer. The phone must scan again.
+#[tauri::command]
+fn rotate_pairing_token() -> Result<PairingTokenInfo, String> {
+    ingest::rotate_live_pairing_token().map_err(pairing_error_message)?;
+    resolve_pairing_info()
+}
+
 /// Logs a v1 Life Event Observation from the Menubar (P6-E2-T1 / ADR-006).
 ///
 /// Persists via [`storage::ObservationRepository`] — UI ↛ SQLite. Calm errors.
@@ -1311,6 +1339,7 @@ pub fn run() -> DesktopResult<()> {
             open_dashboard,
             core_ping,
             get_pairing_token,
+            rotate_pairing_token,
             get_ingest_lan_preference,
             set_ingest_lan_preference,
             log_life_event,
@@ -2046,10 +2075,10 @@ mod tests {
         );
         let info = build_pairing_info("tok".into(), true, &advertise).expect("qr");
         assert_eq!(info.bind_mode, "lan");
-        assert_eq!(info.ingest_base_url, "http://192.168.1.40:8787");
+        assert_eq!(info.ingest_base_url, "https://192.168.1.40:8787");
         assert_eq!(
             info.base_url_hints,
-            vec!["http://192.168.1.40:8787".to_owned()]
+            vec!["https://192.168.1.40:8787".to_owned()]
         );
         assert!(info.from_env);
     }
@@ -2091,7 +2120,7 @@ mod tests {
         assert_eq!(advertise.bind_mode, ingest::BindMode::Lan);
         // Primary hint may be empty if OS discovery fails in CI; mode must still be lan.
         for url in &advertise.base_url_hints {
-            assert!(url.starts_with("http://"), "hint={url}");
+            assert!(url.starts_with("https://"), "hint={url}");
             assert!(url.contains(":8787"), "hint={url}");
             assert!(
                 !url.contains("127.0.0.1"),
@@ -2112,7 +2141,8 @@ mod tests {
             configured_bind: ingest::INGEST_LAN_BIND_HOST,
             ingest_error: None,
         };
-        let info = build_pairing_info_with("tok".into(), false, &advertise, &runtime).expect("qr");
+        let info =
+            build_pairing_info_with("tok".into(), false, &advertise, &runtime, None).expect("qr");
         assert_eq!(info.bind_mode, "loopback");
         assert!(info.lan_configured);
         assert!(info.restart_required);
@@ -2128,7 +2158,8 @@ mod tests {
             configured_bind: ingest::INGEST_BIND_HOST,
             ingest_error: Some("Phone sync is off: port 8787 is already in use.".into()),
         };
-        let info = build_pairing_info_with("tok".into(), false, &advertise, &runtime).expect("qr");
+        let info =
+            build_pairing_info_with("tok".into(), false, &advertise, &runtime, None).expect("qr");
         assert!(!info.ingest_running);
         assert!(!info.restart_required);
         assert!(info.ingest_error.unwrap().contains("8787"));

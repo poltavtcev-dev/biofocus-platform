@@ -4,7 +4,9 @@ import SwiftUI
 struct ContentView: View {
     @AppStorage("biofocus.ingestBaseURL") private var baseURLText = "http://127.0.0.1:8787"
     @AppStorage("biofocus.pairingToken") private var token = ""
+    @AppStorage("biofocus.certPin") private var certPin = ""
     @AppStorage("biofocus.autoSync") private var autoSync = true
+    @State private var pairingPaste = ""
 
     @StateObject private var sync = HealthKitSyncCoordinator.shared
     @State private var isBusy = false
@@ -20,10 +22,20 @@ struct ContentView: View {
                     SecureField("Pairing token", text: $token)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                    TextField("Certificate fingerprint", text: $certPin)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    TextField("Pairing QR text", text: $pairingPaste, axis: .vertical)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    Button("Apply pairing text") {
+                        applyPairingText()
+                    }
+                    .disabled(pairingPaste.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 } header: {
                     Text("Desktop pairing")
                 } footer: {
-                    Text("Copy Base URL and token from Desktop → Companion. Simulator: loopback. Physical iPhone: enable LAN on Desktop, then use the LAN Base URL — not 127.0.0.1.")
+                    Text("Simulator: http://127.0.0.1:8787. A real iPhone uses the https address from Desktop. Paste the QR text (four lines). A different certificate fingerprint is rejected.")
                 }
 
                 Section {
@@ -104,6 +116,17 @@ struct ContentView: View {
                 sync.refreshTypeBoard()
             }
         }
+    }
+
+    private func applyPairingText() {
+        guard let parsed = PairingQr.parse(pairingPaste) else {
+            sync.reportPairingError("Pairing text must be four lines starting with biofocus:1.")
+            return
+        }
+        baseURLText = parsed.url
+        token = parsed.token
+        certPin = parsed.pin ?? ""
+        pairingPaste = ""
     }
 
     @MainActor

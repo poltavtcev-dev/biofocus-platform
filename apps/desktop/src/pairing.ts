@@ -18,6 +18,8 @@ export type PairingTokenInfo = {
   ingestRunning: boolean;
   /** Why ingest is not running (UI-safe). */
   ingestError: string | null;
+  /** SHA-256 of the LAN certificate. Empty on loopback. */
+  certFingerprint: string | null;
 };
 
 type PairingPayload = {
@@ -36,6 +38,8 @@ type PairingPayload = {
   from_env?: boolean;
   qrSvg?: string;
   qr_svg?: string;
+  certFingerprint?: string | null;
+  cert_fingerprint?: string | null;
 };
 
 export type PairingView =
@@ -78,6 +82,8 @@ function normalize(payload: PairingPayload): PairingTokenInfo | null {
     restartRequired: Boolean(payload.restartRequired),
     ingestRunning: payload.ingestRunning ?? true,
     ingestError: payload.ingestError?.trim() || null,
+    certFingerprint:
+      (payload.certFingerprint ?? payload.cert_fingerprint ?? "").trim() || null,
   };
 }
 
@@ -189,7 +195,7 @@ export function companionStatusCopy(info: PairingTokenInfo): {
         tone: "ok",
         title: "Ready to pair",
         detail:
-          "Your iPhone must be on the same Wi‑Fi. Enter this Base URL and the token in the BioFocus Companion app.",
+          "Your iPhone must be on the same Wi‑Fi. The address is https. Scan the QR: it carries the token and the certificate fingerprint. A different certificate is rejected.",
       };
   }
 }
@@ -241,7 +247,7 @@ export function networkModeLabel(info: PairingTokenInfo): string {
 /** Calm, non-evaluative network copy (LAN opt-in / local only). */
 export function networkModeDetail(info: PairingTokenInfo): string {
   if (info.bindMode === "lan") {
-    return "Local network only — nothing leaves your Wi‑Fi. Every request still needs the token.";
+    return "Local network only, over TLS. Nothing leaves your Wi‑Fi. Every request still needs the token, and the phone pins the certificate fingerprint in the QR.";
   }
   return "Nothing is reachable from other devices while LAN is off.";
 }
@@ -257,15 +263,19 @@ export function mockPairingFromLocation(
   const lan = raw !== "lan_off";
   const info: PairingTokenInfo = {
     token: "0000000000000000000000000000000000000000000000000000000000mock",
-    ingestBaseUrl: lan && raw !== "no_address" ? "http://192.168.0.37:8787" : "http://127.0.0.1:8787",
+    ingestBaseUrl: lan && raw !== "no_address" ? "https://192.168.0.37:8787" : "http://127.0.0.1:8787",
     bindMode: raw === "lan_off" || raw === "restart" ? "loopback" : "lan",
-    baseUrlHints: raw === "no_address" ? [] : [lan ? "http://192.168.0.37:8787" : "http://127.0.0.1:8787"],
+    baseUrlHints: raw === "no_address" ? [] : [lan ? "https://192.168.0.37:8787" : "http://127.0.0.1:8787"],
     fromEnv: false,
     qrSvg: "<svg xmlns='http://www.w3.org/2000/svg' width='168' height='168'/>",
     lanConfigured: lan,
     restartRequired: raw === "restart",
     ingestRunning: raw !== "ingest_off",
     ingestError: raw === "ingest_off" ? "Phone sync is off: port 8787 is already in use." : null,
+    certFingerprint:
+      lan && raw !== "no_address" && raw !== "lan_off" && raw !== "restart"
+        ? "ab".repeat(32)
+        : null,
   };
   return { kind: "ready", info };
 }
@@ -287,6 +297,24 @@ export async function fetchPairingToken(): Promise<PairingView> {
     return {
       kind: "error",
       detail: text.trim() || "Could not load pairing token.",
+    };
+  }
+}
+
+/** Replaces the pairing token. The QR changes; the phone must pair again. */
+export async function rotatePairingToken(): Promise<PairingView> {
+  try {
+    const payload = await invoke<PairingPayload>("rotate_pairing_token");
+    const info = normalize(payload);
+    if (!info) {
+      return { kind: "error", detail: "Pairing data was incomplete." };
+    }
+    return { kind: "ready", info };
+  } catch (err) {
+    const text = err instanceof Error ? err.message : String(err);
+    return {
+      kind: "error",
+      detail: text.trim() || "Could not rotate the pairing token.",
     };
   }
 }
