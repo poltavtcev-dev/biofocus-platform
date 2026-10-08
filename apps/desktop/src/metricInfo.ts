@@ -166,6 +166,42 @@ export const METRIC_INFO: Record<string, MetricInfo> = {
     direction: "neutral",
     unit: "%",
   },
+  RestingHeartRate: {
+    name: "Resting heart rate",
+    what: "The latest resting heart rate, set next to your own recent median when there are enough days.",
+    from: "Resting heart-rate samples from the phone. The comparison needs five earlier days.",
+    direction: "neutral",
+  },
+  HrvVsBaseline: {
+    name: "Heart-rate variability",
+    what: "How today's variability compares with your own recent days. SDNN and RMSSD stay separate.",
+    from: "One method only, after five earlier days of that same method.",
+    direction: "neutral",
+  },
+  SleepStages: {
+    name: "Sleep stages",
+    what: "Time asleep, plus deep, REM and core shares when the source recorded stages. Otherwise total sleep only.",
+    from: "Sleep intervals from the phone.",
+    direction: "neutral",
+  },
+  NightSpO2: {
+    name: "Oxygen during sleep",
+    what: "Average and lowest oxygen saturation for the night, next to your own recent nights when there are enough of them.",
+    from: "Oxygen saturation samples. Shown for context only.",
+    direction: "neutral",
+  },
+  RespiratoryRate: {
+    name: "Breathing rate",
+    what: "Average and lowest breathing rate, next to your own recent nights when there are enough of them.",
+    from: "Breathing-rate samples. Shown for context only.",
+    direction: "neutral",
+  },
+  WristTemperature: {
+    name: "Wrist temperature",
+    what: "How far the night's wrist temperature sits from your own recent nights.",
+    from: "Wrist-temperature change from the watch. Shown for context only.",
+    direction: "neutral",
+  },
 };
 
 export function metricInfo(featureId: string): MetricInfo {
