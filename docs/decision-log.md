@@ -30,6 +30,7 @@
 | ADR-026 | 2026-08-12 | **Phase 25:** catalog Feature **`SustainedLoadIndicator`** = Feature-level **persistence** composite of **`StressIndex` + `FatigueIndex` + `MeetingDensity`** (schedule proxy); Feature cadence **15m / 1m** with **4h lookback** for prolonged-load math; output **0–100**; omit when both Stress and Fatigue absent; **renormalize** present slots (MeetingDensity optional); ADR-007 expected slots = 3; **no** new Observation / **no** migration; calm “prolonged load in this window” framing | PM-GATE-POST-P24 chose SustainedLoadIndicator; Stress / Fatigue / MeetingDensity long shipped. Prolonged persistence ≠ CognitiveLoad current demand. Personal self-tracking only | Clinical burnout / “you are burned out”; workplace surveillance scoring; new Observation families; rewriting Stress / Fatigue / MeetingDensity / CognitiveLoad; using CognitiveLoad as input; TypingRhythm / DeepFocusLikelihood / IDE / weather / App Store as P25 primary; PR during freeze; migration without approve |
 | ADR-027 | 2026-08-12 | **Phase 26:** **OSS Public Launch Hygiene** — SoT **`docs/19-oss-public-launch.md`**; packaging ops stay in **`docs/18-packaging-runbook.md`**; three launch layers (repo/docs hygiene → post–freeze `main` catch-up → notarized GitHub Release before public visibility); AGPLv3 Core open; personal self-tracking framing in public copy; **no** migration / **no** Feature math | PM-GATE-POST-P25; vision already links missing `19-oss…`; catalog math backlog empty of safe distinct Features; packaging runbook exists (ADR-012) | IDE plugin; weather ambient; App Store listing as primary; Companion polish-as-primary; TypingRhythm; DeepFocusLikelihood; precise GPS; new Observation/Feature math; Pattern Discovery expansion as primary; PR during freeze; cloud accounts/telemetry by default; secret/proprietary Feature formulas |
 | ADR-029 | 2026-08-31 | **Phase 28:** **Local device reliability (A+B)** — **(A)** Mac menubar always-on + opt-in Launch Agent / login item; ingest + collectors + Feature Worker while app process lives; **(B)** iPhone HealthKit buffer (durable queue + retry flush when Mac LAN-reachable); **catch-up replay** of Observations after offline gaps; existing `observations` SQLite on Mac; Bearer LAN ingest (ADR-005); **no** BioFocus cloud / **no** default telemetry | User approved local-only path (2026-08-31): product must work safely and deliver Pattern Discovery value without vendor cloud. Watches → HealthKit → phone queue → Mac compute. Mac must stay reachable in LAN when user opts in; phone holds data until flush. | BioFocus cloud relay / sync service; mandatory cloud account; compute Features on vendor servers; silent always-on `0.0.0.0`; mDNS auto-discovery (ADR-005 rejected); iCloud/third-party sync without separate opt-in ADR; new Observation SQLite outbox on Mac; busy-loop HK/TCP poll; clinical claims |
+| ADR-030 | 2026-10-08 | **Wearables v2:** Apple Watch and Xiaomi reach BioFocus **only through Apple Health on iPhone**. Additive `data_type`s + payload `src` (kind from bundle id / product type); **no** SQLite migration. Sync = anchored forward (new, late writes, deletions) + descending backfill. HRV `method` is `sdnn` or `rmssd` and the two never mix. Network ingest is an allowlist; `life_event_retraction` stays Mac-only. Source choice is **on read**. No medical claims. No unofficial Xiaomi/Zepp cloud API. | A real Health export showed almost no 2026 rows, zero HRV, and sleep collapsed to `in_bed`/`asleep`. Date-ascending sync and a strict start predicate drop late Xiaomi writes. Mi Fitness / Zepp Life do not export HRV, SpO2, or sleep stages to HealthKit — that limit is theirs. Watch and band must stay distinguishable without storing personal device names. | Unofficial Xiaomi/Zepp cloud API; converting RMSSD ↔ SDNN; summing steps from two sources; deleting Observation rows; watchOS or Android app in this ADR; writing HealthKit; clinical alerts; plain-text `source.name` / `HKDevice.name` in payloads |
 | ADR-028 | 2026-08-12 | **Phase 27:** **Pattern Discovery rule expansion** — add deterministic **InsightRule** / **RecommendationRule**s in `knowledge-engine` on **shipped** Features only; evaluate-on-read (ADR-008/009); **no** Insight/Recommendation SQLite store; E2 slate: `cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1`; **no** migration / **no** new Feature formulas | PM-GATE-POST-P26; north star Pattern Discovery; Phases 10–25 Features under-used by Knowledge; Feature-math backlog empty of safe nodes | New Feature catalog math; TypingRhythm; DeepFocusLikelihood; IDE; weather; App Store; Companion polish-as-primary; precise GPS; LLM-authored Insights/Recommendations; workplace surveillance framing; PR during freeze; migration / new Observation; claiming public launch Done / flipping visibility |
 
 ### ADR-007 detail — Feature confidence (v1)
@@ -2354,4 +2355,109 @@ Mac menubar (A) → ingest → SQLite observations → pipeline → Features →
 6. **New Mac SQLite outbox / sync tables** — rejected for v1.
 7. **Busy-loop HealthKit or TCP polling** — rejected.
 8. **Clinical / surveillance framing** in sync UX — rejected.
+
+### ADR-030 detail — Wearables v2 (Apple Watch + Xiaomi via HealthKit)
+
+> **Relationship:** ADR-016/018 already ingest `heart_rate`, `hrv`, `step_count`, `active_energy`, `sleep_interval`, `oxygen_saturation` from HealthKit. ADR-029 keeps the phone queue and Mac as the only compute. **This ADR** locks how those (and new) types are synced, labeled, validated, and chosen when two devices write the same window. Implementation is phased (`wearables/p1` … `p5`). P0 ships this ADR and synthetic fixtures only.
+
+#### What HealthKit can actually deliver
+
+| Device path | Expect on the Mac | Do not expect |
+| :--- | :--- | :--- |
+| Apple Watch → Health | HR, resting HR, HRV **SDNN**, SpO2 (model/region), respiratory rate, sleep **stages**, wrist temperature, VO2max, workouts, steps, energy | A BioFocus watchOS app (Watch already writes Health) |
+| Xiaomi via Mi Fitness or Zepp Life → Health | HR, steps, energy, coarse sleep; sometimes resting HR | HRV, SpO2, and sleep stages. Those apps do not write them. This is not a BioFocus bug |
+| Unofficial Xiaomi/Zepp cloud | — | **Out of scope.** No credentials, no RMSSD pasted into an SDNN field |
+
+UI copy must say when a type is absent (“HRV is not visible from any source”). HealthKit returns an empty query when read permission is missing; it does not return an error.
+
+#### Payload `src` (every health Observation)
+
+`provider_id` stays `com.biofocus.applehealth`.
+
+```json
+"src": {
+  "bundle_id": "com.apple.health",
+  "app_name": "Health",
+  "device_model": "Watch",
+  "device_manufacturer": "Apple Inc.",
+  "hardware_version": "Watch7,1",
+  "product_type": "Watch7,1",
+  "os_version": "11.0",
+  "was_user_entered": false,
+  "kind": "apple_watch"
+}
+```
+
+`kind` is one of `apple_watch`, `iphone`, `xiaomi_mi_fitness`, `zepp_life`, `other_app`, `manual`.
+
+| Signal | kind |
+| :--- | :--- |
+| bundle `com.xiaomi.wearable` (and Mi Fitness successors listed in the fixture README) | `xiaomi_mi_fitness` |
+| bundle `com.huami.watch` or `com.xiaomi.hm.health` | `zepp_life` |
+| `was_user_entered` | `manual` |
+| `product_type` / hardware starts with `Watch` and bundle is Apple Health | `apple_watch` |
+| `product_type` starts with `iPhone` | `iphone` |
+| anything else | `other_app` |
+
+Do **not** store `source.name` or `HKDevice.name` (they often contain a personal name). No name in logs or reports. Optional later: `device_label_hash` (SHA-256 with a local salt). Not required for P0 fixtures.
+
+#### Sync (companion) — locked behavior, not this commit’s code
+
+Two channels per type. State is one file, not scattered `UserDefaults` date anchors.
+
+1. **Forward:** `HKAnchoredObjectQuery`, `startDate >= installTime − 30d`, persisted `HKQueryAnchor`, pages of 500. Returns new samples, **late writes** (start before the old date anchor), and `deletedObjects`.
+2. **Backfill:** `HKSampleQuery` with `endDate` descending, pages of 500. First the last 30 days, then history (365 days or all — setting). Type order: HRV, resting HR, sleep, SpO2, respiratory rate, HR, then steps and energy.
+3. `Observation.id` = HealthKit `sample.uuid`.
+4. Deletion → `data_type: "source_deletion"` `{ "target_id" }` from `provider_id = com.biofocus.applehealth` only. Read-side filter, same idea as `life_event_retraction`. No row deletes.
+5. Background delivery for every registry type; observers registered at launch; completion handler always called. Backfill may use a processing task.
+
+#### New `data_type`s (additive; schema v1 frozen)
+
+Formalize existing pass-through types and add the rest. Old payloads stay valid.
+
+| data_type | Payload (minimum) |
+| :--- | :--- |
+| `heart_rate`, `resting_heart_rate`, `walking_heart_rate_average` | `bpm`, `src` |
+| `hrv` | `method`: `sdnn` \| `rmssd`, plus `sdnn_ms` and/or `rmssd_ms`, `src`. Never mix methods in one Feature |
+| `oxygen_saturation` | existing fields + `src` |
+| `respiratory_rate` | `breaths_per_min`, `src` |
+| `sleeping_wrist_temperature` | `celsius` (delta, −5…+5), `src` |
+| `vo2_max` | `ml_kg_min`, `src` |
+| `sleep_interval` | stage v2 adds `asleep_core`, `asleep_deep`, `asleep_rem`. v1 `in_bed`, `awake`, `asleep`, `unknown` stay valid |
+| `workout` | `activity_type`, `start`, `end`, optional `kcal`, `distance_m`, `avg_hr`, `src` |
+| `exercise_time`, `stand_time` | `minutes`, optional `window_secs`, `src` |
+| `stand_hour`, `mindful_session` | `start`, `end`, `src` |
+| `distance_walking_running` | `meters`, `src` |
+| `basal_energy` | `kcal`, `src` |
+| `source_deletion` | `target_id` |
+
+Ranges (outside → skip, do not panic): HR 25–250, resting HR 25–150, HRV 1–300 ms, SpO2 50–100, respiratory rate 4–40, wrist-temp delta −5…+5 °C, VO2max 10–90.
+
+#### Ingest allowlist
+
+From the companion, accept only the health types above, `life_event`, and `source_deletion` (applehealth → applehealth only). Reject with `403 forbidden_data_type`: `life_event_retraction`, `context_window`, `keystrokes`, `git_activity`, `browser_category`, `notification_event`, `calendar_event`, `ambient_light`, `now_playing`. Body cap 2 MB and 1000 observations (`413`). Plain HTTP on LAN stays (ADR-005); document the open-token risk. TLS pinning is optional later work, not this ADR’s build.
+
+#### Read-side source choice
+
+Store every row. Before feature-engine, pick one source per window. Default order: `apple_watch > xiaomi_mi_fitness > zepp_life > iphone > other_app > manual`, overridable in `~/.biofocus/source-priority.toml`. Cumulative types (steps, energy, distance, exercise time): one source, do not sum. Discrete types (HR, HRV, SpO2, respiratory rate): keep the highest priority present in the window. Sleep: one night from the priority source; stages only if that source wrote them.
+
+#### Features and copy (later phases)
+
+Personal baseline (median / IQR, ≥ 5 days before an HRV emit). No absolute SDNN thresholds copied from the RMSSD map. Confidence may scale by `src.kind`. Insight text compares the person with their own week. Forbidden words in insight copy: apnea, arrhythmia, disease, illness, burnout, and any diagnosis. “Stress” as a clinical state is forbidden; the existing Feature id `StressIndex` stays a catalog name, not user-facing diagnosis copy.
+
+#### Fixtures
+
+Synthetic JSON under `crates/bio-spec/tests/fixtures/wearables/`. Not a user export. Numbers and ids are invented. A shape test loads them; it does not implement sync, validators, or Features.
+
+#### Rejected alternatives
+
+1. Unofficial Xiaomi / Zepp cloud APIs or stored vendor passwords.
+2. Writing RMSSD into `sdnn_ms` or converting between them.
+3. Medical alerts (apnea, arrhythmia, illness).
+4. A watchOS app or an Android app in this decision.
+5. Writing into HealthKit.
+6. Summing steps or energy from Watch and a band in one window.
+7. Deleting Observation rows when HealthKit deletes a sample.
+8. Storing personal device names.
+9. A SQLite migration for source metadata.
 
