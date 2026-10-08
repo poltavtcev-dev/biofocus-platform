@@ -1,10 +1,10 @@
 //! Immutable append/read API for `observations` (`docs/04-storage.md`).
 
 use bio_spec::{
-    Confidence, DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, DATA_TYPE_SOURCE_DELETION,
-    DataType, Observation, ObservationId, UnixTimestamp,
+    Confidence, DataType, Observation, ObservationId, UnixTimestamp, DATA_TYPE_LIFE_EVENT,
+    DATA_TYPE_LIFE_EVENT_RETRACTION, DATA_TYPE_SOURCE_DELETION,
 };
-use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, params};
+use rusqlite::{params, Connection, ErrorCode, OptionalExtension, Row};
 use uuid::Uuid;
 
 use crate::clock::unix_now_secs;
@@ -159,6 +159,45 @@ impl<'db> ObservationRepository<'db> {
         let mut stmt = self.conn.prepare(&sql)?;
         let rows = stmt.query_map(
             params![start.as_secs(), end.as_secs()],
+            read_observation_columns,
+        )?;
+        collect_observations(rows)
+    }
+
+    /// Lists one `data_type` inside an inclusive timestamp range.
+    ///
+    /// Retracted Life Events and deleted wearable rows are excluded, same as
+    /// [`Self::list_by_time_range`].
+    pub fn list_by_data_type_in_range(
+        &self,
+        data_type: &str,
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+    ) -> StorageResult<Vec<Observation>> {
+        if end.as_secs() < start.as_secs() {
+            return Err(StorageError::InvalidTimeRange {
+                start: start.as_secs(),
+                end: end.as_secs(),
+            });
+        }
+        let mut filter = String::new();
+        if data_type != DATA_TYPE_LIFE_EVENT_RETRACTION {
+            filter.push_str(" AND ");
+            filter.push_str(&retraction_filter_sql());
+        }
+        if data_type != DATA_TYPE_SOURCE_DELETION {
+            filter.push_str(" AND ");
+            filter.push_str(&source_deletion_filter_sql());
+        }
+        let sql = format!(
+            "SELECT id, timestamp, provider_id, data_type, payload, confidence
+             FROM observations
+             WHERE data_type = ?1 AND timestamp >= ?2 AND timestamp <= ?3{filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(
+            params![data_type, start.as_secs(), end.as_secs()],
             read_observation_columns,
         )?;
         collect_observations(rows)

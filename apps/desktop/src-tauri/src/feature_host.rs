@@ -5,7 +5,13 @@
 //! Shutdown stops the worker with the app (idle freeze after stop).
 
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use bio_spec::{
+    UnixTimestamp, DATA_TYPE_HRV, DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_RESPIRATORY_RATE,
+    DATA_TYPE_RESTING_HEART_RATE, DATA_TYPE_SLEEPING_WRIST_TEMPERATURE, DATA_TYPE_SLEEP_INTERVAL,
+};
+use pipeline::SourcePriority;
 use runtime::{
     feature_source_error, spawn_feature_worker, FeatureWorkerConfig, FeatureWorkerHandle,
     Observation, ObservationSource, DEFAULT_FEATURE_BATCH_LIMIT,
@@ -104,6 +110,7 @@ pub fn start_feature_host<R: Runtime>(app: &AppHandle<R>) {
         }
     };
 
+    let history = load_vital_history(&db);
     let source = match SqliteObservationSource::open_at_tip(db) {
         Ok(source) => source,
         Err(err) => {
@@ -114,7 +121,8 @@ pub fn start_feature_host<R: Runtime>(app: &AppHandle<R>) {
 
     let alert_state = AlertState::new();
     let snapshot_state = SnapshotState::new();
-    let hook = CatalogAlertHook::new(alert_state.share(), snapshot_state.share());
+    let mut hook = CatalogAlertHook::new(alert_state.share(), snapshot_state.share());
+    hook.seed_vitals(history);
     let handle = spawn_feature_worker(source, hook, FeatureWorkerConfig::default());
     info!("feature worker armed (poll ≥1s when idle; pipeline → catalog alert hook)");
 
@@ -123,6 +131,41 @@ pub fn start_feature_host<R: Runtime>(app: &AppHandle<R>) {
     app.manage(FeatureHost {
         worker: Mutex::new(Some(handle)),
     });
+}
+
+const VITAL_HISTORY_SECS: i64 = 28 * 24 * 60 * 60;
+
+fn load_vital_history(db: &Database) -> Vec<Observation> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs() as i64)
+        .unwrap_or(0);
+    if now <= 0 {
+        return Vec::new();
+    }
+    let start = UnixTimestamp::from_secs(now.saturating_sub(VITAL_HISTORY_SECS));
+    let end = UnixTimestamp::from_secs(now);
+    let repo = ObservationRepository::new(db);
+    let types = [
+        DATA_TYPE_RESTING_HEART_RATE,
+        DATA_TYPE_HRV,
+        DATA_TYPE_SLEEP_INTERVAL,
+        DATA_TYPE_OXYGEN_SATURATION,
+        DATA_TYPE_RESPIRATORY_RATE,
+        DATA_TYPE_SLEEPING_WRIST_TEMPERATURE,
+    ];
+    let mut all = Vec::new();
+    for data_type in types {
+        match repo.list_by_data_type_in_range(data_type, start, end) {
+            Ok(mut rows) => all.append(&mut rows),
+            Err(err) => warn!(
+                error = %err.public_message(),
+                data_type,
+                "vital history load skipped"
+            ),
+        }
+    }
+    pipeline::select_sources(all, &SourcePriority::load_installed())
 }
 
 /// Stops the Feature Worker if it was started (no-op when manage state absent).

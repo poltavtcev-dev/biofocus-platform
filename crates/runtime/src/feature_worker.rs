@@ -7,9 +7,9 @@ use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-use bio_spec::Observation;
+use bio_spec::{Observation, ObservationId};
 use pipeline::{
-    DedupeState, NormalizedBatch, PipelineError, SourcePriority, run_quality_pipeline_with,
+    run_quality_pipeline_with, DedupeState, NormalizedBatch, PipelineError, SourcePriority,
 };
 use tracing::{debug, error, info, warn};
 
@@ -33,6 +33,12 @@ pub trait ObservationSource: Send {
 pub trait FeatureHook: Send {
     /// Called with a successfully normalized batch (may be empty after skip/dedupe).
     fn on_normalized(&mut self, batch: &NormalizedBatch);
+
+    /// Target ids removed by a `source_deletion` marker in this poll.
+    ///
+    /// Default is a no-op. The desktop hook drops them from the vital history
+    /// buffer, because those rows were loaded at startup and are not in the batch.
+    fn on_source_deletions(&mut self, _target_ids: &[ObservationId]) {}
 }
 
 /// No-op Feature Engine hook (logs count at debug).
@@ -166,9 +172,24 @@ fn process_batch<H: FeatureHook>(
     priority: &SourcePriority,
     hook: &mut H,
 ) -> Result<(), PipelineError> {
+    let deletions = source_deletion_targets(&batch);
+    hook.on_source_deletions(&deletions);
     let normalized = run_quality_pipeline_with(batch, dedupe, priority)?;
     hook.on_normalized(&normalized);
     Ok(())
+}
+
+fn source_deletion_targets(batch: &[Observation]) -> Vec<ObservationId> {
+    batch
+        .iter()
+        .filter(|obs| obs.data_type == bio_spec::DATA_TYPE_SOURCE_DELETION)
+        .filter_map(|obs| {
+            obs.payload
+                .get("target_id")
+                .and_then(|value| value.as_str())
+                .and_then(|id| ObservationId::parse_str(id).ok())
+        })
+        .collect()
 }
 
 /// Maps a displayable source failure into [`RuntimeError`].

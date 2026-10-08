@@ -10,7 +10,8 @@
 use std::sync::{Arc, Mutex};
 
 use feature_engine::{
-    map_alert_level, register_catalog_v1, AlertLevel, FeatureEngine, FeatureSnapshot, WINDOW_SECS,
+    map_alert_level, register_catalog_v1, register_wearable_vitals_v1, AlertLevel, FeatureEngine,
+    FeatureSnapshot, WINDOW_SECS,
 };
 use pipeline::NormalizedBatch;
 use runtime::{FeatureHook, Observation};
@@ -40,10 +41,7 @@ impl AlertState {
     /// Current level for `get_status` (Green if lock poisoned).
     #[must_use]
     pub fn current(&self) -> AlertLevel {
-        self.inner
-            .lock()
-            .map(|g| *g)
-            .unwrap_or(AlertLevel::Green)
+        self.inner.lock().map(|g| *g).unwrap_or(AlertLevel::Green)
     }
 }
 
@@ -91,11 +89,16 @@ impl Default for SnapshotState {
 }
 
 /// Feature Worker hook: rolling Observation snapshot → catalog → alert + cache.
+///
+/// Wearable vitals keep a separate 28-day buffer so a personal median does not
+/// stretch the 15-minute window used by the rest of the catalog.
 pub struct CatalogAlertHook {
     level: Arc<Mutex<AlertLevel>>,
     snapshot: Arc<Mutex<FeatureSnapshot>>,
     recent: Vec<Observation>,
+    vitals: Vec<Observation>,
     engine: FeatureEngine,
+    vital_engine: FeatureEngine,
 }
 
 impl CatalogAlertHook {
@@ -106,12 +109,28 @@ impl CatalogAlertHook {
         if let Err(err) = register_catalog_v1(&mut engine) {
             warn!(error = %err, "alert hook: catalog register failed; alerts stay green");
         }
+        let mut vital_engine = FeatureEngine::new();
+        if let Err(err) = register_wearable_vitals_v1(&mut vital_engine) {
+            warn!(error = %err, "alert hook: wearable vitals register failed");
+        }
         Self {
             level,
             snapshot,
             recent: Vec::new(),
+            vitals: Vec::new(),
             engine,
+            vital_engine,
         }
+    }
+
+    /// Loads already-stored vital Observations (source choice already applied).
+    pub(crate) fn seed_vitals(&mut self, observations: Vec<Observation>) {
+        if observations.is_empty() {
+            return;
+        }
+        self.vitals = observations;
+        self.prune_vitals();
+        self.refresh();
     }
 
     fn prune_recent(&mut self) {
@@ -126,6 +145,70 @@ impl CatalogAlertHook {
         if self.recent.len() > HARD_CAP {
             let excess = self.recent.len() - HARD_CAP;
             self.recent.drain(0..excess);
+        }
+    }
+
+    fn prune_vitals(&mut self) {
+        let Some(max_ts) = self.vitals.iter().map(|o| o.timestamp.as_secs()).max() else {
+            return;
+        };
+        let cutoff = max_ts.saturating_sub(VITAL_HISTORY_SECS);
+        self.vitals
+            .retain(|o| is_vital_history(&o.data_type) && o.timestamp.as_secs() >= cutoff);
+        const VITAL_CAP: usize = 12_000;
+        if self.vitals.len() > VITAL_CAP {
+            self.vitals.sort_by_key(|o| o.timestamp.as_secs());
+            let excess = self.vitals.len() - VITAL_CAP;
+            self.vitals.drain(0..excess);
+        }
+    }
+
+    fn refresh(&mut self) {
+        let mut output = match self.engine.run(&self.recent) {
+            Ok(output) => output,
+            Err(err) => {
+                warn!(error = %err, "alert hook: feature engine run failed");
+                return;
+            }
+        };
+        match self.vital_engine.run(&self.vitals) {
+            Ok(vital) => output.features.extend(vital.features),
+            Err(err) => warn!(error = %err, "alert hook: wearable vitals run failed"),
+        }
+        let next = map_alert_level(&output);
+        let snap = FeatureSnapshot::from_engine_output(&output);
+        if let Ok(mut guard) = self.level.lock() {
+            if *guard != next {
+                debug!(alert = next.as_str(), "alert level updated");
+            }
+            *guard = next;
+        }
+        if let Ok(mut guard) = self.snapshot.lock() {
+            *guard = snap;
+        }
+    }
+}
+
+const VITAL_HISTORY_SECS: i64 = 28 * 24 * 60 * 60;
+
+fn is_vital_history(data_type: &str) -> bool {
+    matches!(
+        data_type,
+        bio_spec::DATA_TYPE_RESTING_HEART_RATE
+            | bio_spec::DATA_TYPE_HRV
+            | bio_spec::DATA_TYPE_SLEEP_INTERVAL
+            | bio_spec::DATA_TYPE_OXYGEN_SATURATION
+            | bio_spec::DATA_TYPE_RESPIRATORY_RATE
+            | bio_spec::DATA_TYPE_SLEEPING_WRIST_TEMPERATURE
+    )
+}
+
+fn absorb_vitals(vitals: &mut Vec<Observation>, batch: &[Observation]) {
+    for obs in batch.iter().filter(|o| is_vital_history(&o.data_type)) {
+        if let Some(existing) = vitals.iter_mut().find(|kept| kept.id == obs.id) {
+            *existing = obs.clone();
+        } else {
+            vitals.push(obs.clone());
         }
     }
 }
@@ -150,30 +233,22 @@ pub(crate) fn absorb_batch(recent: &mut Vec<Observation>, batch: &[Observation])
 }
 
 impl FeatureHook for CatalogAlertHook {
+    fn on_source_deletions(&mut self, target_ids: &[bio_spec::ObservationId]) {
+        if target_ids.is_empty() {
+            return;
+        }
+        self.vitals.retain(|o| !target_ids.contains(&o.id));
+        self.recent.retain(|o| !target_ids.contains(&o.id));
+    }
+
     fn on_normalized(&mut self, batch: &NormalizedBatch) {
         if !batch.is_empty() {
             absorb_batch(&mut self.recent, batch.observations());
+            absorb_vitals(&mut self.vitals, batch.observations());
             self.prune_recent();
+            self.prune_vitals();
         }
-
-        match self.engine.run(&self.recent) {
-            Ok(output) => {
-                let next = map_alert_level(&output);
-                let snap = FeatureSnapshot::from_engine_output(&output);
-                if let Ok(mut guard) = self.level.lock() {
-                    if *guard != next {
-                        debug!(alert = next.as_str(), "alert level updated");
-                    }
-                    *guard = next;
-                }
-                if let Ok(mut guard) = self.snapshot.lock() {
-                    *guard = snap;
-                }
-            }
-            Err(err) => {
-                warn!(error = %err, "alert hook: feature engine run failed");
-            }
-        }
+        self.refresh();
     }
 }
 
@@ -214,11 +289,8 @@ mod tests {
         let snapshots = SnapshotState::new();
         let mut hook = CatalogAlertHook::new(state.share(), snapshots.share());
         let mut dedupe = DedupeState::new();
-        let batch = run_quality_pipeline(
-            vec![hrv(1, 1500, 25.0), hrv(2, 1800, 25.0)],
-            &mut dedupe,
-        )
-        .expect("pipeline");
+        let batch = run_quality_pipeline(vec![hrv(1, 1500, 25.0), hrv(2, 1800, 25.0)], &mut dedupe)
+            .expect("pipeline");
         // RMSSD 25 → stress ≈ (70-25)/(70-15)*100 ≈ 81.8 > 60 → Yellow (no High_Stress span).
         hook.on_normalized(&batch);
         assert_eq!(state.current(), AlertLevel::Yellow);
@@ -285,5 +357,35 @@ mod tests {
         absorb_batch(&mut recent, &[marker]);
         assert_eq!(recent.len(), 1, "walk + marker gone, HRV kept");
         assert_eq!(recent[0].id, Uuid::from_u128(1));
+    }
+
+    #[test]
+    fn seeded_resting_heart_rate_stays_in_the_snapshot() {
+        let state = AlertState::new();
+        let snapshots = SnapshotState::new();
+        let mut hook = CatalogAlertHook::new(state.share(), snapshots.share());
+        let sample = Observation::try_new(
+            Uuid::from_u128(7),
+            UnixTimestamp::from_secs(1_700_000_000),
+            "com.biofocus.applehealth",
+            bio_spec::DATA_TYPE_RESTING_HEART_RATE,
+            json!({ "bpm": 58.0, "src": { "kind": "apple_watch" } }),
+            1.0,
+        )
+        .expect("rhr");
+        hook.seed_vitals(vec![sample]);
+        assert!(snapshots
+            .current()
+            .features
+            .iter()
+            .any(|f| f.feature_id == "RestingHeartRate"));
+
+        hook.on_source_deletions(&[Uuid::from_u128(7)]);
+        hook.on_normalized(&pipeline::NormalizedBatch::from_selected(Vec::new(), 0));
+        assert!(snapshots
+            .current()
+            .features
+            .iter()
+            .all(|f| f.feature_id != "RestingHeartRate"));
     }
 }
