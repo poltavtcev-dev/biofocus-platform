@@ -19,7 +19,7 @@ pub use db::Database;
 pub use error::{StorageError, StorageResult};
 pub use migrate::SCHEMA_VERSION;
 pub use observation_repo::{ObservationCreated, ObservationRepository};
-pub use paths::{default_db_path, BIOFOCUS_DATA_DIR, DEFAULT_DB_FILE_NAME};
+pub use paths::{BIOFOCUS_DATA_DIR, DEFAULT_DB_FILE_NAME, default_db_path};
 
 pub use bio_spec::CRATE_NAME as SPEC_CRATE_NAME;
 

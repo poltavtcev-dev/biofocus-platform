@@ -96,11 +96,10 @@ mod tests {
 
     #[test]
     fn from_probe_includes_lan_hints() {
-        let advertise = AdvertiseInfo::for_bind_with(
-            crate::config::INGEST_LAN_BIND_HOST,
-            8787,
-            || vec![std::net::Ipv4Addr::new(192, 168, 1, 10)],
-        );
+        let advertise =
+            AdvertiseInfo::for_bind_with(crate::config::INGEST_LAN_BIND_HOST, 8787, || {
+                vec![std::net::Ipv4Addr::new(192, 168, 1, 10)]
+            });
         let status = StatusResponse::from_probe("0.1.0", Ok(()), &advertise);
         assert_eq!(status.bind_mode, BindMode::Lan);
         assert_eq!(

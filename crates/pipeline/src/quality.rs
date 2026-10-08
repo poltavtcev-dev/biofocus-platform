@@ -2,10 +2,10 @@
 
 use bio_spec::Observation;
 
-use crate::dedupe::{dedupe_accepted, DedupeState};
-use crate::intake::accept_owned;
-use crate::normalize::{normalize_deduped, NormalizedBatch};
 use crate::PipelineResult;
+use crate::dedupe::{DedupeState, dedupe_accepted};
+use crate::intake::accept_owned;
+use crate::normalize::{NormalizedBatch, normalize_deduped};
 
 /// Run intake → dedupe → normalize on an owned Observation batch.
 ///

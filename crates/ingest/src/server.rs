@@ -7,25 +7,25 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
-use crate::config::{IngestConfig, INGEST_BIND_HOST};
+use crate::config::{INGEST_BIND_HOST, IngestConfig};
 use crate::error::{IngestError, IngestResult};
-use crate::routes::{ingest_router, IngestState};
+use crate::routes::{IngestState, ingest_router};
 
 /// Binds a TCP listener to `host:port`.
 ///
 /// Port `0` requests an ephemeral free port (useful in tests).
 pub async fn bind_host(host: Ipv4Addr, port: u16) -> IngestResult<(TcpListener, SocketAddr)> {
     let addr = SocketAddr::V4(SocketAddrV4::new(host, port));
-    let listener = TcpListener::bind(addr).await.map_err(|source| IngestError::Bind {
-        addr: addr.to_string(),
-        source,
-    })?;
-    let local = listener
-        .local_addr()
+    let listener = TcpListener::bind(addr)
+        .await
         .map_err(|source| IngestError::Bind {
             addr: addr.to_string(),
             source,
         })?;
+    let local = listener.local_addr().map_err(|source| IngestError::Bind {
+        addr: addr.to_string(),
+        source,
+    })?;
     Ok((listener, local))
 }
 
@@ -39,9 +39,7 @@ pub async fn bind_loopback(port: u16) -> IngestResult<(TcpListener, SocketAddr)>
 /// Serves ingest on an already-bound listener until the process ends.
 pub async fn serve_listener(listener: TcpListener, state: IngestState) -> IngestResult<()> {
     let app = ingest_router(state);
-    axum::serve(listener, app)
-        .await
-        .map_err(IngestError::Serve)
+    axum::serve(listener, app).await.map_err(IngestError::Serve)
 }
 
 /// Binds per [`IngestConfig::bind_host`] and serves until `shutdown` receives a value.

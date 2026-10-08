@@ -16,7 +16,11 @@ fn open_temp_file_enables_wal_and_normal_sync() {
 #[test]
 fn open_creates_missing_parent_directories() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let path = dir.path().join("nested").join("data").join("biofocus_main.db");
+    let path = dir
+        .path()
+        .join("nested")
+        .join("data")
+        .join("biofocus_main.db");
 
     let db = Database::open(&path).expect("open nested path");
     assert!(path.exists());

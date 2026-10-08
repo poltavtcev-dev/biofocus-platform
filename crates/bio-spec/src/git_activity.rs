@@ -80,13 +80,11 @@ pub fn validate_git_activity_payload(payload: &JsonValue) -> SpecResult<()> {
             JsonValue::Number(n) => n
                 .as_u64()
                 .or_else(|| {
-                    n.as_i64()
-                        .and_then(|i| u64::try_from(i).ok())
-                        .or_else(|| {
-                            n.as_f64()
-                                .filter(|f| f.is_finite() && *f >= 0.0 && f.fract() == 0.0)
-                                .map(|f| f as u64)
-                        })
+                    n.as_i64().and_then(|i| u64::try_from(i).ok()).or_else(|| {
+                        n.as_f64()
+                            .filter(|f| f.is_finite() && *f >= 0.0 && f.fract() == 0.0)
+                            .map(|f| f as u64)
+                    })
                 })
                 .ok_or_else(|| SpecError::InvalidGitActivityPayload {
                     reason: "event_count must be a positive integer".to_owned(),

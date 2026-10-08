@@ -2,8 +2,8 @@
 
 use rusqlite::Connection;
 
-use crate::clock::unix_now_secs;
 use crate::StorageResult;
+use crate::clock::unix_now_secs;
 
 /// Current schema version applied by this crate.
 pub const SCHEMA_VERSION: u32 = 1;

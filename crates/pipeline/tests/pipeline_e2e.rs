@@ -7,10 +7,11 @@ use std::path::PathBuf;
 
 use bio_spec::{FeatureValue, Observation, Severity};
 use feature_engine::{
-    register_catalog_v1, FeatureEngine, CONTEXT_SWITCH_RATE_ID, FATIGUE_INDEX_ID, FOCUS_SCORE_ID,
+    CONTEXT_SWITCH_RATE_ID, FATIGUE_INDEX_ID, FOCUS_SCORE_ID, FeatureEngine,
     HIGH_STRESS_MIN_DURATION_SECS, HIGH_STRESS_SIGNAL_TYPE, HIGH_STRESS_THRESHOLD, STRESS_INDEX_ID,
+    register_catalog_v1,
 };
-use pipeline::{run_quality_pipeline, DedupeState, PipelineStage};
+use pipeline::{DedupeState, PipelineStage, run_quality_pipeline};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -116,7 +117,10 @@ fn e2e_fixture_yields_features_and_high_stress() {
         stress > HIGH_STRESS_THRESHOLD,
         "expected elevated StressIndex, got {stress}"
     );
-    assert!((stress - 100.0).abs() < 1e-6, "RMSSD 15 → stress 100, got {stress}");
+    assert!(
+        (stress - 100.0).abs() < 1e-6,
+        "RMSSD 15 → stress 100, got {stress}"
+    );
 
     let stress_feats = scalar_features(&output, STRESS_INDEX_ID);
     let stress_feat = stress_feats.last().expect("stress feat");
@@ -131,8 +135,7 @@ fn e2e_fixture_yields_features_and_high_stress() {
     assert_eq!(sig.signal_type, HIGH_STRESS_SIGNAL_TYPE);
     assert_eq!(sig.severity, Severity::High);
     assert!(
-        sig.timestamp_end.as_secs() - sig.timestamp_start.as_secs()
-            > HIGH_STRESS_MIN_DURATION_SECS
+        sig.timestamp_end.as_secs() - sig.timestamp_start.as_secs() > HIGH_STRESS_MIN_DURATION_SECS
     );
 }
 
