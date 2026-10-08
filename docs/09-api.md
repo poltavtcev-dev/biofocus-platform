@@ -73,6 +73,25 @@ Same shape when the channel is full on the **first** item (`accepted: 0`). Colle
 - **Host:** Desktop starts ingest on app launch via `IngestConfig::load()` (pairing file / `BIOFOCUS_INGEST_TOKEN`) and stops accept + persist worker on exit.
 - **Read the hint:** `curl -s http://127.0.0.1:8787/v1/status` (or the LAN URL once known) → use `base_url_hints[0]` as companion ingest base. Pairing IPC exposes the same fields (camelCase) — see [`get_pairing_token`](#get_pairing_token-p2-e3-t2).
 
+### `POST /v1/companion/status`
+
+- **Description:** Companion backfill progress for the Dashboard «Источники данных» tab. Not an Observation. Nothing is written to SQLite.
+- **Auth:** `Authorization: Bearer <pairing token>` (same as ingest).
+- **Body:** exactly these fields. Any extra key (including `bpm`, `payload`, sample ids) → `400 invalid_companion_status`.
+
+```json
+{"phase":"recent","types_ok":6,"types_empty":2,"types_total":18,"pending":3}
+```
+
+| Field | Rule |
+| :--- | :--- |
+| `phase` | `idle` \| `recent` \| `history` \| `done` |
+| `types_ok`, `types_empty` | ≤ `types_total` |
+| `types_total` | ≤ 64 |
+| `pending` | queue length, ≤ 1_000_000 |
+
+- **Response:** `200 {"status":"ok"}`. Missing token → `401`.
+
 ---
 
 ## 2. Desktop Tauri IPC (Phase 1)
