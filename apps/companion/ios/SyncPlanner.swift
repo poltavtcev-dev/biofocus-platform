@@ -175,6 +175,114 @@ enum ObserverFinish {
     }
 }
 
+enum TypeAvailability {
+    static let ok = "ok"
+    static let noData = "no_data"
+    static let noPermission = "no_permission"
+    static let unknown = "unknown"
+}
+
+struct CompanionTypeRow: Identifiable, Equatable {
+    var identifier: String
+    var label: String
+    var status: String
+    var id: String { identifier }
+}
+
+/// Progress the phone shows and posts. Counts only — no sample values.
+enum CompanionStatusBoard {
+    static func label(for identifier: String) -> String {
+        switch identifier {
+        case HealthTypeRegistry.hrvSDNN: return "HRV"
+        case HealthTypeRegistry.restingHeartRate: return "Пульс покоя"
+        case HealthTypeRegistry.heartRate: return "Пульс"
+        case HealthTypeRegistry.walkingHeartRate: return "Пульс при ходьбе"
+        case HealthTypeRegistry.oxygenSaturation: return "Кислород"
+        case HealthTypeRegistry.respiratoryRate: return "Дыхание"
+        case HealthTypeRegistry.wristTemperature: return "Температура запястья"
+        case HealthTypeRegistry.vo2Max: return "VO₂max"
+        case HealthTypeRegistry.sleep: return "Сон"
+        case HealthTypeRegistry.stepCount: return "Шаги"
+        case HealthTypeRegistry.workout: return "Тренировки"
+        case HealthTypeRegistry.activeEnergy: return "Активная энергия"
+        case HealthTypeRegistry.basalEnergy: return "Базовая энергия"
+        case HealthTypeRegistry.distance: return "Дистанция"
+        case HealthTypeRegistry.exerciseTime: return "Упражнения"
+        case HealthTypeRegistry.standTime: return "Стоя"
+        case HealthTypeRegistry.standHour: return "Часы стоя"
+        case HealthTypeRegistry.mindfulSession: return "Осознанность"
+        default: return identifier
+        }
+    }
+
+    static func statusText(_ availability: String) -> String {
+        switch availability {
+        case TypeAvailability.ok: return "OK"
+        case TypeAvailability.noData: return "нет данных"
+        case TypeAvailability.noPermission: return "нет разрешения?"
+        default: return "ещё не проверяли"
+        }
+    }
+
+    static func note(hadSamples: Bool, authDenied: Bool) -> String {
+        if authDenied { return TypeAvailability.noPermission }
+        if hadSamples { return TypeAvailability.ok }
+        return TypeAvailability.noData
+    }
+
+    /// An empty page does not wipe a type that already arrived. Denied access does.
+    static func merge(previous: String?, next: String) -> String {
+        if next == TypeAvailability.noPermission { return next }
+        if previous == TypeAvailability.ok && next == TypeAvailability.noData {
+            return TypeAvailability.ok
+        }
+        return next
+    }
+
+    static func phase(cursors: [String: String]) -> String {
+        let phases = Array(cursors.values)
+        if phases.isEmpty { return "idle" }
+        if phases.allSatisfy({ $0 == "done" }) { return "done" }
+        if phases.contains("history") { return "history" }
+        if phases.contains("recent") { return "recent" }
+        return "idle"
+    }
+
+    static func rows(identifiers: [String], marks: [String: String]) -> [CompanionTypeRow] {
+        identifiers.map { identifier in
+            CompanionTypeRow(
+                identifier: identifier,
+                label: label(for: identifier),
+                status: statusText(marks[identifier] ?? TypeAvailability.unknown)
+            )
+        }
+    }
+
+    static func payload(
+        identifiers: [String],
+        marks: [String: String],
+        cursors: [String: String],
+        pending: Int
+    ) -> [String: Any] {
+        var typesOk = 0
+        var typesEmpty = 0
+        for identifier in identifiers {
+            switch marks[identifier] {
+            case TypeAvailability.ok: typesOk += 1
+            case TypeAvailability.noData: typesEmpty += 1
+            default: break
+            }
+        }
+        return [
+            "phase": phase(cursors: cursors),
+            "types_ok": typesOk,
+            "types_empty": typesEmpty,
+            "types_total": identifiers.count,
+            "pending": pending,
+        ]
+    }
+}
+
 enum SyncStateStore {
     static func fileURL(in directory: URL) -> URL {
         directory.appendingPathComponent("biofocus-sync-state.json")

@@ -59,7 +59,7 @@ struct ContentView: View {
                             ProgressView()
                                 .frame(maxWidth: .infinity)
                         } else {
-                            Text("Send latest wearable samples now")
+                            Text("Синхронизировать сейчас")
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -72,6 +72,19 @@ struct ContentView: View {
                     .disabled(isBusy || sync.pendingCount == 0
                         || baseURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         || token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
+                Section("Данные Health") {
+                    Text(sync.backfillLine)
+                        .font(.subheadline)
+                    ForEach(sync.typeRows) { row in
+                        HStack {
+                            Text(row.label)
+                            Spacer()
+                            Text(row.status)
+                                .foregroundStyle(row.status == "OK" ? Color.green : Color.secondary)
+                        }
+                    }
                 }
 
                 Section("Status") {
@@ -88,6 +101,7 @@ struct ContentView: View {
                     await sync.startAutoSyncIfNeeded()
                 }
                 sync.refreshPendingCount()
+                sync.refreshTypeBoard()
             }
         }
     }

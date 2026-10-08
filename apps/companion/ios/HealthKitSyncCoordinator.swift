@@ -14,6 +14,8 @@ final class HealthKitSyncCoordinator: ObservableObject {
     @Published private(set) var lastStatus: String = "Idle"
     @Published private(set) var lastWasError: Bool = false
     @Published private(set) var pendingCount: Int = 0
+    @Published private(set) var typeRows: [CompanionTypeRow] = []
+    @Published private(set) var backfillLine: String = "Синхронизация ещё не начиналась"
 
     private let store = HKHealthStore()
     private var observersStarted = false
@@ -160,13 +162,21 @@ final class HealthKitSyncCoordinator: ObservableObject {
 
     private func pullAndFlush(rounds: Int, baseURL: URL? = nil, token: String? = nil) async throws {
         let salt = DeviceSalt.loadOrCreate()
-        for _ in 0..<rounds {
-            let progressed = try await pullOneRound(salt: salt)
-            if !progressed {
-                break
+        do {
+            for _ in 0..<rounds {
+                let progressed = try await pullOneRound(salt: salt)
+                if !progressed {
+                    break
+                }
             }
+        } catch {
+            if Self.isAuthDenied(error) {
+                recordAuthDenied()
+            }
+            throw error
         }
         refreshPendingCount()
+        await publishProgress(baseURL: baseURL, token: token)
         let base = baseURL ?? configuredBaseURL()
         let auth = token ?? (UserDefaults.standard.string(forKey: "biofocus.pairingToken") ?? "")
         guard let base, !auth.isEmpty else {
@@ -210,6 +220,7 @@ final class HealthKitSyncCoordinator: ObservableObject {
                 cursor.forwardAnchor = AnchoredCursor.archive(newAnchor)
             }
 
+            var backfillCount = 0
             if cursor.phase != "done" {
                 let page = BackfillPage(
                     identifier: identifier,
@@ -220,6 +231,7 @@ final class HealthKitSyncCoordinator: ObservableObject {
                     limit: SyncPlanner.pageSize
                 )
                 let samples = try await descendingPage(type: sampleType, page: page)
+                backfillCount = samples.count
                 if !samples.isEmpty {
                     progressed = true
                 }
@@ -236,6 +248,8 @@ final class HealthKitSyncCoordinator: ObservableObject {
                 )
             }
             state.types[identifier] = cursor
+            let hadSamples = !forward.samples.isEmpty || backfillCount > 0
+            record(identifier: identifier, hadSamples: hadSamples, authDenied: false)
         }
         SyncStateStore.save(state, to: url)
         return progressed
@@ -260,6 +274,90 @@ final class HealthKitSyncCoordinator: ObservableObject {
         _ = salt
         guard let data = WearableMapper.deletionJSON(targetId: id, timestamp: now) else { return }
         ObservationQueue.enqueue(dedupeKey: "del-\(id.lowercased())", observationJSON: data)
+    }
+
+    func refreshTypeBoard() {
+        let stored = marks()
+        typeRows = CompanionStatusBoard.rows(
+            identifiers: HealthTypeRegistry.syncPriority,
+            marks: stored
+        )
+        let now = Int64(Date().timeIntervalSince1970)
+        let url = SyncStateStore.fileURL(in: DeviceSalt.supportDirectory())
+        let state = SyncStateStore.load(from: url, now: now)
+        var cursors: [String: String] = [:]
+        for identifier in HealthTypeRegistry.syncPriority {
+            cursors[identifier] = state.types[identifier]?.phase ?? "recent"
+        }
+        let done = cursors.values.filter { $0 == "done" }.count
+        backfillLine = "Прогресс: \(Self.phaseLine(CompanionStatusBoard.phase(cursors: cursors))). Готово \(done) из \(HealthTypeRegistry.syncPriority.count)."
+    }
+
+    private func publishProgress(baseURL: URL?, token: String?) async {
+        refreshTypeBoard()
+        let base = baseURL ?? configuredBaseURL()
+        let auth = token ?? (UserDefaults.standard.string(forKey: "biofocus.pairingToken") ?? "")
+        guard let base, !auth.isEmpty else { return }
+        let now = Int64(Date().timeIntervalSince1970)
+        let url = SyncStateStore.fileURL(in: DeviceSalt.supportDirectory())
+        let state = SyncStateStore.load(from: url, now: now)
+        var cursors: [String: String] = [:]
+        for identifier in HealthTypeRegistry.syncPriority {
+            if let phase = state.types[identifier]?.phase {
+                cursors[identifier] = phase
+            }
+        }
+        let object = CompanionStatusBoard.payload(
+            identifiers: HealthTypeRegistry.syncPriority,
+            marks: marks(),
+            cursors: cursors,
+            pending: ObservationQueue.pendingCount
+        )
+        guard let data = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]) else {
+            return
+        }
+        let client = IngestClient(baseURL: base, token: auth)
+        try? await client.postCompanionStatus(data)
+    }
+
+    private func marks() -> [String: String] {
+        UserDefaults.standard.dictionary(forKey: "biofocus.typeMarks") as? [String: String] ?? [:]
+    }
+
+    private func setMarks(_ next: [String: String]) {
+        UserDefaults.standard.set(next, forKey: "biofocus.typeMarks")
+        refreshTypeBoard()
+    }
+
+    private func record(identifier: String, hadSamples: Bool, authDenied: Bool) {
+        var stored = marks()
+        let next = CompanionStatusBoard.note(hadSamples: hadSamples, authDenied: authDenied)
+        stored[identifier] = CompanionStatusBoard.merge(previous: stored[identifier], next: next)
+        setMarks(stored)
+    }
+
+    private func recordAuthDenied() {
+        var stored = marks()
+        for identifier in HealthTypeRegistry.syncPriority {
+            stored[identifier] = TypeAvailability.noPermission
+        }
+        setMarks(stored)
+    }
+
+    private static func phaseLine(_ phase: String) -> String {
+        switch phase {
+        case "recent": return "сначала последние 30 дней"
+        case "history": return "история"
+        case "done": return "окно дочитано"
+        default: return "ожидание"
+        }
+    }
+
+    private static func isAuthDenied(_ error: Error) -> Bool {
+        let ns = error as NSError
+        guard ns.domain == HKError.errorDomain else { return false }
+        return ns.code == HKError.Code.errorAuthorizationDenied.rawValue
+            || ns.code == HKError.Code.errorAuthorizationNotDetermined.rawValue
     }
 
     private func configuredBaseURL() -> URL? {

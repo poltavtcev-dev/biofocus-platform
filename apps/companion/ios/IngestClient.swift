@@ -114,6 +114,38 @@ struct IngestClient {
         }
     }
 
+    /// Progress only. The body must not carry health samples.
+    func postCompanionStatus(_ body: Data) async throws {
+        try IngestURLPolicy.validateBaseURL(baseURL)
+        let url = baseURL
+            .appendingPathComponent("v1")
+            .appendingPathComponent("companion")
+            .appendingPathComponent("status")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await ingestSession.data(for: request)
+        } catch {
+            throw mapURLError(error)
+        }
+        guard let http = response as? HTTPURLResponse else {
+            throw IngestClientError.badResponse("non-HTTP response")
+        }
+        if http.statusCode == 401 {
+            throw IngestClientError.unauthorized
+        }
+        guard (200 ... 299).contains(http.statusCode) else {
+            let text = String(data: data, encoding: .utf8) ?? ""
+            throw IngestClientError.http(status: http.statusCode, body: text)
+        }
+    }
+
     func postObservations(_ body: Data) async throws {
         try IngestURLPolicy.validateBaseURL(baseURL)
         let url = baseURL.appendingPathComponent("v1").appendingPathComponent("ingest")

@@ -239,6 +239,33 @@ final class SyncPlannerTests: XCTestCase {
         XCTAssertEqual(loaded, state)
         try? FileManager.default.removeItem(at: dir)
     }
+
+    func testCompanionStatusHasNoHealthFields() {
+        let ids = [HealthTypeRegistry.hrvSDNN, HealthTypeRegistry.stepCount]
+        let marks = [HealthTypeRegistry.hrvSDNN: TypeAvailability.ok]
+        XCTAssertEqual(
+            CompanionStatusBoard.merge(previous: TypeAvailability.ok, next: TypeAvailability.noData),
+            TypeAvailability.ok
+        )
+        XCTAssertEqual(
+            CompanionStatusBoard.statusText(TypeAvailability.noPermission),
+            "нет разрешения?"
+        )
+        XCTAssertEqual(CompanionStatusBoard.statusText(TypeAvailability.noData), "нет данных")
+        let payload = CompanionStatusBoard.payload(
+            identifiers: ids,
+            marks: marks,
+            cursors: [HealthTypeRegistry.hrvSDNN: "recent", HealthTypeRegistry.stepCount: "recent"],
+            pending: 3
+        )
+        XCTAssertEqual(payload["phase"] as? String, "recent")
+        XCTAssertEqual(payload["types_ok"] as? Int, 1)
+        XCTAssertEqual(payload["types_total"] as? Int, 2)
+        XCTAssertEqual(payload["pending"] as? Int, 3)
+        let keys = Set(payload.keys)
+        XCTAssertEqual(keys, ["pending", "phase", "types_empty", "types_ok", "types_total"])
+        XCTAssertEqual(CompanionStatusBoard.phase(cursors: ["a": "done", "b": "done"]), "done")
+    }
 }
 
 private func intValue(_ value: Any?) -> Int64 {
