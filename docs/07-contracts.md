@@ -314,12 +314,34 @@ Companion HealthKit path keeps existing `heart_rate` + soft-optional `hrv` (ADR-
 | :--- | :--- | :--- | :--- |
 | `step_count` | `count` (≥ 0 integer) | `window_secs` (≥ 1) | Interval or sample step sum |
 | `active_energy` | `kcal` (≥ 0 number) | — | Active energy kilocalories |
-| `sleep_interval` | `start`, `end` (Unix s; `end` ≥ `start`) | `stage`: `asleep` \| `in_bed` \| `awake` \| `unknown` | Coarse sleep interval |
+| `sleep_interval` | `start`, `end` (Unix s; `end` ≥ `start`) | `stage`: `asleep` \| `in_bed` \| `awake` \| `unknown` \| `asleep_core` \| `asleep_deep` \| `asleep_rem` (ADR-030; old stages stay valid) | Coarse sleep interval |
 | `oxygen_saturation` | `spo2_percent` (0–100) | — | **Soft-optional** — emit only when HK has samples; non-clinical |
 
 **Deferred:** parallel `workout` Observation family (use Life Event `workout` + steps/energy). **Forbidden:** Mi Cloud payloads; inventing SpO2/sleep when absent; clinical framing.
 
 Validation: `bio_spec::validate_*_payload` / `validate_observation_payload`. Ingest reject codes: `invalid_step_count` / `invalid_active_energy` / `invalid_sleep_interval` / `invalid_oxygen_saturation`. Pipeline normalize strips aliases / out-of-range known types.
+
+### Wearables v2 (ADR-030)
+
+Additive payloads on the existing `observations` table. `provider_id` stays `com.biofocus.applehealth`. Optional `src` object: `kind` ∈ `apple_watch` | `iphone` | `xiaomi_mi_fitness` | `zepp_life` | `other_app` | `manual`. Do not store `src.name` / `device_name` / `source_name`.
+
+| `data_type` | Required | Notes |
+| :--- | :--- | :--- |
+| `heart_rate`, `walking_heart_rate_average` | `bpm` | Normalize skips outside 25–250 |
+| `resting_heart_rate` | `bpm` | Skips outside 25–150 |
+| `hrv` | `sdnn_ms` and/or `rmssd_ms` (aliases `sdnn` / `rmssd` still accepted) | Optional `method`: `sdnn` \| `rmssd`. A method keeps only that metric. Skips outside 1–300 ms. Old payloads without `method` stay valid |
+| `respiratory_rate` | `breaths_per_min` | Skips outside 4–40 |
+| `sleeping_wrist_temperature` | `celsius` | Delta, skips outside −5…+5 |
+| `vo2_max` | `ml_kg_min` | Skips outside 10–90 |
+| `oxygen_saturation` | `spo2_percent` | After fraction→percent, skips outside 50–100 |
+| `workout` | `activity_type`, `start`, `end` | |
+| `exercise_time`, `stand_time` | `minutes` | |
+| `stand_hour`, `mindful_session` | `start`, `end` | |
+| `distance_walking_running` | `meters` | |
+| `basal_energy` | `kcal` | |
+| `source_deletion` | `target_id` (UUID) | Only `provider_id = com.biofocus.applehealth`. Read-side filter, same idea as `life_event_retraction`. No row delete |
+
+`POST /v1/ingest` allowlist is the health types above plus `step_count`, `active_energy`, `sleep_interval`, `life_event`. Anything else, including `life_event_retraction` and Mac collector types, is `403 forbidden_data_type`. Body > 2 MB or more than 1000 Observations → `413 payload_too_large`. Plain HTTP on LAN is unchanged (ADR-005): the token is visible on Wi-Fi. Use a trusted network.
 
 ### `notification_event` payload (ADR-019 / P18 shipped · ADR-020 live probe shipped)
 
