@@ -343,6 +343,8 @@ Additive payloads on the existing `observations` table. `provider_id` stays `com
 
 `POST /v1/ingest` allowlist is the health types above plus `step_count`, `active_energy`, `sleep_interval`, `life_event`. Anything else, including `life_event_retraction` and Mac collector types, is `403 forbidden_data_type`. Body > 2 MB or more than 1000 Observations → `413 payload_too_large`. Plain HTTP on LAN is unchanged (ADR-005): the token is visible on Wi-Fi. Use a trusted network.
 
+Source choice is on read, after normalize. Storage keeps every row. Default order is `apple_watch`, `xiaomi_mi_fitness`, `zepp_life`, `iphone`, `other_app`, `manual`, overridable in `source-priority.toml` (`order = [...]`) under `BIOFOCUS_HOME` or `~/.biofocus/`. Cumulative types (steps, energy, distance, exercise time, stand time) keep one source per UTC day and are not summed. Heart rate, HRV, SpO2, and respiratory rate keep one source per 15-minute bucket. Sleep keeps one source per night; stages come only from that source.
+
 ### `notification_event` payload (ADR-019 / P18 shipped · ADR-020 live probe shipped)
 
 Phase 18 notification pressure Observation family. **Contracts locked (ADR-019)**; collector + Feature **shipped** (P18-E2/E3). **ADR-020** live `SystemNotificationEventProbe` mapping **shipped** (P19-E2): read-only **usernoted** NC SQLite; **payload unchanged**; soft-fail when mapping unavailable / TCC denied. Existing `observations` store — **no** migration in v1.
