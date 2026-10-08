@@ -8,7 +8,9 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use bio_spec::Observation;
-use pipeline::{run_quality_pipeline, DedupeState, NormalizedBatch, PipelineError};
+use pipeline::{
+    DedupeState, NormalizedBatch, PipelineError, SourcePriority, run_quality_pipeline_with,
+};
 use tracing::{debug, error, info, warn};
 
 use crate::{RuntimeError, RuntimeResult};
@@ -121,6 +123,7 @@ where
             "feature worker started"
         );
         let mut dedupe = DedupeState::new();
+        let priority = SourcePriority::load_installed();
 
         loop {
             match stop_rx.try_recv() {
@@ -129,14 +132,12 @@ where
             }
 
             match source.poll_new() {
-                Ok(batch) if batch.is_empty() => {
-                    match stop_rx.recv_timeout(interval) {
-                        Ok(()) | Err(mpsc::RecvTimeoutError::Disconnected) => break,
-                        Err(mpsc::RecvTimeoutError::Timeout) => continue,
-                    }
-                }
+                Ok(batch) if batch.is_empty() => match stop_rx.recv_timeout(interval) {
+                    Ok(()) | Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                    Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                },
                 Ok(batch) => {
-                    if let Err(err) = process_batch(batch, &mut dedupe, &mut hook) {
+                    if let Err(err) = process_batch(batch, &mut dedupe, &priority, &mut hook) {
                         error!(error = %err, "feature worker pipeline tick failed");
                     }
                 }
@@ -162,9 +163,10 @@ where
 fn process_batch<H: FeatureHook>(
     batch: Vec<Observation>,
     dedupe: &mut DedupeState,
+    priority: &SourcePriority,
     hook: &mut H,
 ) -> Result<(), PipelineError> {
-    let normalized = run_quality_pipeline(batch, dedupe)?;
+    let normalized = run_quality_pipeline_with(batch, dedupe, priority)?;
     hook.on_normalized(&normalized);
     Ok(())
 }
