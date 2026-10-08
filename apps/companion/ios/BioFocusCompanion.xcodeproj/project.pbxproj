@@ -19,6 +19,10 @@
 		C2D3E4F5061728394A5B6C7D /* ObservationQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F5061728394A5B6C7D8E /* ObservationQueue.swift */; };
 		E4F5061728394A5B6C7D8E9F /* HealthKitSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5061728394A5B6C7D8E9F0A /* HealthKitSyncCoordinator.swift */; };
 		F0BCD1869D974D2B9A757539 /* BioFocusCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBD55CD76914D1CAFF1EC21 /* BioFocusCompanionApp.swift */; };
+		B20000000000000000000002 /* WearableMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WearableMapping.swift */; };
+		B20000000000000000000004 /* SyncPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* SyncPlanner.swift */; };
+		B20000000000000000000006 /* HKRecordAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* HKRecordAdapter.swift */; };
+		B20000000000000000000011 /* WearableMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000010 /* WearableMappingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +41,11 @@
 		C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioFocusCompanion.entitlements; sourceTree = "<group>"; };
 		D3E4F5061728394A5B6C7D8E /* ObservationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationQueue.swift; sourceTree = "<group>"; };
 		F5061728394A5B6C7D8E9F0A /* HealthKitSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSyncCoordinator.swift; sourceTree = "<group>"; };
+		B20000000000000000000001 /* WearableMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearableMapping.swift; sourceTree = "<group>"; };
+		B20000000000000000000003 /* SyncPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncPlanner.swift; sourceTree = "<group>"; };
+		B20000000000000000000005 /* HKRecordAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HKRecordAdapter.swift; sourceTree = "<group>"; };
+		B20000000000000000000010 /* WearableMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearableMappingTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000014 /* BioFocusCompanionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BioFocusCompanionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */,
+				B20000000000000000000014 /* BioFocusCompanionTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,6 +73,7 @@
 			children = (
 				AFE3A842F011446AA0A4C14D /* BioFocusCompanion */,
 				ABAD077593414214A87DD340 /* Contract */,
+				B2000000000000000000001E /* BioFocusCompanionTests */,
 				5C9F28EF073343F18DAA0ADD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -79,6 +90,9 @@
 				64E4F5A6B9877E0F1A2B3C4D /* OxygenSaturationSample.swift */,
 				D3E4F5061728394A5B6C7D8E /* ObservationQueue.swift */,
 				F5061728394A5B6C7D8E9F0A /* HealthKitSyncCoordinator.swift */,
+				B20000000000000000000001 /* WearableMapping.swift */,
+				B20000000000000000000003 /* SyncPlanner.swift */,
+				B20000000000000000000005 /* HKRecordAdapter.swift */,
 				0E18F70078C1438884E94B8D /* SamplePost.swift */,
 			);
 			name = Contract;
@@ -93,6 +107,14 @@
 				C8D9680966CA46DD98DA9F22 /* BioFocusCompanion.entitlements */,
 			);
 			path = BioFocusCompanion;
+			sourceTree = "<group>";
+		};
+		B2000000000000000000001E /* BioFocusCompanionTests */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000010 /* WearableMappingTests.swift */,
+			);
+			path = BioFocusCompanionTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -115,6 +137,23 @@
 			productReference = 13088822D34941D8BFFFBA58 /* BioFocusCompanion.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B20000000000000000000015 /* BioFocusCompanionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B2000000000000000000001D /* Build configuration list for PBXNativeTarget "BioFocusCompanionTests" */;
+			buildPhases = (
+				B20000000000000000000016 /* Sources */,
+				B20000000000000000000017 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B2000000000000000000001A /* PBXTargetDependency */,
+			);
+			name = BioFocusCompanionTests;
+			productName = BioFocusCompanionTests;
+			productReference = B20000000000000000000014 /* BioFocusCompanionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -127,6 +166,10 @@
 				TargetAttributes = {
 					374080AC7E3D4AA080724F58 = {
 						CreatedOnToolsVersion = 16.2;
+					};
+					B20000000000000000000015 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 374080AC7E3D4AA080724F58;
 					};
 				};
 			};
@@ -144,6 +187,7 @@
 			projectRoot = "";
 			targets = (
 				374080AC7E3D4AA080724F58 /* BioFocusCompanion */,
+				B20000000000000000000015 /* BioFocusCompanionTests */,
 			);
 		};
 /* End PBXProject section */
@@ -174,11 +218,50 @@
 				54D3E4F5A8766D9E0F1A2B3C /* OxygenSaturationSample.swift in Sources */,
 				C2D3E4F5061728394A5B6C7D /* ObservationQueue.swift in Sources */,
 				E4F5061728394A5B6C7D8E9F /* HealthKitSyncCoordinator.swift in Sources */,
+				B20000000000000000000002 /* WearableMapping.swift in Sources */,
+				B20000000000000000000004 /* SyncPlanner.swift in Sources */,
+				B20000000000000000000006 /* HKRecordAdapter.swift in Sources */,
 				17740C59FE8E4E3E99782CCB /* SamplePost.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B20000000000000000000016 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B20000000000000000000011 /* WearableMappingTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		B20000000000000000000019 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A89DA5DDA4A0430C94201959 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 374080AC7E3D4AA080724F58;
+			remoteInfo = BioFocusCompanion;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		B2000000000000000000001A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 374080AC7E3D4AA080724F58 /* BioFocusCompanion */;
+			targetProxy = B20000000000000000000019 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B20000000000000000000017 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		564C8D247DDE409E8F977082 /* Release */ = {
@@ -270,6 +353,44 @@
 			};
 			name = Debug;
 		};
+		B2000000000000000000001B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 84C2C9CBD3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BioFocusCompanion.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BioFocusCompanion";
+			};
+			name = Debug;
+		};
+		B2000000000000000000001C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 84C2C9CBD3;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biofocus.companion.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BioFocusCompanion.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BioFocusCompanion";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -287,6 +408,15 @@
 			buildConfigurations = (
 				89C7C5F5FF7442A8B1E841F1 /* Debug */,
 				564C8D247DDE409E8F977082 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B2000000000000000000001D /* Build configuration list for PBXNativeTarget "BioFocusCompanionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B2000000000000000000001B /* Debug */,
+				B2000000000000000000001C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
