@@ -9,6 +9,7 @@ license.workspace = true
 bio-spec = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+toml = "0.8"
 
 [dev-dependencies]
 feature-engine = { workspace = true }

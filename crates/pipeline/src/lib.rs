@@ -33,6 +33,7 @@ mod error;
 mod intake;
 mod normalize;
 mod quality;
+mod source_select;
 
 pub use dedupe::{DedupeState, DedupedBatch, dedupe_accepted, dedupe_observations, dedupe_owned};
 pub use error::{PipelineError, PipelineResult};
@@ -43,7 +44,8 @@ pub use normalize::{
     DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT, NormalizedBatch,
     normalize_deduped, normalize_observations, normalize_owned,
 };
-pub use quality::run_quality_pipeline;
+pub use quality::{run_quality_pipeline, run_quality_pipeline_with};
+pub use source_select::{SourcePriority, select_sources};
 
 /// Crate identity used by dependents and status payloads.
 pub const CRATE_NAME: &str = "pipeline";
@@ -57,4 +59,6 @@ pub enum PipelineStage {
     Deduped,
     /// Normalization completed; known-type payloads are in canonical form.
     Normalized,
+    /// One `src.kind` kept per wearable bucket. Storage still has every row.
+    SourceSelected,
 }

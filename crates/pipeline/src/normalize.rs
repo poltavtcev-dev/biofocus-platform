@@ -124,6 +124,16 @@ impl NormalizedBatch {
     pub fn into_observations(self) -> Vec<Observation> {
         self.observations
     }
+
+    /// Observations after source choice. `skipped_count` stays the normalize tally.
+    #[must_use]
+    pub fn from_selected(observations: Vec<Observation>, skipped_count: usize) -> Self {
+        Self {
+            observations,
+            skipped_count,
+            stage: PipelineStage::SourceSelected,
+        }
+    }
 }
 
 /// Normalize a slice of Observations (payload / units → canon).

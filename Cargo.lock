@@ -2487,6 +2487,7 @@ dependencies = [
  "feature-engine",
  "serde_json",
  "thiserror 2.0.19",
+ "toml 0.8.2",
  "uuid",
 ]
 

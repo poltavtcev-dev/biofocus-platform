@@ -32,7 +32,7 @@ fn load_fixture(name: &str) -> Vec<Observation> {
 fn run_e2e(raw: Vec<Observation>) -> (Vec<Observation>, feature_engine::EngineOutput) {
     let mut dedupe = DedupeState::new();
     let normalized = run_quality_pipeline(raw, &mut dedupe).expect("quality pipeline");
-    assert_eq!(normalized.stage(), PipelineStage::Normalized);
+    assert_eq!(normalized.stage(), PipelineStage::SourceSelected);
 
     let observations = normalized.into_observations();
     let mut engine = FeatureEngine::new();
