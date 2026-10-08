@@ -132,9 +132,11 @@ where
         let value = raw.to_string_lossy();
         let trimmed = value.trim();
         if !trimmed.is_empty() {
-            return trimmed.parse::<Ipv4Addr>().map_err(|_| IngestError::InvalidBindHost {
-                value: trimmed.to_owned(),
-            });
+            return trimmed
+                .parse::<Ipv4Addr>()
+                .map_err(|_| IngestError::InvalidBindHost {
+                    value: trimmed.to_owned(),
+                });
         }
     }
 
@@ -260,7 +262,9 @@ mod tests {
     fn lan_bind_refuses_dev_token() {
         let mut cfg = IngestConfig::with_token(KNOWN_DEV_TOKEN);
         cfg.bind_host = INGEST_LAN_BIND_HOST;
-        let err = cfg.validate().expect_err("dev token on LAN must be refused");
+        let err = cfg
+            .validate()
+            .expect_err("dev token on LAN must be refused");
         assert!(matches!(err, IngestError::InsecureToken { .. }));
     }
 
@@ -280,7 +284,9 @@ mod tests {
 
     #[test]
     fn loopback_allows_dev_token_for_local_tests() {
-        IngestConfig::with_token(KNOWN_DEV_TOKEN).validate().expect("loopback ok");
+        IngestConfig::with_token(KNOWN_DEV_TOKEN)
+            .validate()
+            .expect("loopback ok");
     }
 
     #[test]

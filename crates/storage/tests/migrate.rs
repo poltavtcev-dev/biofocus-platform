@@ -8,7 +8,10 @@ fn open_creates_observations_table_and_indexes() {
     let db = Database::open_in_memory().expect("open");
     let conn = db.connection();
 
-    assert_eq!(table_columns(conn, "observations"), expected_observation_columns());
+    assert_eq!(
+        table_columns(conn, "observations"),
+        expected_observation_columns()
+    );
     assert!(index_exists(conn, "idx_obs_ts"));
     assert!(index_exists(conn, "idx_obs_type_ts"));
     assert_eq!(schema_version(conn), SCHEMA_VERSION);

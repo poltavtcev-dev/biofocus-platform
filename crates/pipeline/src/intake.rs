@@ -88,7 +88,7 @@ mod tests {
     use serde_json::json;
     use uuid::Uuid;
 
-    use super::{accept_iter, accept_observations, accept_owned, AcceptedBatch};
+    use super::{AcceptedBatch, accept_iter, accept_observations, accept_owned};
     use crate::PipelineStage;
 
     fn sample_observation(n: u64) -> Observation {

@@ -26,9 +26,11 @@ pub fn validate_oxygen_saturation_payload(payload: &JsonValue) -> SpecResult<()>
             reason: "missing required field spo2_percent".to_owned(),
         }),
         Some(JsonValue::Number(n)) => {
-            let pct = n.as_f64().ok_or_else(|| SpecError::InvalidOxygenSaturationPayload {
-                reason: "spo2_percent must be a finite number 0–100".to_owned(),
-            })?;
+            let pct = n
+                .as_f64()
+                .ok_or_else(|| SpecError::InvalidOxygenSaturationPayload {
+                    reason: "spo2_percent must be a finite number 0–100".to_owned(),
+                })?;
             if !pct.is_finite() || pct < 0.0 || pct > SPO2_PERCENT_MAX {
                 return Err(SpecError::InvalidOxygenSaturationPayload {
                     reason: "spo2_percent must be a finite number 0–100".to_owned(),

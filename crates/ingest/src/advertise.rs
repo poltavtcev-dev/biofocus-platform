@@ -125,11 +125,17 @@ pub(crate) fn parse_ifconfig_ipv4s(text: &str) -> Vec<Ipv4Addr> {
         // Linux `ifconfig` may print `addr:1.2.3.4`; `ip`-style may print `1.2.3.4/24`.
         let raw = raw.trim_start_matches("addr:");
         let raw = raw.split('/').next().unwrap_or(raw);
-        let Ok(ip) = raw.parse::<Ipv4Addr>() else { continue };
+        let Ok(ip) = raw.parse::<Ipv4Addr>() else {
+            continue;
+        };
         if !is_usable_lan_ipv4(ip) {
             continue;
         }
-        let bucket = if ip.is_private() { &mut private } else { &mut other };
+        let bucket = if ip.is_private() {
+            &mut private
+        } else {
+            &mut other
+        };
         if !bucket.contains(&ip) {
             bucket.push(ip);
         }
@@ -139,7 +145,10 @@ pub(crate) fn parse_ifconfig_ipv4s(text: &str) -> Vec<Ipv4Addr> {
 }
 
 fn is_usable_lan_ipv4(ip: Ipv4Addr) -> bool {
-    !ip.is_loopback() && !ip.is_unspecified() && !ip.is_link_local() && !ip.is_broadcast()
+    !ip.is_loopback()
+        && !ip.is_unspecified()
+        && !ip.is_link_local()
+        && !ip.is_broadcast()
         && !ip.is_multicast()
 }
 

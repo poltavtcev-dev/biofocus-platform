@@ -125,9 +125,9 @@ mod tests {
             StorageError::HomeDirUnavailable.public_message(),
             "Could not locate local data directory."
         );
-        let sqlite = StorageError::Sqlite(rusqlite::Error::InvalidPath(
-            PathBuf::from("/tmp/hidden/biofocus_main.db"),
-        ));
+        let sqlite = StorageError::Sqlite(rusqlite::Error::InvalidPath(PathBuf::from(
+            "/tmp/hidden/biofocus_main.db",
+        )));
         let msg = sqlite.public_message();
         assert_eq!(msg, "Could not open local database.");
         assert!(!msg.contains("/tmp"));

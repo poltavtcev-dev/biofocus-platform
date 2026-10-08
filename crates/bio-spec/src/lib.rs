@@ -30,63 +30,75 @@ mod signal;
 mod sleep_interval;
 mod step_count;
 mod time;
+mod wearable;
 
-pub use active_energy::{validate_active_energy_payload, DATA_TYPE_ACTIVE_ENERGY};
+pub use active_energy::{DATA_TYPE_ACTIVE_ENERGY, validate_active_energy_payload};
 pub use ambient_light::{
-    is_v1_light_kind, validate_ambient_light_payload, DATA_TYPE_AMBIENT_LIGHT, LEVEL_MAX,
-    LIGHT_KIND_BRIGHT, LIGHT_KIND_DARK, LIGHT_KIND_DIM, LIGHT_KIND_MODERATE, LIGHT_KIND_UNKNOWN,
-    V1_LIGHT_KINDS,
+    DATA_TYPE_AMBIENT_LIGHT, LEVEL_MAX, LIGHT_KIND_BRIGHT, LIGHT_KIND_DARK, LIGHT_KIND_DIM,
+    LIGHT_KIND_MODERATE, LIGHT_KIND_UNKNOWN, V1_LIGHT_KINDS, is_v1_light_kind,
+    validate_ambient_light_payload,
 };
 pub use browser_category::{
-    is_v1_browser_category, validate_browser_category_payload, BROWSER_CATEGORY_COMMUNICATION,
-    BROWSER_CATEGORY_ENTERTAINMENT, BROWSER_CATEGORY_REFERENCE, BROWSER_CATEGORY_SHOPPING,
-    BROWSER_CATEGORY_UNKNOWN, BROWSER_CATEGORY_WORK, DATA_TYPE_BROWSER_CATEGORY,
-    V1_BROWSER_CATEGORIES,
+    BROWSER_CATEGORY_COMMUNICATION, BROWSER_CATEGORY_ENTERTAINMENT, BROWSER_CATEGORY_REFERENCE,
+    BROWSER_CATEGORY_SHOPPING, BROWSER_CATEGORY_UNKNOWN, BROWSER_CATEGORY_WORK,
+    DATA_TYPE_BROWSER_CATEGORY, V1_BROWSER_CATEGORIES, is_v1_browser_category,
+    validate_browser_category_payload,
 };
-pub use calendar_event::{
-    validate_calendar_event_payload, DATA_TYPE_CALENDAR_EVENT,
-};
+pub use calendar_event::{DATA_TYPE_CALENDAR_EVENT, validate_calendar_event_payload};
 pub use error::{SpecError, SpecResult};
 pub use feature::{ExplanationFactor, Feature, FeatureId, FeatureValue, Provenance};
 pub use git_activity::{
-    is_v1_activity_kind, validate_git_activity_payload, ACTIVITY_KIND_CHECKOUT,
-    ACTIVITY_KIND_COMMIT, ACTIVITY_KIND_IDLE, ACTIVITY_KIND_OTHER, ACTIVITY_KIND_SYNC,
-    ACTIVITY_KIND_UNKNOWN, DATA_TYPE_GIT_ACTIVITY, V1_ACTIVITY_KINDS,
+    ACTIVITY_KIND_CHECKOUT, ACTIVITY_KIND_COMMIT, ACTIVITY_KIND_IDLE, ACTIVITY_KIND_OTHER,
+    ACTIVITY_KIND_SYNC, ACTIVITY_KIND_UNKNOWN, DATA_TYPE_GIT_ACTIVITY, V1_ACTIVITY_KINDS,
+    is_v1_activity_kind, validate_git_activity_payload,
 };
 pub use insight::{EvidenceRef, Insight, InsightId};
 pub use life_event::{
+    DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, LIFE_EVENT_KIND_COFFEE,
+    LIFE_EVENT_KIND_LUNCH, LIFE_EVENT_KIND_WALK, LIFE_EVENT_KIND_WORKOUT, V1_LIFE_EVENT_KINDS,
     apply_life_event_retractions, is_v1_life_event_kind, life_event_retraction_target,
     validate_life_event_payload, validate_life_event_retraction_payload,
-    validate_observation_payload, DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, LIFE_EVENT_KIND_COFFEE, LIFE_EVENT_KIND_LUNCH, LIFE_EVENT_KIND_WALK,
-    LIFE_EVENT_KIND_WORKOUT, V1_LIFE_EVENT_KINDS,
+    validate_observation_payload,
 };
 pub use notification_event::{
-    is_v1_interruption_level, is_v1_notification_app_kind, is_v1_notification_category,
-    validate_notification_event_payload, DATA_TYPE_NOTIFICATION_EVENT, INTERRUPTION_LEVEL_ACTIVE,
-    INTERRUPTION_LEVEL_CRITICAL, INTERRUPTION_LEVEL_PASSIVE, INTERRUPTION_LEVEL_TIME_SENSITIVE,
-    INTERRUPTION_LEVEL_UNKNOWN, NOTIFICATION_APP_KIND_CALENDAR, NOTIFICATION_APP_KIND_MAIL,
-    NOTIFICATION_APP_KIND_MESSAGING, NOTIFICATION_APP_KIND_OTHER, NOTIFICATION_APP_KIND_SOCIAL,
-    NOTIFICATION_APP_KIND_SYSTEM, NOTIFICATION_APP_KIND_UNKNOWN, NOTIFICATION_CATEGORY_CALENDAR,
+    DATA_TYPE_NOTIFICATION_EVENT, INTERRUPTION_LEVEL_ACTIVE, INTERRUPTION_LEVEL_CRITICAL,
+    INTERRUPTION_LEVEL_PASSIVE, INTERRUPTION_LEVEL_TIME_SENSITIVE, INTERRUPTION_LEVEL_UNKNOWN,
+    NOTIFICATION_APP_KIND_CALENDAR, NOTIFICATION_APP_KIND_MAIL, NOTIFICATION_APP_KIND_MESSAGING,
+    NOTIFICATION_APP_KIND_OTHER, NOTIFICATION_APP_KIND_SOCIAL, NOTIFICATION_APP_KIND_SYSTEM,
+    NOTIFICATION_APP_KIND_UNKNOWN, NOTIFICATION_CATEGORY_CALENDAR,
     NOTIFICATION_CATEGORY_COMMUNICATION, NOTIFICATION_CATEGORY_MEDIA, NOTIFICATION_CATEGORY_OTHER,
     NOTIFICATION_CATEGORY_SOCIAL, NOTIFICATION_CATEGORY_SYSTEM, NOTIFICATION_CATEGORY_UNKNOWN,
     V1_INTERRUPTION_LEVELS, V1_NOTIFICATION_APP_KINDS, V1_NOTIFICATION_CATEGORIES,
+    is_v1_interruption_level, is_v1_notification_app_kind, is_v1_notification_category,
+    validate_notification_event_payload,
 };
 pub use now_playing::{
-    is_v1_media_kind, validate_now_playing_payload, DATA_TYPE_NOW_PLAYING, MEDIA_KIND_MUSIC,
-    MEDIA_KIND_NONE, MEDIA_KIND_OTHER, MEDIA_KIND_PODCAST, MEDIA_KIND_UNKNOWN, V1_MEDIA_KINDS,
+    DATA_TYPE_NOW_PLAYING, MEDIA_KIND_MUSIC, MEDIA_KIND_NONE, MEDIA_KIND_OTHER, MEDIA_KIND_PODCAST,
+    MEDIA_KIND_UNKNOWN, V1_MEDIA_KINDS, is_v1_media_kind, validate_now_playing_payload,
 };
 pub use observation::{Confidence, DataType, Observation, ObservationId, ProviderId};
 pub use oxygen_saturation::{
-    validate_oxygen_saturation_payload, DATA_TYPE_OXYGEN_SATURATION, SPO2_PERCENT_MAX,
+    DATA_TYPE_OXYGEN_SATURATION, SPO2_PERCENT_MAX, validate_oxygen_saturation_payload,
 };
 pub use recommendation::{Recommendation, RecommendationId};
 pub use signal::{Severity, Signal, SignalId, SignalType};
 pub use sleep_interval::{
-    is_v1_sleep_stage, validate_sleep_interval_payload, DATA_TYPE_SLEEP_INTERVAL,
-    SLEEP_STAGE_ASLEEP, SLEEP_STAGE_AWAKE, SLEEP_STAGE_IN_BED, SLEEP_STAGE_UNKNOWN, V1_SLEEP_STAGES,
+    DATA_TYPE_SLEEP_INTERVAL, SLEEP_STAGE_ASLEEP, SLEEP_STAGE_ASLEEP_CORE, SLEEP_STAGE_ASLEEP_DEEP,
+    SLEEP_STAGE_ASLEEP_REM, SLEEP_STAGE_AWAKE, SLEEP_STAGE_IN_BED, SLEEP_STAGE_UNKNOWN,
+    V1_SLEEP_STAGES, is_v1_sleep_stage, validate_sleep_interval_payload,
 };
-pub use step_count::{validate_step_count_payload, DATA_TYPE_STEP_COUNT};
+pub use step_count::{DATA_TYPE_STEP_COUNT, validate_step_count_payload};
 pub use time::{TimeWindow, UnixTimestamp};
+pub use wearable::{
+    DATA_TYPE_BASAL_ENERGY, DATA_TYPE_DISTANCE_WALKING_RUNNING, DATA_TYPE_EXERCISE_TIME,
+    DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_MINDFUL_SESSION, DATA_TYPE_RESPIRATORY_RATE,
+    DATA_TYPE_RESTING_HEART_RATE, DATA_TYPE_SLEEPING_WRIST_TEMPERATURE, DATA_TYPE_SOURCE_DELETION,
+    DATA_TYPE_STAND_HOUR, DATA_TYPE_STAND_TIME, DATA_TYPE_VO2_MAX,
+    DATA_TYPE_WALKING_HEART_RATE_AVERAGE, DATA_TYPE_WORKOUT, PROVIDER_APPLE_HEALTH,
+    SRC_KIND_APPLE_WATCH, SRC_KIND_IPHONE, SRC_KIND_MANUAL, SRC_KIND_OTHER_APP,
+    SRC_KIND_XIAOMI_MI_FITNESS, SRC_KIND_ZEPP_LIFE, apply_source_deletions,
+    companion_ingest_allowed, is_src_kind, validate_wearable_observation,
+};
 
 /// Crate identity used by dependents and IPC status payloads.
 pub const CRATE_NAME: &str = "bio-spec";

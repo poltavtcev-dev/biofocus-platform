@@ -1,10 +1,10 @@
 //! Immutable append/read API for `observations` (`docs/04-storage.md`).
 
 use bio_spec::{
-    Confidence, DataType, Observation, ObservationId, UnixTimestamp, DATA_TYPE_LIFE_EVENT,
-    DATA_TYPE_LIFE_EVENT_RETRACTION,
+    Confidence, DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, DATA_TYPE_SOURCE_DELETION,
+    DataType, Observation, ObservationId, UnixTimestamp,
 };
-use rusqlite::{params, Connection, ErrorCode, OptionalExtension, Row};
+use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, params};
 use uuid::Uuid;
 
 use crate::clock::unix_now_secs;
@@ -29,6 +29,20 @@ fn retraction_filter_sql() -> String {
              WHERE data_type = '{r}'))",
         r = DATA_TYPE_LIFE_EVENT_RETRACTION,
         l = DATA_TYPE_LIFE_EVENT,
+    )
+}
+
+/// Hides `source_deletion` markers and targets that share the marker's provider.
+/// A marker from another provider does not hide the row (ADR-030).
+fn source_deletion_filter_sql() -> String {
+    format!(
+        "data_type <> '{d}'
+         AND NOT EXISTS (
+             SELECT 1 FROM observations AS src_del
+             WHERE src_del.data_type = '{d}'
+               AND json_extract(src_del.payload, '$.target_id') = observations.id
+               AND src_del.provider_id = observations.provider_id)",
+        d = DATA_TYPE_SOURCE_DELETION,
     )
 }
 
@@ -66,9 +80,9 @@ impl<'db> ObservationRepository<'db> {
 
         match result {
             Ok(_) => Ok(()),
-            Err(err) if is_primary_key_constraint(&err) => Err(StorageError::DuplicateObservation {
-                id: observation.id,
-            }),
+            Err(err) if is_primary_key_constraint(&err) => {
+                Err(StorageError::DuplicateObservation { id: observation.id })
+            }
             Err(err) => Err(StorageError::Sqlite(err)),
         }
     }
@@ -128,7 +142,11 @@ impl<'db> ObservationRepository<'db> {
         }
 
         let filter = if hide_retracted {
-            format!(" AND {}", retraction_filter_sql())
+            format!(
+                " AND {} AND {}",
+                retraction_filter_sql(),
+                source_deletion_filter_sql()
+            )
         } else {
             String::new()
         };
@@ -139,7 +157,10 @@ impl<'db> ObservationRepository<'db> {
              ORDER BY timestamp ASC, id ASC"
         );
         let mut stmt = self.conn.prepare(&sql)?;
-        let rows = stmt.query_map(params![start.as_secs(), end.as_secs()], read_observation_columns)?;
+        let rows = stmt.query_map(
+            params![start.as_secs(), end.as_secs()],
+            read_observation_columns,
+        )?;
         collect_observations(rows)
     }
 
@@ -148,11 +169,15 @@ impl<'db> ObservationRepository<'db> {
     /// For `life_event`, retracted events are excluded. Asking for
     /// `life_event_retraction` explicitly returns the markers.
     pub fn list_by_data_type(&self, data_type: &str) -> StorageResult<Vec<Observation>> {
-        let filter = if data_type == DATA_TYPE_LIFE_EVENT_RETRACTION {
-            String::new()
-        } else {
-            format!(" AND {}", retraction_filter_sql())
-        };
+        let mut filter = String::new();
+        if data_type != DATA_TYPE_LIFE_EVENT_RETRACTION {
+            filter.push_str(" AND ");
+            filter.push_str(&retraction_filter_sql());
+        }
+        if data_type != DATA_TYPE_SOURCE_DELETION {
+            filter.push_str(" AND ");
+            filter.push_str(&source_deletion_filter_sql());
+        }
         let sql = format!(
             "SELECT id, timestamp, provider_id, data_type, payload, confidence
              FROM observations
@@ -186,7 +211,9 @@ impl<'db> ObservationRepository<'db> {
              LIMIT 1",
         )?;
         let row = stmt
-            .query_row([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
+            .query_row([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })
             .optional()?;
         Ok(row)
     }
@@ -243,10 +270,11 @@ struct ObservationColumns {
 
 impl ObservationColumns {
     fn into_observation(self) -> StorageResult<Observation> {
-        let id = Uuid::parse_str(&self.id).map_err(|source| StorageError::InvalidObservationId {
-            value: self.id,
-            source,
-        })?;
+        let id =
+            Uuid::parse_str(&self.id).map_err(|source| StorageError::InvalidObservationId {
+                value: self.id,
+                source,
+            })?;
         let payload = serde_json::from_str(&self.payload)
             .map_err(|source| StorageError::PayloadDeserialize { source })?;
         let confidence = Confidence::try_new(self.confidence)?;

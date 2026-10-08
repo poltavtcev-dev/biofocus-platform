@@ -1,7 +1,7 @@
 //! Bearer token extraction for ingest endpoints.
 
-use axum::http::header::AUTHORIZATION;
 use axum::http::HeaderMap;
+use axum::http::header::AUTHORIZATION;
 
 const BEARER_PREFIX: &str = "Bearer ";
 

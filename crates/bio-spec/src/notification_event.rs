@@ -122,9 +122,10 @@ pub fn validate_notification_event_payload(payload: &JsonValue) -> SpecResult<()
             });
         }
         Some(v) => {
-            let count = nonneg_u64(v).ok_or_else(|| SpecError::InvalidNotificationEventPayload {
-                reason: "count must be an integer ≥ 1".to_owned(),
-            })?;
+            let count =
+                nonneg_u64(v).ok_or_else(|| SpecError::InvalidNotificationEventPayload {
+                    reason: "count must be an integer ≥ 1".to_owned(),
+                })?;
             if count < 1 {
                 return Err(SpecError::InvalidNotificationEventPayload {
                     reason: "count must be an integer ≥ 1".to_owned(),
@@ -160,13 +161,11 @@ fn validate_optional_closed_set(
 fn nonneg_u64(v: &JsonValue) -> Option<u64> {
     match v {
         JsonValue::Number(n) => n.as_u64().or_else(|| {
-            n.as_i64()
-                .and_then(|i| u64::try_from(i).ok())
-                .or_else(|| {
-                    n.as_f64()
-                        .filter(|f| f.is_finite() && *f >= 0.0 && f.fract() == 0.0)
-                        .map(|f| f as u64)
-                })
+            n.as_i64().and_then(|i| u64::try_from(i).ok()).or_else(|| {
+                n.as_f64()
+                    .filter(|f| f.is_finite() && *f >= 0.0 && f.fract() == 0.0)
+                    .map(|f| f as u64)
+            })
         }),
         _ => None,
     }
