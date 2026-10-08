@@ -2,8 +2,8 @@
 
 use bio_spec::{Observation, UnixTimestamp};
 use runtime::{
-    init_tracing, observation_channel, CoreRuntime, RuntimeConfig, RuntimeError,
-    DEFAULT_OBSERVATION_BUFFER,
+    CoreRuntime, DEFAULT_OBSERVATION_BUFFER, RuntimeConfig, RuntimeError, init_tracing,
+    observation_channel,
 };
 use serde_json::json;
 use uuid::Uuid;
@@ -25,8 +25,7 @@ fn core_runtime_block_on_async_work() {
 
 #[test]
 fn observation_channel_is_bounded() {
-    let (tx, mut rx) =
-        observation_channel(2).expect("capacity 2 is valid");
+    let (tx, mut rx) = observation_channel(2).expect("capacity 2 is valid");
 
     let mk = |n: u64| {
         Observation::try_new(
@@ -43,7 +42,10 @@ fn observation_channel_is_bounded() {
     tx.try_send(mk(1)).expect("slot 1");
     tx.try_send(mk(2)).expect("slot 2");
     let err = tx.try_send(mk(3)).expect_err("channel must be full");
-    assert!(matches!(err, tokio::sync::mpsc::error::TrySendError::Full(_)));
+    assert!(matches!(
+        err,
+        tokio::sync::mpsc::error::TrySendError::Full(_)
+    ));
 
     let first = rx.try_recv().expect("queued observation");
     assert_eq!(first.timestamp.as_secs(), 1);

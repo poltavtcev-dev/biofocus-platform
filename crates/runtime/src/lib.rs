@@ -18,18 +18,18 @@ mod host;
 mod tracing_init;
 
 pub use channel::{
-    observation_channel, ObservationReceiver, ObservationSender, DEFAULT_OBSERVATION_BUFFER,
+    DEFAULT_OBSERVATION_BUFFER, ObservationReceiver, ObservationSender, observation_channel,
 };
 pub use error::{RuntimeError, RuntimeResult};
 pub use feature_worker::{
-    feature_source_error, spawn_feature_worker, validate_feature_worker_config, FeatureHook,
-    FeatureWorkerConfig, FeatureWorkerHandle, NoopFeatureHook, ObservationSource,
-    DEFAULT_FEATURE_BATCH_LIMIT, DEFAULT_FEATURE_POLL_INTERVAL,
+    DEFAULT_FEATURE_BATCH_LIMIT, DEFAULT_FEATURE_POLL_INTERVAL, FeatureHook, FeatureWorkerConfig,
+    FeatureWorkerHandle, NoopFeatureHook, ObservationSource, feature_source_error,
+    spawn_feature_worker, validate_feature_worker_config,
 };
 pub use host::{CoreRuntime, RuntimeConfig};
 pub use tracing_init::init_tracing;
 
-pub use bio_spec::{Observation, CRATE_NAME as SPEC_CRATE_NAME};
+pub use bio_spec::{CRATE_NAME as SPEC_CRATE_NAME, Observation};
 
 /// Crate identity used by dependents and IPC status payloads.
 pub const CRATE_NAME: &str = "runtime";
