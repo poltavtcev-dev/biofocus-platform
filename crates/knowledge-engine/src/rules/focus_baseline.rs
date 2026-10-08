@@ -16,8 +16,11 @@ pub const RULE_FOCUS_VS_RECENT_BASELINE: &str = "focus_vs_recent_baseline_v1";
 /// Minimum |current − baseline| (FocusScore points) to emit an Insight.
 pub const FOCUS_BASELINE_DELTA: f64 = 10.0;
 
-/// ADR-007 confidence floor for current and series windows.
-pub const FOCUS_BASELINE_CONFIDENCE_GATE: f64 = 0.4;
+/// Floor for the live score and the prior windows.
+///
+/// Matches the feature-engine baseline gate: one-of-three Focus coverage is
+/// about 0.33 and must still be comparable.
+pub const FOCUS_BASELINE_CONFIDENCE_GATE: f64 = 0.30;
 
 /// Minimum prior windows required for a usable baseline mean.
 pub const FOCUS_BASELINE_MIN_WINDOWS: usize = 2;
@@ -174,6 +177,21 @@ mod tests {
         for word in ["diagnos", "disorder", "patholog", "unhealthy", "medical"] {
             assert!(!blob.contains(word), "clinical term in {blob}");
         }
+    }
+
+    #[test]
+    fn one_of_three_coverage_still_compares() {
+        let rule = FocusVsRecentBaselineRule;
+        let current = focus(10_000, 80.0, 0.33);
+        let pattern = PatternInputs::with_baseline_series(vec![
+            focus(1_000, 50.0, 0.33),
+            focus(2_000, 52.0, 0.33),
+        ]);
+        let out = rule
+            .evaluate(std::slice::from_ref(&current), &[], &pattern)
+            .expect("ok");
+        assert_eq!(out.len(), 1);
+        assert!(out[0].description.contains("higher"));
     }
 
     #[test]

@@ -19,8 +19,11 @@ pub const BASELINE_MAX_WINDOWS: usize = 7;
 /// Minimum prior windows before a baseline mean is considered usable by callers.
 pub const BASELINE_MIN_WINDOWS: usize = 2;
 
-/// ADR-007 confidence floor for current / series windows used in baseline compare.
-pub const BASELINE_CONFIDENCE_GATE: f64 = 0.4;
+/// Floor for afternoon windows used in the personal comparison.
+///
+/// Mac-only Focus often has one of three inputs, so confidence is about 0.33.
+/// That still counts. A thinner window (below 0.30) does not.
+pub const BASELINE_CONFIDENCE_GATE: f64 = 0.30;
 
 /// UTC afternoon bucket start hour (inclusive), 13:00.
 pub const AFTERNOON_START_HOUR_UTC: i64 = 13;
@@ -214,6 +217,36 @@ mod tests {
         let batch = rich_afternoon(today, 1, 180.0);
         let out = recompute_focus_afternoon_baseline(&batch, reference, 7).expect("ok");
         assert!(out.is_empty());
+    }
+
+    #[test]
+    fn mac_only_afternoons_still_build_a_series() {
+        let reference = 1_700_000_000;
+        let today = utc_day_start(reference);
+        let mut batch = Vec::new();
+        for day in 1..=2 {
+            let day_start = today - day * SECS_PER_DAY;
+            let t0 = day_start + AFTERNOON_START_HOUR_UTC * SECS_PER_HOUR + 30 * 60;
+            let id = (day as u128) * 10;
+            batch.push(obs(
+                id,
+                t0,
+                "context_window",
+                json!({ "bundle_id": "com.dev.ide", "app_name": "IDE" }),
+            ));
+            batch.push(obs(
+                id + 1,
+                t0 + 120,
+                "context_window",
+                json!({ "bundle_id": "com.apple.Safari", "app_name": "Safari" }),
+            ));
+        }
+        let out = recompute_focus_afternoon_baseline(&batch, reference, 7).expect("ok");
+        assert_eq!(out.len(), 2);
+        for feature in &out {
+            assert!(feature.confidence.get() >= BASELINE_CONFIDENCE_GATE);
+            assert!(feature.confidence.get() < 0.4);
+        }
     }
 
     #[test]
