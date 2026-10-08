@@ -1,0 +1,289 @@
+{
+  "schema": "biofocus.wearables.fixture.v2",
+  "synthetic": true,
+  "source_kind": "apple_watch",
+  "samples": [
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000001",
+        "identifier": "HKQuantityTypeIdentifierHeartRate",
+        "start": 1772438400,
+        "end": 1772438400,
+        "value": 62,
+        "unit": "count/min"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000001",
+        "timestamp": 1772438400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "heart_rate",
+        "payload": {
+          "bpm": 62,
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000002",
+        "identifier": "HKQuantityTypeIdentifierRestingHeartRate",
+        "start": 1772438400,
+        "end": 1772438400,
+        "value": 54,
+        "unit": "count/min"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000002",
+        "timestamp": 1772438400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "resting_heart_rate",
+        "payload": {
+          "bpm": 54,
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000003",
+        "identifier": "HKQuantityTypeIdentifierHeartRateVariabilitySDNN",
+        "start": 1772406000,
+        "end": 1772406000,
+        "value": 48,
+        "unit": "ms"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000003",
+        "timestamp": 1772406000,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "hrv",
+        "payload": {
+          "sdnn_ms": 48,
+          "method": "sdnn",
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000004",
+        "identifier": "HKQuantityTypeIdentifierOxygenSaturation",
+        "start": 1772409600,
+        "end": 1772409600,
+        "value": 0.97,
+        "unit": "percent"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000004",
+        "timestamp": 1772409600,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "oxygen_saturation",
+        "payload": {
+          "percent": 97,
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000005",
+        "identifier": "HKQuantityTypeIdentifierRespiratoryRate",
+        "start": 1772413200,
+        "end": 1772413200,
+        "value": 14,
+        "unit": "count/min"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000005",
+        "timestamp": 1772413200,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "respiratory_rate",
+        "payload": {
+          "breaths_per_min": 14,
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000006",
+        "identifier": "HKQuantityTypeIdentifierAppleSleepingWristTemperature",
+        "start": 1772420400,
+        "end": 1772420400,
+        "value": 0.2,
+        "unit": "degC"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000006",
+        "timestamp": 1772420400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "sleeping_wrist_temperature",
+        "payload": {
+          "celsius": 0.2,
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000009",
+        "identifier": "HKCategoryTypeIdentifierSleepAnalysis",
+        "value": "asleepDeep",
+        "start": 1772406000,
+        "end": 1772413200
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000009",
+        "timestamp": 1772406000,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "sleep_interval",
+        "payload": {
+          "start": 1772406000,
+          "end": 1772413200,
+          "stage": "asleep_deep",
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-00000000000a",
+        "identifier": "HKCategoryTypeIdentifierSleepAnalysis",
+        "value": "asleepREM",
+        "start": 1772420400,
+        "end": 1772424000
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-00000000000a",
+        "timestamp": 1772420400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "sleep_interval",
+        "payload": {
+          "start": 1772420400,
+          "end": 1772424000,
+          "stage": "asleep_rem",
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-00000000000c",
+        "identifier": "HKQuantityTypeIdentifierStepCount",
+        "start": 1772438400,
+        "end": 1772442000,
+        "value": 1200,
+        "unit": "count"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-00000000000c",
+        "timestamp": 1772442000,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "step_count",
+        "payload": {
+          "count": 1200,
+          "src": {
+            "bundle_id": "com.apple.health",
+            "app_name": "Health",
+            "device_model": "Watch",
+            "device_manufacturer": "Apple Inc.",
+            "hardware_version": "Watch7,1",
+            "product_type": "Watch7,1",
+            "os_version": "11.0",
+            "was_user_entered": false,
+            "kind": "apple_watch"
+          }
+        },
+        "confidence": 1.0
+      }
+    }
+  ]
+}

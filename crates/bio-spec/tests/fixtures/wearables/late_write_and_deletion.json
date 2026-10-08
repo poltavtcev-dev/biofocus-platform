@@ -1,0 +1,46 @@
+{
+  "schema": "biofocus.wearables.fixture.v2",
+  "synthetic": true,
+  "late_write": {
+    "why": "Zepp Life and Mi Fitness often insert a sample whose start is already behind a date anchor. A strict startDate predicate drops it forever. An anchored query still returns it.",
+    "date_anchor_unix": 1772445600,
+    "sample_start": 1772402400,
+    "expect_dated_predicate": "skipped",
+    "expect_anchored_query": "delivered",
+    "observation": {
+      "id": "0190a030-0000-7000-8000-0000000000ee",
+      "timestamp": 1772402400,
+      "provider_id": "com.biofocus.applehealth",
+      "data_type": "heart_rate",
+      "payload": {
+        "bpm": 58,
+        "src": {
+          "bundle_id": "com.xiaomi.hm.health",
+          "app_name": "Zepp Life",
+          "device_model": null,
+          "device_manufacturer": "Xiaomi",
+          "hardware_version": null,
+          "product_type": null,
+          "os_version": null,
+          "was_user_entered": false,
+          "kind": "zepp_life"
+        }
+      },
+      "confidence": 1.0
+    }
+  },
+  "deletion": {
+    "why": "HealthKit deleted the Watch heart-rate sample 0190a030-0000-7000-8000-000000000001. The Mac appends a marker. It does not delete the row.",
+    "hk_deleted_uuid": "0190a030-0000-7000-8000-000000000001",
+    "observation": {
+      "id": "0190a030-0000-7000-8000-0000000000de",
+      "timestamp": 1772445600,
+      "provider_id": "com.biofocus.applehealth",
+      "data_type": "source_deletion",
+      "payload": {
+        "target_id": "0190a030-0000-7000-8000-000000000001"
+      },
+      "confidence": 1.0
+    }
+  }
+}
