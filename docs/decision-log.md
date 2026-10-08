@@ -2461,3 +2461,5 @@ Synthetic JSON under `crates/bio-spec/tests/fixtures/wearables/`. Not a user exp
 8. Storing personal device names.
 9. A SQLite migration for source metadata.
 
+Official Xiaomi/Zepp file export and an Android Health Connect companion are weighed in `docs/wearables-p6-xiaomi-outside-healthkit.md`. That note does not approve a build and does not change this ADR.
+
