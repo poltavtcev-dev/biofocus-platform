@@ -4,12 +4,15 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use axum::extract::State;
+use axum::extract::{DefaultBodyLimit, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use bio_spec::{validate_observation_payload, Observation};
+use bio_spec::{
+    DATA_TYPE_SOURCE_DELETION, Observation, PROVIDER_APPLE_HEALTH, companion_ingest_allowed,
+    validate_observation_payload,
+};
 use runtime::ObservationSender;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
@@ -17,7 +20,7 @@ use tracing::warn;
 use crate::advertise::AdvertiseInfo;
 use crate::auth::{bearer_token, tokens_equal};
 use crate::config::{DEFAULT_INGEST_PORT, INGEST_BIND_HOST};
-use crate::status::{probe_db_at, StatusResponse};
+use crate::status::{StatusResponse, probe_db_at};
 
 /// Soft-fail DB probe used by `GET /v1/status`.
 pub type DbProbe = Arc<dyn Fn() -> Result<(), String> + Send + Sync>;
@@ -146,12 +149,18 @@ impl QueuePressureBody {
     }
 }
 
+/// Max JSON body for `POST /v1/ingest` (ADR-030).
+pub const INGEST_MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
+/// Max Observations in one ingest request (ADR-030).
+pub const INGEST_MAX_BATCH: usize = 1000;
+
 /// Builds the ingest router (`POST /v1/ingest`, `GET /v1/status`).
 #[must_use]
 pub fn ingest_router(state: IngestState) -> Router {
     Router::new()
         .route("/v1/ingest", post(post_ingest))
         .route("/v1/status", get(get_status))
+        .layer(DefaultBodyLimit::max(INGEST_MAX_BODY_BYTES))
         .with_state(state)
 }
 
@@ -182,21 +191,50 @@ async fn post_ingest(
         Ok(Json(items)) => items,
         Err(rejection) => {
             warn!(error = %rejection, "ingest rejected invalid JSON body");
+            if rejection.status() == StatusCode::PAYLOAD_TOO_LARGE {
+                return (
+                    StatusCode::PAYLOAD_TOO_LARGE,
+                    Json(error_body("payload_too_large")),
+                )
+                    .into_response();
+            }
+            return (StatusCode::BAD_REQUEST, Json(error_body("invalid_json"))).into_response();
+        }
+    };
+
+    if observations.len() > INGEST_MAX_BATCH {
+        return (
+            StatusCode::PAYLOAD_TOO_LARGE,
+            Json(error_body("payload_too_large")),
+        )
+            .into_response();
+    }
+
+    for observation in &observations {
+        if !companion_ingest_allowed(observation.data_type.as_str()) {
+            warn!(data_type = %observation.data_type, "ingest rejected companion data type");
             return (
-                StatusCode::BAD_REQUEST,
-                Json(error_body("invalid_json")),
+                StatusCode::FORBIDDEN,
+                Json(error_body("forbidden_data_type")),
             )
                 .into_response();
         }
-    };
+        if observation.data_type == DATA_TYPE_SOURCE_DELETION
+            && observation.provider_id != PROVIDER_APPLE_HEALTH
+        {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(error_body("invalid_wearable")),
+            )
+                .into_response();
+        }
+    }
 
     for observation in &observations {
         if let Err(err) = validate_observation_payload(observation) {
             warn!(error = %err, data_type = %observation.data_type, "ingest rejected Observation payload");
             let code = match &err {
-                bio_spec::SpecError::InvalidCalendarEventPayload { .. } => {
-                    "invalid_calendar_event"
-                }
+                bio_spec::SpecError::InvalidCalendarEventPayload { .. } => "invalid_calendar_event",
                 bio_spec::SpecError::InvalidBrowserCategoryPayload { .. } => {
                     "invalid_browser_category"
                 }
@@ -212,6 +250,7 @@ async fn post_ingest(
                 bio_spec::SpecError::InvalidOxygenSaturationPayload { .. } => {
                     "invalid_oxygen_saturation"
                 }
+                bio_spec::SpecError::InvalidWearablePayload { .. } => "invalid_wearable",
                 _ => "invalid_life_event",
             };
             return (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response();
@@ -228,7 +267,8 @@ async fn post_ingest(
                 tokio::sync::mpsc::error::TrySendError::Full(_) => {
                     warn!(
                         accepted,
-                        rejected, "ingest channel full; stopping further enqueue (mid-batch contract C)"
+                        rejected,
+                        "ingest channel full; stopping further enqueue (mid-batch contract C)"
                     );
                     return (
                         StatusCode::SERVICE_UNAVAILABLE,
@@ -252,11 +292,7 @@ async fn post_ingest(
         accepted += 1;
     }
 
-    (
-        StatusCode::ACCEPTED,
-        Json(IngestResponse::queued(accepted)),
-    )
-        .into_response()
+    (StatusCode::ACCEPTED, Json(IngestResponse::queued(accepted))).into_response()
 }
 
 #[derive(Serialize)]
