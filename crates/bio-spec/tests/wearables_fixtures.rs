@@ -1,17 +1,17 @@
-//! Shape lock for ADR-030 fixtures. Does not validate new payloads — P1 does that.
+//! Shape lock for ADR-030 fixtures, plus validation of those payloads.
 
 use std::fs;
 use std::path::PathBuf;
 
+use bio_spec::{Observation, validate_observation_payload};
 use serde_json::Value;
 
 fn fixture(name: &str) -> Value {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/wearables")
         .join(name);
-    let raw = fs::read_to_string(&path).unwrap_or_else(|err| {
-        panic!("read {}: {err}", path.display())
-    });
+    let raw =
+        fs::read_to_string(&path).unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
     serde_json::from_str(&raw).unwrap_or_else(|err| panic!("parse {name}: {err}"))
 }
 
@@ -40,7 +40,14 @@ fn assert_no_personal_name(value: &Value) {
 }
 
 fn assert_observation(obs: &Value) {
-    for key in ["id", "timestamp", "provider_id", "data_type", "payload", "confidence"] {
+    for key in [
+        "id",
+        "timestamp",
+        "provider_id",
+        "data_type",
+        "payload",
+        "confidence",
+    ] {
         assert!(obs.get(key).is_some(), "missing {key}");
     }
     assert_eq!(obs["provider_id"], "com.biofocus.applehealth");
@@ -58,7 +65,10 @@ fn watch_fixture_has_sdnn_and_sleep_stages() {
         assert_observation(item);
         assert_eq!(item["payload"]["src"]["kind"], "apple_watch");
     }
-    assert!(obs.iter().any(|o| o["data_type"] == "hrv" && o["payload"]["method"] == "sdnn"));
+    assert!(
+        obs.iter()
+            .any(|o| o["data_type"] == "hrv" && o["payload"]["method"] == "sdnn")
+    );
     assert!(obs.iter().any(|o| o["payload"]["stage"] == "asleep_deep"));
     assert!(obs.iter().any(|o| o["payload"]["stage"] == "asleep_rem"));
     assert!(obs.iter().any(|o| o["data_type"] == "oxygen_saturation"));
@@ -108,14 +118,52 @@ fn late_write_is_behind_the_date_anchor_and_deletion_points_at_watch() {
     assert!(found, "deletion target must be a Watch sample id");
 }
 
+fn assert_valid_observation(obs: &Value) {
+    let parsed: Observation = serde_json::from_value(obs.clone()).expect("observation json");
+    validate_observation_payload(&parsed).unwrap_or_else(|err| {
+        panic!(
+            "fixture payload should validate: {err} ({})",
+            obs["data_type"]
+        )
+    });
+}
+
+#[test]
+fn fixture_payloads_validate() {
+    for file in [
+        "apple_watch.json",
+        "xiaomi_mi_fitness.json",
+        "zepp_life.json",
+    ] {
+        let doc = fixture(file);
+        for obs in observations_in_samples(&doc) {
+            assert_valid_observation(obs);
+        }
+    }
+    let late = fixture("late_write_and_deletion.json");
+    assert_valid_observation(&late["late_write"]["observation"]);
+    assert_valid_observation(&late["deletion"]["observation"]);
+    for obs in fixture("legacy_payloads.json")["observations"]
+        .as_array()
+        .unwrap()
+    {
+        assert_valid_observation(obs);
+    }
+}
+
 #[test]
 fn legacy_payloads_keep_pre_v2_shapes() {
     let doc = fixture("legacy_payloads.json");
     let obs = doc["observations"].as_array().unwrap();
     assert!(obs.iter().any(|o| {
-        o["data_type"] == "hrv" && o["payload"].get("method").is_none() && o["payload"].get("src").is_none()
+        o["data_type"] == "hrv"
+            && o["payload"].get("method").is_none()
+            && o["payload"].get("src").is_none()
     }));
-    assert!(obs.iter().any(|o| o["data_type"] == "heart_rate" && o["payload"].get("src").is_none()));
+    assert!(
+        obs.iter()
+            .any(|o| o["data_type"] == "heart_rate" && o["payload"].get("src").is_none())
+    );
     assert!(obs.iter().any(|o| o["payload"]["stage"] == "asleep"));
     for item in obs {
         assert_observation(item);

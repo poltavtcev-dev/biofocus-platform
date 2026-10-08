@@ -4,9 +4,9 @@ use serde_json::json;
 use uuid::Uuid;
 
 use bio_spec::{
-    validate_life_event_payload, validate_observation_payload, Confidence, EvidenceRef, Feature,
-    FeatureValue, Insight, Observation, Recommendation, Severity, Signal, SpecError, TimeWindow,
-    UnixTimestamp, DATA_TYPE_LIFE_EVENT, LIFE_EVENT_KIND_COFFEE, V1_LIFE_EVENT_KINDS,
+    Confidence, DATA_TYPE_LIFE_EVENT, EvidenceRef, Feature, FeatureValue, Insight,
+    LIFE_EVENT_KIND_COFFEE, Observation, Recommendation, Severity, Signal, SpecError, TimeWindow,
+    UnixTimestamp, V1_LIFE_EVENT_KINDS, validate_life_event_payload, validate_observation_payload,
 };
 
 /// Sample Observation JSON from `docs/07-contracts.md`.
@@ -24,8 +24,8 @@ const CONTRACT_OBSERVATION_JSON: &str = r#"{
 
 #[test]
 fn observation_contract_json_round_trip() {
-    let parsed: Observation = serde_json::from_str(CONTRACT_OBSERVATION_JSON)
-        .expect("contract sample must deserialize");
+    let parsed: Observation =
+        serde_json::from_str(CONTRACT_OBSERVATION_JSON).expect("contract sample must deserialize");
 
     assert_eq!(
         parsed.id,
@@ -72,10 +72,7 @@ fn life_event_contract_json_round_trip() {
 
 #[test]
 fn life_event_v1_kinds_documented() {
-    assert_eq!(
-        V1_LIFE_EVENT_KINDS,
-        &["coffee", "walk", "lunch", "workout"]
-    );
+    assert_eq!(V1_LIFE_EVENT_KINDS, &["coffee", "walk", "lunch", "workout"]);
     for kind in V1_LIFE_EVENT_KINDS {
         validate_life_event_payload(&json!({ "kind": kind })).expect("v1 kind ok");
     }
@@ -99,7 +96,7 @@ const CONTRACT_CALENDAR_EVENT_JSON: &str = r#"{
 
 #[test]
 fn calendar_event_contract_json_round_trip() {
-    use bio_spec::{validate_calendar_event_payload, DATA_TYPE_CALENDAR_EVENT};
+    use bio_spec::{DATA_TYPE_CALENDAR_EVENT, validate_calendar_event_payload};
 
     let parsed: Observation = serde_json::from_str(CONTRACT_CALENDAR_EVENT_JSON)
         .expect("calendar event contract sample must deserialize");
@@ -128,7 +125,7 @@ const CONTRACT_BROWSER_CATEGORY_JSON: &str = r#"{
 
 #[test]
 fn browser_category_contract_json_round_trip() {
-    use bio_spec::{validate_browser_category_payload, DATA_TYPE_BROWSER_CATEGORY};
+    use bio_spec::{DATA_TYPE_BROWSER_CATEGORY, validate_browser_category_payload};
 
     let parsed: Observation = serde_json::from_str(CONTRACT_BROWSER_CATEGORY_JSON)
         .expect("browser category contract sample must deserialize");
@@ -157,7 +154,7 @@ const CONTRACT_NOW_PLAYING_JSON: &str = r#"{
 
 #[test]
 fn now_playing_contract_json_round_trip() {
-    use bio_spec::{validate_now_playing_payload, DATA_TYPE_NOW_PLAYING};
+    use bio_spec::{DATA_TYPE_NOW_PLAYING, validate_now_playing_payload};
 
     let parsed: Observation = serde_json::from_str(CONTRACT_NOW_PLAYING_JSON)
         .expect("now_playing contract sample must deserialize");
@@ -187,7 +184,7 @@ const CONTRACT_GIT_ACTIVITY_JSON: &str = r#"{
 
 #[test]
 fn git_activity_contract_json_round_trip() {
-    use bio_spec::{validate_git_activity_payload, DATA_TYPE_GIT_ACTIVITY};
+    use bio_spec::{DATA_TYPE_GIT_ACTIVITY, validate_git_activity_payload};
 
     let parsed: Observation = serde_json::from_str(CONTRACT_GIT_ACTIVITY_JSON)
         .expect("git_activity contract sample must deserialize");
@@ -217,7 +214,7 @@ const CONTRACT_AMBIENT_LIGHT_JSON: &str = r#"{
 
 #[test]
 fn ambient_light_contract_json_round_trip() {
-    use bio_spec::{validate_ambient_light_payload, DATA_TYPE_AMBIENT_LIGHT};
+    use bio_spec::{DATA_TYPE_AMBIENT_LIGHT, validate_ambient_light_payload};
 
     let parsed: Observation = serde_json::from_str(CONTRACT_AMBIENT_LIGHT_JSON)
         .expect("ambient_light contract sample must deserialize");
@@ -249,7 +246,7 @@ const CONTRACT_NOTIFICATION_EVENT_JSON: &str = r#"{
 
 #[test]
 fn notification_event_contract_json_round_trip() {
-    use bio_spec::{validate_notification_event_payload, DATA_TYPE_NOTIFICATION_EVENT};
+    use bio_spec::{DATA_TYPE_NOTIFICATION_EVENT, validate_notification_event_payload};
 
     let parsed: Observation = serde_json::from_str(CONTRACT_NOTIFICATION_EVENT_JSON)
         .expect("notification_event contract sample must deserialize");
@@ -319,16 +316,27 @@ fn life_event_rejects_malformed_payloads() {
 
 #[test]
 fn life_event_observation_validate_skips_other_types() {
-    let hr = Observation::try_new(
+    let custom = Observation::try_new(
         Uuid::nil(),
         UnixTimestamp::from_secs(0),
         "com.biofocus.test",
+        "custom_probe",
+        json!({}),
+        1.0,
+    )
+    .expect("custom");
+    validate_observation_payload(&custom).expect("unknown types stay pass-through");
+
+    let hr = Observation::try_new(
+        Uuid::nil(),
+        UnixTimestamp::from_secs(0),
+        "com.biofocus.applehealth",
         "heart_rate",
         json!({}),
         1.0,
     )
     .expect("hr");
-    validate_observation_payload(&hr).expect("non-life-event pass-through");
+    assert!(validate_observation_payload(&hr).is_err());
 }
 
 #[test]
@@ -394,8 +402,7 @@ fn signal_feature_insight_serde_smoke() {
     };
     let feature_json = serde_json::to_value(&feature).expect("feature serialize");
     assert!(feature_json.get("factors").is_some());
-    let feature_back: Feature =
-        serde_json::from_value(feature_json).expect("feature deserialize");
+    let feature_back: Feature = serde_json::from_value(feature_json).expect("feature deserialize");
     assert_eq!(feature_back, feature);
 
     // Omit-until-present: JSON without factors deserializes to empty vec.

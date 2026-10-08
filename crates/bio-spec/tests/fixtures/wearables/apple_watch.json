@@ -112,7 +112,7 @@
         "provider_id": "com.biofocus.applehealth",
         "data_type": "oxygen_saturation",
         "payload": {
-          "percent": 97,
+          "spo2_percent": 97,
           "src": {
             "bundle_id": "com.apple.health",
             "app_name": "Health",
