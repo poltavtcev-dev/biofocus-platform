@@ -65,6 +65,7 @@ mod sleep_debt;
 mod stress_index;
 mod sustained_load_indicator;
 mod switch_curve;
+mod wearable_vitals;
 mod window;
 
 pub use confidence::{
@@ -80,7 +81,9 @@ pub use circadian_offset::{CircadianOffsetNode, FEATURE_ID as CIRCADIAN_OFFSET_I
 pub use cognitive_load::{CognitiveLoadNode, FEATURE_ID as COGNITIVE_LOAD_ID};
 pub use context_switch_rate::{ContextSwitchRateNode, FEATURE_ID as CONTEXT_SWITCH_RATE_ID};
 pub use deep_work_score::{DeepWorkScoreNode, FEATURE_ID as DEEP_WORK_SCORE_ID};
-pub use desk_away_presence::{DeskAwayPresenceNode, FEATURE_ID as DESK_AWAY_PRESENCE_ID, MIN_STEPS_AWAY};
+pub use desk_away_presence::{
+    DeskAwayPresenceNode, FEATURE_ID as DESK_AWAY_PRESENCE_ID, MIN_STEPS_AWAY,
+};
 pub use distraction_score::{DistractionScoreNode, FEATURE_ID as DISTRACTION_SCORE_ID};
 pub use energy_score::{EnergyScoreNode, FEATURE_ID as ENERGY_SCORE_ID};
 pub use fatigue_index::{FatigueIndexNode, FEATURE_ID as FATIGUE_INDEX_ID};
@@ -101,6 +104,10 @@ pub use stress_index::{
 };
 pub use sustained_load_indicator::{
     SustainedLoadIndicatorNode, FEATURE_ID as SUSTAINED_LOAD_INDICATOR_ID,
+};
+pub use wearable_vitals::{
+    WearableVitalsNode, BASELINE_MIN_DAYS, HRV_VS_BASELINE_ID, NIGHT_SPO2_ID, RESPIRATORY_RATE_ID,
+    RESTING_HEART_RATE_ID, SLEEP_STAGES_ID, WRIST_TEMPERATURE_ID,
 };
 pub use window::{STEP_SECS, WINDOW_SECS};
 
@@ -226,6 +233,13 @@ pub fn register_circadian_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<
     Ok(())
 }
 
+/// Registers daily wearable vitals (ADR-030): resting heart rate, HRV versus
+/// a personal baseline, sleep stages, night SpO2, breathing rate, wrist temperature.
+pub fn register_wearable_vitals_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()> {
+    engine.register(WearableVitalsNode::new())?;
+    Ok(())
+}
+
 /// Registers `SustainedLoadIndicator` (Feature-level persistence; ADR-026 / P25-E2).
 ///
 /// Depends on `StressIndex`, `FatigueIndex`, and `MeetingDensity` — call
@@ -258,5 +272,6 @@ pub fn register_catalog_v1(engine: &mut FeatureEngine) -> FeatureEngineResult<()
     register_desk_away_v1(engine)?;
     register_circadian_v1(engine)?;
     register_sustained_load_v1(engine)?;
+    register_wearable_vitals_v1(engine)?;
     Ok(())
 }
