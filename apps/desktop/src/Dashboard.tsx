@@ -31,6 +31,7 @@ import {
   HEADLINE_FOURTH,
   HEADLINE_IDS,
   latestPerFeature,
+  isStaleFeature,
   metricInfo,
   reliabilityOf,
   reliabilityText,
@@ -739,6 +740,7 @@ function FeatureRow({ f }: { f: FeatureDto }) {
   const info = metricInfo(f.featureId);
   const rel = reliabilityOf(f);
   const relText = reliabilityText(rel, f.factors);
+  const stale = isStaleFeature(f.timeWindow.end);
   return (
     <li
       className={`feature-row${rel === "ok" ? "" : " feature-row--weak"}`}
@@ -752,6 +754,7 @@ function FeatureRow({ f }: { f: FeatureDto }) {
             {rel === "single_input" && (
               <span className="feature-badge">one source</span>
             )}
+            {stale && <span className="feature-badge">stale</span>}
           </span>
           <span className="feature-value">
             {formatFeatureValue(f.value)}
@@ -774,6 +777,9 @@ function FeatureRow({ f }: { f: FeatureDto }) {
             <p className="status-meta">
               Data coverage: {Math.round(f.confidence * 100)}%
             </p>
+          )}
+          {stale && (
+            <p className="status-meta">This window ended more than 18 hours ago.</p>
           )}
           {relText && <p className="status-meta">{relText}</p>}
           <p className="status-meta feature-tech-id">Metric id: {f.featureId}</p>
@@ -802,6 +808,7 @@ function StatCards({ features }: { features: FeatureDto[] }) {
           );
         }
         const { tone, word } = statTone(f);
+        const stale = isStaleFeature(f.timeWindow.end);
         return (
           <div key={id} className={`stat-card stat-card--${tone}`} title={info.what}>
             <p className="stat-name">{info.name}</p>
@@ -811,6 +818,7 @@ function StatCards({ features }: { features: FeatureDto[] }) {
             </p>
             <p className="stat-foot">
               <span className={`tone-chip tone-chip--${tone}`}>{word}</span>
+              {stale ? " · stale" : ""}
             </p>
           </div>
         );

@@ -195,6 +195,13 @@ const COMPOSITES = new Set([
   "EnergyScore",
 ]);
 
+/** A metric whose window ended longer ago than this is shown as stale. */
+export const STALE_AFTER_SECS = 18 * 60 * 60;
+
+export function isStaleFeature(windowEndUnix: number, nowUnix = Date.now() / 1000): boolean {
+  return Number.isFinite(windowEndUnix) && nowUnix - windowEndUnix > STALE_AFTER_SECS;
+}
+
 export function reliabilityOf(f: {
   featureId: string;
   confidence?: number;
