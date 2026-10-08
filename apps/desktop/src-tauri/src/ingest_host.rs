@@ -15,16 +15,16 @@
 use std::sync::Mutex;
 use std::time::Duration;
 
-use ingest::{serve_with_shutdown, spawn_persist_worker, IngestConfig, IngestState};
+use ingest::{IngestConfig, IngestState, serve_with_shutdown, spawn_persist_worker};
 use macos_collector::{
-    ambient_light_enabled, browser_categories_enabled, calendar_enabled, calendar_ics_path_from_env,
-    git_activity_enabled, input_aggregates_enabled, notification_events_enabled,
-    now_playing_enabled, ActiveWindowPlugin, AmbientLightPlugin, BrowserCategoryPlugin,
-    CalendarPlugin, GitActivityPlugin, KeystrokeAggregatePlugin, NotificationPlugin,
-    NowPlayingPlugin,
+    ActiveWindowPlugin, AmbientLightPlugin, BrowserCategoryPlugin, CalendarPlugin,
+    GitActivityPlugin, KeystrokeAggregatePlugin, NotificationPlugin, NowPlayingPlugin,
+    ambient_light_enabled, browser_categories_enabled, calendar_enabled,
+    calendar_ics_path_from_env, git_activity_enabled, input_aggregates_enabled,
+    notification_events_enabled, now_playing_enabled,
 };
 use plugin_sdk::BioFocusPlugin;
-use runtime::{observation_channel, DEFAULT_OBSERVATION_BUFFER};
+use runtime::{DEFAULT_OBSERVATION_BUFFER, observation_channel};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, Runtime};
 use tokio::sync::oneshot;
@@ -253,6 +253,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
         .with_version(env!("CARGO_PKG_VERSION"))
         .with_db_path(db_path)
         .with_bind(config.bind_host, config.port);
+    ingest::publish_companion_status(state.companion_status.clone());
 
     set_run_state(IngestRunState::Running { bind_host });
     let (shutdown_tx, shutdown_rx) = oneshot::channel();

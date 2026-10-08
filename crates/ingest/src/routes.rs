@@ -19,6 +19,7 @@ use tracing::warn;
 
 use crate::advertise::AdvertiseInfo;
 use crate::auth::{bearer_token, tokens_equal};
+use crate::companion_status::{CompanionStatusBody, CompanionStatusSlot};
 use crate::config::{DEFAULT_INGEST_PORT, INGEST_BIND_HOST};
 use crate::status::{StatusResponse, probe_db_at};
 
@@ -41,6 +42,8 @@ pub struct IngestState {
     /// Actual bind (host, port) when known — hints are re-derived per request so
     /// a Wi-Fi change after startup is picked up without restarting.
     pub bind: Option<(Ipv4Addr, u16)>,
+    /// Latest companion progress. No health samples.
+    pub companion_status: CompanionStatusSlot,
 }
 
 impl IngestState {
@@ -54,6 +57,7 @@ impl IngestState {
             db_probe: Arc::new(|| Ok(())),
             advertise: AdvertiseInfo::for_bind(INGEST_BIND_HOST, DEFAULT_INGEST_PORT),
             bind: None,
+            companion_status: CompanionStatusSlot::default(),
         }
     }
 
@@ -154,12 +158,13 @@ pub const INGEST_MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
 /// Max Observations in one ingest request (ADR-030).
 pub const INGEST_MAX_BATCH: usize = 1000;
 
-/// Builds the ingest router (`POST /v1/ingest`, `GET /v1/status`).
+/// Builds the ingest router (`POST /v1/ingest`, `GET /v1/status`, companion progress).
 #[must_use]
 pub fn ingest_router(state: IngestState) -> Router {
     Router::new()
         .route("/v1/ingest", post(post_ingest))
         .route("/v1/status", get(get_status))
+        .route("/v1/companion/status", post(post_companion_status))
         .layer(DefaultBodyLimit::max(INGEST_MAX_BODY_BYTES))
         .with_state(state)
 }
@@ -293,6 +298,33 @@ async fn post_ingest(
     }
 
     (StatusCode::ACCEPTED, Json(IngestResponse::queued(accepted))).into_response()
+}
+
+async fn post_companion_status(
+    State(state): State<IngestState>,
+    headers: HeaderMap,
+    body: Result<Json<CompanionStatusBody>, axum::extract::rejection::JsonRejection>,
+) -> impl IntoResponse {
+    let Some(provided) = bearer_token(&headers) else {
+        return (StatusCode::UNAUTHORIZED, Json(error_body("unauthorized"))).into_response();
+    };
+    if !tokens_equal(state.token.as_ref(), provided) {
+        return (StatusCode::UNAUTHORIZED, Json(error_body("unauthorized"))).into_response();
+    }
+    let Json(payload) = match body {
+        Ok(json) => json,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(error_body("invalid_companion_status")),
+            )
+                .into_response();
+        }
+    };
+    match state.companion_status.store(payload) {
+        Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "status": "ok" }))).into_response(),
+        Err(code) => (StatusCode::BAD_REQUEST, Json(error_body(code))).into_response(),
+    }
 }
 
 #[derive(Serialize)]

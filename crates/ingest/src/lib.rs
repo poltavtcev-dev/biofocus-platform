@@ -10,6 +10,7 @@
 
 mod advertise;
 mod auth;
+mod companion_status;
 mod config;
 mod error;
 mod ingest_prefs;
@@ -21,6 +22,9 @@ mod test_lock;
 mod token;
 
 pub use advertise::{AdvertiseInfo, BindMode, http_base_url};
+pub use companion_status::{
+    CompanionStatus, CompanionStatusSlot, publish_companion_status, published_companion_status,
+};
 pub use config::{
     DEFAULT_INGEST_PORT, INGEST_BIND_HOST, INGEST_BIND_HOST_ENV, INGEST_LAN_BIND_HOST,
     INGEST_LAN_ENV, INGEST_TOKEN_ENV, IngestConfig, MIN_LAN_TOKEN_LEN, resolve_bind_host,

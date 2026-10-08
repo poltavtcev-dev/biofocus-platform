@@ -713,3 +713,47 @@ async fn get_status_lan_advertise_shape() {
     assert!(!obj.contains_key("token"));
     assert!(!obj.contains_key("path"));
 }
+
+#[tokio::test]
+async fn companion_status_stores_progress_and_rejects_health_fields() {
+    let (state, _rx) = test_state(4);
+    let app = ingest_router(state.clone());
+
+    let ok = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/companion/status")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"phase":"recent","types_ok":2,"types_empty":1,"types_total":18,"pending":4}"#,
+                ))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(ok.status(), StatusCode::OK);
+    let stored = state.companion_status.snapshot().expect("stored");
+    assert_eq!(stored.phase, "recent");
+    assert_eq!(stored.types_ok, 2);
+    assert_eq!(stored.pending, 4);
+    assert!(stored.received_at > 0);
+
+    let leaked = ingest_router(state)
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/companion/status")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"phase":"recent","types_ok":1,"types_empty":0,"types_total":1,"pending":0,"bpm":72}"#,
+                ))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(leaked.status(), StatusCode::BAD_REQUEST);
+}
