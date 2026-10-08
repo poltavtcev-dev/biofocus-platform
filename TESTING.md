@@ -96,8 +96,8 @@ Team under *Signing & Capabilities*, then press ⌘R.
    - *Phone sync is not running* → the message says why (e.g. port in use).
 4. Make sure the iPhone is on the **same Wi‑Fi** (guest or office networks that
    isolate devices won't work).
-5. In the Companion app, enter the **Base URL** (`http://192.168.x.x:8787`) and the
-   **token** (use **Copy**, or **Show QR** to scan it). Allow **Local Network** and
+5. In the Companion app, paste the pairing QR text from Desktop (or enter the
+   **https** Base URL, the token, and the certificate fingerprint). Allow **Local Network** and
    **Health** access when iOS asks.
 6. Tap **Test connection**, then **Send latest wearable samples now**. Within a few minutes, *Recovery* /
    *Stress index* should appear in the Dashboard.
@@ -105,8 +105,10 @@ Team under *Signing & Capabilities*, then press ⌘R.
 If it can't connect, allow incoming connections for BioFocus in
 *System Settings → Network → Firewall*, then try again.
 
-**Security notes:** the token works like a password, so don't share it. Phone
-sync uses plain HTTP on your local network. Use it on a home network you trust,
+**Security notes:** the token works like a password, so don't share it. A real
+iPhone talks to the Mac over TLS and rejects a certificate whose fingerprint is
+not the one in the QR. Loopback (Simulator) stays plain HTTP. Use a home network
+you trust,
 not on public Wi‑Fi.
 
 ---

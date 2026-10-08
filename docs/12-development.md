@@ -55,9 +55,9 @@ Without these knobs, bind stays `127.0.0.1` (Simulator / same-machine unchanged)
 
 ```bash
 curl -s http://127.0.0.1:8787/v1/status | jq '{bind_mode, base_url_hints}'
-# point companion at base_url_hints[0], e.g. http://192.168.x.x:8787
+# point companion at base_url_hints[0]. Loopback is http://127.0.0.1:8787; LAN is https://192.168.x.x:8787
 ```
-Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on read/startup (no busy-loop).
+Loopback mode always reports `http://127.0.0.1:<port>`. A LAN bind reports `https://`. Hints are derived on read/startup (no busy-loop). The pairing QR includes the certificate fingerprint (ADR-031).
 
 **Companion LAN UI (P5-E2-T1 Done):** Desktop **Companion** section shows copyable primary base URL (`ingestBaseUrl` from `get_pairing_token`), bind-mode / LAN opt-in copy, and existing token Show / Copy / QR. When `bindMode=lan` but primary is still loopback, UI surfaces a calm fallback hint (`BIOFOCUS_INGEST_BIND_HOST=<lan-ipv4>`). No pairing busy-loop (load on mount + manual Reload).
 
@@ -66,7 +66,7 @@ Loopback mode always reports `http://127.0.0.1:<port>`. Hints are derived on rea
 | Symptom | Likely cause | Checklist |
 | :--- | :--- | :--- |
 | iOS **timeout** (~60s before P28; now ≤5s) | Desktop loopback-only or wrong Base URL | Desktop: enable LAN (UI checkbox or `BIOFOCUS_INGEST_LAN=1`) → **restart** → Reload pairing → copy LAN URL (not `127.0.0.1`) |
-| iOS **loopback on device** message | `127.0.0.1` on physical iPhone | Use `http://192.168.x.x:8787` from Desktop Companion |
+| iOS **loopback on device** message | `127.0.0.1` on physical iPhone | Use the `https://192.168.x.x:8787` URL from Desktop Companion, and paste the QR text so the certificate fingerprint is set |
 | **LAN on** but no address | Discovery empty / offline NIC | Set `BIOFOCUS_INGEST_BIND_HOST=<mac-lan-ipv4>` → restart → Reload |
 | **401** on Send | Token mismatch | Copy token from Desktop Companion again |
 | **Unreachable** / connection refused | Firewall / AP isolation / Desktop quit | Same Wi‑Fi; allow incoming on `:8787`; keep BioFocus running; iOS **Local Network** permission |
