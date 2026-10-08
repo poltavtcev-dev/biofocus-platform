@@ -175,6 +175,7 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 mod alert_state;
+mod data_sources_ipc;
 mod feature_host;
 mod git_watched_roots_ipc;
 mod ingest_host;
@@ -188,14 +189,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bio_spec::{EvidenceRef, Insight, Recommendation};
 use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal};
 use knowledge_engine::{
-    register_insights_v1, register_recommendations_v1, KnowledgeEngine, PatternInputs,
+    KnowledgeEngine, PatternInputs, register_insights_v1, register_recommendations_v1,
 };
-use qrcode::render::svg;
 use qrcode::QrCode;
+use qrcode::render::svg;
 use report_engine::{
-    build_report_with_pack_and_life_events, interpret_report, LocalLlmConfig, ReportDocument,
-    ReportEngineError, ReportLifeEvent,
-    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
+    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION, LocalLlmConfig, ReportDocument,
+    ReportEngineError, ReportLifeEvent, build_report_with_pack_and_life_events, interpret_report,
 };
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -205,9 +205,9 @@ use thiserror::Error;
 use tracing::warn;
 
 use crate::alert_state::{AlertState, SnapshotState};
-use crate::pattern_host::{load_focus_baseline_series, BaselineMemoState};
+use crate::pattern_host::{BaselineMemoState, load_focus_baseline_series};
 use crate::series_host::{
-    latest_features_per_id, load_feature_series, FeatureSeriesResult, SeriesMemoState,
+    FeatureSeriesResult, SeriesMemoState, latest_features_per_id, load_feature_series,
 };
 
 /// Process-lifetime Knowledge Engine with v1 Insight + Recommendation rules.
@@ -351,13 +351,13 @@ impl From<&Feature> for FeatureDto {
                 end: feature.time_window.end.as_secs(),
             },
             value: FeatureValueDto::from(&feature.value),
-            provenance: feature
-                .provenance
-                .iter()
-                .map(|id| id.to_string())
-                .collect(),
+            provenance: feature.provenance.iter().map(|id| id.to_string()).collect(),
             confidence: feature.confidence.get(),
-            factors: feature.factors.iter().map(ExplanationFactorDto::from).collect(),
+            factors: feature
+                .factors
+                .iter()
+                .map(ExplanationFactorDto::from)
+                .collect(),
         }
     }
 }
@@ -465,7 +465,11 @@ impl From<&Insight> for InsightDto {
             title: insight.title.clone(),
             description: insight.description.clone(),
             category: insight.category.clone(),
-            evidence_list: insight.evidence_list.iter().map(EvidenceRefDto::from).collect(),
+            evidence_list: insight
+                .evidence_list
+                .iter()
+                .map(EvidenceRefDto::from)
+                .collect(),
             action_recommendation: insight.action_recommendation.clone(),
         }
     }
@@ -631,9 +635,7 @@ fn evaluate_recommendations_dto(
     snapshot: &FeatureSnapshot,
     insights: &[Insight],
 ) -> RecommendationsDto {
-    recommendations_to_dto(&evaluate_recommendations_list(
-        engine, snapshot, insights,
-    ))
+    recommendations_to_dto(&evaluate_recommendations_list(engine, snapshot, insights))
 }
 
 /// IPC payload for [`get_local_llm_status`] (P11-E3-T1).
@@ -715,22 +717,14 @@ fn report_dto_offline(doc: ReportDocument) -> ReportDto {
 
 fn calm_llm_error(err: &ReportEngineError) -> String {
     match err {
-        ReportEngineError::LocalLlmTimeout { .. } => {
-            "Local AI did not respond in time.".into()
-        }
-        ReportEngineError::LocalLlmHttp { .. } => {
-            "Could not reach the local AI endpoint.".into()
-        }
+        ReportEngineError::LocalLlmTimeout { .. } => "Local AI did not respond in time.".into(),
+        ReportEngineError::LocalLlmHttp { .. } => "Could not reach the local AI endpoint.".into(),
         ReportEngineError::LocalLlmResponse { .. } => {
             "Local AI returned an unusable response.".into()
         }
-        ReportEngineError::LocalLlmDisabled => {
-            "Local AI is optional and currently off.".into()
-        }
+        ReportEngineError::LocalLlmDisabled => "Local AI is optional and currently off.".into(),
         ReportEngineError::BuildFailed { .. } => "Could not build the report.".into(),
-        ReportEngineError::UnknownPromptPack { .. } => {
-            "That report pack is not available.".into()
-        }
+        ReportEngineError::UnknownPromptPack { .. } => "That report pack is not available.".into(),
     }
 }
 
@@ -837,14 +831,10 @@ fn get_ingest_lan_preference() -> Result<IngestLanPreferenceDto, String> {
 #[tauri::command]
 fn set_ingest_lan_preference(enabled: bool) -> Result<IngestLanPreferenceDto, String> {
     if ingest::lan_preference_overridden_by_env() {
-        return Err(
-            "LAN bind is controlled by environment variables for this launch.".into(),
-        );
+        return Err("LAN bind is controlled by environment variables for this launch.".into());
     }
     ingest::write_persisted_lan_enabled(enabled).map_err(|err| match err {
-        ingest::IngestError::HomeDirUnavailable => {
-            "Could not locate local BioFocus config.".into()
-        }
+        ingest::IngestError::HomeDirUnavailable => "Could not locate local BioFocus config.".into(),
         ingest::IngestError::TokenIo { .. } => "Could not save LAN preference.".into(),
         other => other.to_string(),
     })?;
@@ -888,9 +878,7 @@ struct PairingRuntime {
 /// Maps token resolve errors to short UI-safe strings (no filesystem paths).
 fn pairing_error_message(err: ingest::IngestError) -> String {
     match err {
-        ingest::IngestError::HomeDirUnavailable => {
-            "Could not locate local pairing data.".into()
-        }
+        ingest::IngestError::HomeDirUnavailable => "Could not locate local pairing data.".into(),
         ingest::IngestError::TokenIo { .. } => "Could not read pairing token.".into(),
         ingest::IngestError::EmptyTokenFile { .. } => "Pairing token is empty.".into(),
         ingest::IngestError::TokenEntropy(_) => "Could not create pairing token.".into(),
@@ -995,8 +983,7 @@ fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
         ingest_host::IngestRunState::NotStarted => (None, None),
     };
     let advertise_bind = running_bind.unwrap_or(configured_bind);
-    let advertise =
-        ingest::AdvertiseInfo::for_bind(advertise_bind, ingest::DEFAULT_INGEST_PORT);
+    let advertise = ingest::AdvertiseInfo::for_bind(advertise_bind, ingest::DEFAULT_INGEST_PORT);
     let runtime = PairingRuntime {
         running_bind,
         configured_bind,
@@ -1158,9 +1145,7 @@ fn open_dashboard(app: AppHandle) -> Result<(), String> {
     let Some(window) = app.get_webview_window("dashboard") else {
         return Err("Dashboard window is not available.".into());
     };
-    window
-        .unminimize()
-        .map_err(|err| err.to_string())?;
+    window.unminimize().map_err(|err| err.to_string())?;
     window.show().map_err(|err| err.to_string())?;
     window.set_focus().map_err(|err| err.to_string())?;
     Ok(())
@@ -1213,10 +1198,7 @@ fn restore_life_event(id: String) -> Result<life_event_ipc::LifeEventDto, String
 
 /// Change when a Life Event happened (re-timed copy + retraction of the old row).
 #[tauri::command]
-fn retime_life_event(
-    id: String,
-    happened_at: i64,
-) -> Result<life_event_ipc::LifeEventDto, String> {
+fn retime_life_event(id: String, happened_at: i64) -> Result<life_event_ipc::LifeEventDto, String> {
     life_event_ipc::retime_life_event(&id, happened_at)
 }
 
@@ -1235,6 +1217,18 @@ fn list_recent_life_events(
     limit: Option<u32>,
 ) -> Result<Vec<life_event_ipc::LifeEventDto>, String> {
     life_event_ipc::list_recent_life_events(limit)
+}
+
+/// Wearable sources for the Dashboard tab. No raw payloads.
+#[tauri::command]
+fn get_data_sources() -> data_sources_ipc::DataSourcesDto {
+    data_sources_ipc::get_data_sources()
+}
+
+/// Saves source priority order (`source-priority.toml`). Returns the refreshed list.
+#[tauri::command]
+fn set_source_priority(order: Vec<String>) -> Result<data_sources_ipc::DataSourcesDto, String> {
+    data_sources_ipc::set_source_priority(order)
 }
 
 /// Load personal Git watched folders from the ADR-014 config file (P14-E3-T1).
@@ -1326,7 +1320,9 @@ pub fn run() -> DesktopResult<()> {
             retime_life_event,
             list_life_events_between,
             get_git_watched_roots,
-            set_git_watched_roots
+            set_git_watched_roots,
+            get_data_sources,
+            set_source_priority
         ])
         .build(tauri::generate_context!())?;
 
@@ -1462,9 +1458,11 @@ mod tests {
 
     #[test]
     fn non_empty_feature_snapshot_dto_has_provenance_no_biometrics() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![Feature {
                 feature_id: "FocusScore".into(),
@@ -1519,10 +1517,7 @@ mod tests {
         let s = signals[0].as_object().expect("signal obj");
         assert_eq!(s.get("type").and_then(|v| v.as_str()), Some("High_Stress"));
         assert_eq!(s.get("severity").and_then(|v| v.as_str()), Some("high"));
-        assert_eq!(
-            s.get("timestampStart").and_then(|v| v.as_i64()),
-            Some(900)
-        );
+        assert_eq!(s.get("timestampStart").and_then(|v| v.as_i64()), Some(900));
 
         let raw = serde_json::to_string(&dto).expect("string");
         assert!(!raw.contains("/Users"));
@@ -1532,9 +1527,11 @@ mod tests {
 
     #[test]
     fn feature_snapshot_dto_exposes_factors_when_present() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![Feature {
                 feature_id: "FocusScore".into(),
@@ -1553,7 +1550,10 @@ mod tests {
         let dto = snapshot_to_dto(&snap);
         let json = serde_json::to_value(&dto).expect("serialize");
         let f = json["features"][0].as_object().expect("feature");
-        let factors = f.get("factors").and_then(|v| v.as_array()).expect("factors");
+        let factors = f
+            .get("factors")
+            .and_then(|v| v.as_array())
+            .expect("factors");
         assert_eq!(factors.len(), 1);
         assert_eq!(factors[0]["id"].as_str(), Some("typing"));
         assert_eq!(factors[0]["label"].as_str(), Some("Typing activity"));
@@ -1563,12 +1563,16 @@ mod tests {
 
     #[test]
     fn snapshot_dto_collapses_to_latest_per_feature_id() {
-        let older =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
-        let newer =
-            TimeWindow::try_new(UnixTimestamp::from_secs(1100), UnixTimestamp::from_secs(2000))
-                .expect("window");
+        let older = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
+        let newer = TimeWindow::try_new(
+            UnixTimestamp::from_secs(1100),
+            UnixTimestamp::from_secs(2000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![
                 Feature {
@@ -1619,9 +1623,11 @@ mod tests {
 
     #[test]
     fn non_empty_feature_series_dto_has_wire_shape_no_biometrics() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let series = FeatureSeriesResult {
             range: "1h".into(),
             step_secs: 60,
@@ -1641,10 +1647,16 @@ mod tests {
         let obj = json.as_object().expect("object");
         assert_eq!(obj.get("range").and_then(|v| v.as_str()), Some("1h"));
         assert_eq!(obj.get("stepSecs").and_then(|v| v.as_i64()), Some(60));
-        let tw = obj.get("window").and_then(|v| v.as_object()).expect("window");
+        let tw = obj
+            .get("window")
+            .and_then(|v| v.as_object())
+            .expect("window");
         assert_eq!(tw.get("start").and_then(|v| v.as_i64()), Some(0));
         assert_eq!(tw.get("end").and_then(|v| v.as_i64()), Some(3600));
-        let features = obj.get("features").and_then(|v| v.as_array()).expect("features");
+        let features = obj
+            .get("features")
+            .and_then(|v| v.as_array())
+            .expect("features");
         assert_eq!(features.len(), 1);
         assert_eq!(
             features[0].get("featureId").and_then(|v| v.as_str()),
@@ -1676,16 +1688,18 @@ mod tests {
     #[test]
     fn unregistered_engine_insights_are_empty() {
         let engine = KnowledgeEngine::new();
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![Feature {
                 feature_id: "ContextSwitchRate".into(),
                 time_window: window,
                 value: FeatureValue::Scalar(2.5),
                 provenance: vec![Uuid::from_u128(2)],
-            confidence: bio_spec::Confidence::ONE,
+                confidence: bio_spec::Confidence::ONE,
                 factors: Vec::new(),
             }],
             signals: vec![Signal {
@@ -1704,9 +1718,11 @@ mod tests {
     fn registered_engine_emits_insights_with_evidence_refs() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let signal_id = Uuid::from_u128(9);
         let snap = FeatureSnapshot {
             features: vec![
@@ -1715,16 +1731,16 @@ mod tests {
                     time_window: window.clone(),
                     value: FeatureValue::Scalar(2.5),
                     provenance: vec![Uuid::from_u128(2)],
-                confidence: bio_spec::Confidence::ONE,
-                factors: Vec::new(),
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
                 },
                 Feature {
                     feature_id: "StressIndex".into(),
                     time_window: window,
                     value: FeatureValue::Scalar(80.0),
                     provenance: vec![Uuid::from_u128(3)],
-                confidence: bio_spec::Confidence::ONE,
-                factors: Vec::new(),
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
                 },
             ],
             signals: vec![Signal {
@@ -1782,9 +1798,11 @@ mod tests {
 
         let focus = |end: i64, value: f64| {
             let start = end.saturating_sub(900);
-            let window =
-                TimeWindow::try_new(UnixTimestamp::from_secs(start), UnixTimestamp::from_secs(end))
-                    .expect("window");
+            let window = TimeWindow::try_new(
+                UnixTimestamp::from_secs(start),
+                UnixTimestamp::from_secs(end),
+            )
+            .expect("window");
             Feature {
                 feature_id: "FocusScore".into(),
                 time_window: window,
@@ -1873,9 +1891,11 @@ mod tests {
 
     #[tokio::test]
     async fn assemble_report_with_features_keeps_deterministic_markdown() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let features = vec![Feature {
             feature_id: "FocusScore".into(),
             time_window: window,
@@ -1907,7 +1927,10 @@ mod tests {
             .await
             .expect("report");
         assert!(dto.markdown.contains("## Life events"));
-        assert!(dto.markdown.contains("| coffee | 1700000000 | 1700000900 |"));
+        assert!(
+            dto.markdown
+                .contains("| coffee | 1700000000 | 1700000900 |")
+        );
     }
 
     #[tokio::test]
@@ -2033,7 +2056,9 @@ mod tests {
 
     #[test]
     fn resolve_pairing_advertise_loopback_by_default() {
-        let _guard = ENV_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _guard = ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // Isolate from the developer's real ~/.biofocus (LAN opt-in file).
         let home = tempfile::tempdir().expect("tempdir");
         // SAFETY: serialized by ENV_LOCK; restore LAN knobs before unlock.
@@ -2055,7 +2080,9 @@ mod tests {
 
     #[test]
     fn resolve_pairing_advertise_lan_flag_is_lan_mode() {
-        let _guard = ENV_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _guard = ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         unsafe {
             std::env::set_var(ingest::INGEST_LAN_ENV, "1");
             std::env::remove_var(ingest::INGEST_BIND_HOST_ENV);
@@ -2066,7 +2093,10 @@ mod tests {
         for url in &advertise.base_url_hints {
             assert!(url.starts_with("http://"), "hint={url}");
             assert!(url.contains(":8787"), "hint={url}");
-            assert!(!url.contains("127.0.0.1"), "LAN hint should not be loopback");
+            assert!(
+                !url.contains("127.0.0.1"),
+                "LAN hint should not be loopback"
+            );
         }
         unsafe {
             std::env::remove_var(ingest::INGEST_LAN_ENV);
@@ -2117,7 +2147,9 @@ mod tests {
 
     #[test]
     fn resolve_pairing_info_from_env_override() {
-        let _guard = ENV_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _guard = ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // SAFETY: serialized by ENV_LOCK; restored before unlock.
         unsafe {
             std::env::set_var(ingest::INGEST_TOKEN_ENV, "ux-test-pairing-token");

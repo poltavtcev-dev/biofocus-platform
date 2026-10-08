@@ -81,6 +81,7 @@ import {
   mockLlmProviderFromLocation,
   type LlmProviderView,
 } from "./llmProvider";
+import { DataSourcesPanel, mockDataSourcesFromLocation } from "./dataSources";
 
 /** Soft refresh — idle-safe; no busy-loop. Does not regenerate reports. */
 const SNAPSHOT_POLL_MS = 30_000;
@@ -548,6 +549,9 @@ export function Dashboard() {
   );
   const [busy, setBusy] = useState(true);
   const [reportBusy, setReportBusy] = useState(false);
+  const [tab, setTab] = useState<"overview" | "sources">(() =>
+    mockDataSourcesFromLocation() ? "sources" : "overview",
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -679,6 +683,29 @@ export function Dashboard() {
       </section>
       </header>
 
+      <nav className="dash-tabs" aria-label="Разделы">
+        <button
+          type="button"
+          className={tab === "overview" ? "dash-tab dash-tab--on" : "dash-tab"}
+          aria-pressed={tab === "overview"}
+          onClick={() => setTab("overview")}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          className={tab === "sources" ? "dash-tab dash-tab--on" : "dash-tab"}
+          aria-pressed={tab === "sources"}
+          onClick={() => setTab("sources")}
+        >
+          Источники данных
+        </button>
+      </nav>
+
+      {tab === "sources" ? (
+        <DataSourcesPanel />
+      ) : (
+        <>
       {isReady && features.length > 0 && <StatCards features={features} />}
 
       {view.kind === "error" && (
@@ -732,6 +759,8 @@ export function Dashboard() {
         onGenerate={onGenerateReport}
         llmProvider={llmProvider}
       />
+        </>
+      )}
     </main>
   );
 }
