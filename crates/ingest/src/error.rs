@@ -60,4 +60,12 @@ pub enum IngestError {
         /// Short, secret-free reason.
         reason: &'static str,
     },
+
+    /// TLS certificate could not be created or read. The detail has no key material.
+    #[error("ingest TLS setup failed: {0}")]
+    Tls(String),
+
+    /// `BIOFOCUS_INGEST_TOKEN` is set, so the on-disk token cannot be rotated.
+    #[error("pairing token is controlled by BIOFOCUS_INGEST_TOKEN")]
+    TokenFromEnv,
 }

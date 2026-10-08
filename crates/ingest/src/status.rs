@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(status.bind_mode, BindMode::Lan);
         assert_eq!(
             status.base_url_hints,
-            vec!["http://192.168.1.10:8787".to_owned()]
+            vec!["https://192.168.1.10:8787".to_owned()]
         );
         assert!(status.db_error.is_none());
     }

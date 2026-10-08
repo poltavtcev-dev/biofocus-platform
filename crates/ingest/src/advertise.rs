@@ -24,7 +24,7 @@ pub enum BindMode {
 pub struct AdvertiseInfo {
     /// Loopback vs LAN opt-in bind.
     pub bind_mode: BindMode,
-    /// Usable `http://<host>:<port>` URLs (no trailing slash). First is primary.
+    /// Usable base URLs (no trailing slash). `http` on loopback, `https` on LAN. First is primary.
     pub base_url_hints: Vec<String>,
 }
 
@@ -44,17 +44,17 @@ impl AdvertiseInfo {
         if bind_host.is_loopback() {
             return Self {
                 bind_mode: BindMode::Loopback,
-                base_url_hints: vec![http_base_url(INGEST_BIND_HOST, port)],
+                base_url_hints: vec![base_url_for(bind_host, INGEST_BIND_HOST, port)],
             };
         }
 
         let mut hints = Vec::new();
         if bind_host != INGEST_LAN_BIND_HOST && !bind_host.is_unspecified() {
-            hints.push(http_base_url(bind_host, port));
+            hints.push(base_url_for(bind_host, bind_host, port));
         } else {
             for ip in discover() {
                 if !ip.is_loopback() && !ip.is_unspecified() {
-                    let url = http_base_url(ip, port);
+                    let url = base_url_for(bind_host, ip, port);
                     if !hints.contains(&url) {
                         hints.push(url);
                     }
@@ -75,10 +75,21 @@ impl AdvertiseInfo {
     }
 }
 
-/// Formats `http://<ipv4>:<port>` (no trailing slash).
+/// Formats `http://<ipv4>:<port>` (no trailing slash). Loopback only.
 #[must_use]
 pub fn http_base_url(host: Ipv4Addr, port: u16) -> String {
     format!("http://{host}:{port}")
+}
+
+/// URL for a listener. Non-loopback binds use `https`.
+#[must_use]
+pub fn base_url_for(bind_host: Ipv4Addr, host: Ipv4Addr, port: u16) -> String {
+    let scheme = if bind_host.is_loopback() {
+        "http"
+    } else {
+        "https"
+    };
+    format!("{scheme}://{host}:{port}")
 }
 
 /// Best-effort LAN IPv4 discovery.
@@ -187,7 +198,7 @@ mod tests {
         assert_eq!(info.bind_mode, BindMode::Lan);
         assert_eq!(
             info.base_url_hints,
-            vec!["http://192.168.1.40:8787".to_owned()]
+            vec!["https://192.168.1.40:8787".to_owned()]
         );
     }
 
@@ -198,7 +209,10 @@ mod tests {
             panic!("discovery must not run for concrete bind host")
         });
         assert_eq!(info.bind_mode, BindMode::Lan);
-        assert_eq!(info.base_url_hints, vec!["http://10.0.0.5:9000".to_owned()]);
+        assert_eq!(
+            info.base_url_hints,
+            vec!["https://10.0.0.5:9000".to_owned()]
+        );
     }
 
     #[test]

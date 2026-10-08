@@ -4,6 +4,7 @@ use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex, RwLock};
 
 use crate::error::{IngestError, IngestResult};
 
@@ -55,6 +56,77 @@ pub fn default_pairing_token_path() -> IngestResult<PathBuf> {
     Ok(PathBuf::from(home)
         .join(BIOFOCUS_DIR)
         .join(PAIRING_TOKEN_FILE))
+}
+
+/// Bearer token shared by the running server so rotation takes effect immediately.
+#[derive(Debug, Clone)]
+pub struct SharedToken {
+    inner: Arc<RwLock<String>>,
+}
+
+impl SharedToken {
+    /// Wraps a token value.
+    #[must_use]
+    pub fn new(token: impl Into<String>) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(token.into())),
+        }
+    }
+
+    /// Constant-time compare against the current value.
+    #[must_use]
+    pub fn matches(&self, provided: &str) -> bool {
+        let current = self
+            .inner
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        crate::auth::tokens_equal(current.as_str(), provided)
+    }
+
+    /// Replaces the live value. Old bearers fail on the next request.
+    pub fn replace(&self, next: impl Into<String>) {
+        let mut current = self
+            .inner
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        *current = next.into();
+    }
+}
+
+static LIVE_TOKEN: Mutex<Option<SharedToken>> = Mutex::new(None);
+
+/// Remembers the token the running server checks, so a later rotate updates it.
+pub fn install_live_token(token: SharedToken) {
+    if let Ok(mut guard) = LIVE_TOKEN.lock() {
+        *guard = Some(token);
+    }
+}
+
+/// Writes a new token and updates the running server when one is installed.
+///
+/// Refuses when `BIOFOCUS_INGEST_TOKEN` is set: that override would keep serving
+/// the old value.
+pub fn rotate_live_pairing_token() -> IngestResult<String> {
+    if let Ok(token) = env::var(INGEST_TOKEN_ENV) {
+        if !token.trim().is_empty() {
+            return Err(IngestError::TokenFromEnv);
+        }
+    }
+    let path = default_pairing_token_path()?;
+    let next = rotate_pairing_token_file(&path)?;
+    if let Ok(guard) = LIVE_TOKEN.lock() {
+        if let Some(live) = guard.as_ref() {
+            live.replace(next.clone());
+        }
+    }
+    Ok(next)
+}
+
+/// Replaces the token file. Does not touch a running server.
+pub fn rotate_pairing_token_file(path: &Path) -> IngestResult<String> {
+    let next = generate_pairing_token()?;
+    write_token_file(path, &next)?;
+    Ok(next)
 }
 
 /// Generates a cryptographically strong pairing token (64 hex chars).
@@ -260,6 +332,28 @@ mod tests {
         let err = load_or_create_pairing_token(&path).expect_err("empty");
         assert!(matches!(err, IngestError::EmptyTokenFile { .. }));
 
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rotate_replaces_the_file_and_the_old_value_stops_matching() {
+        let dir = std::env::temp_dir().join(format!(
+            "biofocus-pairing-rotate-{}-{}",
+            std::process::id(),
+            uuid::Uuid::now_v7()
+        ));
+        fs::create_dir_all(&dir).expect("temp dir");
+        let path = dir.join(PAIRING_TOKEN_FILE);
+        let first = load_or_create_pairing_token(&path).expect("create");
+        let shared = SharedToken::new(first.clone());
+        let next = rotate_pairing_token_file(&path).expect("rotate");
+        assert_ne!(first, next);
+        assert!(shared.matches(&first));
+        shared.replace(next.clone());
+        assert!(!shared.matches(&first));
+        assert!(shared.matches(&next));
+        let on_disk = fs::read_to_string(&path).expect("read");
+        assert_eq!(on_disk.trim(), next);
         let _ = fs::remove_dir_all(&dir);
     }
 }

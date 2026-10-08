@@ -14,11 +14,13 @@ mod companion_status;
 mod config;
 mod error;
 mod ingest_prefs;
+mod pairing_qr;
 mod persist;
 mod routes;
 mod server;
 mod status;
 mod test_lock;
+mod tls;
 mod token;
 
 pub use advertise::{AdvertiseInfo, BindMode, http_base_url};
@@ -35,13 +37,22 @@ pub use ingest_prefs::{
     INGEST_LAN_PREFS_FILE, ingest_lan_prefs_path, read_persisted_lan_enabled,
     write_persisted_lan_enabled,
 };
+pub use pairing_qr::{ParsedPairingQr, pairing_qr_payload, parse_pairing_qr};
 pub use persist::spawn_persist_worker;
 pub use routes::{DbProbe, IngestResponse, IngestState, QueuePressureBody, ingest_router};
-pub use server::{bind_host, bind_loopback, serve_listener, serve_with_shutdown};
+pub use server::{
+    bind_host, bind_loopback, serve_listener, serve_listener_with_shutdown, serve_tls_listener,
+    serve_with_shutdown,
+};
 pub use status::{StatusResponse, probe_db_at};
+pub use tls::{
+    IngestTransport, TlsIdentity, generate_tls_identity, load_or_create_tls_identity, pin_matches,
+    pinned_client_config, transport_for_bind,
+};
 pub use token::{
-    BIOFOCUS_DIR, BIOFOCUS_HOME_ENV, PAIRING_TOKEN_FILE, default_pairing_token_path,
-    generate_pairing_token, load_or_create_pairing_token, resolve_ingest_token,
+    BIOFOCUS_DIR, BIOFOCUS_HOME_ENV, PAIRING_TOKEN_FILE, SharedToken, default_pairing_token_path,
+    generate_pairing_token, install_live_token, load_or_create_pairing_token, resolve_ingest_token,
+    rotate_live_pairing_token, rotate_pairing_token_file,
 };
 
 /// Crate identity used by dependents and status payloads.

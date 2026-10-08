@@ -704,7 +704,7 @@ async fn get_status_lan_advertise_shape() {
     assert_eq!(parsed.bind_mode, BindMode::Lan);
     assert_eq!(
         parsed.base_url_hints,
-        vec!["http://10.0.0.8:8787".to_owned()]
+        vec!["https://10.0.0.8:8787".to_owned()]
     );
     assert_eq!(parsed.db_status, "ok");
     let value: serde_json::Value = serde_json::from_slice(&bytes).expect("value");

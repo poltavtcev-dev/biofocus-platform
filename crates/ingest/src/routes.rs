@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use tracing::warn;
 
 use crate::advertise::AdvertiseInfo;
-use crate::auth::{bearer_token, tokens_equal};
+use crate::auth::bearer_token;
 use crate::companion_status::{CompanionStatusBody, CompanionStatusSlot};
 use crate::config::{DEFAULT_INGEST_PORT, INGEST_BIND_HOST};
 use crate::status::{StatusResponse, probe_db_at};
@@ -29,8 +29,8 @@ pub type DbProbe = Arc<dyn Fn() -> Result<(), String> + Send + Sync>;
 /// Shared state for ingest handlers.
 #[derive(Clone)]
 pub struct IngestState {
-    /// Expected Bearer token.
-    pub token: Arc<str>,
+    /// Expected Bearer token. Rotation replaces this value in place.
+    pub token: crate::token::SharedToken,
     /// Bounded Observation ingress (drained by persist worker).
     pub tx: ObservationSender,
     /// Version string returned by `GET /v1/status`.
@@ -51,7 +51,7 @@ impl IngestState {
     #[must_use]
     pub fn new(token: impl Into<String>, tx: ObservationSender) -> Self {
         Self {
-            token: Arc::from(token.into()),
+            token: crate::token::SharedToken::new(token),
             tx,
             version: Arc::from(env!("CARGO_PKG_VERSION")),
             db_probe: Arc::new(|| Ok(())),
@@ -188,7 +188,7 @@ async fn post_ingest(
     let Some(provided) = bearer_token(&headers) else {
         return (StatusCode::UNAUTHORIZED, Json(error_body("unauthorized"))).into_response();
     };
-    if !tokens_equal(state.token.as_ref(), provided) {
+    if !state.token.matches(provided) {
         return (StatusCode::UNAUTHORIZED, Json(error_body("unauthorized"))).into_response();
     }
 
@@ -308,7 +308,7 @@ async fn post_companion_status(
     let Some(provided) = bearer_token(&headers) else {
         return (StatusCode::UNAUTHORIZED, Json(error_body("unauthorized"))).into_response();
     };
-    if !tokens_equal(state.token.as_ref(), provided) {
+    if !state.token.matches(provided) {
         return (StatusCode::UNAUTHORIZED, Json(error_body("unauthorized"))).into_response();
     }
     let Json(payload) = match body {
