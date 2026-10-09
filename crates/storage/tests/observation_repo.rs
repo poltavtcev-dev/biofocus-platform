@@ -324,3 +324,37 @@ fn list_after_created_cursor_incremental_and_idle_empty() {
         .expect("limit 0")
         .is_empty());
 }
+
+#[test]
+fn summarize_types_since_groups_without_payloads() {
+    let db = Database::open_in_memory().expect("open");
+    let repo = ObservationRepository::new(&db);
+    let hr = sample_observation(
+        "01900000-0000-7000-8000-0000000000a1",
+        2_000,
+        "heart_rate",
+    );
+    let hr2 = sample_observation(
+        "01900000-0000-7000-8000-0000000000a2",
+        3_000,
+        "heart_rate",
+    );
+    let steps = sample_observation(
+        "01900000-0000-7000-8000-0000000000a3",
+        2_500,
+        "step_count",
+    );
+    repo.insert(&hr).expect("hr");
+    repo.insert(&hr2).expect("hr2");
+    repo.insert(&steps).expect("steps");
+
+    let rows = repo
+        .summarize_types_since(UnixTimestamp::from_secs(2_500))
+        .expect("summary");
+    assert_eq!(rows.len(), 2);
+    let hr_row = rows.iter().find(|r| r.data_type == "heart_rate").expect("hr");
+    assert_eq!(hr_row.count, 1);
+    assert_eq!(hr_row.latest_timestamp, 3_000);
+    let step_row = rows.iter().find(|r| r.data_type == "step_count").expect("steps");
+    assert_eq!(step_row.count, 1);
+}

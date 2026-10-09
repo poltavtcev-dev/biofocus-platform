@@ -54,43 +54,37 @@ pub(crate) fn render_features_section(
     out: &mut String,
     features: &[Feature],
 ) -> ReportResult<()> {
-    out.push_str("## Features\n\n");
+    out.push_str("## Расписание\n\n");
     if features.is_empty() {
         out.push_str("_No Features in this period._\n\n");
         return Ok(());
     }
 
-    let mut sorted: Vec<&Feature> = features.iter().collect();
-    sorted.sort_by(|a, b| {
-        (
-            a.feature_id.as_str(),
-            a.time_window.start.as_secs(),
-            a.time_window.end.as_secs(),
-        )
-            .cmp(&(
-                b.feature_id.as_str(),
-                b.time_window.start.as_secs(),
-                b.time_window.end.as_secs(),
-            ))
-    });
+    out.push_str(
+        "_Минутные окна склеены в отрезки. Время местное. \
+         Это не медицинская оценка._\n\n",
+    );
 
-    out.push_str("| Feature | Window (UTC s) | Value |\n");
-    out.push_str("| :--- | :--- | :--- |\n");
-    for feature in sorted {
-        let window = format!(
-            "{}–{}",
-            feature.time_window.start.as_secs(),
-            feature.time_window.end.as_secs()
-        );
-        let value = format_feature_value(&feature.value)?;
-        out.push_str(&format!(
-            "| {} | {} | {} |\n",
-            escape_cell(&feature.feature_id),
-            window,
-            escape_cell(&value)
-        ));
+    let offset = local_offset_secs();
+    for (feature_id, samples) in group_features(features)? {
+        out.push_str(&format!("### {}\n\n", feature_label(&feature_id)));
+        out.push_str(&format!("_Код метрики: {feature_id}._\n\n"));
+        for run in merge_runs(&samples) {
+            let start = format_local(run.start, offset);
+            let end = format_local(run.end, offset);
+            out.push_str(&format!("- **{start} – {end}**"));
+            if run.count > 1 {
+                out.push_str(&format!(" ({} окон)", run.count));
+            }
+            out.push('\n');
+            out.push_str(&format!(
+                "  - В начале {}, в конце {}. Диапазон {}–{}.\n",
+                run.first, run.last, run.low, run.high
+            ));
+            out.push_str(&format!("  - {}\n", trend_line(&run)));
+        }
+        out.push('\n');
     }
-    out.push('\n');
     Ok(())
 }
 
@@ -129,7 +123,10 @@ fn render_llm_prompt(markdown: &str) -> String {
     );
     wrap_markdown_for_llm(&mut out, markdown);
     out.push_str(
-        "Write a short natural-language summary the user can skim. \
+        "Write the summary in Russian, in a few short paragraphs. \
+         Use the clock times from the schedule. \
+         Say which sources are present and which are missing. \
+         Do not invent watch, phone, or computer data. \
          Prefer gentle observations over advice.\n",
     );
     out
@@ -178,8 +175,175 @@ pub(crate) fn format_evidence(list: &[EvidenceRef]) -> String {
         .join(", ")
 }
 
-fn escape_cell(raw: &str) -> String {
-    raw.replace('|', "\\|").replace('\n', " ")
+struct FeatureSample {
+    start: i64,
+    end: i64,
+    value: String,
+    scalar: Option<f64>,
+}
+
+struct FeatureRun {
+    start: i64,
+    end: i64,
+    count: usize,
+    first: String,
+    last: String,
+    low: String,
+    high: String,
+    first_scalar: Option<f64>,
+    last_scalar: Option<f64>,
+}
+
+fn group_features(features: &[Feature]) -> ReportResult<Vec<(String, Vec<FeatureSample>)>> {
+    let mut sorted: Vec<&Feature> = features.iter().collect();
+    sorted.sort_by(|a, b| {
+        (
+            a.feature_id.as_str(),
+            a.time_window.start.as_secs(),
+            a.time_window.end.as_secs(),
+        )
+            .cmp(&(
+                b.feature_id.as_str(),
+                b.time_window.start.as_secs(),
+                b.time_window.end.as_secs(),
+            ))
+    });
+
+    let mut groups: Vec<(String, Vec<FeatureSample>)> = Vec::new();
+    for feature in sorted {
+        let sample = FeatureSample {
+            start: feature.time_window.start.as_secs(),
+            end: feature.time_window.end.as_secs(),
+            value: format_feature_value(&feature.value)?,
+            scalar: match &feature.value {
+                FeatureValue::Scalar(n) if n.is_finite() => Some(*n),
+                _ => None,
+            },
+        };
+        if let Some((id, samples)) = groups.last_mut() {
+            if id == &feature.feature_id {
+                samples.push(sample);
+                continue;
+            }
+        }
+        groups.push((feature.feature_id.clone(), vec![sample]));
+    }
+    Ok(groups)
+}
+
+fn merge_runs(samples: &[FeatureSample]) -> Vec<FeatureRun> {
+    let mut runs: Vec<FeatureRun> = Vec::new();
+    for sample in samples {
+        if let Some(run) = runs.last_mut() {
+            if sample.start <= run.end.saturating_add(120) {
+                run.end = run.end.max(sample.end);
+                run.count += 1;
+                run.last = sample.value.clone();
+                run.last_scalar = sample.scalar;
+                if let Some(n) = sample.scalar {
+                    let low = run.low.parse::<f64>().unwrap_or(n);
+                    let high = run.high.parse::<f64>().unwrap_or(n);
+                    if n < low {
+                        run.low = format_scalar(n);
+                    }
+                    if n > high {
+                        run.high = format_scalar(n);
+                    }
+                }
+                continue;
+            }
+        }
+        runs.push(FeatureRun {
+            start: sample.start,
+            end: sample.end,
+            count: 1,
+            first: sample.value.clone(),
+            last: sample.value.clone(),
+            low: sample.value.clone(),
+            high: sample.value.clone(),
+            first_scalar: sample.scalar,
+            last_scalar: sample.scalar,
+        });
+    }
+    runs
+}
+
+fn trend_line(run: &FeatureRun) -> String {
+    match (run.first_scalar, run.last_scalar) {
+        (Some(start), Some(end)) if end < start - 5.0 => {
+            "К концу отрезка значение заметно ниже, чем в начале.".into()
+        }
+        (Some(start), Some(end)) if end > start + 5.0 => {
+            "К концу отрезка значение заметно выше, чем в начале.".into()
+        }
+        (Some(_), Some(_)) => "За отрезок значение почти не сдвинулось.".into(),
+        _ => "Числовое сравнение начала и конца недоступно.".into(),
+    }
+}
+
+fn feature_label(id: &str) -> String {
+    match id {
+        "AttentionStability" => "Устойчивость фокуса",
+        "FocusScore" => "Фокус",
+        "DeepWorkScore" => "Длинный фокус",
+        "CognitiveLoad" => "Суммарная нагрузка",
+        "SustainedLoadIndicator" => "Длительная нагрузка",
+        "StressIndex" => "Напряжение",
+        "FatigueIndex" => "Усталость",
+        "RecoveryScore" => "Восстановление",
+        "ContextSwitchRate" => "Переключения приложений",
+        "MeetingDensity" => "Плотность встреч",
+        "NotificationPressure" => "Давление уведомлений",
+        "DistractionScore" => "Фрагментация внимания",
+        "SleepDebt" => "Недосып",
+        "EnergyScore" => "Энергия",
+        "ActivityBalance" => "Баланс активности",
+        "CircadianOffset" => "Совпадение графика",
+        "DeskAwayPresence" => "Вне стола",
+        other => other,
+    }
+    .to_owned()
+}
+
+/// Local clock `7 окт 2026, 17:40` for a Unix UTC second.
+pub fn format_unix_local(unix: i64, offset_secs: i32) -> String {
+    format_local(unix, offset_secs)
+}
+
+fn format_local(unix: i64, offset_secs: i32) -> String {
+    let local = unix.saturating_add(i64::from(offset_secs));
+    let days = local.div_euclid(86_400);
+    let sod = local.rem_euclid(86_400);
+    let hour = sod / 3_600;
+    let minute = (sod % 3_600) / 60;
+    let (year, month, day) = civil_from_days(days);
+    let months = [
+        "янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек",
+    ];
+    let month_name = months
+        .get((month as usize).saturating_sub(1))
+        .copied()
+        .unwrap_or("?");
+    format!("{day} {month_name} {year}, {hour:02}:{minute:02}")
+}
+
+/// Howard Hinnant civil_from_days. `days` is days since 1970-01-01.
+fn civil_from_days(days: i64) -> (i32, u32, u32) {
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = if month <= 2 { y + 1 } else { y };
+    (year as i32, month as u32, day as u32)
+}
+
+fn local_offset_secs() -> i32 {
+    chrono::Local::now().offset().local_minus_utc()
 }
 
 #[cfg(test)]
@@ -251,25 +415,18 @@ mod tests {
         let b = build_report(&features, &insights).expect("build b");
         assert_eq!(a, b);
 
-        // Feature table order: FocusScore@0, FocusScore@900, StressIndex@100
-        let focus_pos = a.markdown.find("| FocusScore | 0–900 |").expect("focus row");
-        let focus2_pos = a
-            .markdown
-            .find("| FocusScore | 900–1800 |")
-            .expect("focus2 row");
-        let stress_pos = a
-            .markdown
-            .find("| StressIndex | 100–200 |")
-            .expect("stress row");
-        assert!(focus_pos < focus2_pos);
-        assert!(focus2_pos < stress_pos);
+        let focus_pos = a.markdown.find("### Фокус").expect("focus heading");
+        let stress_pos = a.markdown.find("### Напряжение").expect("stress heading");
+        assert!(focus_pos < stress_pos);
+        assert!(a.markdown.contains("72.0000"));
+        assert!(a.markdown.contains("68.2500"));
+        assert!(a.markdown.contains("61.5000"));
+        assert!(a.markdown.contains("2 окон"));
 
         // Insight order by UUID
         let first = a.markdown.find("### First").expect("first insight");
         let second = a.markdown.find("### Second").expect("second insight");
         assert!(first < second);
-
-        assert!(a.markdown.contains("| FocusScore | 0–900 | 72.0000 |"));
         assert!(a.llm_prompt.contains("interpret"));
         assert!(a.llm_prompt.contains("---\n# BioFocus report"));
     }
@@ -278,7 +435,7 @@ mod tests {
     fn features_only_minimal_insights_section() {
         let features = vec![feature("FatigueIndex", 0, 60, 40.0)];
         let doc = build_report(&features, &[]).expect("features-only");
-        assert!(doc.markdown.contains("| FatigueIndex |"));
+        assert!(doc.markdown.contains("### Усталость"));
         assert!(doc.markdown.contains("_No Insights matched"));
     }
 
