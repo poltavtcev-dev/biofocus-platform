@@ -1856,7 +1856,7 @@ mod tests {
             .iter()
             .find(|i| i.category == "pattern")
             .expect("pattern insight");
-        assert!(pattern_insight.description.contains("lower"));
+        assert!(pattern_insight.description.contains("ниже"));
 
         let dto = evaluate_recommendations_dto(&engine, &snap, &insights);
         assert_eq!(dto.recommendations.len(), 1);
