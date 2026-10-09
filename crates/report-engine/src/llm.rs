@@ -10,6 +10,8 @@
 
 use std::env;
 use std::fmt;
+use std::fs;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -31,8 +33,11 @@ pub const LOCAL_LLM_TIMEOUT_SECS_ENV: &str = "BIOFOCUS_LOCAL_LLM_TIMEOUT_SECS";
 pub const LOCAL_LLM_API_KEY_ENV: &str = "BIOFOCUS_LOCAL_LLM_API_KEY";
 
 const DEFAULT_BASE_URL: &str = "http://127.0.0.1:11434/v1";
-const DEFAULT_MODEL: &str = "llama3.2";
-const DEFAULT_TIMEOUT_SECS: u64 = 30;
+/// Small local model (~1B). Enough to paraphrase an already-computed report.
+const DEFAULT_MODEL: &str = "llama3.2:1b";
+const DEFAULT_TIMEOUT_SECS: u64 = 90;
+/// Opt-in flag under `$BIOFOCUS_HOME` or `$HOME/.biofocus/`. Env still wins.
+pub const LOCAL_LLM_PREFS_FILE: &str = "local_llm_enabled";
 
 /// Configuration for the optional local LLM adapter.
 #[derive(Clone, PartialEq, Eq)]
@@ -77,9 +82,15 @@ impl LocalLlmConfig {
         }
     }
 
-    /// Load from process env. Missing / unrecognized enable flag → disabled.
+    /// Load from process env. Missing enable flag falls back to the on-disk
+    /// opt-in file. An explicit env value (including `0`) always wins.
     pub fn from_env() -> Self {
-        Self::from_env_lookup(|key| env::var(key).ok())
+        let env_flag = env::var(LOCAL_LLM_ENV).ok();
+        let mut cfg = Self::from_env_lookup(|key| env::var(key).ok());
+        if env_flag.is_none() && read_persisted_local_llm_enabled() {
+            cfg.enabled = true;
+        }
+        cfg
     }
 
     fn from_env_lookup(lookup: impl Fn(&str) -> Option<String>) -> Self {
@@ -111,6 +122,33 @@ impl LocalLlmConfig {
             api_key,
         }
     }
+}
+
+/// True when `~/.biofocus/local_llm_enabled` (or `$BIOFOCUS_HOME/…`) is a truthy flag.
+/// Missing file → false. Does not open a network connection.
+#[must_use]
+pub fn read_persisted_local_llm_enabled() -> bool {
+    let Some(path) = local_llm_prefs_path() else {
+        return false;
+    };
+    let Ok(raw) = fs::read_to_string(path) else {
+        return false;
+    };
+    env_flag_enabled(&raw)
+}
+
+fn local_llm_prefs_path() -> Option<PathBuf> {
+    let dir = if let Ok(home) = env::var(crate::health_context::BIOFOCUS_HOME_ENV) {
+        let home = home.trim();
+        if home.is_empty() {
+            return None;
+        }
+        PathBuf::from(home)
+    } else {
+        PathBuf::from(env::var_os("HOME")?)
+            .join(crate::health_context::BIOFOCUS_CONFIG_DIR_NAME)
+    };
+    Some(dir.join(LOCAL_LLM_PREFS_FILE))
 }
 
 fn env_flag_enabled(raw: &str) -> bool {
@@ -304,6 +342,66 @@ mod tests {
             _ => None,
         });
         assert!(cfg.api_key.is_none());
+    }
+
+    #[test]
+    fn persisted_file_enables_when_env_flag_absent() {
+        struct Restore {
+            home: Option<String>,
+            flag: Option<String>,
+            model: Option<String>,
+            dir: PathBuf,
+        }
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                // SAFETY: test-only; put the process env back after the assertion.
+                unsafe {
+                    match self.flag.take() {
+                        Some(v) => env::set_var(LOCAL_LLM_ENV, v),
+                        None => env::remove_var(LOCAL_LLM_ENV),
+                    }
+                    match self.model.take() {
+                        Some(v) => env::set_var(LOCAL_LLM_MODEL_ENV, v),
+                        None => env::remove_var(LOCAL_LLM_MODEL_ENV),
+                    }
+                    match self.home.take() {
+                        Some(v) => env::set_var(crate::health_context::BIOFOCUS_HOME_ENV, v),
+                        None => env::remove_var(crate::health_context::BIOFOCUS_HOME_ENV),
+                    }
+                }
+                let _ = fs::remove_dir_all(&self.dir);
+            }
+        }
+
+        let dir = std::env::temp_dir().join(format!(
+            "biofocus-llm-pref-{}",
+            uuid::Uuid::now_v7()
+        ));
+        fs::create_dir_all(&dir).expect("dir");
+        let restore = Restore {
+            home: env::var(crate::health_context::BIOFOCUS_HOME_ENV).ok(),
+            flag: env::var(LOCAL_LLM_ENV).ok(),
+            model: env::var(LOCAL_LLM_MODEL_ENV).ok(),
+            dir: dir.clone(),
+        };
+        // SAFETY: test-only env mutation; Restore puts the previous values back.
+        unsafe {
+            env::set_var(crate::health_context::BIOFOCUS_HOME_ENV, &dir);
+            env::remove_var(LOCAL_LLM_ENV);
+            env::remove_var(LOCAL_LLM_MODEL_ENV);
+        }
+        fs::write(dir.join(LOCAL_LLM_PREFS_FILE), "1\n").expect("write");
+
+        let cfg = LocalLlmConfig::from_env();
+        assert!(cfg.enabled);
+        assert_eq!(cfg.model, "llama3.2:1b");
+
+        unsafe {
+            env::set_var(LOCAL_LLM_ENV, "0");
+        }
+        let forced_off = LocalLlmConfig::from_env();
+        assert!(!forced_off.enabled);
+        drop(restore);
     }
 
     #[test]

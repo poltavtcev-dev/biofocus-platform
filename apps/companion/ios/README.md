@@ -10,6 +10,14 @@ Free **Personal Team** is enough for dogfood. Entitlements: **HealthKit** + **ba
 
 If Xcode still fails on the profile, set a unique Bundle Identifier, e.g. `com.<yourname>.biofocus.companion`.
 
+### So the app does not stop opening
+
+A free Apple ID install is valid for **7 days**. After that the icon can remain, but iOS refuses to launch it until you plug the phone into the Mac and press **Run** in Xcode again. Swiping the app out of the app switcher does **not** uninstall it; HealthKit background delivery can still enqueue samples while the install is valid.
+
+To keep a longer install: enroll in the **Apple Developer Program** (paid). A development profile then lasts about a year. There is no App Store build yet.
+
+On the phone after the first Run: **Settings → General → VPN & Device Management** → trust your Apple ID, and allow Health read for BioFocus Companion.
+
 ## Open & run
 
 ```bash

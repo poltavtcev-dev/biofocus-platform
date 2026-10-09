@@ -724,6 +724,7 @@ name = "desktop"
 version = "0.1.0"
 dependencies = [
  "bio-spec",
+ "chrono",
  "feature-engine",
  "ingest",
  "knowledge-engine",
@@ -2967,6 +2968,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "bio-spec",
+ "chrono",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
