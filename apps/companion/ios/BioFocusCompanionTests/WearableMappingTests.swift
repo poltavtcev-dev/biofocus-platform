@@ -201,6 +201,32 @@ final class WearableMappingTests: XCTestCase {
     }
 }
 
+final class ObservationQueueTests: XCTestCase {
+    func testEnqueueManyDedupesInOneWrite() {
+        let key = "biofocus.pendingObservations.v1"
+        let previous = UserDefaults.standard.data(forKey: key)
+        defer {
+            if let previous {
+                UserDefaults.standard.set(previous, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+            _ = ObservationQueue.load()
+        }
+        ObservationQueue.clearAll()
+        let first = Data(#"{"id":"a"}"#.utf8)
+        let second = Data(#"{"id":"b"}"#.utf8)
+        ObservationQueue.enqueueMany([
+            (dedupeKey: "a", observationJSON: first),
+            (dedupeKey: "a", observationJSON: Data(#"{"id":"a2"}"#.utf8)),
+            (dedupeKey: "b", observationJSON: second),
+        ])
+        XCTAssertEqual(ObservationQueue.pendingCount, 2)
+        let batch = ObservationQueue.nextBatch()
+        XCTAssertEqual(batch?.keys, ["a", "b"])
+    }
+}
+
 final class SyncPlannerTests: XCTestCase {
     func testFirstPageIsNewestNotOldest() {
         let now: Int64 = 1_800_000_000

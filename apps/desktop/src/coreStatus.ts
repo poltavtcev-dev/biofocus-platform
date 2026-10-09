@@ -26,16 +26,16 @@ const COPY: Record<
   { label: string; detail: string }
 > = {
   idle: {
-    label: "Idle",
-    detail: "Starting the local analysis engine…",
+    label: "Ожидание",
+    detail: "Запускаем локальный анализ…",
   },
   ready: {
-    label: "Ready",
-    detail: "Running locally. Nothing leaves this Mac.",
+    label: "Готово",
+    detail: "Работает на этом Mac. Наружу ничего не уходит.",
   },
   error: {
-    label: "Error",
-    detail: "The local analysis engine is not responding. Click Try again or restart BioFocus.",
+    label: "Ошибка",
+    detail: "Локальный анализ не отвечает. Нажмите «Ещё раз» или перезапустите BioFocus.",
   },
 };
 
@@ -65,11 +65,11 @@ export function trayTooltipFor(view: CoreStatusView): string {
 export function alertCopy(level: AlertLevel): { label: string; detail: string } {
   switch (level) {
     case "green":
-      return { label: "Steady", detail: "Recent demand on your attention looks steady." };
+      return { label: "Ровно", detail: "Нагрузка на внимание в последнее время ровная." };
     case "yellow":
-      return { label: "Elevated", detail: "Demand on your attention is higher than usual — maybe take a short break." };
+      return { label: "Выше обычного", detail: "Нагрузка на внимание выше обычной — можно сделать короткую паузу." };
     case "red":
-      return { label: "High", detail: "Demand on your attention has been high for a while. Open the Dashboard to see why." };
+      return { label: "Высокая", detail: "Нагрузка на внимание уже давно высокая. Откройте панель, чтобы посмотреть почему." };
   }
 }
 

@@ -662,7 +662,7 @@ fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusD
     if !config.enabled {
         return LocalLlmProviderStatusDto {
             status: "disabled".into(),
-            detail: "Local AI is optional and currently off.".into(),
+            detail: "Локальный ИИ необязателен и сейчас выключен.".into(),
             model: None,
             pack_id,
             pack_version,
@@ -674,7 +674,7 @@ fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusD
     if url_ok && model_ok {
         LocalLlmProviderStatusDto {
             status: "ready".into(),
-            detail: "Local AI is configured. Interpretation runs only when you generate a report."
+            detail: "Локальный ИИ настроен. Пояснение появляется только когда вы собираете отчёт."
                 .into(),
             model: Some(config.model.clone()),
             pack_id,
@@ -683,7 +683,7 @@ fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusD
     } else {
         LocalLlmProviderStatusDto {
             status: "error".into(),
-            detail: "Local AI is enabled but the endpoint config looks unusable.".into(),
+            detail: "Локальный ИИ включён, но адрес выглядит непригодным.".into(),
             model: None,
             pack_id,
             pack_version,
@@ -717,12 +717,12 @@ fn report_dto_offline(doc: ReportDocument) -> ReportDto {
 
 fn calm_llm_error(err: &ReportEngineError) -> String {
     match err {
-        ReportEngineError::LocalLlmTimeout { .. } => "Local AI did not respond in time.".into(),
+        ReportEngineError::LocalLlmTimeout { .. } => "Локальный ИИ не ответил вовремя.".into(),
         ReportEngineError::LocalLlmHttp { .. } => "Could not reach the local AI endpoint.".into(),
         ReportEngineError::LocalLlmResponse { .. } => {
-            "Local AI returned an unusable response.".into()
+            "Локальный ИИ вернул непригодный ответ.".into()
         }
-        ReportEngineError::LocalLlmDisabled => "Local AI is optional and currently off.".into(),
+        ReportEngineError::LocalLlmDisabled => "Локальный ИИ необязателен и сейчас выключен.".into(),
         ReportEngineError::BuildFailed { .. } => "Could not build the report.".into(),
         ReportEngineError::UnknownPromptPack { .. } => "That report pack is not available.".into(),
     }
@@ -880,15 +880,15 @@ struct PairingRuntime {
 /// Maps token resolve errors to short UI-safe strings (no filesystem paths).
 fn pairing_error_message(err: ingest::IngestError) -> String {
     match err {
-        ingest::IngestError::HomeDirUnavailable => "Could not locate local pairing data.".into(),
-        ingest::IngestError::TokenIo { .. } => "Could not read pairing token.".into(),
-        ingest::IngestError::EmptyTokenFile { .. } => "Pairing token is empty.".into(),
-        ingest::IngestError::TokenEntropy(_) => "Could not create pairing token.".into(),
+        ingest::IngestError::HomeDirUnavailable => "Не удалось найти локальные данные подключения.".into(),
+        ingest::IngestError::TokenIo { .. } => "Не удалось прочитать токен.".into(),
+        ingest::IngestError::EmptyTokenFile { .. } => "Токен пустой.".into(),
+        ingest::IngestError::TokenEntropy(_) => "Не удалось создать токен.".into(),
         ingest::IngestError::TokenFromEnv => {
-            "Token is set by the environment for this launch.".into()
+            "В этом запуске токен задан окружением.".into()
         }
-        ingest::IngestError::Tls(_) => "Could not prepare the LAN certificate.".into(),
-        _ => "Could not load pairing token.".into(),
+        ingest::IngestError::Tls(_) => "Не удалось подготовить сертификат для LAN.".into(),
+        _ => "Не удалось загрузить токен.".into(),
     }
 }
 
@@ -1290,7 +1290,7 @@ pub fn run() -> DesktopResult<()> {
             TrayIconBuilder::with_id("main")
                 .icon(icon)
                 .icon_as_template(true)
-                .tooltip("BioFocus — Idle")
+                .tooltip("BioFocus — Ожидание")
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
@@ -1902,8 +1902,8 @@ mod tests {
         assert!(dto.markdown.contains("BioFocus"));
         assert!(!dto.llm_prompt.is_empty());
         // Empty Evidence → calm minimal default-pack summary (not an error).
-        assert!(dto.markdown.contains("Nothing to summarize"));
-        assert!(dto.llm_prompt.contains("Do not invent"));
+        assert!(dto.markdown.contains("нечего обобщать"));
+        assert!(dto.llm_prompt.contains("Не выдумывай"));
 
         let json = serde_json::to_value(&dto).expect("serialize");
         let obj = json.as_object().expect("object");
@@ -1955,7 +1955,7 @@ mod tests {
         let dto = assemble_report_dto(&[], &[], &[], &[ev], &LocalLlmConfig::disabled())
             .await
             .expect("report");
-        assert!(dto.markdown.contains("## Life events"));
+        assert!(dto.markdown.contains("## События дня"));
         assert!(
             dto.markdown
                 .contains("| coffee | 1700000000 | 1700000900 |")
@@ -1974,7 +1974,7 @@ mod tests {
         let dto = assemble_report_dto(&[], &[], &[rec], &[], &LocalLlmConfig::disabled())
             .await
             .expect("report");
-        assert!(dto.markdown.contains("## Recommendations"));
+        assert!(dto.markdown.contains("## Подсказки"));
         assert!(dto.markdown.contains("A gentler pace may help"));
         assert!(dto.llm_prompt.contains("A gentler pace may help"));
         assert_eq!(dto.llm_status, "disabled");

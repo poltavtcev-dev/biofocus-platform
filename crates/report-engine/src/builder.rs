@@ -34,14 +34,14 @@ pub fn build_report(features: &[Feature], insights: &[Insight]) -> ReportResult<
 
 pub(crate) fn render_markdown(features: &[Feature], insights: &[Insight]) -> ReportResult<String> {
     let mut out = String::new();
-    out.push_str("# BioFocus report\n\n");
+    out.push_str("# Отчёт BioFocus\n\n");
     out.push_str(
-        "_Offline summary from Features and Insights. Not a medical assessment._\n\n",
+        "_Локальное резюме по метрикам и наблюдениям. Это не медицинская оценка._\n\n",
     );
 
     if features.is_empty() && insights.is_empty() {
-        out.push_str("## Summary\n\n");
-        out.push_str("Nothing to summarize for this period yet.\n");
+        out.push_str("## Кратко\n\n");
+        out.push_str("За этот период пока нечего обобщать.\n");
         return Ok(out);
     }
 
@@ -54,9 +54,9 @@ pub(crate) fn render_features_section(
     out: &mut String,
     features: &[Feature],
 ) -> ReportResult<()> {
-    out.push_str("## Features\n\n");
+    out.push_str("## Метрики\n\n");
     if features.is_empty() {
-        out.push_str("_No Features in this period._\n\n");
+        out.push_str("_За этот период метрик нет._\n\n");
         return Ok(());
     }
 
@@ -74,7 +74,7 @@ pub(crate) fn render_features_section(
             ))
     });
 
-    out.push_str("| Feature | Window (UTC s) | Value |\n");
+    out.push_str("| Метрика | Окно (UTC, с) | Значение |\n");
     out.push_str("| :--- | :--- | :--- |\n");
     for feature in sorted {
         let window = format!(
@@ -95,9 +95,9 @@ pub(crate) fn render_features_section(
 }
 
 pub(crate) fn render_insights_section(out: &mut String, insights: &[Insight]) {
-    out.push_str("## Insights\n\n");
+    out.push_str("## Наблюдения\n\n");
     if insights.is_empty() {
-        out.push_str("_No Insights matched for this period._\n");
+        out.push_str("_За этот период закономерностей нет._\n");
         return;
     }
 
@@ -107,13 +107,13 @@ pub(crate) fn render_insights_section(out: &mut String, insights: &[Insight]) {
     for insight in sorted {
         out.push_str(&format!("### {}\n\n", insight.title));
         out.push_str(&format!("{}\n\n", insight.description));
-        out.push_str(&format!("- **Category:** {}\n", insight.category));
+        out.push_str(&format!("- **Категория:** {}\n", insight.category));
         out.push_str(&format!(
-            "- **Evidence:** {}\n",
+            "- **Основание:** {}\n",
             format_evidence(&insight.evidence_list)
         ));
         if let Some(action) = &insight.action_recommendation {
-            out.push_str(&format!("- **Suggestion:** {action}\n"));
+            out.push_str(&format!("- **Подсказка:** {action}\n"));
         }
         out.push('\n');
     }
@@ -122,15 +122,15 @@ pub(crate) fn render_insights_section(out: &mut String, insights: &[Insight]) {
 fn render_llm_prompt(markdown: &str) -> String {
     let mut out = String::new();
     out.push_str(
-        "You are interpreting a BioFocus local wellness summary. \
-         Use only the facts in the report below. Do not invent metrics, \
-         diagnoses, or clinical claims. Keep a calm, non-evaluative tone. \
-         Do not recompute Features — interpret the given values only.\n\n",
+        "Ты пересказываешь локальное резюме BioFocus. \
+         Используй только факты из отчёта ниже. Не выдумывай метрики, \
+         диагнозы и медицинские выводы. Тон спокойный, без оценки человека. \
+         Не пересчитывай метрики — только поясни уже данные значения.\n\n",
     );
     wrap_markdown_for_llm(&mut out, markdown);
     out.push_str(
-        "Write a short natural-language summary the user can skim. \
-         Prefer gentle observations over advice.\n",
+        "Напиши короткое резюме на русском, которое можно пробежать глазами. \
+         Лучше спокойные наблюдения, чем советы.\n",
     );
     out
 }
@@ -225,11 +225,11 @@ mod tests {
     #[test]
     fn empty_inputs_yield_calm_minimal_report() {
         let doc = build_report(&[], &[]).expect("empty report builds");
-        assert!(doc.markdown.contains("# BioFocus report"));
-        assert!(doc.markdown.contains("Nothing to summarize"));
+        assert!(doc.markdown.contains("# Отчёт BioFocus"));
+        assert!(doc.markdown.contains("нечего обобщать"));
         assert!(!doc.markdown.contains("| Feature |"));
         assert!(doc.llm_prompt.contains(&doc.markdown));
-        assert!(doc.llm_prompt.contains("Do not invent metrics"));
+        assert!(doc.llm_prompt.contains("Не выдумывай метрики"));
     }
 
     #[test]
@@ -271,8 +271,8 @@ mod tests {
         assert!(first < second);
 
         assert!(a.markdown.contains("| FocusScore | 0–900 | 72.0000 |"));
-        assert!(a.llm_prompt.contains("interpret"));
-        assert!(a.llm_prompt.contains("---\n# BioFocus report"));
+        assert!(a.llm_prompt.contains("пересказ"));
+        assert!(a.llm_prompt.contains("---\n# Отчёт BioFocus"));
     }
 
     #[test]
@@ -280,7 +280,7 @@ mod tests {
         let features = vec![feature("FatigueIndex", 0, 60, 40.0)];
         let doc = build_report(&features, &[]).expect("features-only");
         assert!(doc.markdown.contains("| FatigueIndex |"));
-        assert!(doc.markdown.contains("_No Insights matched"));
+        assert!(doc.markdown.contains("_За этот период закономерностей нет"));
     }
 
     #[test]
@@ -288,7 +288,7 @@ mod tests {
         let id = Uuid::parse_str("01900000-0000-7000-8000-000000000099").expect("uuid");
         let insights = vec![insight(id, "Solo")];
         let doc = build_report(&[], &insights).expect("insights-only");
-        assert!(doc.markdown.contains("_No Features in this period._"));
+        assert!(doc.markdown.contains("_За этот период метрик нет._"));
         assert!(doc.markdown.contains("### Solo"));
     }
 }

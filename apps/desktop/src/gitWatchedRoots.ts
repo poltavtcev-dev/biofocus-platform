@@ -82,7 +82,7 @@ function mockErrorFromQuery(): boolean {
 /** Load watched folders via IPC (or QA mock). No busy-loop. */
 export async function fetchGitWatchedRoots(): Promise<GitWatchedRootsView> {
   if (mockErrorFromQuery()) {
-    return { kind: "error", detail: "Could not load watched folders." };
+    return { kind: "error", detail: "Не удалось загрузить папки." };
   }
   const mocked = mockFromQuery();
   if (mocked) {
@@ -93,14 +93,14 @@ export async function fetchGitWatchedRoots(): Promise<GitWatchedRootsView> {
     const payload = await invoke<GitWatchedRootsPayload>("get_git_watched_roots");
     const info = normalize(payload);
     if (!info) {
-      return { kind: "error", detail: "Could not load watched folders." };
+      return { kind: "error", detail: "Не удалось загрузить папки." };
     }
     return { kind: "ready", info };
   } catch (err) {
     const detail =
       typeof err === "string" && err.trim()
         ? err.trim()
-        : "Could not load watched folders.";
+        : "Не удалось загрузить папки.";
     return { kind: "error", detail };
   }
 }
@@ -110,7 +110,7 @@ export async function saveGitWatchedRoots(
   roots: string[],
 ): Promise<GitWatchedRootsSaveView> {
   if (mockErrorFromQuery()) {
-    return { kind: "error", detail: "Could not save watched folders." };
+    return { kind: "error", detail: "Не удалось сохранить папки." };
   }
   const mocked = mockFromQuery();
   if (mocked) {
@@ -124,8 +124,8 @@ export async function saveGitWatchedRoots(
       info,
       message:
         info.roots.length === 0
-          ? "Watched folders cleared — Git activity stays idle."
-          : "Watched folders saved.",
+          ? "Список папок очищен — активность Git не собирается."
+          : "Папки сохранены.",
     };
   }
 
@@ -135,21 +135,21 @@ export async function saveGitWatchedRoots(
     });
     const info = normalize(payload);
     if (!info) {
-      return { kind: "error", detail: "Could not save watched folders." };
+      return { kind: "error", detail: "Не удалось сохранить папки." };
     }
     return {
       kind: "ok",
       info,
       message:
         info.roots.length === 0
-          ? "Watched folders cleared — Git activity stays idle."
-          : "Watched folders saved.",
+          ? "Список папок очищен — активность Git не собирается."
+          : "Папки сохранены.",
     };
   } catch (err) {
     const detail =
       typeof err === "string" && err.trim()
         ? err.trim()
-        : "Could not save watched folders.";
+        : "Не удалось сохранить папки.";
     return { kind: "error", detail };
   }
 }

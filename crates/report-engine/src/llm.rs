@@ -355,7 +355,7 @@ mod tests {
         let text = interpret_report(&doc, &config).await.expect("interpret");
         assert_eq!(text, "Calm local summary.");
         assert_eq!(hits.load(Ordering::SeqCst), 1);
-        assert!(doc.llm_prompt.contains("Do not invent metrics"));
+        assert!(doc.llm_prompt.contains("Не выдумывай метрики"));
     }
 
     #[tokio::test]

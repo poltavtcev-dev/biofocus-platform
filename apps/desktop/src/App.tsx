@@ -198,14 +198,14 @@ function MenubarShell() {
       return;
     }
     const ok = window.confirm(
-      "Rotate the pairing token? The phone will need the new QR before it can sync.",
+      "Сменить токен? Телефону понадобится новый QR, иначе синхронизация остановится.",
     );
     if (!ok) {
       return;
     }
     const next = await rotatePairingToken();
     setPairing(next);
-    setCopyNote(next.kind === "ready" ? "Token rotated. Scan the QR again." : null);
+    setCopyNote(next.kind === "ready" ? "Токен сменён. Отсканируйте QR ещё раз." : null);
   };
 
   const onCopyToken = async () => {
@@ -213,16 +213,16 @@ function MenubarShell() {
       return;
     }
     const ok = await copyText(pairing.info.token);
-    setCopyNote(ok ? "Token copied." : "Could not copy.");
+    setCopyNote(ok ? "Токен скопирован." : "Не удалось скопировать.");
   };
 
   const onCopyBaseUrl = async () => {
     if (pairing.kind !== "ready" || !isPrimaryUrlCopyable(pairing.info)) {
-      setCopyNote("Not ready for a phone yet — follow the message above.");
+      setCopyNote("Для телефона ещё не готово — смотрите сообщение выше.");
       return;
     }
     const ok = await copyText(primaryBaseUrl(pairing.info));
-    setCopyNote(ok ? "Base URL copied." : "Could not copy.");
+    setCopyNote(ok ? "Адрес скопирован." : "Не удалось скопировать.");
   };
 
   const onToggleLanPref = async (enabled: boolean) => {
@@ -242,10 +242,10 @@ function MenubarShell() {
     void fetchPairingToken().then(setPairing);
     setLanNote(
       result.pref.needsRestart
-        ? "Saved. Quit and reopen BioFocus to apply, then press Reload."
+        ? "Сохранено. Закройте и снова откройте BioFocus, затем нажмите «Обновить»."
         : enabled
-          ? "LAN preference saved."
-          : "LAN turned off. Quit and reopen BioFocus to stop listening on the network.",
+          ? "Настройка LAN сохранена."
+          : "LAN выключен. Закройте и снова откройте BioFocus, чтобы перестать слушать сеть.",
     );
   };
 
@@ -253,7 +253,7 @@ function MenubarShell() {
     setDashNote(null);
     void openDashboardWindow().then((ok) => {
       if (!ok) {
-        setDashNote("Could not open Dashboard.");
+        setDashNote("Не удалось открыть панель.");
       }
     });
   };
@@ -319,7 +319,7 @@ function MenubarShell() {
         <div className="status-row">
           <span className={`status-dot status-dot--${view.kind}`} aria-hidden />
           <p className="status-label">
-            {busy && view.kind === "idle" ? "Idle" : view.label}
+            {busy && view.kind === "idle" ? "Ожидание" : view.label}
           </p>
         </div>
         <p className="status-detail">{view.detail}</p>
@@ -330,39 +330,39 @@ function MenubarShell() {
 
       {view.kind === "error" && (
         <button type="button" className="retry" onClick={onRetry} disabled={busy}>
-          Try again
+          Ещё раз
         </button>
       )}
 
-      <section className="dashboard-entry" aria-label="Dashboard">
+      <section className="dashboard-entry" aria-label="Обзор">
         <button type="button" className="retry" onClick={onOpenDashboard}>
-          Open Dashboard
+          Открыть панель
         </button>
         {dashNote && <p className="status-meta">{dashNote}</p>}
       </section>
 
       <LifeEventsBlock />
 
-      <section className="git-roots-block" aria-label="Git watched folders">
-        <h2 className="pairing-title">Git folders</h2>
+      <section className="git-roots-block" aria-label="Папки Git">
+        <h2 className="pairing-title">Папки Git</h2>
         <p className="pairing-detail">
-          Folders you choose for your own Git activity. BioFocus keeps only
-          coarse event kinds — not paths, remotes, or commit messages in
-          Observations.
+          Папки, по которым вы сами хотите видеть активность Git. BioFocus
+          хранит только грубый тип события — не пути, не адреса репозиториев
+          и не тексты коммитов.
         </p>
         <p className="status-meta">
-          Also set <code>BIOFOCUS_GIT_ACTIVITY=1</code> so the collector can run.
-          Empty list → idle (no whole-disk scan).
+          Ещё задайте <code>BIOFOCUS_GIT_ACTIVITY=1</code>, иначе сборщик не
+          запустится. Пустой список — простой, без обхода всего диска.
         </p>
 
         {gitRoots.kind === "loading" && (
-          <p className="status-meta">Loading watched folders…</p>
+          <p className="status-meta">Загружаем папки…</p>
         )}
         {gitRoots.kind === "error" && (
           <>
             <p className="status-meta">{gitRoots.detail}</p>
             <button type="button" className="retry" onClick={onReloadGitRoots}>
-              Try again
+              Ещё раз
             </button>
           </>
         )}
@@ -377,7 +377,7 @@ function MenubarShell() {
                 type="text"
                 value={gitDraft}
                 placeholder="/Users/you/Developer/…"
-                aria-label="Folder path to watch"
+                aria-label="Путь к папке"
                 onChange={(e) => setGitDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -392,12 +392,12 @@ function MenubarShell() {
                 onClick={onAddGitRoot}
                 disabled={!gitDraft.trim() || gitSaving}
               >
-                Add
+                Добавить
               </button>
             </div>
 
             {gitLocalRoots.length === 0 ? (
-              <p className="status-meta">No folders yet — Git activity stays idle.</p>
+              <p className="status-meta">Папок пока нет — активность Git не собирается.</p>
             ) : (
               <ul className="git-roots-rows">
                 {gitLocalRoots.map((path) => (
@@ -409,7 +409,7 @@ function MenubarShell() {
                       onClick={() => onRemoveGitRoot(path)}
                       disabled={gitSaving}
                     >
-                      Remove
+                      Убрать
                     </button>
                   </li>
                 ))}
@@ -423,7 +423,7 @@ function MenubarShell() {
                 onClick={onSaveGitRoots}
                 disabled={gitSaving}
               >
-                Save folders
+                Сохранить папки
               </button>
               <button
                 type="button"
@@ -431,7 +431,7 @@ function MenubarShell() {
                 onClick={onReloadGitRoots}
                 disabled={gitSaving || gitRoots.kind === "loading"}
               >
-                Reload
+                Обновить
               </button>
             </div>
             {gitSave.kind === "ok" && (
@@ -446,29 +446,29 @@ function MenubarShell() {
             )}
             {gitSave.kind === "saving" && (
               <p className="status-meta" aria-live="polite">
-                Saving…
+                Сохраняем…
               </p>
             )}
           </>
         )}
       </section>
 
-      <section className="pairing-block" aria-label="Companion pairing">
-        <h2 className="pairing-title">Companion</h2>
+      <section className="pairing-block" aria-label="Подключение компаньона">
+        <h2 className="pairing-title">Телефон</h2>
         <p className="pairing-detail">
-          Local pairing only — no cloud account. Share this Mac’s base URL and
-          token with a phone on the same network when LAN is enabled.
+          Только локальное подключение, без облачного аккаунта. Когда LAN
+          включён, передайте телефону в той же сети адрес этого Mac и токен.
         </p>
 
         {pairing.kind === "loading" && (
-          <p className="status-meta">Loading pairing…</p>
+          <p className="status-meta">Загружаем подключение…</p>
         )}
 
         {pairing.kind === "error" && (
           <>
             <p className="status-meta">{pairing.detail}</p>
             <button type="button" className="retry" onClick={onReloadPairing}>
-              Try again
+              Ещё раз
             </button>
           </>
         )}
@@ -494,18 +494,18 @@ function MenubarShell() {
                   disabled={lanBusy || Boolean(lanPref?.fromEnv)}
                   onChange={(e) => void onToggleLanPref(e.target.checked)}
                 />
-                Enable LAN ingest for physical iPhone (opt-in)
+                LAN для настоящего iPhone (включается вручную)
               </label>
               {lanPref?.fromEnv && (
                 <p className="status-meta">
-                  LAN bind is controlled by environment variables for this launch.
+                  В этом запуске LAN задан переменными окружения.
                 </p>
               )}
               {lanNote && <p className="status-meta">{lanNote}</p>}
             </div>
 
             <div className="pairing-url-block">
-              <p className="pairing-subtitle">Base URL</p>
+              <p className="pairing-subtitle">Адрес</p>
               <p className="pairing-url" aria-live="polite">
                 {baseUrlPlaceholder(pairing.info)}
               </p>
@@ -516,25 +516,25 @@ function MenubarShell() {
                   disabled={!isPrimaryUrlCopyable(pairing.info)}
                   onClick={() => void onCopyBaseUrl()}
                 >
-                  Copy URL
+                  Копировать адрес
                 </button>
                 <button
                   type="button"
                   className="retry"
                   onClick={onReloadPairing}
                 >
-                  Reload
+                  Обновить
                 </button>
               </div>
               <p className="status-meta">
                 {networkModeLabel(pairing.info)}
-                {pairing.info.fromEnv ? " · token env override" : ""}
+                {pairing.info.fromEnv ? " · токен из окружения" : ""}
               </p>
               <p className="pairing-detail">{networkModeDetail(pairing.info)}</p>
             </div>
 
             <div className="pairing-token-block">
-              <p className="pairing-subtitle">Token</p>
+              <p className="pairing-subtitle">Токен</p>
               <p className="pairing-token" aria-live="polite">
                 {tokenVisible
                   ? pairing.info.token
@@ -546,21 +546,21 @@ function MenubarShell() {
                   className="retry"
                   onClick={() => setTokenVisible((v) => !v)}
                 >
-                  {tokenVisible ? "Hide" : "Show"}
+                  {tokenVisible ? "Скрыть" : "Показать"}
                 </button>
                 <button
                   type="button"
                   className="retry"
                   onClick={() => void onCopyToken()}
                 >
-                  Copy
+                  Копировать
                 </button>
                 <button
                   type="button"
                   className="retry"
                   onClick={() => setQrVisible((v) => !v)}
                 >
-                  {qrVisible ? "Hide QR" : "Show QR"}
+                  {qrVisible ? "Скрыть QR" : "Показать QR"}
                 </button>
                 <button
                   type="button"
@@ -568,17 +568,17 @@ function MenubarShell() {
                   disabled={pairing.info.fromEnv}
                   onClick={() => void onRotateToken()}
                 >
-                  Rotate token
+                  Сменить токен
                 </button>
               </div>
               {pairing.info.certFingerprint && (
                 <>
-                  <p className="pairing-subtitle">Certificate fingerprint</p>
+                  <p className="pairing-subtitle">Отпечаток сертификата</p>
                   <p className="pairing-token" aria-live="polite">
                     {pairing.info.certFingerprint}
                   </p>
                   <p className="pairing-detail">
-                    The QR includes this fingerprint. The phone rejects a different certificate.
+                    Этот отпечаток уже внутри QR. Телефон отклонит другой сертификат.
                   </p>
                 </>
               )}
@@ -586,7 +586,7 @@ function MenubarShell() {
                 <div
                   className="pairing-qr"
                   role="img"
-                  aria-label="QR code for pairing"
+                  aria-label="QR для подключения"
                   dangerouslySetInnerHTML={{ __html: pairing.info.qrSvg }}
                 />
               )}

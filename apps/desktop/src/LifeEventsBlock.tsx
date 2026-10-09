@@ -196,26 +196,26 @@ export function LifeEventsBlock() {
   const newestId = events[0]?.id;
 
   return (
-    <section className="life-events-block le" aria-label="Life events">
+    <section className="life-events-block le" aria-label="События дня">
       <div className="le-head">
-        <h2 className="pairing-title">Life events</h2>
+        <h2 className="pairing-title">События дня</h2>
         <button
           type="button"
           className="icon-btn"
           onClick={reload}
           disabled={list.kind === "loading"}
-          aria-label="Refresh recent life events"
-          title="Refresh"
+          aria-label="Обновить недавние события"
+          title="Обновить"
         >
           <span aria-hidden>↻</span>
         </button>
       </div>
       <p className="le-help">
-        One tap to note a moment. It appears on your Trends chart and in reports — never scored.
+        Одно нажатие, чтобы отметить момент. Он появится на графике и в отчёте — без оценки.
       </p>
 
-      <div className="le-when" role="radiogroup" aria-label="When did it happen?">
-        <span className="le-when-label">When</span>
+      <div className="le-when" role="radiogroup" aria-label="Когда это было?">
+        <span className="le-when-label">Когда</span>
         {BACKDATE_OPTIONS.map((opt) => (
           <button
             key={opt.minutes}
@@ -224,14 +224,14 @@ export function LifeEventsBlock() {
             aria-checked={minutesAgo === opt.minutes}
             className={`le-chip${minutesAgo === opt.minutes ? " le-chip--on" : ""}`}
             onClick={() => setMinutesAgo(opt.minutes)}
-            title={opt.minutes === 0 ? "Happened just now" : `Happened ${opt.label} ago`}
+            title={opt.minutes === 0 ? "Только что" : opt.label}
           >
             {opt.minutes === 0 ? opt.label : `−${opt.label}`}
           </button>
         ))}
       </div>
 
-      <div className="le-grid" role="group" aria-label="Log a life event">
+      <div className="le-grid" role="group" aria-label="Записать событие дня">
         {LIFE_EVENT_KINDS.map((kind) => {
           const state = btn?.kind === kind ? btn.phase : null;
           return (
@@ -248,9 +248,9 @@ export function LifeEventsBlock() {
               </span>
               <span className="le-btn-label">
                 {state === "logging"
-                  ? "Saving…"
+                  ? "Запись…"
                   : state === "logged"
-                    ? "Logged"
+                    ? "Записано"
                     : lifeEventLabel(kind)}
               </span>
             </button>
@@ -262,8 +262,8 @@ export function LifeEventsBlock() {
         <div className={`le-toast le-toast--${toast.phase}`} role="status" aria-live="polite">
           <span className="le-toast-text">
             {toast.phase === "removed"
-              ? `Removed ${lifeEventLabel(toast.event.kind).toLowerCase()}.`
-              : `Logged ${lifeEventLabel(toast.event.kind).toLowerCase()} · ${formatClock(toast.event.timestamp)}`}
+              ? `Убрано: ${lifeEventLabel(toast.event.kind).toLowerCase()}.`
+              : `Записано: ${lifeEventLabel(toast.event.kind).toLowerCase()} · ${formatClock(toast.event.timestamp)}`}
           </span>
           {toast.phase !== "removed" && (
             <button
@@ -272,7 +272,7 @@ export function LifeEventsBlock() {
               onClick={onToastUndo}
               disabled={toast.phase === "busy"}
             >
-              {toast.phase === "busy" ? "Undoing…" : "Undo"}
+              {toast.phase === "busy" ? "Возвращаем…" : "Отменить"}
             </button>
           )}
         </div>
@@ -284,20 +284,20 @@ export function LifeEventsBlock() {
         </p>
       )}
 
-      <p className="pairing-subtitle le-recent-title">Recent</p>
-      {list.kind === "loading" && <p className="status-meta">Loading…</p>}
+      <p className="pairing-subtitle le-recent-title">Недавние</p>
+      {list.kind === "loading" && <p className="status-meta">Загрузка…</p>}
       {list.kind === "error" && (
         <p className="status-meta">
           {list.detail}{" "}
           <button type="button" className="link-btn" onClick={reload}>
-            Try again
+            Ещё раз
           </button>
         </p>
       )}
       {list.kind === "ready" && rows.length === 0 && (
         <div className="le-empty">
           <span aria-hidden>🌱</span>
-          <p>Nothing logged yet. Tap a button above after your next coffee or walk.</p>
+          <p>Пока ничего не записано. Нажмите кнопку выше после кофе или прогулки.</p>
         </div>
       )}
       {rows.length > 0 && (
@@ -309,8 +309,8 @@ export function LifeEventsBlock() {
                   {lifeEventIcon(event.kind)}
                 </span>
                 <span className="le-row-text">
-                  <span className="le-row-kind">{lifeEventLabel(event.kind)} removed</span>
-                  <span className="le-row-abs">Hidden from charts, insights and reports</span>
+                  <span className="le-row-kind">{lifeEventLabel(event.kind)} убрано</span>
+                  <span className="le-row-abs">Скрыто с графика, из наблюдений и отчётов</span>
                 </span>
                 <button
                   type="button"
@@ -318,7 +318,7 @@ export function LifeEventsBlock() {
                   onClick={() => onRestore(event)}
                   disabled={busyId === event.id}
                 >
-                  Undo
+                  Отменить
                 </button>
               </li>
             ) : (
@@ -334,8 +334,8 @@ export function LifeEventsBlock() {
                     <span className="le-row-kind">{lifeEventLabel(event.kind)}</span>
                     <span className="le-row-abs">
                       <span className="le-row-rel">{formatRelativeTime(event.timestamp)}</span>
-                      {isBackdated(event) ? ` · logged ${formatClock(event.loggedAt)}` : ""}
-                      {event.edited ? " · edited" : ""}
+                      {isBackdated(event) ? ` · записано ${formatClock(event.loggedAt)}` : ""}
+                      {event.edited ? " · изменено" : ""}
                     </span>
                   </span>
                   <span className="le-row-actions">
@@ -344,9 +344,9 @@ export function LifeEventsBlock() {
                       className={`icon-btn le-act${editing === event.id ? " le-act--on" : ""}`}
                       onClick={() => setEditing(editing === event.id ? null : event.id)}
                       disabled={busyId === event.id}
-                      aria-label={`Change time of ${lifeEventLabel(event.kind)}`}
+                      aria-label={`Изменить время: ${lifeEventLabel(event.kind)}`}
                       aria-expanded={editing === event.id}
-                      title="Change time"
+                      title="Изменить время"
                     >
                       <span aria-hidden>🕑</span>
                     </button>
@@ -355,16 +355,16 @@ export function LifeEventsBlock() {
                       className="icon-btn le-act le-act--remove"
                       onClick={() => onRemove(event)}
                       disabled={busyId === event.id}
-                      aria-label={`Remove ${lifeEventLabel(event.kind)}`}
-                      title="Remove"
+                      aria-label={`Убрать: ${lifeEventLabel(event.kind)}`}
+                      title="Убрать"
                     >
                       <span aria-hidden>✕</span>
                     </button>
                   </span>
                 </div>
                 {editing === event.id && (
-                  <div className="le-retime" role="group" aria-label="When did it happen?">
-                    <span className="le-when-label">Happened</span>
+                  <div className="le-retime" role="group" aria-label="Когда это было?">
+                    <span className="le-when-label">Было</span>
                     {RETIME_OPTIONS.map((opt) => (
                       <button
                         key={opt.minutes}
@@ -377,7 +377,7 @@ export function LifeEventsBlock() {
                       </button>
                     ))}
                     <button type="button" className="link-btn le-retime-cancel" onClick={() => setEditing(null)}>
-                      Cancel
+                      Отмена
                     </button>
                   </div>
                 )}

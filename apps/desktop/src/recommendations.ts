@@ -34,16 +34,16 @@ const COPY: Record<
   { label: string; detail: string }
 > = {
   empty: {
-    label: "No suggestions yet",
-    detail: "Optional pace hints appear here when Patterns support them.",
+    label: "Подсказок пока нет",
+    detail: "Необязательные подсказки о темпе появятся здесь, когда для них хватит закономерностей.",
   },
   ready: {
-    label: "Suggestions",
-    detail: "Optional personal hints from Core — not medical advice.",
+    label: "Подсказки",
+    detail: "Необязательные личные подсказки из ядра. Это не медицинский совет.",
   },
   error: {
-    label: "Could not load suggestions",
-    detail: "Could not reach Recommendations from Core.",
+    label: "Не удалось загрузить подсказки",
+    detail: "Не удалось получить подсказки из ядра.",
   },
 };
 
@@ -65,8 +65,8 @@ export function recommendationsView(
 export function loadingRecommendationsView(): RecommendationsView {
   return {
     kind: "loading",
-    label: "Loading",
-    detail: "Fetching suggestions…",
+    label: "Загрузка",
+    detail: "Загружаем подсказки…",
     source: "get_recommendations",
     recommendations: [],
   };
@@ -76,10 +76,10 @@ export function loadingRecommendationsView(): RecommendationsView {
 export function formatRecommendationCategory(category: string): string {
   const key = category.trim().toLowerCase();
   if (key === "pace") {
-    return "Pace";
+    return "Темп";
   }
   if (key === "focus") {
-    return "Focus";
+    return "Фокус";
   }
   if (!key) {
     return "";
@@ -92,9 +92,9 @@ export { formatEvidenceRef };
 /** Sample pace Recommendation (mirrors `focus_dip_pace_hint_v1` copy). */
 const MOCK_PACE_RECOMMENDATION: RecommendationDto = {
   id: "01900000-0000-7000-8000-0000000000a1",
-  title: "A gentler pace may help",
+  title: "Можно чуть сбавить темп",
   suggestion:
-    "If it fits your schedule, a short pause or slightly slower pace may help when focus looks lower than your recent average.",
+    "Если это вписывается в день, короткая пауза или чуть более спокойный темп могут помочь, когда фокус ниже вашего недавнего среднего.",
   category: "pace",
   evidenceList: [
     { kind: "feature", id: "FocusScore" },

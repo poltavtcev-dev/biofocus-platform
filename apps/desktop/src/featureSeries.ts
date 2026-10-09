@@ -23,7 +23,7 @@ export function loadingSeriesView(): SeriesView {
   return {
     kind: "loading",
     label: "Loading",
-    detail: "Loading Feature series…",
+    detail: "Загружаем график…",
     series: null,
   };
 }
@@ -35,15 +35,15 @@ export function isChartRange(value: string): value is ChartRange {
 export function rangeLabel(range: ChartRange): string {
   switch (range) {
     case "1h":
-      return "1h";
+      return "1 ч";
     case "8h":
-      return "8h";
+      return "8 ч";
     case "12h":
-      return "12h";
+      return "12 ч";
     case "1d":
-      return "1d";
+      return "1 д";
     case "1w":
-      return "1w";
+      return "1 нед";
   }
 }
 
@@ -64,7 +64,7 @@ export async function fetchFeatureSeries(range: ChartRange): Promise<SeriesView>
       return {
         kind: "empty",
         label: "No series",
-        detail: "No Feature series for this range yet.",
+        detail: "За этот диапазон графика ещё нет.",
         series: {
           range,
           stepSecs: 60,
@@ -77,7 +77,7 @@ export async function fetchFeatureSeries(range: ChartRange): Promise<SeriesView>
       return {
         kind: "empty",
         label: "No series",
-        detail: "No Feature series for this range yet.",
+        detail: "За этот диапазон графика ещё нет.",
         series,
       };
     }
@@ -93,7 +93,7 @@ export async function fetchFeatureSeries(range: ChartRange): Promise<SeriesView>
         ? err.message
         : typeof err === "string"
           ? err
-          : "Could not load Feature series.";
+          : "Не удалось загрузить график.";
     return {
       kind: "error",
       label: "Unavailable",

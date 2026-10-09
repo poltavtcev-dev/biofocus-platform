@@ -269,7 +269,7 @@ pub fn start_ingest_host<R: Runtime>(app: &AppHandle<R>) {
                 error!(error = %err, port, "ingest HTTP serve failed");
                 let reason = match err {
                     ingest::IngestError::Bind { .. } => format!(
-                        "Phone sync is off: port {port} is already in use (is another BioFocus running?)."
+                        "Синхронизация с телефоном выключена: порт {port} уже занят (не запущен ли ещё один BioFocus?)."
                     ),
                     _ => "Phone sync stopped unexpectedly. Restart BioFocus.".to_owned(),
                 };

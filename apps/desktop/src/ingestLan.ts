@@ -48,11 +48,11 @@ export async function setIngestLanPreference(
     });
     const pref = normalizeLanPreference(payload ?? {});
     if (!pref) {
-      return { ok: false, detail: "Could not update LAN preference." };
+      return { ok: false, detail: "Не удалось изменить настройку LAN." };
     }
     return { ok: true, pref };
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err);
-    return { ok: false, detail: text.trim() || "Could not update LAN preference." };
+    return { ok: false, detail: text.trim() || "Не удалось изменить настройку LAN." };
   }
 }

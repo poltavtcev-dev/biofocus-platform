@@ -217,7 +217,7 @@ enum CompanionStatusBoard {
 
     static func statusText(_ availability: String) -> String {
         switch availability {
-        case TypeAvailability.ok: return "OK"
+        case TypeAvailability.ok: return "есть"
         case TypeAvailability.noData: return "нет данных"
         case TypeAvailability.noPermission: return "нет разрешения?"
         default: return "ещё не проверяли"

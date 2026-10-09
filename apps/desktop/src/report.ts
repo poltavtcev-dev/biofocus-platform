@@ -27,17 +27,17 @@ const COPY: Record<
   { label: string; detail: string }
 > = {
   idle: {
-    label: "Report",
+    label: "Отчёт",
     detail:
-      "Generate a calm offline summary from the latest Features, Insights, and Suggestions. Local AI is optional and off by default.",
+      "Соберите спокойное локальное резюме по последним метрикам, наблюдениям и подсказкам. Локальный ИИ необязателен и по умолчанию выключен.",
   },
   ready: {
-    label: "Report ready",
-    detail: "Offline summary via pack biofocus.default. Local AI is optional.",
+    label: "Отчёт готов",
+    detail: "Локальное резюме пакетом biofocus.default. Локальный ИИ необязателен.",
   },
   error: {
-    label: "Could not generate report",
-    detail: "Could not reach the report builder from Core.",
+    label: "Не удалось собрать отчёт",
+    detail: "Не удалось обратиться к сборщику отчёта в ядре.",
   },
 };
 
@@ -63,8 +63,8 @@ export function idleReportView(): ReportView {
 export function loadingReportView(): ReportView {
   return {
     kind: "loading",
-    label: "Generating",
-    detail: "Building offline report…",
+    label: "Сборка",
+    detail: "Собираем локальный отчёт…",
     source: "generate_report",
   };
 }
@@ -73,15 +73,15 @@ export function loadingReportView(): ReportView {
 export function llmStatusDetail(report: ReportDto): string {
   switch (report.llmStatus) {
     case "disabled":
-      return "Offline report only. Local AI is optional and currently off.";
+      return "Только локальный отчёт. Локальный ИИ необязателен и сейчас выключен.";
     case "ok":
-      return "Local AI interpretation (optional).";
+      return "Пояснение локального ИИ (необязательно).";
     case "timeout":
-      return report.llmError ?? "Local AI did not respond in time.";
+      return report.llmError ?? "Локальный ИИ не ответил вовремя.";
     case "error":
-      return report.llmError ?? "Local AI could not complete this time.";
+      return report.llmError ?? "Локальный ИИ в этот раз не закончил.";
     default:
-      return report.llmError ?? `Local AI status: ${report.llmStatus}`;
+      return report.llmError ?? `Статус локального ИИ: ${report.llmStatus}`;
   }
 }
 
@@ -99,19 +99,19 @@ export function mockReportFromLocation(
   if (raw === "disabled" || raw === "ready") {
     return reportView("ready", "mock", {
       markdown:
-        "# BioFocus report\n\nNothing to summarize yet.\n\nNot a medical assessment.",
+        "# Отчёт BioFocus\n\nПока нечего обобщать.\n\nЭто не медицинская оценка.",
       llmPrompt:
-        "Interpret the following BioFocus offline report calmly.\n\n# BioFocus report\n\nNothing to summarize yet.",
+        "Спокойно перескажи локальный отчёт BioFocus.\n\n# Отчёт BioFocus\n\nПока нечего обобщать.",
       llmStatus: "disabled",
     });
   }
   if (raw === "ok") {
     return reportView("ready", "mock", {
       markdown:
-        "# BioFocus report\n\n## Features\n\n- FocusScore: 72.5000\n\nNot a medical assessment.",
-      llmPrompt: "Interpret calmly…\n\n# BioFocus report\n\n## Features\n\n- FocusScore: 72.5000",
+        "# Отчёт BioFocus\n\n## Метрики\n\n- FocusScore: 72.5000\n\nЭто не медицинская оценка.",
+      llmPrompt: "Спокойно перескажи…\n\n# Отчёт BioFocus\n\n## Метрики\n\n- FocusScore: 72.5000",
       interpretation:
-        "FocusScore sits in a moderate range for this window. No clinical claim — just a calm restatement of the offline facts.",
+        "FocusScore в этом окне в среднем диапазоне. Без медицинских выводов — только спокойный пересказ локальных фактов.",
       llmStatus: "ok",
     });
   }

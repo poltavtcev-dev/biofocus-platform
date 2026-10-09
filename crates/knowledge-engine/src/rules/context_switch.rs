@@ -50,12 +50,12 @@ impl InsightRule for ContextSwitchElevatedRule {
 
         Ok(vec![Insight {
             id: Uuid::now_v7(),
-            title: "Frequent context changes".into(),
-            description: "ContextSwitchRate was elevated in the latest window, a pattern that often aligns with a shallower FocusScore.".into(),
+            title: "Частые переключения".into(),
+            description: "Переключений в последнем окне было больше обычного. Так часто бывает, когда фокус получается более поверхностным.".into(),
             category: "focus".into(),
             evidence_list: evidence,
             action_recommendation: Some(
-                "Grouping similar tasks for a stretch can reduce switching when useful.".into(),
+                "Если это уместно, похожие задачи можно собрать в один отрезок — переключений станет меньше.".into(),
             ),
         }])
     }

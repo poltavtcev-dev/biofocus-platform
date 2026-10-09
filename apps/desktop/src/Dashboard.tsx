@@ -143,20 +143,20 @@ function ChartSlot({
     saveSeriesPref(next);
   };
 
-  let placeholder = "No data to chart yet.";
+  let placeholder = "На графике пока нет данных.";
   if (seriesView.kind === "loading") {
-    placeholder = "Loading…";
+    placeholder = "Загрузка…";
   } else if (seriesView.kind === "error") {
     placeholder = seriesView.detail;
   } else if (seriesView.kind === "empty") {
-    placeholder = "No data for this range yet. Keep BioFocus running for a few minutes.";
+    placeholder = "За этот диапазон данных ещё нет. Оставьте BioFocus запущенным на несколько минут.";
   }
 
   return (
-    <section className="chart-slot" aria-label="Trends">
+    <section className="chart-slot" aria-label="Динамика">
       <div className="chart-slot-header">
-        <p className="chart-slot-title">Trends</p>
-        <div className="range-picker" role="group" aria-label="Chart range">
+        <p className="chart-slot-title">Динамика</p>
+        <div className="range-picker" role="group" aria-label="Диапазон графика">
           {CHART_RANGES.map((r) => (
             <button
               key={r}
@@ -171,7 +171,7 @@ function ChartSlot({
         </div>
       </div>
       {present.length > 0 && (
-        <div className="series-chips" role="group" aria-label="Lines to show">
+        <div className="series-chips" role="group" aria-label="Какие линии показать">
           {present.map((id) => {
             const on = effective.includes(id);
             return (
@@ -214,14 +214,14 @@ function ChartSlot({
       </div>
       {points.length > 0 && (
         <p className="chart-slot-units" aria-hidden>
-          Left axis: score 0–100
-          {showCsr ? " · Right axis (dashed): app switches per minute" : ""} · Tap a
-          name above to show or hide it.
+          Левая ось: оценка 0–100
+          {showCsr ? " · Правая ось (пунктир): переключения в минуту" : ""} · Нажмите
+          имя выше, чтобы показать или скрыть линию.
         </p>
       )}
       {points.length > 0 && markersInRange(points, lifeEvents).length > 0 && (
-        <p className="chart-events-legend" aria-label="Life events on the chart">
-          <span>Dotted lines = life events you logged:</span>
+        <p className="chart-events-legend" aria-label="События дня на графике">
+          <span>Пунктир — записанные события дня:</span>
           {markersInRange(points, lifeEvents).map((e) => (
             <span key={e.id}>
               {lifeEventIcon(e.kind)} {lifeEventLabel(e.kind)} {formatClock(e.timestamp)}
@@ -368,8 +368,8 @@ function InsightsSlot({ view }: { view: InsightsView }) {
   const showList = view.kind === "ready" && view.insights.length > 0;
 
   return (
-    <section className="insights-slot" aria-label="Insights" aria-live="polite">
-      <p className="chart-slot-title">Insights</p>
+    <section className="insights-slot" aria-label="Наблюдения" aria-live="polite">
+      <p className="chart-slot-title">Наблюдения</p>
       {showList ? (
         <ul className="insight-rows">
           {view.insights.map((insight) => {
@@ -383,7 +383,7 @@ function InsightsSlot({ view }: { view: InsightsView }) {
                 <p className="insight-description">{insight.description}</p>
                 {insight.evidenceList.length > 0 && (
                   <p className="insight-evidence">
-                    Evidence:{" "}
+                    Основание:{" "}
                     {insight.evidenceList.map(formatEvidenceRef).join(" · ")}
                   </p>
                 )}
@@ -414,10 +414,10 @@ function RecommendationsSlot({ view }: { view: RecommendationsView }) {
   return (
     <section
       className="recommendations-slot"
-      aria-label="Suggestions"
+      aria-label="Подсказки"
       aria-live="polite"
     >
-      <p className="chart-slot-title">Suggestions</p>
+      <p className="chart-slot-title">Подсказки</p>
       {showList ? (
         <ul className="insight-rows">
           {view.recommendations.map((item) => {
@@ -431,7 +431,7 @@ function RecommendationsSlot({ view }: { view: RecommendationsView }) {
                 <p className="insight-description">{item.suggestion}</p>
                 {item.evidenceList.length > 0 && (
                   <p className="insight-evidence">
-                    Evidence:{" "}
+                    Основание:{" "}
                     {item.evidenceList.map(formatEvidenceRef).join(" · ")}
                   </p>
                 )}
@@ -469,11 +469,11 @@ function ReportSlot({
   const packMeta = `${llmProvider.packId} @ ${llmProvider.packVersion}`;
 
   return (
-    <section className="report-slot" aria-label="Report" aria-live="polite">
-      <p className="chart-slot-title">Report</p>
+    <section className="report-slot" aria-label="Отчёт" aria-live="polite">
+      <p className="chart-slot-title">Отчёт</p>
       <div
         className="llm-provider-row"
-        aria-label="Local AI provider status"
+        aria-label="Статус локальной модели"
       >
         <span
           className={`status-dot status-dot--${llmProviderDotKind(llmProvider.status)}`}
@@ -483,8 +483,8 @@ function ReportSlot({
           <p className="status-label">{llmProvider.label}</p>
           <p className="status-meta">{llmProvider.detail}</p>
           <p className="status-meta">
-            Report pack: {packMeta}
-            {llmProvider.model ? ` · model ${llmProvider.model}` : ""}
+            Пакет отчёта: {packMeta}
+            {llmProvider.model ? ` · модель ${llmProvider.model}` : ""}
           </p>
         </div>
       </div>
@@ -495,8 +495,8 @@ function ReportSlot({
         <p className="status-meta">{view.detail}</p>
       )}
       <p className="report-ai-note">
-        Local AI is optional and never runs automatically. Offline markdown is
-        always available — interpretation only after you generate a report.
+        Локальный ИИ необязателен и сам не запускается. Локальный текст отчёта
+        всегда доступен — пояснение появляется только после сборки отчёта.
       </p>
       <button
         type="button"
@@ -504,14 +504,14 @@ function ReportSlot({
         onClick={onGenerate}
         disabled={busy || view.kind === "loading"}
       >
-        {view.kind === "loading" ? "Generating…" : "Generate report"}
+        {view.kind === "loading" ? "Собираем…" : "Собрать отчёт"}
       </button>
 
       {showBody && (
         <div className="report-body">
           <pre className="report-markdown">{report.markdown}</pre>
           <details className="report-prompt">
-            <summary>Prompt for local AI</summary>
+            <summary>Запрос для локального ИИ</summary>
             <pre className="report-markdown report-markdown--prompt">
               {report.llmPrompt}
             </pre>
@@ -519,7 +519,7 @@ function ReportSlot({
           <p className="status-meta">{llmStatusDetail(report)}</p>
           {report.interpretation && (
             <div className="report-interpretation">
-              <p className="chart-slot-title">Local AI (optional)</p>
+              <p className="chart-slot-title">Локальный ИИ (необязательно)</p>
               <pre className="report-markdown">{report.interpretation}</pre>
             </div>
           )}
@@ -661,7 +661,7 @@ export function Dashboard() {
       <header className="dash-header">
         <div className="brand brand--dashboard">
           <h1>BioFocus</h1>
-          <p className="brand-sub">Last 15 minutes · everything stays on this Mac</p>
+          <p className="brand-sub">Последние 15 минут · всё остаётся на этом Mac</p>
         </div>
       <section className="status-block status-block--inline" aria-live="polite">
         <div className="status-row">
@@ -676,7 +676,7 @@ export function Dashboard() {
             aria-hidden
           />
           <p className="status-label">
-            {busy && view.kind === "loading" ? "Loading" : view.label}
+            {busy && view.kind === "loading" ? "Загрузка" : view.label}
           </p>
         </div>
         <p className="status-detail">{view.detail}</p>
@@ -690,7 +690,7 @@ export function Dashboard() {
           aria-pressed={tab === "overview"}
           onClick={() => setTab("overview")}
         >
-          Overview
+          Обзор
         </button>
         <button
           type="button"
@@ -715,7 +715,7 @@ export function Dashboard() {
           onClick={onRetry}
           disabled={busy}
         >
-          Try again
+          Ещё раз
         </button>
       )}
 
@@ -727,11 +727,11 @@ export function Dashboard() {
       />
 
       {isReady && features.length > 0 && (
-        <section className="feature-list" aria-label="Feature snapshot">
-          <p className="chart-slot-title">Snapshot</p>
+        <section className="feature-list" aria-label="Снимок метрик">
+          <p className="chart-slot-title">Снимок</p>
           <p className="status-meta">
-            Latest 15-minute window. Click a metric to see what it means. Values
-            marked “rough” or “one source” are hints, not conclusions.
+            Последнее окно в 15 минут. Нажмите метрику, чтобы увидеть, что она
+            значит. Пометки «грубо» и «один источник» — подсказки, не выводы.
           </p>
           <ul className="feature-rows">
             {[...features]
@@ -742,7 +742,7 @@ export function Dashboard() {
           </ul>
           {signals.length > 0 && (
             <p className="status-meta">
-              Signals: {signals.map((s) => s.type).join(", ")}
+              Сигналы: {signals.map((s) => s.type).join(", ")}
             </p>
           )}
         </section>
@@ -779,11 +779,11 @@ function FeatureRow({ f }: { f: FeatureDto }) {
         <summary>
           <span className="feature-id">
             {info.name}
-            {rel === "low" && <span className="feature-badge">rough</span>}
+            {rel === "low" && <span className="feature-badge">грубо</span>}
             {rel === "single_input" && (
-              <span className="feature-badge">one source</span>
+              <span className="feature-badge">один источник</span>
             )}
-            {stale && <span className="feature-badge">stale</span>}
+            {stale && <span className="feature-badge">устарело</span>}
           </span>
           <span className="feature-value">
             {formatFeatureValue(f.value)}
@@ -792,11 +792,11 @@ function FeatureRow({ f }: { f: FeatureDto }) {
         </summary>
         <div className="feature-explain">
           <p>{info.what}</p>
-          <p className="status-meta">From: {info.from}</p>
+          <p className="status-meta">Из чего: {info.from}</p>
           <p className="status-meta">{directionHint(info.direction)}</p>
           {f.factors && f.factors.length > 0 && (
             <p className="status-meta">
-              This window:{" "}
+              Это окно:{" "}
               {f.factors
                 .map((x) => `${x.label} ${Math.round(x.share * 100)}%`)
                 .join(" · ")}
@@ -804,14 +804,14 @@ function FeatureRow({ f }: { f: FeatureDto }) {
           )}
           {typeof f.confidence === "number" && (
             <p className="status-meta">
-              Data coverage: {Math.round(f.confidence * 100)}%
+              Покрытие данными: {Math.round(f.confidence * 100)}%
             </p>
           )}
           {stale && (
-            <p className="status-meta">This window ended more than 18 hours ago.</p>
+            <p className="status-meta">Это окно закончилось больше 18 часов назад.</p>
           )}
           {relText && <p className="status-meta">{relText}</p>}
-          <p className="status-meta feature-tech-id">Metric id: {f.featureId}</p>
+          <p className="status-meta feature-tech-id">Идентификатор: {f.featureId}</p>
         </div>
       </details>
     </li>
@@ -823,7 +823,7 @@ function StatCards({ features }: { features: FeatureDto[] }) {
   const fourth = HEADLINE_FOURTH.find((id) => byId.has(id));
   const ids = [...HEADLINE_IDS, ...(fourth ? [fourth] : [])];
   return (
-    <section className="stat-cards" aria-label="Key metrics">
+    <section className="stat-cards" aria-label="Ключевые метрики">
       {ids.map((id) => {
         const f = byId.get(id);
         const info = metricInfo(id);
@@ -832,7 +832,7 @@ function StatCards({ features }: { features: FeatureDto[] }) {
             <div key={id} className="stat-card stat-card--empty">
               <p className="stat-name">{info.name}</p>
               <p className="stat-value">—</p>
-              <p className="stat-foot">No data yet</p>
+              <p className="stat-foot">Данных пока нет</p>
             </div>
           );
         }

@@ -86,7 +86,7 @@ const PHASE_LABEL: Record<string, string> = {
 
 /** Clock time in Europe/Belgrade, independent of the Mac zone. */
 export function formatBelgrade(unixSecs: number): string {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("ru-RU", {
     timeZone: "Europe/Belgrade",
     day: "2-digit",
     month: "short",

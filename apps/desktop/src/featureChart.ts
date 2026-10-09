@@ -43,72 +43,72 @@ export const CHART_SERIES_META: Record<
   { label: string; unit: string; color: string }
 > = {
   FocusScore: {
-    label: "Focus",
+    label: "Фокус",
     unit: "0–100",
     color: "#5b6b8c",
   },
   StressIndex: {
-    label: "Stress index",
+    label: "Индекс напряжения",
     unit: "0–100",
     color: "#8a7a5c",
   },
   FatigueIndex: {
-    label: "Fatigue index",
+    label: "Усталость",
     unit: "0–100",
     color: "#6e7a86",
   },
   ContextSwitchRate: {
-    label: "Context switches",
-    unit: "per window min",
+    label: "Переключения",
+    unit: "в минуту",
     color: "#7a8a7a",
   },
   ActivityBalance: {
-    label: "Activity",
+    label: "Движение",
     unit: "0–100",
     color: "#6a8f7a",
   },
   EnergyScore: {
-    label: "Energy",
+    label: "Энергия",
     unit: "0–100",
     color: "#8c7a5b",
   },
   SleepDebt: {
-    label: "Sleep shortfall",
+    label: "Недосып",
     unit: "0–100",
     color: "#6b7088",
   },
   RecoveryScore: {
-    label: "Recovery",
+    label: "Восстановление",
     unit: "0–100",
     color: "#7a6b8c",
   },
   CognitiveLoad: {
-    label: "Combined demand",
+    label: "Общая нагрузка",
     unit: "0–100",
     color: "#6b7a8a",
   },
   DeepWorkScore: {
-    label: "Sustained focus",
+    label: "Глубокая работа",
     unit: "0–100",
     color: "#5c7a6b",
   },
   AttentionStability: {
-    label: "Focus stability",
+    label: "Устойчивость внимания",
     unit: "0–100",
     color: "#5b7a8c",
   },
   DeskAwayPresence: {
-    label: "Away from desk",
+    label: "Вдали от стола",
     unit: "0–100",
     color: "#7a6b5c",
   },
   CircadianOffset: {
-    label: "Schedule alignment",
+    label: "Совпадение с ритмом",
     unit: "0–100",
     color: "#5c6b7a",
   },
   SustainedLoadIndicator: {
-    label: "Prolonged load",
+    label: "Длительная нагрузка",
     unit: "0–100",
     color: "#8a6b5c",
   },

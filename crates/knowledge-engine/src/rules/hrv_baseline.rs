@@ -45,13 +45,13 @@ impl InsightRule for HrvVsBaselineRule {
 
         Ok(vec![Insight {
             id: Uuid::now_v7(),
-            title: "Variability compared with your usual days".into(),
-            description: "Heart-rate variability is lower than the middle of your recent days."
+            title: "Вариабельность на фоне обычных дней".into(),
+            description: "Вариабельность пульса ниже середины ваших недавних дней."
                 .into(),
             category: "pattern".into(),
             evidence_list: vec![EvidenceRef::Feature(HRV_VS_BASELINE_ID.into())],
             action_recommendation: Some(
-                "A quieter evening is one option if that still feels useful.".into(),
+                "Более тихий вечер — один из вариантов, если это всё ещё уместно.".into(),
             ),
         }])
     }

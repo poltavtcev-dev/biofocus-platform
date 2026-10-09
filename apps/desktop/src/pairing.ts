@@ -163,39 +163,39 @@ export function companionStatusCopy(info: PairingTokenInfo): {
     case "ingest_off":
       return {
         tone: "error",
-        title: "Phone sync is not running",
+        title: "Синхронизация с телефоном не запущена",
         detail:
           info.ingestError ??
-          "The local sync server did not start. Restart BioFocus; if it persists, report it (see TESTING.md).",
+          "Локальный сервер синхронизации не стартовал. Перезапустите BioFocus. Если повторится, это стоит сообщить.",
       };
     case "restart_needed":
       return {
         tone: "warn",
-        title: "Restart BioFocus to apply",
+        title: "Перезапустите BioFocus",
         detail: info.lanConfigured
-          ? "LAN is enabled in settings, but this Mac is still listening only on itself. Quit and reopen BioFocus, then press Reload."
-          : "LAN was turned off in settings, but this Mac is still reachable on the network until you quit and reopen BioFocus.",
+          ? "LAN включён в настройках, но этот Mac всё ещё слушает только себя. Закройте и снова откройте BioFocus, затем нажмите «Обновить»."
+          : "LAN выключен в настройках, но Mac останется доступен в сети, пока вы не закроете и не откроете BioFocus снова.",
       };
     case "lan_off":
       return {
         tone: "info",
-        title: "LAN is off — this Mac only",
+        title: "LAN выключен — только этот Mac",
         detail:
-          "The iOS Simulator on this Mac can connect. To pair a real iPhone, tick “Enable LAN” below, restart BioFocus, then press Reload.",
+          "Симулятор iOS на этом Mac подключится. Для настоящего iPhone включите «LAN для iPhone» ниже, перезапустите BioFocus и нажмите «Обновить».",
       };
     case "lan_no_address":
       return {
         tone: "error",
-        title: "LAN is on, but no network address was found",
+        title: "LAN включён, но адрес сети не найден",
         detail:
-          "Check that Wi‑Fi is connected, then press Reload. If it still fails, set BIOFOCUS_INGEST_BIND_HOST to this Mac’s Wi‑Fi IPv4 (System Settings → Wi‑Fi → Details) and restart.",
+          "Проверьте Wi‑Fi и нажмите «Обновить». Если не поможет, задайте BIOFOCUS_INGEST_BIND_HOST равным IPv4 этого Mac (Системные настройки → Wi‑Fi → Подробнее) и перезапустите.",
       };
     case "lan_ready":
       return {
         tone: "ok",
-        title: "Ready to pair",
+        title: "Можно подключать телефон",
         detail:
-          "Your iPhone must be on the same Wi‑Fi. The address is https. Scan the QR: it carries the token and the certificate fingerprint. A different certificate is rejected.",
+          "iPhone должен быть в той же сети Wi‑Fi. Адрес — https. В QR токен и отпечаток сертификата. Чужой сертификат телефон отклонит.",
       };
   }
 }
@@ -223,33 +223,33 @@ export function baseUrlPlaceholder(info: PairingTokenInfo): string {
     case "lan_ready":
       return primaryBaseUrl(info);
     case "lan_off":
-      return `${primaryBaseUrl(info)} (this Mac / Simulator only)`;
+      return `${primaryBaseUrl(info)} (только этот Mac / симулятор)`;
     case "restart_needed":
-      return "Restart BioFocus, then Reload.";
+      return "Перезапустите BioFocus, затем «Обновить».";
     case "lan_no_address":
-      return "No network address found — check Wi‑Fi, then Reload.";
+      return "Адрес сети не найден — проверьте Wi‑Fi и нажмите «Обновить».";
     case "ingest_off":
-      return "Phone sync is not running.";
+      return "Синхронизация с телефоном не запущена.";
   }
 }
 
 /** Short reachability label under the base URL. */
 export function networkModeLabel(info: PairingTokenInfo): string {
   if (info.bindMode !== "lan") {
-    return "This Mac";
+    return "Этот Mac";
   }
   if (needsLanHintFallback(info)) {
-    return "Local network (address unavailable)";
+    return "Локальная сеть (адрес недоступен)";
   }
-  return "Local network";
+  return "Локальная сеть";
 }
 
 /** Calm, non-evaluative network copy (LAN opt-in / local only). */
 export function networkModeDetail(info: PairingTokenInfo): string {
   if (info.bindMode === "lan") {
-    return "Local network only, over TLS. Nothing leaves your Wi‑Fi. Every request still needs the token, and the phone pins the certificate fingerprint in the QR.";
+    return "Только локальная сеть, по TLS. За пределы Wi‑Fi ничего не уходит. Каждый запрос всё равно с токеном, а телефон сверяет отпечаток сертификата из QR.";
   }
-  return "Nothing is reachable from other devices while LAN is off.";
+  return "Пока LAN выключен, другие устройства достучаться не могут.";
 }
 
 /** QA: `?mockPairing=ready|lan_off|restart|no_address|ingest_off` (layout / screenshots). */
@@ -271,7 +271,7 @@ export function mockPairingFromLocation(
     lanConfigured: lan,
     restartRequired: raw === "restart",
     ingestRunning: raw !== "ingest_off",
-    ingestError: raw === "ingest_off" ? "Phone sync is off: port 8787 is already in use." : null,
+    ingestError: raw === "ingest_off" ? "Синхронизация с телефоном выключена: порт 8787 уже занят." : null,
     certFingerprint:
       lan && raw !== "no_address" && raw !== "lan_off" && raw !== "restart"
         ? "ab".repeat(32)
@@ -289,14 +289,14 @@ export async function fetchPairingToken(): Promise<PairingView> {
     const payload = await invoke<PairingPayload>("get_pairing_token");
     const info = normalize(payload);
     if (!info) {
-      return { kind: "error", detail: "Pairing data was incomplete." };
+      return { kind: "error", detail: "Данные подключения неполные." };
     }
     return { kind: "ready", info };
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err);
     return {
       kind: "error",
-      detail: text.trim() || "Could not load pairing token.",
+      detail: text.trim() || "Не удалось загрузить токен.",
     };
   }
 }
@@ -307,14 +307,14 @@ export async function rotatePairingToken(): Promise<PairingView> {
     const payload = await invoke<PairingPayload>("rotate_pairing_token");
     const info = normalize(payload);
     if (!info) {
-      return { kind: "error", detail: "Pairing data was incomplete." };
+      return { kind: "error", detail: "Данные подключения неполные." };
     }
     return { kind: "ready", info };
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err);
     return {
       kind: "error",
-      detail: text.trim() || "Could not rotate the pairing token.",
+      detail: text.trim() || "Не удалось сменить токен.",
     };
   }
 }

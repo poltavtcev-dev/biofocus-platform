@@ -48,12 +48,12 @@ impl InsightRule for HighStressPeriodRule {
 
         Ok(vec![Insight {
             id: Uuid::now_v7(),
-            title: "Sustained stress pattern".into(),
-            description: "Stress stayed elevated long enough in this period to raise a High_Stress signal.".into(),
+            title: "Напряжение держалось долго".into(),
+            description: "Напряжение в этом периоде держалось достаточно долго, чтобы появился сигнал High_Stress.".into(),
             category: "stress".into(),
             evidence_list: evidence,
             action_recommendation: Some(
-                "A brief pause or slower pace may help when it fits your schedule.".into(),
+                "Короткая пауза или более спокойный темп могут помочь, если это вписывается в день.".into(),
             ),
         }])
     }

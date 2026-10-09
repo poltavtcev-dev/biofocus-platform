@@ -76,10 +76,10 @@ fn now_secs() -> i64 {
 
 fn check_happened_at(happened_at: i64, now: i64) -> Result<(), String> {
     if happened_at > now + FUTURE_SKEW_SECS {
-        return Err("A life event can’t be in the future.".into());
+        return Err("Событие дня не может быть в будущем.".into());
     }
     if happened_at < now - MAX_BACKDATE_SECS {
-        return Err("Life events can be back-dated up to 24 hours.".into());
+        return Err("Событие дня можно сдвинуть не больше чем на 24 часа.".into());
     }
     Ok(())
 }
@@ -87,9 +87,9 @@ fn check_happened_at(happened_at: i64, now: i64) -> Result<(), String> {
 fn validated(obs: Observation) -> Result<Observation, String> {
     validate_observation_payload(&obs).map_err(|err| match err {
         bio_spec::SpecError::InvalidLifeEventPayload { .. } => {
-            "That life event could not be validated.".to_string()
+            "Это событие дня не прошло проверку.".to_string()
         }
-        _ => "Could not validate that life event.".to_string(),
+        _ => "Не удалось проверить событие дня.".to_string(),
     })?;
     Ok(obs)
 }
@@ -97,11 +97,11 @@ fn validated(obs: Observation) -> Result<Observation, String> {
 fn check_kind(kind: &str) -> Result<&str, String> {
     let kind = kind.trim();
     if kind.is_empty() {
-        return Err("Choose a life event to log.".into());
+        return Err("Выберите событие дня.".into());
     }
     if !is_v1_life_event_kind(kind) {
         return Err(format!(
-            "That event kind isn’t available. Use one of: {}.",
+            "Такого события нет. Можно: {}.",
             V1_LIFE_EVENT_KINDS.join(", ")
         ));
     }
@@ -125,7 +125,7 @@ pub fn build_life_event_observation_at(
         json!({ "kind": kind, "logged_at": now }),
         1.0,
     )
-    .map_err(|_| "Could not build that life event.".to_string())?;
+    .map_err(|_| "Не удалось собрать событие дня.".to_string())?;
     validated(obs)
 }
 
@@ -134,7 +134,7 @@ pub(crate) fn life_event_dto(obs: &Observation) -> Result<LifeEventDto, String> 
         .payload
         .get("kind")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| "Stored life event is missing kind.".to_string())?;
+        .ok_or_else(|| "У сохранённого события нет типа.".to_string())?;
     let logged_at = obs
         .payload
         .get("logged_at")
@@ -158,14 +158,14 @@ fn open_default_db() -> Result<Database, String> {
 fn insert(repo: &ObservationRepository<'_>, obs: &Observation) -> Result<(), String> {
     repo.insert(obs).map_err(|err| match err {
         storage::StorageError::DuplicateObservation { .. } => {
-            "That life event was already logged.".to_string()
+            "Это событие дня уже записано.".to_string()
         }
         other => other.public_message(),
     })
 }
 
 fn parse_id(id: &str) -> Result<Uuid, String> {
-    Uuid::parse_str(id.trim()).map_err(|_| "That life event id isn’t valid.".to_string())
+    Uuid::parse_str(id.trim()).map_err(|_| "Идентификатор события дня неверный.".to_string())
 }
 
 /// Loads a stored life event (even if already retracted).
@@ -173,9 +173,9 @@ fn load_life_event(repo: &ObservationRepository<'_>, id: Uuid) -> Result<Observa
     let obs = repo
         .get_by_id(id)
         .map_err(|err| err.public_message())?
-        .ok_or_else(|| "That life event wasn’t found.".to_string())?;
+        .ok_or_else(|| "Такое событие дня не найдено.".to_string())?;
     if obs.data_type != DATA_TYPE_LIFE_EVENT {
-        return Err("Only life events can be changed here.".into());
+        return Err("Здесь можно менять только события дня.".into());
     }
     Ok(obs)
 }
@@ -185,7 +185,7 @@ fn copy_of(original: &Observation, happened_at: i64, now: i64) -> Result<Observa
         .payload
         .get("kind")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| "Stored life event is missing kind.".to_string())?;
+        .ok_or_else(|| "У сохранённого события нет типа.".to_string())?;
     let logged_at = original
         .payload
         .get("logged_at")
@@ -204,7 +204,7 @@ fn copy_of(original: &Observation, happened_at: i64, now: i64) -> Result<Observa
         }),
         1.0,
     )
-    .map_err(|_| "Could not build that life event.".to_string())?;
+    .map_err(|_| "Не удалось собрать событие дня.".to_string())?;
     validated(obs)
 }
 
@@ -220,7 +220,7 @@ fn retraction_for(target: &Observation, now: i64) -> Result<Observation, String>
         }),
         1.0,
     )
-    .map_err(|_| "Could not remove that life event.".to_string())?;
+    .map_err(|_| "Не удалось убрать событие дня.".to_string())?;
     validated(marker)
 }
 
@@ -251,7 +251,7 @@ pub fn retract_life_event_in(
     let repo = ObservationRepository::new(db);
     let target = load_life_event(&repo, parse_id(id)?)?;
     if repo.is_retracted(target.id).map_err(|e| e.public_message())? {
-        return Err("That life event was already removed.".into());
+        return Err("Это событие дня уже убрано.".into());
     }
     let marker = retraction_for(&target, now)?;
     insert(&repo, &marker)?;
@@ -273,7 +273,7 @@ pub fn restore_life_event_in(db: &Database, id: &str, now: i64) -> Result<LifeEv
     let repo = ObservationRepository::new(db);
     let original = load_life_event(&repo, parse_id(id)?)?;
     if !repo.is_retracted(original.id).map_err(|e| e.public_message())? {
-        return Err("That life event is still logged.".into());
+        return Err("Это событие дня всё ещё записано.".into());
     }
     let already = repo
         .list_by_data_type(DATA_TYPE_LIFE_EVENT)
@@ -281,7 +281,7 @@ pub fn restore_life_event_in(db: &Database, id: &str, now: i64) -> Result<LifeEv
         .into_iter()
         .any(|o| o.payload.get("edited_from").and_then(|v| v.as_str()) == Some(&original.id.to_string()));
     if already {
-        return Err("That life event was already restored.".into());
+        return Err("Это событие дня уже возвращено.".into());
     }
     let copy = copy_of(&original, original.timestamp.as_secs(), now)?;
     insert(&repo, &copy)?;
@@ -306,18 +306,18 @@ pub fn retime_life_event_in(
     let repo = ObservationRepository::new(db);
     let original = load_life_event(&repo, parse_id(id)?)?;
     if repo.is_retracted(original.id).map_err(|e| e.public_message())? {
-        return Err("That life event was removed.".into());
+        return Err("Это событие дня убрано.".into());
     }
     let copy = copy_of(&original, happened_at, now)?;
     let marker = retraction_for(&original, now)?;
     let tx = db
         .connection()
         .unchecked_transaction()
-        .map_err(|_| "Could not update that life event.".to_string())?;
+        .map_err(|_| "Не удалось обновить событие дня.".to_string())?;
     insert(&repo, &copy)?;
     insert(&repo, &marker)?;
     tx.commit()
-        .map_err(|_| "Could not update that life event.".to_string())?;
+        .map_err(|_| "Не удалось обновить событие дня.".to_string())?;
     life_event_dto(&copy)
 }
 
@@ -434,7 +434,7 @@ mod tests {
     #[test]
     fn build_rejects_unknown_kind() {
         let err = build_life_event_observation_at("meeting", None, NOW).expect_err("reject");
-        assert!(err.contains("isn’t available") || err.contains("isn't available"));
+        assert!(err.contains("Такого события нет"));
     }
 
     #[test]
@@ -485,7 +485,7 @@ mod tests {
 
         assert!(retract_life_event_in(&db, &coffee.id, NOW + 6)
             .expect_err("double")
-            .contains("already removed"));
+            .contains("уже убрано"));
         assert!(retract_life_event_in(&db, "not-a-uuid", NOW).is_err());
         assert!(retract_life_event_in(&db, &Uuid::now_v7().to_string(), NOW).is_err());
     }

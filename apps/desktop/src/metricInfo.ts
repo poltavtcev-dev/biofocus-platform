@@ -21,185 +21,185 @@ export type MetricInfo = {
 
 export const METRIC_INFO: Record<string, MetricInfo> = {
   FocusScore: {
-    name: "Focus",
-    what: "How settled your work looked in the last 15 minutes.",
-    from: "Staying in the same app (most weight), steady typing (quiet reading counts as neutral), and heart-rate variability if a watch is paired.",
+    name: "Фокус",
+    what: "Насколько ровной выглядела работа за последние 15 минут.",
+    from: "Одно и то же приложение (главный вес), ровный набор текста (тихое чтение — нейтрально) и вариабельность пульса, если часы подключены.",
     direction: "higher_better",
     unit: "0–100",
   },
   ContextSwitchRate: {
-    name: "App switches",
-    what: "How often you changed the front app, per minute, over the last 15 minutes.",
-    from: "The active-window history on this Mac. 1.0 means about 15 switches in 15 minutes.",
+    name: "Переключения",
+    what: "Как часто менялось переднее приложение за последние 15 минут, в пересчёте на минуту.",
+    from: "История активного окна на этом Mac. 1,0 — около 15 переключений за 15 минут.",
     direction: "neutral",
-    unit: "per minute",
+    unit: "в минуту",
   },
   CognitiveLoad: {
-    name: "Combined demand",
-    what: "How much was pulling at your attention: meetings, app switching and notifications.",
-    from: "Calendar busy time, app switches and notification counts — whichever are turned on. With only one source it mostly reflects that source.",
+    name: "Общая нагрузка",
+    what: "Сколько одновременно тянуло внимание: встречи, переключения приложений и уведомления.",
+    from: "Занятость календаря, переключения и число уведомлений — что из этого включено. Если источник один, цифра в основном про него.",
     direction: "lower_better",
     unit: "0–100",
   },
   DeepWorkScore: {
-    name: "Deep work",
-    what: "Focus that also held steady without much app hopping.",
-    from: "Focus plus app-switch steadiness.",
+    name: "Глубокая работа",
+    what: "Фокус, который держался ровно и без частых прыжков между приложениями.",
+    from: "Фокус и ровность переключений.",
     direction: "higher_better",
     unit: "0–100",
   },
   AttentionStability: {
-    name: "Attention steadiness",
-    what: "How little your Focus swung up and down within the window.",
-    from: "Focus changes over the window plus app-switch steadiness.",
+    name: "Устойчивость внимания",
+    what: "Насколько мало фокус качался вверх и вниз внутри окна.",
+    from: "Изменения фокуса за окно и ровность переключений.",
     direction: "higher_better",
     unit: "0–100",
   },
   DistractionScore: {
-    name: "Browser mix",
-    what: "How fragmented your browsing was across kinds of sites.",
-    from: "Coarse browser categories (work, communication, entertainment, …) — no URLs or titles — plus app switches.",
+    name: "Смесь сайтов",
+    what: "Насколько просмотр в браузере был раздроблен по типам сайтов.",
+    from: "Грубые категории браузера (работа, общение, развлечения и так далее) — без адресов и заголовков — плюс переключения приложений.",
     direction: "lower_better",
     unit: "0–100",
   },
   StressIndex: {
-    name: "Stress index",
-    what: "A body-strain estimate from heart-rate variability. Needs a paired watch/phone.",
-    from: "HRV readings (RMSSD/SDNN). Not a medical measure.",
+    name: "Индекс напряжения",
+    what: "Оценка напряжения по вариабельности пульса. Нужны подключённые часы или телефон.",
+    from: "Показатели HRV (RMSSD или SDNN). Это не медицинское измерение.",
     direction: "lower_better",
     unit: "0–100",
   },
   FatigueIndex: {
-    name: "Fatigue index",
-    what: "How worn-down the day looks so far.",
-    from: "Focus trend, time active today, and heart-rate drift if available.",
+    name: "Усталость",
+    what: "Насколько вымотанным выглядит день к этому моменту.",
+    from: "Тренд фокуса, время активности сегодня и сдвиг пульса, если он есть.",
     direction: "lower_better",
     unit: "0–100",
   },
   RecoveryScore: {
-    name: "Recovery",
-    what: "How recovered your body looks right now.",
-    from: "HRV and resting heart rate from the paired phone.",
+    name: "Восстановление",
+    what: "Насколько восстановленным выглядит тело сейчас.",
+    from: "HRV и пульс покоя с подключённого телефона.",
     direction: "higher_better",
     unit: "0–100",
   },
   MeetingDensity: {
-    name: "Meeting share",
-    what: "Share of the last 15 minutes that was blocked by calendar events.",
-    from: "Busy calendar events (times only, no titles).",
+    name: "Доля встреч",
+    what: "Какая доля последних 15 минут была занята событиями календаря.",
+    from: "Занятые слоты календаря (только время, без названий).",
     direction: "neutral",
     unit: "0–1",
   },
   RecoveryBetweenMeetings: {
-    name: "Breaks between meetings",
-    what: "How much breathing room you had between back-to-back meetings.",
-    from: "Gaps between busy calendar events.",
+    name: "Паузы между встречами",
+    what: "Сколько воздуха было между встречами подряд.",
+    from: "Промежутки между занятыми слотами календаря.",
     direction: "higher_better",
     unit: "0–100",
   },
   NotificationPressure: {
-    name: "Notifications",
-    what: "How many notifications arrived recently.",
-    from: "Notification counts only — never content.",
+    name: "Уведомления",
+    what: "Сколько уведомлений пришло недавно.",
+    from: "Только число уведомлений, никогда не их текст.",
     direction: "lower_better",
     unit: "0–100",
   },
   GitActivityRate: {
-    name: "Git activity",
-    what: "How much commit/checkout/sync activity happened in your watched repos.",
-    from: "Git events in folders you added under “Git folders”.",
+    name: "Активность Git",
+    what: "Сколько было коммитов, переключений и синхронизаций в выбранных репозиториях.",
+    from: "События Git в папках из блока «Папки Git».",
     direction: "neutral",
   },
   ActivityBalance: {
-    name: "Movement",
-    what: "How much you moved recently.",
-    from: "Step counts and logged workouts from the phone.",
+    name: "Движение",
+    what: "Насколько много вы двигались недавно.",
+    from: "Шаги и записанные тренировки с телефона.",
     direction: "higher_better",
     unit: "0–100",
   },
   EnergyScore: {
-    name: "Energy",
-    what: "A rough energy estimate from activity, heart rate and rest.",
-    from: "Active energy, heart rate and sleep from the phone.",
+    name: "Энергия",
+    what: "Грубая оценка энергии по активности, пульсу и отдыху.",
+    from: "Активная энергия, пульс и сон с телефона.",
     direction: "higher_better",
     unit: "0–100",
   },
   SleepDebt: {
-    name: "Sleep shortfall",
-    what: "How far recent sleep fell short of a typical night.",
-    from: "Sleep intervals from the phone.",
+    name: "Недосып",
+    what: "Насколько недавний сон короче обычной ночи.",
+    from: "Интервалы сна с телефона.",
     direction: "lower_better",
     unit: "0–100",
   },
   DeskAwayPresence: {
-    name: "Away from desk",
-    what: "How likely you were away from the desk (only shown with real evidence like a walk or steps).",
-    from: "Quiet keyboard/apps plus steps or a logged walk.",
+    name: "Вдали от стола",
+    what: "Насколько вероятно, что вас не было за столом. Показывается только при явных следах, например шагах или прогулке.",
+    from: "Тихая клавиатура и приложения плюс шаги или записанная прогулка.",
     direction: "neutral",
     unit: "0–100",
   },
   CircadianOffset: {
-    name: "Rhythm alignment",
-    what: "How well work timing lines up with your sleep rhythm.",
-    from: "Sleep midpoint vs. when you are active.",
+    name: "Совпадение с ритмом",
+    what: "Насколько время работы совпадает с ритмом сна.",
+    from: "Середина сна против времени, когда вы активны.",
     direction: "higher_better",
     unit: "0–100",
   },
   SustainedLoadIndicator: {
-    name: "Prolonged load",
-    what: "Whether strain has stayed high for a long stretch, not just a moment.",
-    from: "Stress, fatigue and meeting share over a longer lookback.",
+    name: "Длительная нагрузка",
+    what: "Держалось ли напряжение долго, а не только короткий всплеск.",
+    from: "Напряжение, усталость и доля встреч на более длинном окне.",
     direction: "lower_better",
     unit: "0–100",
   },
   AmbientMediaShare: {
-    name: "Media playing",
-    what: "Share of the window with music/podcasts playing.",
-    from: "Now Playing kind only (no track names).",
+    name: "Медиа",
+    what: "Какая доля окна прошла с музыкой или подкастом.",
+    from: "Только тип Now Playing, без названий треков.",
     direction: "neutral",
     unit: "%",
   },
   AmbientLightShare: {
-    name: "Lighting",
-    what: "Share of the window in brighter light.",
-    from: "Coarse ambient-light level (dark/dim/moderate/bright).",
+    name: "Освещение",
+    what: "Какая доля окна прошла при более ярком свете.",
+    from: "Грубый уровень света: темно, тускло, умеренно, ярко.",
     direction: "neutral",
     unit: "%",
   },
   RestingHeartRate: {
-    name: "Resting heart rate",
-    what: "The latest resting heart rate, set next to your own recent median when there are enough days.",
-    from: "Resting heart-rate samples from the phone. The comparison needs five earlier days.",
+    name: "Пульс покоя",
+    what: "Последний пульс покоя рядом с вашей недавней медианой, когда дней уже достаточно.",
+    from: "Сэмплы пульса покоя с телефона. Для сравнения нужны пять предыдущих дней.",
     direction: "neutral",
   },
   HrvVsBaseline: {
-    name: "Heart-rate variability",
-    what: "How today's variability compares with your own recent days. SDNN and RMSSD stay separate.",
-    from: "One method only, after five earlier days of that same method.",
+    name: "Вариабельность пульса",
+    what: "Как сегодняшняя вариабельность выглядит на фоне ваших недавних дней. SDNN и RMSSD не смешиваются.",
+    from: "Только один метод и только после пяти предыдущих дней этого же метода.",
     direction: "neutral",
   },
   SleepStages: {
-    name: "Sleep stages",
-    what: "Time asleep, plus deep, REM and core shares when the source recorded stages. Otherwise total sleep only.",
-    from: "Sleep intervals from the phone.",
+    name: "Стадии сна",
+    what: "Время сна и доли глубокого, REM и основного сна, если источник записал стадии. Иначе только общий сон.",
+    from: "Интервалы сна с телефона.",
     direction: "neutral",
   },
   NightSpO2: {
-    name: "Oxygen during sleep",
-    what: "Average and lowest oxygen saturation for the night, next to your own recent nights when there are enough of them.",
-    from: "Oxygen saturation samples. Shown for context only.",
+    name: "Кислород во сне",
+    what: "Среднее и самое низкое насыщение кислородом за ночь, рядом с вашими недавними ночами, когда их уже достаточно.",
+    from: "Сэмплы насыщения кислородом. Только для контекста.",
     direction: "neutral",
   },
   RespiratoryRate: {
-    name: "Breathing rate",
-    what: "Average and lowest breathing rate, next to your own recent nights when there are enough of them.",
-    from: "Breathing-rate samples. Shown for context only.",
+    name: "Частота дыхания",
+    what: "Средняя и самая низкая частота дыхания рядом с вашими недавними ночами, когда их уже достаточно.",
+    from: "Сэмплы частоты дыхания. Только для контекста.",
     direction: "neutral",
   },
   WristTemperature: {
-    name: "Wrist temperature",
-    what: "How far the night's wrist temperature sits from your own recent nights.",
-    from: "Wrist-temperature change from the watch. Shown for context only.",
+    name: "Температура запястья",
+    what: "Насколько температура запястья за ночь отличается от ваших недавних ночей.",
+    from: "Изменение температуры запястья с часов. Только для контекста.",
     direction: "neutral",
   },
 };
@@ -208,8 +208,8 @@ export function metricInfo(featureId: string): MetricInfo {
   return (
     METRIC_INFO[featureId] ?? {
       name: featureId,
-      what: "An experimental metric.",
-      from: "Local signals on this Mac.",
+      what: "Экспериментальная метрика.",
+      from: "Локальные сигналы на этом Mac.",
       direction: "neutral",
     }
   );
@@ -255,9 +255,9 @@ export function reliabilityOf(f: {
 export function reliabilityText(r: Reliability, factors?: { label: string }[]): string | null {
   switch (r) {
     case "low":
-      return "Rough estimate — not enough data in this window yet.";
+      return "Грубая оценка — в этом окне пока мало данных.";
     case "single_input":
-      return `Based on one source only (${factors?.[0]?.label ?? "one signal"}) — treat as a hint.`;
+      return `Только один источник (${factors?.[0]?.label ?? "один сигнал"}) — это подсказка, не вывод.`;
     case "ok":
       return null;
   }
@@ -266,11 +266,11 @@ export function reliabilityText(r: Reliability, factors?: { label: string }[]): 
 export function directionHint(d: MetricDirection): string {
   switch (d) {
     case "higher_better":
-      return "Higher is calmer / better.";
+      return "Выше — спокойнее.";
     case "lower_better":
-      return "Lower is calmer.";
+      return "Ниже — спокойнее.";
     case "neutral":
-      return "Neither good nor bad — context only.";
+      return "Ни хорошо, ни плохо — только контекст.";
   }
 }
 
@@ -281,20 +281,20 @@ export function statTone(
   f: { featureId: string; value: unknown; confidence?: number; factors?: { id: string }[] },
 ): { tone: StatTone; word: string } {
   if (reliabilityOf(f) !== "ok") {
-    return { tone: "rough", word: "rough estimate" };
+    return { tone: "rough", word: "грубая оценка" };
   }
   const v = typeof f.value === "number" ? f.value : NaN;
   const dir = metricInfo(f.featureId).direction;
   if (!Number.isFinite(v) || dir === "neutral") {
     if (f.featureId === "ContextSwitchRate" && Number.isFinite(v)) {
-      return v >= 2 ? { tone: "elevated", word: "busy" } : { tone: "ok", word: "settled" };
+      return v >= 2 ? { tone: "elevated", word: "много" } : { tone: "ok", word: "ровно" };
     }
-    return { tone: "neutral", word: "context" };
+    return { tone: "neutral", word: "контекст" };
   }
   if (dir === "higher_better") {
-    return v >= 55 ? { tone: "ok", word: "steady" } : { tone: "elevated", word: "lower" };
+    return v >= 55 ? { tone: "ok", word: "ровно" } : { tone: "elevated", word: "ниже" };
   }
-  return v <= 55 ? { tone: "ok", word: "calm" } : { tone: "elevated", word: "elevated" };
+  return v <= 55 ? { tone: "ok", word: "спокойно" } : { tone: "elevated", word: "выше" };
 }
 
 /** Keep only the newest window per metric (snapshot lists every sliding window). */

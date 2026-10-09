@@ -154,10 +154,10 @@ fn render_default_markdown(
     health: Option<&HealthContext>,
 ) -> ReportResult<String> {
     let mut out = String::new();
-    out.push_str("# BioFocus report\n\n");
+    out.push_str("# Отчёт BioFocus\n\n");
     out.push_str(
-        "_Offline summary from Features, Insights, and Recommendations. \
-         Not a medical assessment._\n\n",
+        "_Локальное резюме по метрикам, наблюдениям и подсказкам. \
+         Это не медицинская оценка._\n\n",
     );
 
     render_health_context_section(&mut out, health);
@@ -167,8 +167,8 @@ fn render_default_markdown(
         && recommendations.is_empty()
         && life_events.is_empty()
     {
-        out.push_str("## Summary\n\n");
-        out.push_str("Nothing to summarize for this period yet.\n");
+        out.push_str("## Кратко\n\n");
+        out.push_str("За этот период пока нечего обобщать.\n");
         return Ok(out);
     }
 
@@ -199,14 +199,14 @@ fn render_life_events_section(out: &mut String, life_events: &[ReportLifeEvent])
     if life_events.is_empty() {
         return;
     }
-    out.push_str("## Life events\n\n");
+    out.push_str("## События дня\n\n");
     out.push_str(
-        "_Logged by the user. Removed events are excluded. \
-         Times are Unix seconds (UTC); \"logged\" differs when back-dated._\n\n",
+        "_Записал пользователь. Убранные события не входят. \
+         Время — секунды Unix (UTC); «записано» отличается, если время сдвинули._\n\n",
     );
     let mut sorted: Vec<&ReportLifeEvent> = life_events.iter().collect();
     sorted.sort_by(|a, b| (a.happened_at, a.id).cmp(&(b.happened_at, b.id)));
-    out.push_str("| Event | Happened (UTC s) | Logged (UTC s) | Id |\n");
+    out.push_str("| Событие | Было (UTC, с) | Записано (UTC, с) | Id |\n");
     out.push_str("| :--- | :--- | :--- | :--- |\n");
     for ev in sorted {
         out.push_str(&format!(
@@ -224,18 +224,18 @@ fn render_health_context_section(out: &mut String, health: Option<&HealthContext
     let Some(ctx) = health.filter(|c| !c.is_empty()) else {
         return;
     };
-    out.push_str("## User-declared context\n\n");
+    out.push_str("## Ваши пометки\n\n");
     out.push_str(
-        "_Optional personal notes the user already knows. \
-         Not a diagnosis. Not inferred from biometrics._\n\n",
+        "_Необязательные личные пометки, которые пользователь уже знает. \
+         Это не диагноз и не вывод из биометрии._\n\n",
     );
     if !ctx.conditions.is_empty() {
-        out.push_str("- **Declared labels:** ");
+        out.push_str("- **Пометки:** ");
         out.push_str(&ctx.conditions.join(", "));
         out.push('\n');
     }
     if !ctx.note.is_empty() {
-        out.push_str("- **Note:** ");
+        out.push_str("- **Заметка:** ");
         out.push_str(&ctx.note);
         out.push('\n');
     }
@@ -243,9 +243,9 @@ fn render_health_context_section(out: &mut String, health: Option<&HealthContext
 }
 
 fn render_recommendations_section(out: &mut String, recommendations: &[Recommendation]) {
-    out.push_str("## Recommendations\n\n");
+    out.push_str("## Подсказки\n\n");
     if recommendations.is_empty() {
-        out.push_str("_No Recommendations for this period._\n");
+        out.push_str("_За этот период подсказок нет._\n");
         return;
     }
 
@@ -255,9 +255,9 @@ fn render_recommendations_section(out: &mut String, recommendations: &[Recommend
     for rec in sorted {
         out.push_str(&format!("### {}\n\n", rec.title));
         out.push_str(&format!("{}\n\n", rec.suggestion));
-        out.push_str(&format!("- **Category:** {}\n", rec.category));
+        out.push_str(&format!("- **Категория:** {}\n", rec.category));
         out.push_str(&format!(
-            "- **Evidence:** {}\n",
+            "- **Основание:** {}\n",
             format_evidence(&rec.evidence_list)
         ));
         out.push('\n');
@@ -267,22 +267,22 @@ fn render_recommendations_section(out: &mut String, recommendations: &[Recommend
 fn render_default_llm_prompt(markdown: &str) -> String {
     let mut out = String::new();
     out.push_str(
-        "You are interpreting a BioFocus local wellness summary. \
-         Use only the facts in the report below. \
-         Do not invent metrics, Evidence, Insights, Recommendations, or actions. \
-         Do not invent diagnoses or clinical claims. \
-         If a \"User-declared context\" section is present, treat it as \
-         optional framing the user already knows — do not diagnose from it \
-         or invent additional conditions. \
-         Keep a calm, non-evaluative tone. \
-         Do not recompute Features — interpret the given values only. \
-         Do not invent or rewrite Recommendations as new advice.\n\n",
+        "Ты пересказываешь локальное резюме BioFocus. \
+         Используй только факты из отчёта ниже. \
+         Не выдумывай метрики, основания, наблюдения, подсказки и действия. \
+         Не ставь диагнозы и не делай медицинских выводов. \
+         Если есть раздел «Ваши пометки», это необязательный контекст, \
+         который пользователь уже знает: не ставь диагноз по нему \
+         и не добавляй новые состояния. \
+         Тон спокойный, без оценки человека. \
+         Не пересчитывай метрики — только поясни уже данные значения. \
+         Не выдумывай подсказки и не переписывай их как новый совет.\n\n",
     );
     wrap_markdown_for_llm(&mut out, markdown);
     out.push_str(
-        "Write a short natural-language summary the user can skim. \
-         Prefer gentle observations over advice. \
-         This is optional personal interpretation, not medical advice.\n",
+        "Напиши короткое резюме на русском, которое можно пробежать глазами. \
+         Лучше спокойные наблюдения, чем советы. \
+         Это необязательное личное пояснение, не медицинский совет.\n",
     );
     out
 }
@@ -334,9 +334,9 @@ mod tests {
             None,
         )
         .expect("ok");
-        assert!(doc.markdown.contains("Nothing to summarize"));
+        assert!(doc.markdown.contains("нечего обобщать"));
         assert!(!doc.markdown.contains("User-declared context"));
-        assert!(doc.llm_prompt.contains("Do not invent diagnoses"));
+        assert!(doc.llm_prompt.contains("Не ставь диагнозы"));
     }
 
     #[test]
@@ -354,12 +354,12 @@ mod tests {
             Some(&health),
         )
         .expect("ok");
-        assert!(doc.markdown.contains("User-declared context"));
+        assert!(doc.markdown.contains("Ваши пометки"));
         assert!(doc.markdown.contains("sleep_sensitive"));
         assert!(doc.markdown.contains("I already know late nights hit me"));
-        assert!(doc.markdown.contains("Not a diagnosis"));
-        assert!(doc.llm_prompt.contains("User-declared context"));
-        assert!(doc.llm_prompt.contains("do not diagnose"));
+        assert!(doc.markdown.contains("не диагноз"));
+        assert!(doc.llm_prompt.contains("Ваши пометки"));
+        assert!(doc.llm_prompt.contains("не ставь диагноз"));
         assert!(!doc.markdown.to_lowercase().contains("you have"));
     }
 
@@ -419,12 +419,12 @@ mod tests {
         )
         .expect("build");
         let md = &doc.markdown;
-        assert!(md.contains("## Life events"));
+        assert!(md.contains("## События дня"));
         let coffee = md.find("| coffee | 1000 | 1000 |").expect("coffee row");
         let walk = md.find("| walk | 2000 | 2900 |").expect("walk row");
         assert!(coffee < walk, "sorted by happened-at");
-        assert!(md.find("## Life events").unwrap() < md.find("## Recommendations").unwrap());
-        assert!(doc.llm_prompt.contains("## Life events"));
+        assert!(md.find("## События дня").unwrap() < md.find("## Подсказки").unwrap());
+        assert!(doc.llm_prompt.contains("## События дня"));
     }
 
     #[test]
@@ -469,7 +469,7 @@ mod tests {
             None,
         )
         .expect("build");
-        assert!(!doc.markdown.contains("Nothing to summarize"));
+        assert!(!doc.markdown.contains("нечего обобщать"));
         assert!(doc.markdown.contains("| lunch | 5 | 5 |"));
     }
 }

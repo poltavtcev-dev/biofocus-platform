@@ -41,8 +41,8 @@ impl RecommendationRule for FocusDipPaceHintRule {
 
         Ok(vec![Recommendation {
             id: Uuid::now_v7(),
-            title: "A gentler pace may help".into(),
-            suggestion: "If it fits your schedule, a short pause or slightly slower pace may help when focus looks lower than your recent average.".into(),
+            title: "Можно чуть сбавить темп".into(),
+            suggestion: "Если это вписывается в день, короткая пауза или чуть более спокойный темп могут помочь, когда фокус ниже вашего недавнего среднего.".into(),
             category: "pace".into(),
             evidence_list: vec![
                 EvidenceRef::Feature(FOCUS_SCORE_ID.into()),
@@ -58,7 +58,7 @@ fn find_focus_below_baseline_insight(insights: &[Insight]) -> Option<&Insight> {
         if insight.category != PATTERN_CATEGORY {
             return false;
         }
-        let lower = insight.description.to_lowercase().contains("lower");
+        let lower = insight.description.to_lowercase().contains("ниже");
         let cites_focus = insight
             .evidence_list
             .iter()
@@ -95,8 +95,8 @@ mod tests {
     fn lower_pattern_insight() -> Insight {
         Insight {
             id: Uuid::from_u128(11),
-            title: "Focus relative to your recent average".into(),
-            description: "Focus looks lower than your recent afternoon average.".into(),
+            title: "Фокус на фоне вашего недавнего среднего".into(),
+            description: "Фокус ниже вашего недавнего среднего по второй половине дня.".into(),
             category: "pattern".into(),
             evidence_list: vec![EvidenceRef::Feature(FOCUS_SCORE_ID.into())],
             action_recommendation: None,
@@ -106,8 +106,8 @@ mod tests {
     fn higher_pattern_insight() -> Insight {
         Insight {
             id: Uuid::from_u128(12),
-            title: "Focus relative to your recent average".into(),
-            description: "Focus looks higher than your recent afternoon average.".into(),
+            title: "Фокус на фоне вашего недавнего среднего".into(),
+            description: "Фокус выше вашего недавнего среднего по второй половине дня.".into(),
             category: "pattern".into(),
             evidence_list: vec![EvidenceRef::Feature(FOCUS_SCORE_ID.into())],
             action_recommendation: None,
@@ -138,7 +138,7 @@ mod tests {
         for word in ["diagnos", "disorder", "patholog", "unhealthy", "medical", "prescri"] {
             assert!(!blob.contains(word), "clinical term in {blob}");
         }
-        assert!(blob.contains("pace") || blob.contains("pause"));
+        assert!(blob.contains("темп") || blob.contains("пауза"));
     }
 
     #[test]

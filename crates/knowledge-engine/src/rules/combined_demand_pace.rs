@@ -36,8 +36,8 @@ impl RecommendationRule for CombinedDemandPaceHintRule {
 
         Ok(vec![Recommendation {
             id: Uuid::now_v7(),
-            title: "Ease the pace for a moment".into(),
-            suggestion: "If it fits your schedule, a short pause or fewer parallel demands may help when combined demand looks elevated.".into(),
+            title: "Можно ненадолго сбавить темп".into(),
+            suggestion: "Если это вписывается в день, короткая пауза или меньше параллельных дел могут помочь, когда общая нагрузка выше обычного.".into(),
             category: "pace".into(),
             evidence_list: evidence,
         }])
@@ -53,7 +53,7 @@ fn find_cognitive_load_elevated_insight(insights: &[Insight]) -> Option<&Insight
         }
         let elevated_demand = {
             let d = insight.description.to_lowercase();
-            d.contains("combined demand") && d.contains("elevated")
+            d.contains("общая нагрузка") && d.contains("выше обычного")
         };
         let cites_load = insight.evidence_list.iter().any(|e| {
             matches!(e, EvidenceRef::Feature(id) if id == COGNITIVE_LOAD_ID)
@@ -90,8 +90,8 @@ mod tests {
     fn demand_insight() -> Insight {
         Insight {
             id: Uuid::from_u128(21),
-            title: "Combined demand looked elevated".into(),
-            description: "Combined demand looked elevated in this window.".into(),
+            title: "Общая нагрузка была выше обычного".into(),
+            description: "Общая нагрузка в этом окне была выше обычного.".into(),
             category: DEMAND_CATEGORY.into(),
             evidence_list: vec![EvidenceRef::Feature(COGNITIVE_LOAD_ID.into())],
             action_recommendation: None,
@@ -101,8 +101,8 @@ mod tests {
     fn unrelated_insight() -> Insight {
         Insight {
             id: Uuid::from_u128(22),
-            title: "Prolonged load looked elevated".into(),
-            description: "Prolonged load looked elevated in this window.".into(),
+            title: "Длительная нагрузка была выше обычного".into(),
+            description: "Длительная нагрузка в этом окне была выше обычного.".into(),
             category: "prolonged_load".into(),
             evidence_list: vec![EvidenceRef::Feature("SustainedLoadIndicator".into())],
             action_recommendation: None,
@@ -130,7 +130,7 @@ mod tests {
             .evidence_list
             .contains(&EvidenceRef::Feature(COGNITIVE_LOAD_ID.into())));
         let blob = format!("{} {}", out[0].title, out[0].suggestion).to_lowercase();
-        assert!(blob.contains("pace") || blob.contains("pause"));
+        assert!(blob.contains("темп") || blob.contains("пауза"));
         for banned in [
             "diagnos",
             "disorder",

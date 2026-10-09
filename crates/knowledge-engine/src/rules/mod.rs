@@ -262,7 +262,7 @@ mod tests {
             .iter()
             .find(|i| i.category == "pattern")
             .expect("pattern insight");
-        assert!(insight.description.contains("higher"));
+        assert!(insight.description.contains("выше"));
     }
 
     #[test]
@@ -332,7 +332,7 @@ mod tests {
             .iter()
             .find(|i| i.category == "pattern")
             .expect("pattern insight");
-        assert!(pattern_insight.description.contains("lower"));
+        assert!(pattern_insight.description.contains("ниже"));
         let focus_dip = recommendations
             .iter()
             .find(|r| {
@@ -362,7 +362,7 @@ mod tests {
             .iter()
             .find(|i| i.category == DEMAND_CATEGORY)
             .expect("demand insight");
-        assert!(demand.description.contains("Combined demand"));
+        assert!(demand.description.contains("Общая нагрузка"));
         assert_eq!(recommendations.len(), 1);
         assert!(recommendations[0]
             .evidence_list

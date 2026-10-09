@@ -26,25 +26,25 @@ enum IngestClientError: Error, LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .loopbackOnPhysicalDevice:
-            return "127.0.0.1 is this phone’s loopback — copy the LAN Base URL from Desktop Companion, not localhost."
+            return "127.0.0.1 — это сам телефон. Скопируйте адрес локальной сети из BioFocus на Mac, не localhost."
         case .timeout:
-            return "Desktop not reachable in time — same Wi‑Fi, enable LAN on Mac, check firewall."
+            return "Mac не ответил вовремя. Та же сеть Wi‑Fi, включите LAN на Mac и проверьте файрвол."
         case .unreachable:
-            return "Desktop not reachable — same Wi‑Fi, enable LAN bind on Mac, check firewall and Local Network permission."
+            return "Mac недоступен. Та же сеть Wi‑Fi, включите LAN на Mac, проверьте файрвол и разрешение «Локальная сеть»."
         case .unauthorized:
-            return "Ingest unauthorized — check pairing token on phone and Desktop."
+            return "Сервер не принял токен. Сверьте токен на телефоне и на Mac."
         case .plainHttpOffLoopback:
-            return "LAN sync uses https. Copy the Base URL from Desktop again."
+            return "По Wi‑Fi нужен адрес https. Скопируйте адрес из BioFocus на Mac ещё раз."
         case .pinRequired:
-            return "Paste the pairing QR so this phone can pin the Mac certificate."
+            return "Вставьте текст QR, чтобы телефон проверил сертификат Mac."
         case .pinMismatch:
-            return "Certificate fingerprint does not match this Mac. Scan the QR again."
+            return "Отпечаток сертификата не совпадает с этим Mac. Вставьте QR ещё раз."
         case .http(let status, let body):
-            return "Ingest HTTP \(status): \(body)"
+            return "Ответ сервера HTTP \(status): \(body)"
         case .network(let message):
             return message
         case .badResponse(let message):
-            return "Unexpected ingest response: \(message)"
+            return "Неожиданный ответ сервера: \(message)"
         }
     }
 }
@@ -233,7 +233,7 @@ struct IngestClient {
         }
 
         guard let http = response as? HTTPURLResponse else {
-            throw IngestClientError.badResponse("non-HTTP response")
+            throw IngestClientError.badResponse("ответ не HTTP")
         }
         guard (200 ... 299).contains(http.statusCode) else {
             let text = String(data: data, encoding: .utf8) ?? ""
@@ -268,7 +268,7 @@ struct IngestClient {
             throw mapURLError(error)
         }
         guard let http = response as? HTTPURLResponse else {
-            throw IngestClientError.badResponse("non-HTTP response")
+            throw IngestClientError.badResponse("ответ не HTTP")
         }
         if http.statusCode == 401 {
             throw IngestClientError.unauthorized
@@ -297,7 +297,7 @@ struct IngestClient {
         }
 
         guard let http = response as? HTTPURLResponse else {
-            throw IngestClientError.badResponse("non-HTTP response")
+            throw IngestClientError.badResponse("ответ не HTTP")
         }
         if http.statusCode == 401 {
             throw IngestClientError.unauthorized

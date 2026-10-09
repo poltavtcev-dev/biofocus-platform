@@ -30,18 +30,18 @@ type LifeEventPayload = {
 
 /** "When did it happen?" presets (minutes before now). */
 export const BACKDATE_OPTIONS = [
-  { minutes: 0, label: "Now" },
-  { minutes: 15, label: "15m" },
-  { minutes: 30, label: "30m" },
-  { minutes: 60, label: "1h" },
+  { minutes: 0, label: "Сейчас" },
+  { minutes: 15, label: "15 мин" },
+  { minutes: 30, label: "30 мин" },
+  { minutes: 60, label: "1 ч" },
 ] as const;
 
 /** Re-time presets for an existing row (minutes before now). */
 export const RETIME_OPTIONS = [
-  { minutes: 15, label: "15 min ago" },
-  { minutes: 30, label: "30 min ago" },
-  { minutes: 60, label: "1 h ago" },
-  { minutes: 120, label: "2 h ago" },
+  { minutes: 15, label: "15 мин назад" },
+  { minutes: 30, label: "30 мин назад" },
+  { minutes: 60, label: "1 ч назад" },
+  { minutes: 120, label: "2 ч назад" },
 ] as const;
 
 export type ActionResult<T> = { ok: true; value: T } | { ok: false; detail: string };
@@ -59,10 +59,10 @@ export type LogLifeEventView =
   | { kind: "error"; detail: string };
 
 const LABELS: Record<LifeEventKind, string> = {
-  coffee: "Coffee",
-  walk: "Walk",
-  lunch: "Lunch",
-  workout: "Workout",
+  coffee: "Кофе",
+  walk: "Прогулка",
+  lunch: "Обед",
+  workout: "Тренировка",
 };
 
 const ICONS: Record<LifeEventKind, string> = {
@@ -86,14 +86,14 @@ export const RECENT_LIMIT = 5;
 /** "just now", "5 min ago", "2 h ago", "yesterday", "3 days ago". */
 export function formatRelativeTime(timestamp: number, nowSecs = Date.now() / 1000): string {
   const diff = Math.max(0, Math.round(nowSecs - timestamp));
-  if (diff < 45) return "just now";
+  if (diff < 45) return "только что";
   const min = Math.round(diff / 60);
-  if (min < 60) return `${min} min ago`;
+  if (min < 60) return `${min} мин назад`;
   const h = Math.round(min / 60);
-  if (h < 24) return `${h} h ago`;
+  if (h < 24) return `${h} ч назад`;
   const d = Math.round(h / 24);
-  if (d === 1) return "yesterday";
-  return `${d} days ago`;
+  if (d === 1) return "вчера";
+  return `${d} дн. назад`;
 }
 
 /** Absolute local time; adds the date when not today. */
@@ -101,9 +101,9 @@ export function formatAbsoluteTime(timestamp: number, now = new Date()): string 
   try {
     const d = new Date(timestamp * 1000);
     const sameDay = d.toDateString() === now.toDateString();
-    const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-    if (sameDay) return `Today, ${time}`;
-    const date = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    const time = d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    if (sameDay) return `Сегодня, ${time}`;
+    const date = d.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "short" });
     return `${date}, ${time}`;
   } catch {
     return "";
@@ -120,13 +120,13 @@ export function lifeEventLabel(kind: string): string {
 
 /** Short confirmation after a successful log. */
 export function loggedMessage(kind: string): string {
-  return `Logged ${lifeEventLabel(kind).toLowerCase()}.`;
+  return `Записано: ${lifeEventLabel(kind).toLowerCase()}.`;
 }
 
 /** Local clock time only (e.g. "14:05"). */
 export function formatClock(timestamp: number): string {
   try {
-    return new Date(timestamp * 1000).toLocaleTimeString(undefined, {
+    return new Date(timestamp * 1000).toLocaleTimeString("ru-RU", {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -143,7 +143,7 @@ export function isBackdated(event: LifeEventInfo): boolean {
 /** Secondary row text: "Today, 14:05" or "Today, 14:05 · logged 14:20". */
 export function lifeEventWhen(event: LifeEventInfo, now = new Date()): string {
   const abs = formatAbsoluteTime(event.timestamp, now);
-  return isBackdated(event) ? `${abs} · logged ${formatClock(event.loggedAt)}` : abs;
+  return isBackdated(event) ? `${abs} · записано ${formatClock(event.loggedAt)}` : abs;
 }
 
 function normalize(payload: LifeEventPayload): LifeEventInfo | null {
@@ -236,7 +236,7 @@ export async function fetchRecentLifeEvents(
   limit = RECENT_LIMIT,
 ): Promise<LifeEventsListView> {
   if (mockErrorFromQuery()) {
-    return { kind: "error", detail: "Could not load recent life events." };
+    return { kind: "error", detail: "Не удалось загрузить недавние события." };
   }
   const mocked = mockFromQuery();
   if (mocked) {
@@ -248,7 +248,7 @@ export async function fetchRecentLifeEvents(
       limit,
     });
     if (!Array.isArray(payload)) {
-      return { kind: "error", detail: "Could not load recent life events." };
+      return { kind: "error", detail: "Не удалось загрузить недавние события." };
     }
     const events = payload
       .map(normalize)
@@ -258,7 +258,7 @@ export async function fetchRecentLifeEvents(
     const detail =
       typeof err === "string" && err.trim()
         ? err.trim()
-        : "Could not load recent life events.";
+        : "Не удалось загрузить недавние события.";
     return { kind: "error", detail };
   }
 }
@@ -272,7 +272,7 @@ export async function logLifeEvent(
   minutesAgo = 0,
 ): Promise<LogLifeEventView> {
   if (mockErrorFromQuery()) {
-    return { kind: "error", detail: "Could not log that event." };
+    return { kind: "error", detail: "Не удалось записать событие." };
   }
   const now = nowSecs();
   const happenedAt = minutesAgo > 0 ? now - minutesAgo * 60 : undefined;
@@ -299,14 +299,14 @@ export async function logLifeEvent(
     );
     const event = normalize(payload);
     if (!event) {
-      return { kind: "error", detail: "Could not log that event." };
+      return { kind: "error", detail: "Не удалось записать событие." };
     }
     return { kind: "ok", event, message: loggedMessage(event.kind) };
   } catch (err) {
     const detail =
       typeof err === "string" && err.trim()
         ? err.trim()
-        : "Could not log that event.";
+        : "Не удалось записать событие.";
     return { kind: "error", detail };
   }
 }
@@ -329,7 +329,7 @@ export async function retractLifeEvent(id: string): Promise<ActionResult<string>
     await invoke("retract_life_event", { id });
     return { ok: true, value: id };
   } catch (err) {
-    return { ok: false, detail: errorDetail(err, "Could not remove that event.") };
+    return { ok: false, detail: errorDetail(err, "Не удалось убрать событие.") };
   }
 }
 
@@ -349,9 +349,9 @@ export async function restoreLifeEvent(id: string): Promise<ActionResult<LifeEve
   try {
     const payload = await invoke<LifeEventPayload>("restore_life_event", { id });
     const event = normalize(payload);
-    return event ? { ok: true, value: event } : { ok: false, detail: "Could not restore that event." };
+    return event ? { ok: true, value: event } : { ok: false, detail: "Не удалось вернуть событие." };
   } catch (err) {
-    return { ok: false, detail: errorDetail(err, "Could not restore that event.") };
+    return { ok: false, detail: errorDetail(err, "Не удалось вернуть событие.") };
   }
 }
 
@@ -374,9 +374,9 @@ export async function retimeLifeEvent(
   try {
     const payload = await invoke<LifeEventPayload>("retime_life_event", { id, happenedAt });
     const event = normalize(payload);
-    return event ? { ok: true, value: event } : { ok: false, detail: "Could not change the time." };
+    return event ? { ok: true, value: event } : { ok: false, detail: "Не удалось изменить время." };
   } catch (err) {
-    return { ok: false, detail: errorDetail(err, "Could not change the time.") };
+    return { ok: false, detail: errorDetail(err, "Не удалось изменить время.") };
   }
 }
 
@@ -431,7 +431,7 @@ export function mockLifeEventsUiFromLocation(): "actions" | null {
 /** Local time for a Unix-seconds timestamp (Menubar meta). */
 export function formatLifeEventTime(timestamp: number): string {
   try {
-    return new Date(timestamp * 1000).toLocaleTimeString(undefined, {
+    return new Date(timestamp * 1000).toLocaleTimeString("ru-RU", {
       hour: "2-digit",
       minute: "2-digit",
     });

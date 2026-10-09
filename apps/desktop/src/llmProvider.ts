@@ -27,16 +27,16 @@ const DEFAULT_PACK_ID = "biofocus.default";
 const DEFAULT_PACK_VERSION = "1";
 
 const LABELS: Record<"disabled" | "ready" | "error", string> = {
-  disabled: "Local AI · Off",
-  ready: "Local AI · Ready",
-  error: "Local AI · Issue",
+  disabled: "Локальный ИИ · выключен",
+  ready: "Локальный ИИ · готов",
+  error: "Локальный ИИ · сбой",
 };
 
 function labelFor(status: LocalLlmProviderStatus): string {
   if (status === "disabled" || status === "ready" || status === "error") {
     return LABELS[status];
   }
-  return `Local AI · ${status}`;
+  return `Локальный ИИ · ${status}`;
 }
 
 export function llmProviderView(
@@ -57,8 +57,8 @@ export function llmProviderView(
 export function loadingLlmProviderView(): LlmProviderView {
   return {
     status: "disabled",
-    label: "Local AI",
-    detail: "Checking local AI status…",
+    label: "Локальный ИИ",
+    detail: "Проверяем локальный ИИ…",
     source: "get_local_llm_status",
     packId: DEFAULT_PACK_ID,
     packVersion: DEFAULT_PACK_VERSION,
@@ -87,7 +87,7 @@ export function mockLlmProviderFromLocation(
     return llmProviderView(
       {
         status: "disabled",
-        detail: "Local AI is optional and currently off.",
+        detail: "Локальный ИИ необязателен и сейчас выключен.",
         packId: DEFAULT_PACK_ID,
         packVersion: DEFAULT_PACK_VERSION,
       },
@@ -99,7 +99,7 @@ export function mockLlmProviderFromLocation(
       {
         status: "ready",
         detail:
-          "Local AI is configured. Interpretation runs only when you generate a report.",
+          "Локальный ИИ настроен. Пояснение появляется только когда вы собираете отчёт.",
         model: "llama3.2",
         packId: DEFAULT_PACK_ID,
         packVersion: DEFAULT_PACK_VERSION,
@@ -111,7 +111,7 @@ export function mockLlmProviderFromLocation(
     return llmProviderView(
       {
         status: "error",
-        detail: "Local AI is enabled but the endpoint config looks unusable.",
+        detail: "Локальный ИИ включён, но адрес выглядит непригодным.",
         packId: DEFAULT_PACK_ID,
         packVersion: DEFAULT_PACK_VERSION,
       },
@@ -172,7 +172,7 @@ export async function fetchLocalLlmStatus(): Promise<LlmProviderView> {
       return llmProviderView(
         {
           status: "error",
-          detail: "Could not read local AI status from Core.",
+          detail: "Не удалось прочитать статус локального ИИ из ядра.",
           packId: DEFAULT_PACK_ID,
           packVersion: DEFAULT_PACK_VERSION,
         },
@@ -184,7 +184,7 @@ export async function fetchLocalLlmStatus(): Promise<LlmProviderView> {
     return llmProviderView(
       {
         status: "error",
-        detail: "Could not reach local AI status from Core.",
+        detail: "Не удалось получить статус локального ИИ из ядра.",
         packId: DEFAULT_PACK_ID,
         packVersion: DEFAULT_PACK_VERSION,
       },

@@ -45,16 +45,16 @@ const COPY: Record<
   { label: string; detail: string }
 > = {
   empty: {
-    label: "No metrics yet",
-    detail: "No data yet. Keep BioFocus running and use your Mac normally — metrics appear after a few minutes.",
+    label: "Метрик пока нет",
+    detail: "Данных ещё нет. Оставьте BioFocus запущенным и работайте как обычно — метрики появятся через несколько минут.",
   },
   ready: {
-    label: "Metrics available",
-    detail: "Latest values from the last 15 minutes.",
+    label: "Метрики есть",
+    detail: "Последние значения за 15 минут.",
   },
   error: {
-    label: "Could not load",
-    detail: "Could not load metrics from the local engine. Try again; if it persists, restart BioFocus.",
+    label: "Не удалось загрузить",
+    detail: "Не удалось получить метрики из локального анализа. Попробуйте ещё раз; если повторится, перезапустите BioFocus.",
   },
 };
 
@@ -76,8 +76,8 @@ export function snapshotView(
 export function loadingView(): SnapshotView {
   return {
     kind: "loading",
-    label: "Loading",
-    detail: "Fetching Feature snapshot…",
+    label: "Загрузка",
+    detail: "Загружаем снимок метрик…",
     source: "get_feature_snapshot",
   };
 }

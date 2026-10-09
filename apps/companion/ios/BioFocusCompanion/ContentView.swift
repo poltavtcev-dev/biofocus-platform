@@ -15,36 +15,36 @@ struct ContentView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Base URL", text: $baseURLText)
+                    TextField("Адрес", text: $baseURLText)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .keyboardType(.URL)
-                    SecureField("Pairing token", text: $token)
+                    SecureField("Токен", text: $token)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    TextField("Certificate fingerprint", text: $certPin)
+                    TextField("Отпечаток сертификата", text: $certPin)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    TextField("Pairing QR text", text: $pairingPaste, axis: .vertical)
+                    TextField("Текст QR", text: $pairingPaste, axis: .vertical)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    Button("Apply pairing text") {
+                    Button("Применить текст QR") {
                         applyPairingText()
                     }
                     .disabled(pairingPaste.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 } header: {
-                    Text("Desktop pairing")
+                    Text("Подключение к Mac")
                 } footer: {
-                    Text("Simulator: http://127.0.0.1:8787. A real iPhone uses the https address from Desktop. Paste the QR text (four lines). A different certificate fingerprint is rejected.")
+                    Text("Симулятор: http://127.0.0.1:8787. Настоящий iPhone берёт адрес https из BioFocus на Mac. Вставьте текст QR — четыре строки. Чужой отпечаток сертификата отклоняется.")
                 }
 
                 Section {
-                    Button("Test connection") {
+                    Button("Проверить связь") {
                         Task { await testConnection() }
                     }
                     .disabled(isBusy || baseURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                    Toggle("Auto-sync", isOn: $autoSync)
+                    Toggle("Автосинхронизация", isOn: $autoSync)
                         .onChange(of: autoSync) { _, enabled in
                             sync.isAutoSyncEnabled = enabled
                             if enabled {
@@ -52,15 +52,15 @@ struct ContentView: View {
                             }
                         }
                     if let last = sync.lastFlushDate() {
-                        Text("Last flush: \(last.formatted(date: .abbreviated, time: .shortened))")
+                        Text("Последняя отправка: \(last.formatted(date: .abbreviated, time: .shortened))")
                             .foregroundStyle(.secondary)
                     }
-                    Text("Pending queue: \(sync.pendingCount)")
+                    Text("В очереди: \(sync.pendingCount)")
                         .foregroundStyle(.secondary)
                 } header: {
-                    Text("Autonomy")
+                    Text("Автономность")
                 } footer: {
-                    Text("When on, new HealthKit samples enqueue and flush when Desktop is reachable. Test connection checks reachability in under 5 seconds.")
+                    Text("Когда включено, новые данные Health попадают в очередь и уходят на Mac, как только он доступен. «Проверить связь» ждёт ответ не дольше 5 секунд.")
                 }
 
                 Section {
@@ -78,7 +78,7 @@ struct ContentView: View {
                     .disabled(isBusy || baseURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         || token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                    Button("Flush queue only") {
+                    Button("Только отправить очередь") {
                         Task { await flushOnly() }
                     }
                     .disabled(isBusy || sync.pendingCount == 0
@@ -94,12 +94,12 @@ struct ContentView: View {
                             Text(row.label)
                             Spacer()
                             Text(row.status)
-                                .foregroundStyle(row.status == "OK" ? Color.green : Color.secondary)
+                                .foregroundStyle(row.status == "есть" ? Color.green : Color.secondary)
                         }
                     }
                 }
 
-                Section("Status") {
+                Section("Статус") {
                     Text(sync.lastStatus)
                         .foregroundStyle(sync.lastWasError ? .red : .primary)
                         .font(.body)
@@ -109,9 +109,6 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .task {
                 sync.isAutoSyncEnabled = autoSync
-                if autoSync {
-                    await sync.startAutoSyncIfNeeded()
-                }
                 sync.refreshPendingCount()
                 sync.refreshTypeBoard()
             }
@@ -120,7 +117,7 @@ struct ContentView: View {
 
     private func applyPairingText() {
         guard let parsed = PairingQr.parse(pairingPaste) else {
-            sync.reportPairingError("Pairing text must be four lines starting with biofocus:1.")
+            sync.reportPairingError("Текст QR — четыре строки, первая biofocus:1.")
             return
         }
         baseURLText = parsed.url
@@ -133,7 +130,7 @@ struct ContentView: View {
     private func testConnection() async {
         let trimmedURL = baseURLText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: trimmedURL), url.scheme == "http" || url.scheme == "https" else {
-            sync.reportPairingError("Base URL looks invalid — use http://… from Desktop Companion.")
+            sync.reportPairingError("Адрес не похож на ссылку. Возьмите http:// или https:// из BioFocus на Mac.")
             return
         }
         isBusy = true
@@ -146,7 +143,7 @@ struct ContentView: View {
         let trimmedURL = baseURLText.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: trimmedURL), url.scheme == "http" || url.scheme == "https" else {
-            sync.reportPairingError("Base URL looks invalid — use http://… from Desktop Companion.")
+            sync.reportPairingError("Адрес не похож на ссылку. Возьмите http:// или https:// из BioFocus на Mac.")
             return
         }
         isBusy = true
@@ -154,7 +151,7 @@ struct ContentView: View {
         do {
             try await sync.preflightConnection(baseURL: url, token: trimmedToken)
         } catch let err as IngestClientError {
-            sync.reportPairingError(err.localizedDescription ?? "Connection check failed.")
+            sync.reportPairingError(err.localizedDescription ?? "Проверка связи не удалась.")
             return
         } catch {
             sync.reportPairingError(error.localizedDescription)
@@ -168,7 +165,7 @@ struct ContentView: View {
         let trimmedURL = baseURLText.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: trimmedURL), url.scheme == "http" || url.scheme == "https" else {
-            sync.reportPairingError("Base URL looks invalid — use http://… from Desktop Companion.")
+            sync.reportPairingError("Адрес не похож на ссылку. Возьмите http:// или https:// из BioFocus на Mac.")
             return
         }
         isBusy = true
@@ -176,7 +173,7 @@ struct ContentView: View {
         do {
             try await sync.preflightConnection(baseURL: url, token: trimmedToken)
         } catch let err as IngestClientError {
-            sync.reportPairingError(err.localizedDescription ?? "Connection check failed.")
+            sync.reportPairingError(err.localizedDescription ?? "Проверка связи не удалась.")
             return
         } catch {
             sync.reportPairingError(error.localizedDescription)
