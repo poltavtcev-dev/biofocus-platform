@@ -28,24 +28,26 @@
 
 #![forbid(unsafe_code)]
 
+mod data_sources;
 mod dedupe;
 mod error;
 mod intake;
 mod normalize;
 mod quality;
+mod source_select;
 
-pub use dedupe::{
-    dedupe_accepted, dedupe_observations, dedupe_owned, DedupedBatch, DedupeState,
-};
+pub use data_sources::{SourceSample, SourceSummary, SourcesReport, summarize_sources};
+pub use dedupe::{DedupeState, DedupedBatch, dedupe_accepted, dedupe_observations, dedupe_owned};
 pub use error::{PipelineError, PipelineResult};
-pub use intake::{accept_iter, accept_observations, accept_owned, AcceptedBatch};
+pub use intake::{AcceptedBatch, accept_iter, accept_observations, accept_owned};
 pub use normalize::{
-    normalize_deduped, normalize_observations, normalize_owned, NormalizedBatch,
     DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_AMBIENT_LIGHT, DATA_TYPE_CONTEXT_WINDOW,
     DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES, DATA_TYPE_NOW_PLAYING,
-    DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
+    DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT, NormalizedBatch,
+    normalize_deduped, normalize_observations, normalize_owned,
 };
-pub use quality::run_quality_pipeline;
+pub use quality::{run_quality_pipeline, run_quality_pipeline_with};
+pub use source_select::{SourcePriority, select_sources};
 
 /// Crate identity used by dependents and status payloads.
 pub const CRATE_NAME: &str = "pipeline";
@@ -59,4 +61,6 @@ pub enum PipelineStage {
     Deduped,
     /// Normalization completed; known-type payloads are in canonical form.
     Normalized,
+    /// One `src.kind` kept per wearable bucket. Storage still has every row.
+    SourceSelected,
 }

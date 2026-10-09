@@ -1,0 +1,35 @@
+{
+  "schema": "biofocus.wearables.fixture.v2",
+  "synthetic": true,
+  "note": "Shapes already accepted before wearables v2. P1 must keep them valid.",
+  "observations": [
+    {
+      "id": "0190a030-0000-7000-8000-000000000301",
+      "timestamp": 1772438400,
+      "provider_id": "com.biofocus.applehealth",
+      "data_type": "heart_rate",
+      "payload": { "bpm": 70 },
+      "confidence": 1.0
+    },
+    {
+      "id": "0190a030-0000-7000-8000-000000000302",
+      "timestamp": 1772406000,
+      "provider_id": "com.biofocus.applehealth",
+      "data_type": "hrv",
+      "payload": { "rmssd_ms": 42 },
+      "confidence": 1.0
+    },
+    {
+      "id": "0190a030-0000-7000-8000-000000000303",
+      "timestamp": 1772402400,
+      "provider_id": "com.biofocus.applehealth",
+      "data_type": "sleep_interval",
+      "payload": {
+        "start": 1772402400,
+        "end": 1772431200,
+        "stage": "asleep"
+      },
+      "confidence": 1.0
+    }
+  ]
+}

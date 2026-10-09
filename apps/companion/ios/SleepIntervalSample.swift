@@ -62,34 +62,9 @@ enum SleepIntervalSample {
         )
     }
 
-    /// Maps HK sleep analysis values to ADR-018 closed-set stages (omit-friendly).
+    /// Core, deep, and REM stay separate (ADR-030). They are not folded into `asleep`.
     static func mapStage(_ value: Int) -> String {
-        if #available(iOS 16.0, *) {
-            switch value {
-            case HKCategoryValueSleepAnalysis.inBed.rawValue:
-                return "in_bed"
-            case HKCategoryValueSleepAnalysis.awake.rawValue:
-                return "awake"
-            case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
-                 HKCategoryValueSleepAnalysis.asleepCore.rawValue,
-                 HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
-                 HKCategoryValueSleepAnalysis.asleepREM.rawValue:
-                return "asleep"
-            default:
-                return "unknown"
-            }
-        } else {
-            switch value {
-            case HKCategoryValueSleepAnalysis.inBed.rawValue:
-                return "in_bed"
-            case HKCategoryValueSleepAnalysis.asleep.rawValue:
-                return "asleep"
-            case HKCategoryValueSleepAnalysis.awake.rawValue:
-                return "awake"
-            default:
-                return "unknown"
-            }
-        }
+        SleepStageMap.stage(hkValue: value)
     }
 
     private static func querySamples(

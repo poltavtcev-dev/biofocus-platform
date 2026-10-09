@@ -15,13 +15,22 @@ pub const SLEEP_STAGE_IN_BED: &str = "in_bed";
 pub const SLEEP_STAGE_AWAKE: &str = "awake";
 /// Sleep stage: unknown.
 pub const SLEEP_STAGE_UNKNOWN: &str = "unknown";
+/// Sleep stage: light / core sleep (ADR-030). v1 `asleep` stays valid.
+pub const SLEEP_STAGE_ASLEEP_CORE: &str = "asleep_core";
+/// Sleep stage: deep sleep (ADR-030).
+pub const SLEEP_STAGE_ASLEEP_DEEP: &str = "asleep_deep";
+/// Sleep stage: REM sleep (ADR-030).
+pub const SLEEP_STAGE_ASLEEP_REM: &str = "asleep_rem";
 
-/// Allowed optional `payload.stage` values (ADR-018).
+/// Allowed optional `payload.stage` values (ADR-018, stages added by ADR-030).
 pub const V1_SLEEP_STAGES: &[&str] = &[
     SLEEP_STAGE_ASLEEP,
     SLEEP_STAGE_IN_BED,
     SLEEP_STAGE_AWAKE,
     SLEEP_STAGE_UNKNOWN,
+    SLEEP_STAGE_ASLEEP_CORE,
+    SLEEP_STAGE_ASLEEP_DEEP,
+    SLEEP_STAGE_ASLEEP_REM,
 ];
 
 /// Returns `true` when `stage` is a documented v1 sleep stage.
@@ -68,10 +77,7 @@ pub fn validate_sleep_interval_payload(payload: &JsonValue) -> SpecResult<()> {
     Ok(())
 }
 
-fn required_i64(
-    obj: &serde_json::Map<String, JsonValue>,
-    key: &str,
-) -> SpecResult<i64> {
+fn required_i64(obj: &serde_json::Map<String, JsonValue>, key: &str) -> SpecResult<i64> {
     match obj.get(key) {
         None => Err(SpecError::InvalidSleepIntervalPayload {
             reason: format!("missing required field {key}"),
@@ -85,13 +91,11 @@ fn required_i64(
 fn json_as_i64(v: &JsonValue) -> Option<i64> {
     match v {
         JsonValue::Number(n) => n.as_i64().or_else(|| {
-            n.as_u64()
-                .and_then(|u| i64::try_from(u).ok())
-                .or_else(|| {
-                    n.as_f64()
-                        .filter(|f| f.is_finite() && f.fract() == 0.0)
-                        .map(|f| f as i64)
-                })
+            n.as_u64().and_then(|u| i64::try_from(u).ok()).or_else(|| {
+                n.as_f64()
+                    .filter(|f| f.is_finite() && f.fract() == 0.0)
+                    .map(|f| f as i64)
+            })
         }),
         _ => None,
     }

@@ -16,6 +16,8 @@ pub enum EvidenceRef {
     Signal(SignalId),
     /// Cite a Knowledge Insight as Evidence (Recommendations / L4).
     Insight(InsightId),
+    /// Cite a raw Observation (e.g. a Life Event the user logged).
+    Observation(crate::ObservationId),
 }
 
 /// Analytical conclusion with provenance evidence and optional action.

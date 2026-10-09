@@ -194,9 +194,9 @@ mod tests {
     use serde_json::json;
     use uuid::Uuid;
 
-    use super::{dedupe_accepted, dedupe_observations, DedupeState};
-    use crate::intake::accept_observations;
+    use super::{DedupeState, dedupe_accepted, dedupe_observations};
     use crate::PipelineStage;
+    use crate::intake::accept_observations;
 
     fn obs_with(id: Uuid, ts: i64, provider: &str, data_type: &str, bpm: u64) -> Observation {
         Observation::try_new(
@@ -258,13 +258,7 @@ mod tests {
             "heart_rate",
             65,
         );
-        let same_id = obs_with(
-            Uuid::from_u128(10),
-            51,
-            "com.biofocus.other",
-            "hrv",
-            1,
-        );
+        let same_id = obs_with(Uuid::from_u128(10), 51, "com.biofocus.other", "hrv", 1);
         let same_content = obs_with(
             Uuid::from_u128(11),
             50,

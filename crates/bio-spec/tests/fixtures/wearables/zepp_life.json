@@ -1,0 +1,133 @@
+{
+  "schema": "biofocus.wearables.fixture.v2",
+  "synthetic": true,
+  "source_kind": "zepp_life",
+  "samples": [
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000201",
+        "identifier": "HKQuantityTypeIdentifierHeartRate",
+        "start": 1772439000,
+        "end": 1772439000,
+        "value": 68,
+        "unit": "count/min"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000201",
+        "timestamp": 1772439000,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "heart_rate",
+        "payload": {
+          "bpm": 68,
+          "src": {
+            "bundle_id": "com.xiaomi.hm.health",
+            "app_name": "Zepp Life",
+            "device_model": null,
+            "device_manufacturer": "Xiaomi",
+            "hardware_version": null,
+            "product_type": null,
+            "os_version": null,
+            "was_user_entered": false,
+            "kind": "zepp_life"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000202",
+        "identifier": "HKQuantityTypeIdentifierStepCount",
+        "start": 1772438400,
+        "end": 1772442000,
+        "value": 500,
+        "unit": "count"
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000202",
+        "timestamp": 1772442000,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "step_count",
+        "payload": {
+          "count": 500,
+          "src": {
+            "bundle_id": "com.xiaomi.hm.health",
+            "app_name": "Zepp Life",
+            "device_model": null,
+            "device_manufacturer": "Xiaomi",
+            "hardware_version": null,
+            "product_type": null,
+            "os_version": null,
+            "was_user_entered": false,
+            "kind": "zepp_life"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000203",
+        "identifier": "HKCategoryTypeIdentifierSleepAnalysis",
+        "value": "inBed",
+        "start": 1772402400,
+        "end": 1772431200
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000203",
+        "timestamp": 1772402400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "sleep_interval",
+        "payload": {
+          "start": 1772402400,
+          "end": 1772431200,
+          "stage": "in_bed",
+          "src": {
+            "bundle_id": "com.huami.watch",
+            "app_name": "Zepp Life",
+            "device_model": null,
+            "device_manufacturer": "Xiaomi",
+            "hardware_version": null,
+            "product_type": null,
+            "os_version": null,
+            "was_user_entered": false,
+            "kind": "zepp_life"
+          }
+        },
+        "confidence": 1.0
+      }
+    },
+    {
+      "hk": {
+        "uuid": "0190a030-0000-7000-8000-000000000204",
+        "identifier": "HKCategoryTypeIdentifierSleepAnalysis",
+        "value": "asleep",
+        "start": 1772404200,
+        "end": 1772427600
+      },
+      "observation": {
+        "id": "0190a030-0000-7000-8000-000000000204",
+        "timestamp": 1772404200,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "sleep_interval",
+        "payload": {
+          "start": 1772404200,
+          "end": 1772427600,
+          "stage": "asleep",
+          "src": {
+            "bundle_id": "com.huami.watch",
+            "app_name": "Zepp Life",
+            "device_model": null,
+            "device_manufacturer": "Xiaomi",
+            "hardware_version": null,
+            "product_type": null,
+            "os_version": null,
+            "was_user_entered": false,
+            "kind": "zepp_life"
+          }
+        },
+        "confidence": 1.0
+      }
+    }
+  ]
+}

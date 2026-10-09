@@ -11,7 +11,8 @@
 //!   window. Not a raw Observation mix.
 //! - **Normalize to 0–100:**
 //!   - `meeting = MeetingDensity × 100`
-//!   - `switches = clamp(ContextSwitchRate × 50, 0, 100)`
+//!   - `switches = switch_load(ContextSwitchRate)` — smooth curve, see `switch_curve.rs`
+//!     (v1 `× 50` clamp saturated at 2 switches/min)
 //!   - `notify = NotificationPressure` (already 0–100)
 //! - **Weights:** equal thirds (⅓ each) — **renormalized** over present inputs.
 //! - **Omit policy:** if **none** of the three upstream Features are present
@@ -42,7 +43,6 @@ const WEIGHT_NOTIFY: f64 = 1.0 / 3.0;
 /// Catalog input families for ADR-007 coverage (meeting / switches / notify).
 const EXPECTED_INPUT_SLOTS: usize = 3;
 /// Maps CSR (switches/min) onto the switches component scale (ADR-021).
-const CSR_SCORE_SCALE: f64 = 50.0;
 
 const FACTOR_MEETING: &str = "meeting";
 const FACTOR_SWITCHES: &str = "switches";
@@ -128,7 +128,7 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
 
     if let Some(csr) = upstream_feature(ctx, context_switch_rate::FEATURE_ID, window) {
         let rate = scalar_value(csr)?;
-        let switches = (rate * CSR_SCORE_SCALE).clamp(0.0, 100.0);
+        let switches = crate::catalog::switch_curve::switch_load(rate);
         weighted.push((
             FACTOR_SWITCHES,
             LABEL_SWITCHES,
@@ -313,7 +313,7 @@ mod tests {
         let FeatureValue::Scalar(v) = feat.value else {
             panic!("scalar");
         };
-        let switches = (2.0 / 15.0) * 50.0;
+        let switches = crate::catalog::switch_curve::switch_load(2.0 / 15.0);
         let expected = (100.0 + switches + 20.0) / 3.0;
         assert!(
             (v - expected).abs() < 1e-9,
@@ -379,5 +379,35 @@ mod tests {
             out.features.iter().any(|f| f.feature_id == FEATURE_ID),
             "CognitiveLoad must be registered via register_catalog_v1"
         );
+    }
+
+    #[test]
+    fn saturation_switching_only_is_below_100() {
+        // 30 switches in 15 min (2/min) with no calendar / notifications.
+        // Old behaviour: 2 × 50 = 100 → CognitiveLoad pinned at 100.
+        let batch: Vec<Observation> = (0..=30i64)
+            .map(|i| ctx_obs(500 + i as u128, 900 + i * 30, if i % 2 == 0 { "a" } else { "b" }))
+            .collect();
+        let feat = last_cognitive(&batch);
+        let v = match feat.value {
+            FeatureValue::Scalar(v) => v,
+            _ => panic!("scalar"),
+        };
+        assert!(v > 60.0 && v < 90.0, "got {v}");
+        // Only one of three inputs present → confidence must be clearly partial.
+        assert_eq!(feat.factors.len(), 1);
+        assert!(feat.confidence.get() < 0.5, "confidence {:?}", feat.confidence);
+    }
+
+    #[test]
+    fn saturation_extreme_switching_stays_bounded() {
+        let batch: Vec<Observation> = (0..=300i64)
+            .map(|i| ctx_obs(900 + i as u128, 900 + i * 3, if i % 2 == 0 { "a" } else { "b" }))
+            .collect();
+        let feat = last_cognitive(&batch);
+        match feat.value {
+            FeatureValue::Scalar(v) => assert!((0.0..=100.0).contains(&v), "got {v}"),
+            _ => panic!("scalar"),
+        }
     }
 }

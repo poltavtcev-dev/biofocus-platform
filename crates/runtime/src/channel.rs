@@ -18,7 +18,9 @@ pub type ObservationReceiver = mpsc::Receiver<Observation>;
 ///
 /// Capacity must be `> 0`. Prefer [`DEFAULT_OBSERVATION_BUFFER`] unless a caller
 /// has a measured reason to change it.
-pub fn observation_channel(capacity: usize) -> RuntimeResult<(ObservationSender, ObservationReceiver)> {
+pub fn observation_channel(
+    capacity: usize,
+) -> RuntimeResult<(ObservationSender, ObservationReceiver)> {
     if capacity == 0 {
         return Err(RuntimeError::InvalidChannelCapacity);
     }

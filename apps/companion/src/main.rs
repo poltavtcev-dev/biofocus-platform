@@ -24,14 +24,17 @@ async fn run() -> Result<(), ExitCode> {
         .and_then(|s| s.parse::<f64>().ok())
         .unwrap_or(74.0);
 
-    let base_url = env::var("BIOFOCUS_INGEST_URL").unwrap_or_else(|_| DEFAULT_INGEST_BASE_URL.to_string());
+    let base_url =
+        env::var("BIOFOCUS_INGEST_URL").unwrap_or_else(|_| DEFAULT_INGEST_BASE_URL.to_string());
 
     let token = resolve_ingest_token().map_err(|err| {
         eprintln!("pairing token required ({err}); set BIOFOCUS_INGEST_TOKEN or create ~/.biofocus/pairing_token");
         ExitCode::from(3)
     })?;
 
-    let client = CompanionClient::new(&base_url, &token).map_err(|err| {
+    let pin = env::var("BIOFOCUS_INGEST_PIN").ok();
+    let pin = pin.as_deref().filter(|value| !value.trim().is_empty());
+    let client = CompanionClient::with_pin(&base_url, &token, pin).map_err(|err| {
         eprintln!("client init failed: {err}");
         ExitCode::FAILURE
     })?;

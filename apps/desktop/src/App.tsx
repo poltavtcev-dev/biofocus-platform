@@ -11,11 +11,12 @@ import {
 import { Dashboard } from "./Dashboard";
 import { isDashboardSurface, openDashboardWindow } from "./dashboardWindow";
 import {
+  baseUrlPlaceholder,
+  companionStatusCopy,
   copyText,
-  companionLanAddressError,
-  companionLoopbackWarning,
   fetchPairingToken,
   isPrimaryUrlCopyable,
+  rotatePairingToken,
   maskToken,
   networkModeDetail,
   networkModeLabel,
@@ -27,16 +28,7 @@ import {
   setIngestLanPreference,
   type IngestLanPreference,
 } from "./ingestLan";
-import {
-  fetchRecentLifeEvents,
-  formatLifeEventTime,
-  LIFE_EVENT_KINDS,
-  lifeEventLabel,
-  logLifeEvent,
-  type LifeEventKind,
-  type LifeEventsListView,
-  type LogLifeEventView,
-} from "./lifeEvents";
+import { LifeEventsBlock } from "./LifeEventsBlock";
 import {
   fetchGitWatchedRoots,
   saveGitWatchedRoots,
@@ -45,6 +37,26 @@ import {
   type GitWatchedRootsView,
 } from "./gitWatchedRoots";
 import "./App.css";
+import "./theme.css";
+
+function GitRootPath({ path }: { path: string }) {
+  const shown = shortenRootPath(path);
+  const bits = shown.split("/");
+  return (
+    <span className="git-roots-path" title={path}>
+      {bits.map((bit, i) => (
+        <span key={`${i}-${bit}`}>
+          {bit}
+          {i < bits.length - 1 ? (
+            <>
+              /<wbr />
+            </>
+          ) : null}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 const TRAY_ID = "main";
 /** Soft refresh so Menubar alert tracks Core without busy-loop. */
@@ -87,10 +99,6 @@ function MenubarShell() {
   const [lanNote, setLanNote] = useState<string | null>(null);
   const [lanBusy, setLanBusy] = useState(false);
   const [dashNote, setDashNote] = useState<string | null>(null);
-  const [lifeEvents, setLifeEvents] = useState<LifeEventsListView>({
-    kind: "idle",
-  });
-  const [logView, setLogView] = useState<LogLifeEventView>({ kind: "idle" });
   const [gitRoots, setGitRoots] = useState<GitWatchedRootsView>({ kind: "idle" });
   const [gitSave, setGitSave] = useState<GitWatchedRootsSaveView>({
     kind: "idle",
@@ -154,19 +162,6 @@ function MenubarShell() {
 
   useEffect(() => {
     let cancelled = false;
-    setLifeEvents({ kind: "loading" });
-    void fetchRecentLifeEvents().then((next) => {
-      if (!cancelled) {
-        setLifeEvents(next);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
     setGitRoots({ kind: "loading" });
     void fetchGitWatchedRoots().then((next) => {
       if (cancelled) {
@@ -198,21 +193,36 @@ function MenubarShell() {
     void fetchPairingToken().then(setPairing);
   };
 
+  const onRotateToken = async () => {
+    if (pairing.kind !== "ready" || pairing.info.fromEnv) {
+      return;
+    }
+    const ok = window.confirm(
+      "Сменить токен? Телефону понадобится новый QR, иначе синхронизация остановится.",
+    );
+    if (!ok) {
+      return;
+    }
+    const next = await rotatePairingToken();
+    setPairing(next);
+    setCopyNote(next.kind === "ready" ? "Токен сменён. Отсканируйте QR ещё раз." : null);
+  };
+
   const onCopyToken = async () => {
     if (pairing.kind !== "ready") {
       return;
     }
     const ok = await copyText(pairing.info.token);
-    setCopyNote(ok ? "Token copied." : "Could not copy.");
+    setCopyNote(ok ? "Токен скопирован." : "Не удалось скопировать.");
   };
 
   const onCopyBaseUrl = async () => {
     if (pairing.kind !== "ready" || !isPrimaryUrlCopyable(pairing.info)) {
-      setCopyNote("Enable LAN and restart before copying a phone Base URL.");
+      setCopyNote("Для телефона ещё не готово — смотрите сообщение выше.");
       return;
     }
     const ok = await copyText(primaryBaseUrl(pairing.info));
-    setCopyNote(ok ? "Base URL copied." : "Could not copy.");
+    setCopyNote(ok ? "Адрес скопирован." : "Не удалось скопировать.");
   };
 
   const onToggleLanPref = async (enabled: boolean) => {
@@ -228,12 +238,14 @@ function MenubarShell() {
       return;
     }
     setLanPref(result.pref);
+    // Refresh the status card so "Restart needed" shows immediately.
+    void fetchPairingToken().then(setPairing);
     setLanNote(
       result.pref.needsRestart
-        ? "Restart BioFocus to apply LAN bind on this Mac."
+        ? "Сохранено. Закройте и снова откройте BioFocus, затем нажмите «Обновить»."
         : enabled
-          ? "LAN preference saved."
-          : "LAN preference cleared — restart to return to loopback-only.",
+          ? "Настройка LAN сохранена."
+          : "LAN выключен. Закройте и снова откройте BioFocus, чтобы перестать слушать сеть.",
     );
   };
 
@@ -241,27 +253,9 @@ function MenubarShell() {
     setDashNote(null);
     void openDashboardWindow().then((ok) => {
       if (!ok) {
-        setDashNote("Could not open Dashboard.");
+        setDashNote("Не удалось открыть панель.");
       }
     });
-  };
-
-  const onLogLifeEvent = (kind: LifeEventKind) => {
-    if (logView.kind === "logging") {
-      return;
-    }
-    setLogView({ kind: "logging", eventKind: kind });
-    void logLifeEvent(kind).then((result) => {
-      setLogView(result);
-      if (result.kind === "ok") {
-        void fetchRecentLifeEvents().then(setLifeEvents);
-      }
-    });
-  };
-
-  const onReloadLifeEvents = () => {
-    setLifeEvents({ kind: "loading" });
-    void fetchRecentLifeEvents().then(setLifeEvents);
   };
 
   const onReloadGitRoots = () => {
@@ -309,7 +303,6 @@ function MenubarShell() {
   };
 
   const alertLevel = view.alertLevel ?? "green";
-  const logging = logView.kind === "logging";
   const gitSaving = gitSave.kind === "saving";
 
   return (
@@ -326,7 +319,7 @@ function MenubarShell() {
         <div className="status-row">
           <span className={`status-dot status-dot--${view.kind}`} aria-hidden />
           <p className="status-label">
-            {busy && view.kind === "idle" ? "Idle" : view.label}
+            {busy && view.kind === "idle" ? "Ожидание" : view.label}
           </p>
         </div>
         <p className="status-detail">{view.detail}</p>
@@ -337,109 +330,39 @@ function MenubarShell() {
 
       {view.kind === "error" && (
         <button type="button" className="retry" onClick={onRetry} disabled={busy}>
-          Try again
+          Ещё раз
         </button>
       )}
 
-      <section className="dashboard-entry" aria-label="Dashboard">
+      <section className="dashboard-entry" aria-label="Обзор">
         <button type="button" className="retry" onClick={onOpenDashboard}>
-          Open Dashboard
+          Открыть панель
         </button>
         {dashNote && <p className="status-meta">{dashNote}</p>}
       </section>
 
-      <section className="life-events-block" aria-label="Life events">
-        <h2 className="pairing-title">Life events</h2>
-        <p className="pairing-detail">
-          Note what happened — coffee, a walk, lunch, or a workout. No scores.
-        </p>
-        <div className="life-event-actions">
-          {LIFE_EVENT_KINDS.map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              className="retry"
-              disabled={logging}
-              onClick={() => onLogLifeEvent(kind)}
-            >
-              {lifeEventLabel(kind)}
-            </button>
-          ))}
-        </div>
-        {logView.kind === "ok" && (
-          <p className="status-meta" aria-live="polite">
-            {logView.message}
-          </p>
-        )}
-        {logView.kind === "error" && (
-          <p className="status-meta" aria-live="polite">
-            {logView.detail}
-          </p>
-        )}
-        {logView.kind === "logging" && (
-          <p className="status-meta" aria-live="polite">
-            Logging {lifeEventLabel(logView.eventKind).toLowerCase()}…
-          </p>
-        )}
+      <LifeEventsBlock />
 
-        <div className="life-event-recent">
-          <div className="life-event-recent-head">
-            <p className="pairing-subtitle">Recent</p>
-            <button
-              type="button"
-              className="retry"
-              onClick={onReloadLifeEvents}
-              disabled={lifeEvents.kind === "loading"}
-            >
-              Refresh
-            </button>
-          </div>
-          {lifeEvents.kind === "loading" && (
-            <p className="status-meta">Loading recent…</p>
-          )}
-          {lifeEvents.kind === "error" && (
-            <p className="status-meta">{lifeEvents.detail}</p>
-          )}
-          {lifeEvents.kind === "ready" && lifeEvents.events.length === 0 && (
-            <p className="status-meta">Nothing logged yet.</p>
-          )}
-          {lifeEvents.kind === "ready" && lifeEvents.events.length > 0 && (
-            <ul className="life-event-rows">
-              {lifeEvents.events.map((event) => (
-                <li key={event.id} className="life-event-row">
-                  <span className="life-event-kind">
-                    {lifeEventLabel(event.kind)}
-                  </span>
-                  <span className="life-event-time">
-                    {formatLifeEventTime(event.timestamp)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      <section className="git-roots-block" aria-label="Git watched folders">
-        <h2 className="pairing-title">Git folders</h2>
+      <section className="git-roots-block" aria-label="Папки Git">
+        <h2 className="pairing-title">Папки Git</h2>
         <p className="pairing-detail">
-          Folders you choose for your own Git activity. BioFocus keeps only
-          coarse event kinds — not paths, remotes, or commit messages in
-          Observations.
+          Папки, по которым вы сами хотите видеть активность Git. BioFocus
+          хранит только грубый тип события — не пути, не адреса репозиториев
+          и не тексты коммитов.
         </p>
         <p className="status-meta">
-          Also set <code>BIOFOCUS_GIT_ACTIVITY=1</code> so the collector can run.
-          Empty list → idle (no whole-disk scan).
+          Ещё задайте <code>BIOFOCUS_GIT_ACTIVITY=1</code>, иначе сборщик не
+          запустится. Пустой список — простой, без обхода всего диска.
         </p>
 
         {gitRoots.kind === "loading" && (
-          <p className="status-meta">Loading watched folders…</p>
+          <p className="status-meta">Загружаем папки…</p>
         )}
         {gitRoots.kind === "error" && (
           <>
             <p className="status-meta">{gitRoots.detail}</p>
             <button type="button" className="retry" onClick={onReloadGitRoots}>
-              Try again
+              Ещё раз
             </button>
           </>
         )}
@@ -454,7 +377,7 @@ function MenubarShell() {
                 type="text"
                 value={gitDraft}
                 placeholder="/Users/you/Developer/…"
-                aria-label="Folder path to watch"
+                aria-label="Путь к папке"
                 onChange={(e) => setGitDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -469,26 +392,24 @@ function MenubarShell() {
                 onClick={onAddGitRoot}
                 disabled={!gitDraft.trim() || gitSaving}
               >
-                Add
+                Добавить
               </button>
             </div>
 
             {gitLocalRoots.length === 0 ? (
-              <p className="status-meta">No folders yet — Git activity stays idle.</p>
+              <p className="status-meta">Папок пока нет — активность Git не собирается.</p>
             ) : (
               <ul className="git-roots-rows">
                 {gitLocalRoots.map((path) => (
                   <li key={path} className="git-roots-row">
-                    <span className="git-roots-path" title={path}>
-                      {shortenRootPath(path)}
-                    </span>
+                    <GitRootPath path={path} />
                     <button
                       type="button"
                       className="retry"
                       onClick={() => onRemoveGitRoot(path)}
                       disabled={gitSaving}
                     >
-                      Remove
+                      Убрать
                     </button>
                   </li>
                 ))}
@@ -502,7 +423,7 @@ function MenubarShell() {
                 onClick={onSaveGitRoots}
                 disabled={gitSaving}
               >
-                Save folders
+                Сохранить папки
               </button>
               <button
                 type="button"
@@ -510,7 +431,7 @@ function MenubarShell() {
                 onClick={onReloadGitRoots}
                 disabled={gitSaving || gitRoots.kind === "loading"}
               >
-                Reload
+                Обновить
               </button>
             </div>
             {gitSave.kind === "ok" && (
@@ -525,45 +446,45 @@ function MenubarShell() {
             )}
             {gitSave.kind === "saving" && (
               <p className="status-meta" aria-live="polite">
-                Saving…
+                Сохраняем…
               </p>
             )}
           </>
         )}
       </section>
 
-      <section className="pairing-block" aria-label="Companion pairing">
-        <h2 className="pairing-title">Companion</h2>
+      <section className="pairing-block" aria-label="Подключение компаньона">
+        <h2 className="pairing-title">Телефон</h2>
         <p className="pairing-detail">
-          Local pairing only — no cloud account. Share this Mac’s base URL and
-          token with a phone on the same network when LAN is enabled.
+          Только локальное подключение, без облачного аккаунта. Когда LAN
+          включён, передайте телефону в той же сети адрес этого Mac и токен.
         </p>
 
         {pairing.kind === "loading" && (
-          <p className="status-meta">Loading pairing…</p>
+          <p className="status-meta">Загружаем подключение…</p>
         )}
 
         {pairing.kind === "error" && (
           <>
             <p className="status-meta">{pairing.detail}</p>
             <button type="button" className="retry" onClick={onReloadPairing}>
-              Try again
+              Ещё раз
             </button>
           </>
         )}
 
         {pairing.kind === "ready" && (
           <>
-            {companionLoopbackWarning(pairing.info) && (
-              <p className="companion-warning" role="status">
-                {companionLoopbackWarning(pairing.info)}
-              </p>
-            )}
-            {companionLanAddressError(pairing.info) && (
-              <p className="companion-warning companion-warning--error" role="alert">
-                {companionLanAddressError(pairing.info)}
-              </p>
-            )}
+            {(() => {
+              const st = companionStatusCopy(pairing.info);
+              const cls = `companion-card companion-card--${st.tone}`;
+              return (
+                <div className={cls} role={st.tone === "error" ? "alert" : "status"}>
+                  <strong>{st.title}</strong>
+                  <p>{st.detail}</p>
+                </div>
+              );
+            })()}
 
             <div className="pairing-lan-toggle">
               <label className="pairing-lan-label">
@@ -573,22 +494,20 @@ function MenubarShell() {
                   disabled={lanBusy || Boolean(lanPref?.fromEnv)}
                   onChange={(e) => void onToggleLanPref(e.target.checked)}
                 />
-                Enable LAN ingest for physical iPhone (opt-in)
+                LAN для настоящего iPhone (включается вручную)
               </label>
               {lanPref?.fromEnv && (
                 <p className="status-meta">
-                  LAN bind is controlled by environment variables for this launch.
+                  В этом запуске LAN задан переменными окружения.
                 </p>
               )}
               {lanNote && <p className="status-meta">{lanNote}</p>}
             </div>
 
             <div className="pairing-url-block">
-              <p className="pairing-subtitle">Base URL</p>
+              <p className="pairing-subtitle">Адрес</p>
               <p className="pairing-url" aria-live="polite">
-                {isPrimaryUrlCopyable(pairing.info)
-                  ? primaryBaseUrl(pairing.info)
-                  : "LAN address unavailable — fix bind, then Reload."}
+                {baseUrlPlaceholder(pairing.info)}
               </p>
               <div className="pairing-actions">
                 <button
@@ -597,25 +516,25 @@ function MenubarShell() {
                   disabled={!isPrimaryUrlCopyable(pairing.info)}
                   onClick={() => void onCopyBaseUrl()}
                 >
-                  Copy URL
+                  Копировать адрес
                 </button>
                 <button
                   type="button"
                   className="retry"
                   onClick={onReloadPairing}
                 >
-                  Reload
+                  Обновить
                 </button>
               </div>
               <p className="status-meta">
                 {networkModeLabel(pairing.info)}
-                {pairing.info.fromEnv ? " · token env override" : ""}
+                {pairing.info.fromEnv ? " · токен из окружения" : ""}
               </p>
               <p className="pairing-detail">{networkModeDetail(pairing.info)}</p>
             </div>
 
             <div className="pairing-token-block">
-              <p className="pairing-subtitle">Token</p>
+              <p className="pairing-subtitle">Токен</p>
               <p className="pairing-token" aria-live="polite">
                 {tokenVisible
                   ? pairing.info.token
@@ -627,28 +546,47 @@ function MenubarShell() {
                   className="retry"
                   onClick={() => setTokenVisible((v) => !v)}
                 >
-                  {tokenVisible ? "Hide" : "Show"}
+                  {tokenVisible ? "Скрыть" : "Показать"}
                 </button>
                 <button
                   type="button"
                   className="retry"
                   onClick={() => void onCopyToken()}
                 >
-                  Copy
+                  Копировать
                 </button>
                 <button
                   type="button"
                   className="retry"
                   onClick={() => setQrVisible((v) => !v)}
                 >
-                  {qrVisible ? "Hide QR" : "Show QR"}
+                  {qrVisible ? "Скрыть QR" : "Показать QR"}
+                </button>
+                <button
+                  type="button"
+                  className="retry"
+                  disabled={pairing.info.fromEnv}
+                  onClick={() => void onRotateToken()}
+                >
+                  Сменить токен
                 </button>
               </div>
+              {pairing.info.certFingerprint && (
+                <>
+                  <p className="pairing-subtitle">Отпечаток сертификата</p>
+                  <p className="pairing-token" aria-live="polite">
+                    {pairing.info.certFingerprint}
+                  </p>
+                  <p className="pairing-detail">
+                    Этот отпечаток уже внутри QR. Телефон отклонит другой сертификат.
+                  </p>
+                </>
+              )}
               {qrVisible && (
                 <div
                   className="pairing-qr"
                   role="img"
-                  aria-label="QR code for pairing token"
+                  aria-label="QR для подключения"
                   dangerouslySetInnerHTML={{ __html: pairing.info.qrSvg }}
                 />
               )}

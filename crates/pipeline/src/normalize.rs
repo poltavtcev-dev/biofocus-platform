@@ -34,10 +34,10 @@
 //! as skipped.
 
 use bio_spec::{
-    is_v1_activity_kind, is_v1_interruption_level, is_v1_light_kind, is_v1_media_kind,
-    is_v1_notification_app_kind, is_v1_notification_category, is_v1_sleep_stage, Observation,
+    Observation, is_v1_activity_kind, is_v1_interruption_level, is_v1_light_kind, is_v1_media_kind,
+    is_v1_notification_app_kind, is_v1_notification_category, is_v1_sleep_stage,
 };
-use serde_json::{json, Map, Value as JsonValue};
+use serde_json::{Map, Value as JsonValue, json};
 
 use crate::dedupe::DedupedBatch;
 use crate::{PipelineResult, PipelineStage};
@@ -123,6 +123,16 @@ impl NormalizedBatch {
     #[must_use]
     pub fn into_observations(self) -> Vec<Observation> {
         self.observations
+    }
+
+    /// Observations after source choice. `skipped_count` stays the normalize tally.
+    #[must_use]
+    pub fn from_selected(observations: Vec<Observation>, skipped_count: usize) -> Self {
+        Self {
+            observations,
+            skipped_count,
+            stage: PipelineStage::SourceSelected,
+        }
     }
 }
 
@@ -272,6 +282,30 @@ fn normalize_one(mut obs: Observation) -> NormalizeOutcome {
             }
             None => NormalizeOutcome::Skip,
         },
+        bio_spec::DATA_TYPE_RESTING_HEART_RATE => {
+            keep_number(obs, &["bpm", "resting_heart_rate"], "bpm", 25.0, 150.0)
+        }
+        bio_spec::DATA_TYPE_WALKING_HEART_RATE_AVERAGE => keep_number(
+            obs,
+            &["bpm", "walking_heart_rate_average"],
+            "bpm",
+            25.0,
+            250.0,
+        ),
+        bio_spec::DATA_TYPE_RESPIRATORY_RATE => keep_number(
+            obs,
+            &["breaths_per_min", "respiratory_rate"],
+            "breaths_per_min",
+            4.0,
+            40.0,
+        ),
+        bio_spec::DATA_TYPE_SLEEPING_WRIST_TEMPERATURE => {
+            keep_number(obs, &["celsius", "delta_celsius"], "celsius", -5.0, 5.0)
+        }
+        bio_spec::DATA_TYPE_VO2_MAX => {
+            keep_number(obs, &["ml_kg_min", "vo2_max"], "ml_kg_min", 10.0, 90.0)
+        }
+        bio_spec::DATA_TYPE_SOURCE_DELETION => NormalizeOutcome::Keep(obs),
         // Unknown type: pass-through unchanged.
         _ => NormalizeOutcome::Keep(obs),
     }
@@ -286,6 +320,9 @@ fn normalize_heart_rate(payload: &JsonValue) -> Option<JsonValue> {
     if unit_is(obj, "hz") {
         bpm *= 60.0;
     }
+    if !(25.0..=250.0).contains(&bpm) {
+        return None;
+    }
     let mut out = Map::new();
     out.insert("bpm".to_string(), json!(bpm));
     if let Some(source) = obj.get("source").and_then(JsonValue::as_str) {
@@ -293,6 +330,9 @@ fn normalize_heart_rate(payload: &JsonValue) -> Option<JsonValue> {
         if !trimmed.is_empty() {
             out.insert("source".to_string(), json!(trimmed));
         }
+    }
+    if !attach_src(obj, &mut out) {
+        return None;
     }
     Some(JsonValue::Object(out))
 }
@@ -315,7 +355,19 @@ fn normalize_hrv(payload: &JsonValue) -> Option<JsonValue> {
         Some(if unit_s { v * 1000.0 } else { v })
     });
 
+    rmssd_ms = rmssd_ms.filter(|v| (1.0..=300.0).contains(v));
+    sdnn_ms = sdnn_ms.filter(|v| (1.0..=300.0).contains(v));
+
+    let method = obj.get("method").and_then(JsonValue::as_str);
+    match method {
+        Some("sdnn") => rmssd_ms = None,
+        Some("rmssd") => sdnn_ms = None,
+        Some(_) => return None,
+        None => {}
+    }
+
     // ADR-016: accept SDNN-only (Apple HealthKit HRV) or RMSSD-only / both.
+    // ADR-030: a stated method keeps only that metric. Out of 1–300 ms is dropped.
     if rmssd_ms.is_none() && sdnn_ms.is_none() {
         return None;
     }
@@ -327,13 +379,52 @@ fn normalize_hrv(payload: &JsonValue) -> Option<JsonValue> {
     if let Some(v) = sdnn_ms.take() {
         out.insert("sdnn_ms".to_string(), json!(v));
     }
+    if method == Some("sdnn")
+        || (method.is_none() && out.contains_key("sdnn_ms") && !out.contains_key("rmssd_ms"))
+    {
+        out.insert("method".to_string(), json!("sdnn"));
+    } else if method == Some("rmssd")
+        || (method.is_none() && out.contains_key("rmssd_ms") && !out.contains_key("sdnn_ms"))
+    {
+        out.insert("method".to_string(), json!("rmssd"));
+    }
     if let Some(pnn50) = first_f64(obj, &["pnn50", "pNN50"]) {
         if pnn50.is_finite() && (0.0..=100.0).contains(&pnn50) {
             out.insert("pnn50".to_string(), json!(pnn50));
         }
     }
+    if !attach_src(obj, &mut out) {
+        return None;
+    }
 
     Some(JsonValue::Object(out))
+}
+
+fn attach_src(from: &Map<String, JsonValue>, out: &mut Map<String, JsonValue>) -> bool {
+    let Some(src_val) = from.get("src") else {
+        return true;
+    };
+    let Some(src) = src_val.as_object() else {
+        return false;
+    };
+    if src.contains_key("name")
+        || src.contains_key("device_name")
+        || src.contains_key("source_name")
+    {
+        return false;
+    }
+    let Some(kind) = src.get("kind").and_then(JsonValue::as_str) else {
+        return false;
+    };
+    if !bio_spec::is_src_kind(kind) {
+        return false;
+    }
+    out.insert("src".to_string(), src_val.clone());
+    true
+}
+
+fn in_range(value: f64, min: f64, max: f64) -> bool {
+    value.is_finite() && (min..=max).contains(&value)
 }
 
 fn normalize_context_window(payload: &JsonValue) -> Option<JsonValue> {
@@ -497,6 +588,9 @@ fn normalize_step_count(payload: &JsonValue) -> Option<JsonValue> {
         }
         out.insert("window_secs".to_string(), json!(window));
     }
+    if !attach_src(obj, &mut out) {
+        return None;
+    }
     Some(JsonValue::Object(out))
 }
 
@@ -506,7 +600,12 @@ fn normalize_active_energy(payload: &JsonValue) -> Option<JsonValue> {
     if !kcal.is_finite() || kcal < 0.0 {
         return None;
     }
-    Some(json!({ "kcal": kcal }))
+    let mut out = Map::new();
+    out.insert("kcal".to_string(), json!(kcal));
+    if !attach_src(obj, &mut out) {
+        return None;
+    }
+    Some(JsonValue::Object(out))
 }
 
 fn normalize_sleep_interval(payload: &JsonValue) -> Option<JsonValue> {
@@ -525,6 +624,9 @@ fn normalize_sleep_interval(payload: &JsonValue) -> Option<JsonValue> {
         }
         out.insert("stage".to_string(), json!(stage));
     }
+    if !attach_src(obj, &mut out) {
+        return None;
+    }
     Some(JsonValue::Object(out))
 }
 
@@ -538,10 +640,40 @@ fn normalize_oxygen_saturation(payload: &JsonValue) -> Option<JsonValue> {
     if pct <= 1.0 {
         pct *= 100.0;
     }
-    if pct > 100.0 {
+    if !in_range(pct, 50.0, 100.0) {
         return None;
     }
-    Some(json!({ "spo2_percent": pct }))
+    let mut out = Map::new();
+    out.insert("spo2_percent".to_string(), json!(pct));
+    if !attach_src(obj, &mut out) {
+        return None;
+    }
+    Some(JsonValue::Object(out))
+}
+
+fn keep_number(
+    mut obs: Observation,
+    keys: &[&str],
+    out_key: &str,
+    min: f64,
+    max: f64,
+) -> NormalizeOutcome {
+    let Some(obj) = obs.payload.as_object() else {
+        return NormalizeOutcome::Skip;
+    };
+    let Some(value) = first_f64(obj, keys) else {
+        return NormalizeOutcome::Skip;
+    };
+    if !in_range(value, min, max) {
+        return NormalizeOutcome::Skip;
+    }
+    let mut out = Map::new();
+    out.insert(out_key.to_string(), json!(value));
+    if !attach_src(obj, &mut out) {
+        return NormalizeOutcome::Skip;
+    }
+    obs.payload = JsonValue::Object(out);
+    NormalizeOutcome::Keep(obs)
 }
 
 fn first_i64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<i64> {
@@ -558,13 +690,11 @@ fn first_i64(obj: &Map<String, JsonValue>, keys: &[&str]) -> Option<i64> {
 fn json_as_i64(v: &JsonValue) -> Option<i64> {
     match v {
         JsonValue::Number(n) => n.as_i64().or_else(|| {
-            n.as_u64()
-                .and_then(|u| i64::try_from(u).ok())
-                .or_else(|| {
-                    n.as_f64()
-                        .filter(|f| f.is_finite() && f.fract() == 0.0)
-                        .map(|f| f as i64)
-                })
+            n.as_u64().and_then(|u| i64::try_from(u).ok()).or_else(|| {
+                n.as_f64()
+                    .filter(|f| f.is_finite() && f.fract() == 0.0)
+                    .map(|f| f as i64)
+            })
         }),
         JsonValue::String(s) => s.trim().parse::<i64>().ok(),
         _ => None,
@@ -645,15 +775,15 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        normalize_deduped, normalize_observations, DATA_TYPE_ACTIVE_ENERGY,
-        DATA_TYPE_AMBIENT_LIGHT, DATA_TYPE_BROWSER_CATEGORY, DATA_TYPE_CALENDAR_EVENT,
-        DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_GIT_ACTIVITY, DATA_TYPE_HEART_RATE, DATA_TYPE_HRV,
-        DATA_TYPE_KEYSTROKES, DATA_TYPE_NOTIFICATION_EVENT, DATA_TYPE_NOW_PLAYING,
-        DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
+        DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_AMBIENT_LIGHT, DATA_TYPE_BROWSER_CATEGORY,
+        DATA_TYPE_CALENDAR_EVENT, DATA_TYPE_CONTEXT_WINDOW, DATA_TYPE_GIT_ACTIVITY,
+        DATA_TYPE_HEART_RATE, DATA_TYPE_HRV, DATA_TYPE_KEYSTROKES, DATA_TYPE_NOTIFICATION_EVENT,
+        DATA_TYPE_NOW_PLAYING, DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL,
+        DATA_TYPE_STEP_COUNT, normalize_deduped, normalize_observations,
     };
+    use crate::PipelineStage;
     use crate::dedupe::DedupeState;
     use crate::intake::accept_observations;
-    use crate::PipelineStage;
 
     fn obs(data_type: &str, payload: serde_json::Value) -> Observation {
         Observation::try_new(
@@ -1079,10 +1209,7 @@ mod tests {
 
     #[test]
     fn oxygen_saturation_scales_fraction() {
-        let input = obs(
-            DATA_TYPE_OXYGEN_SATURATION,
-            json!({ "spo2": 0.97 }),
-        );
+        let input = obs(DATA_TYPE_OXYGEN_SATURATION, json!({ "spo2": 0.97 }));
         let out = normalize_observations(&[input]).expect("ok");
         assert_eq!(out.len(), 1);
         let pct = out.observations()[0].payload["spo2_percent"]
@@ -1116,12 +1243,42 @@ mod tests {
         let dup = a.clone();
         let accepted = accept_observations(&[a, dup]).expect("intake");
         let mut state = DedupeState::new();
-        let deduped =
-            crate::dedupe_accepted(&mut state, accepted).expect("dedupe");
+        let deduped = crate::dedupe_accepted(&mut state, accepted).expect("dedupe");
         assert_eq!(deduped.len(), 1);
         let normalized = normalize_deduped(deduped).expect("normalize");
         assert_eq!(normalized.stage(), PipelineStage::Normalized);
         assert_eq!(normalized.len(), 1);
         assert_eq!(normalized.observations()[0].payload["bpm"], json!(70.0));
+    }
+
+    #[test]
+    fn heart_rate_outside_range_is_skipped() {
+        let low = obs(DATA_TYPE_HEART_RATE, json!({ "bpm": 10 }));
+        let high = obs(DATA_TYPE_HEART_RATE, json!({ "bpm": 400 }));
+        let out = normalize_observations(&[low, high]).expect("ok");
+        assert!(out.is_empty());
+        assert_eq!(out.skipped_count(), 2);
+    }
+
+    #[test]
+    fn hrv_method_sdnn_drops_rmssd() {
+        let input = obs(
+            DATA_TYPE_HRV,
+            json!({ "method": "sdnn", "sdnn_ms": 48, "rmssd_ms": 30 }),
+        );
+        let out = normalize_observations(&[input]).expect("ok");
+        assert_eq!(out.len(), 1);
+        let p = &out.observations()[0].payload;
+        assert_eq!(p["method"], json!("sdnn"));
+        assert_eq!(p["sdnn_ms"], json!(48.0));
+        assert!(p.get("rmssd_ms").is_none());
+    }
+
+    #[test]
+    fn hrv_outside_range_is_skipped() {
+        let input = obs(DATA_TYPE_HRV, json!({ "sdnn_ms": 0 }));
+        let out = normalize_observations(&[input]).expect("ok");
+        assert!(out.is_empty());
+        assert_eq!(out.skipped_count(), 1);
     }
 }

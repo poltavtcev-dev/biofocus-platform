@@ -163,7 +163,15 @@ pub fn load_feature_series(
             sorted.join(",")
         })
         .unwrap_or_default();
-    let memo_key = format!("{}|{}|{}", spec.range, spec.step_secs, filter_key);
+    // Row count in the key: retracting an older Life Event leaves the max
+    // timestamp unchanged but must still invalidate the memo.
+    let memo_key = format!(
+        "{}|{}|{}|{}",
+        spec.range,
+        spec.step_secs,
+        filter_key,
+        observations.len()
+    );
 
     if let Some(memo) = memo {
         if let Some(cached) = memo.get_if_fresh(&memo_key, watermark) {
@@ -350,5 +358,61 @@ mod tests {
             "expected ActivityBalance in synthetic series"
         );
         assert!(features.iter().all(|f| f.feature_id == "ActivityBalance"));
+    }
+
+    #[test]
+    fn retracted_life_event_does_not_reach_feature_series() {
+        use bio_spec::{Observation, DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, DATA_TYPE_STEP_COUNT};
+        use serde_json::json;
+        use storage::{Database, ObservationRepository};
+
+        let db = Database::open_in_memory().expect("db");
+        let repo = ObservationRepository::new(&db);
+        let steps = Observation::try_new(
+            Uuid::from_u128(1),
+            UnixTimestamp::from_secs(3_000),
+            "test.provider",
+            DATA_TYPE_STEP_COUNT,
+            json!({ "count": 200 }),
+            1.0,
+        )
+        .expect("steps");
+        let workout = Observation::try_new(
+            Uuid::from_u128(2),
+            UnixTimestamp::from_secs(3_300),
+            "com.biofocus.desktop",
+            DATA_TYPE_LIFE_EVENT,
+            json!({ "kind": "workout", "duration_secs": 1800 }),
+            1.0,
+        )
+        .expect("workout");
+        repo.insert(&steps).expect("i1");
+        repo.insert(&workout).expect("i2");
+        let with_workout = recompute_series(
+            &repo.list_by_time_range(UnixTimestamp::from_secs(0), UnixTimestamp::from_secs(4_000)).expect("q"),
+            300,
+            None,
+        )
+        .expect("series");
+        let baseline = recompute_series(std::slice::from_ref(&steps), 300, None).expect("baseline");
+        assert_ne!(with_workout, baseline, "workout must influence features (sanity)");
+
+        let marker = Observation::try_new(
+            Uuid::from_u128(3),
+            UnixTimestamp::from_secs(3_500),
+            "com.biofocus.desktop",
+            DATA_TYPE_LIFE_EVENT_RETRACTION,
+            json!({ "target_id": Uuid::from_u128(2).to_string() }),
+            1.0,
+        )
+        .expect("marker");
+        repo.insert(&marker).expect("i3");
+        let after = recompute_series(
+            &repo.list_by_time_range(UnixTimestamp::from_secs(0), UnixTimestamp::from_secs(4_000)).expect("q"),
+            300,
+            None,
+        )
+        .expect("series");
+        assert_eq!(after, baseline, "retracted workout must not change any Feature");
     }
 }

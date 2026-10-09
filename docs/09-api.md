@@ -55,7 +55,7 @@ Same shape when the channel is full on the **first** item (`accepted: 0`). Colle
 ```
 
 ```json
-{"version":"0.1.0","db_status":"ok","bind_mode":"lan","base_url_hints":["http://192.168.1.40:8787"]}
+{"version":"0.1.0","db_status":"ok","bind_mode":"lan","base_url_hints":["https://192.168.1.40:8787"]}
 ```
 
 ```json
@@ -72,6 +72,25 @@ Same shape when the channel is full on the **first** item (`accepted: 0`). Colle
 
 - **Host:** Desktop starts ingest on app launch via `IngestConfig::load()` (pairing file / `BIOFOCUS_INGEST_TOKEN`) and stops accept + persist worker on exit.
 - **Read the hint:** `curl -s http://127.0.0.1:8787/v1/status` (or the LAN URL once known) → use `base_url_hints[0]` as companion ingest base. Pairing IPC exposes the same fields (camelCase) — see [`get_pairing_token`](#get_pairing_token-p2-e3-t2).
+
+### `POST /v1/companion/status`
+
+- **Description:** Companion backfill progress for the Dashboard «Источники данных» tab. Not an Observation. Nothing is written to SQLite.
+- **Auth:** `Authorization: Bearer <pairing token>` (same as ingest).
+- **Body:** exactly these fields. Any extra key (including `bpm`, `payload`, sample ids) → `400 invalid_companion_status`.
+
+```json
+{"phase":"recent","types_ok":6,"types_empty":2,"types_total":18,"pending":3}
+```
+
+| Field | Rule |
+| :--- | :--- |
+| `phase` | `idle` \| `recent` \| `history` \| `done` |
+| `types_ok`, `types_empty` | ≤ `types_total` |
+| `types_total` | ≤ 64 |
+| `pending` | queue length, ≤ 1_000_000 |
+
+- **Response:** `200 {"status":"ok"}`. Missing token → `401`.
 
 ---
 
@@ -435,10 +454,11 @@ LAN opt-in (`BIOFOCUS_INGEST_LAN=1`) example:
 ```json
 {
   "token": "…",
-  "ingestBaseUrl": "http://192.168.1.40:8787",
+  "ingestBaseUrl": "https://192.168.1.40:8787",
   "bindMode": "lan",
-  "baseUrlHints": ["http://192.168.1.40:8787"],
+  "baseUrlHints": ["https://192.168.1.40:8787"],
   "fromEnv": false,
+  "certFingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   "qrSvg": "<svg …>…</svg>"
 }
 ```
@@ -450,7 +470,8 @@ LAN opt-in (`BIOFOCUS_INGEST_LAN=1`) example:
 | `bindMode` | `"loopback"` \| `"lan"` | Same meaning as HTTP `/v1/status` `bind_mode` |
 | `baseUrlHints` | string[] | Same as HTTP `base_url_hints` (derived on invoke; no spin) |
 | `fromEnv` | bool | `true` when env override is active |
-| `qrSvg` | string | SVG QR encoding the token |
+| `certFingerprint` | string? | SHA-256 hex of the LAN certificate. Omitted on loopback |
+| `qrSvg` | string | SVG QR. Payload is four lines: `biofocus:1`, URL, token, fingerprint or `-` |
 
 Errors are short UI-safe strings (no absolute paths). Never returns Observation payloads or DB paths.
 

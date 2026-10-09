@@ -7,8 +7,10 @@ use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-use bio_spec::Observation;
-use pipeline::{run_quality_pipeline, DedupeState, NormalizedBatch, PipelineError};
+use bio_spec::{Observation, ObservationId};
+use pipeline::{
+    run_quality_pipeline_with, DedupeState, NormalizedBatch, PipelineError, SourcePriority,
+};
 use tracing::{debug, error, info, warn};
 
 use crate::{RuntimeError, RuntimeResult};
@@ -31,6 +33,12 @@ pub trait ObservationSource: Send {
 pub trait FeatureHook: Send {
     /// Called with a successfully normalized batch (may be empty after skip/dedupe).
     fn on_normalized(&mut self, batch: &NormalizedBatch);
+
+    /// Target ids removed by a `source_deletion` marker in this poll.
+    ///
+    /// Default is a no-op. The desktop hook drops them from the vital history
+    /// buffer, because those rows were loaded at startup and are not in the batch.
+    fn on_source_deletions(&mut self, _target_ids: &[ObservationId]) {}
 }
 
 /// No-op Feature Engine hook (logs count at debug).
@@ -121,6 +129,7 @@ where
             "feature worker started"
         );
         let mut dedupe = DedupeState::new();
+        let priority = SourcePriority::load_installed();
 
         loop {
             match stop_rx.try_recv() {
@@ -129,14 +138,12 @@ where
             }
 
             match source.poll_new() {
-                Ok(batch) if batch.is_empty() => {
-                    match stop_rx.recv_timeout(interval) {
-                        Ok(()) | Err(mpsc::RecvTimeoutError::Disconnected) => break,
-                        Err(mpsc::RecvTimeoutError::Timeout) => continue,
-                    }
-                }
+                Ok(batch) if batch.is_empty() => match stop_rx.recv_timeout(interval) {
+                    Ok(()) | Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                    Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                },
                 Ok(batch) => {
-                    if let Err(err) = process_batch(batch, &mut dedupe, &mut hook) {
+                    if let Err(err) = process_batch(batch, &mut dedupe, &priority, &mut hook) {
                         error!(error = %err, "feature worker pipeline tick failed");
                     }
                 }
@@ -162,11 +169,27 @@ where
 fn process_batch<H: FeatureHook>(
     batch: Vec<Observation>,
     dedupe: &mut DedupeState,
+    priority: &SourcePriority,
     hook: &mut H,
 ) -> Result<(), PipelineError> {
-    let normalized = run_quality_pipeline(batch, dedupe)?;
+    let deletions = source_deletion_targets(&batch);
+    hook.on_source_deletions(&deletions);
+    let normalized = run_quality_pipeline_with(batch, dedupe, priority)?;
     hook.on_normalized(&normalized);
     Ok(())
+}
+
+fn source_deletion_targets(batch: &[Observation]) -> Vec<ObservationId> {
+    batch
+        .iter()
+        .filter(|obs| obs.data_type == bio_spec::DATA_TYPE_SOURCE_DELETION)
+        .filter_map(|obs| {
+            obs.payload
+                .get("target_id")
+                .and_then(|value| value.as_str())
+                .and_then(|id| ObservationId::parse_str(id).ok())
+        })
+        .collect()
 }
 
 /// Maps a displayable source failure into [`RuntimeError`].

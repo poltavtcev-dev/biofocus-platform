@@ -5,8 +5,9 @@
 //!
 //! - **Window / step:** 15 minutes / context step. Debt is scored over the
 //!   **24h lookback ending at the window end** (not only the 15m Feature window).
-//! - **Inputs:** `sleep_interval` with `stage` ∈ {`asleep`, `in_bed`} (or
-//!   missing stage — treated as rest). `awake` / `unknown` do not add rest time.
+//! - **Inputs:** `sleep_interval` with `stage` ∈ {`asleep`, `in_bed`,
+//!   `asleep_core`, `asleep_deep`, `asleep_rem`} (or missing stage — treated
+//!   as rest). `awake` / `unknown` do not add rest time.
 //! - **Rest seconds:** overlap of each qualifying interval with
 //!   `[window.end − 86400, window.end]`.
 //! - **Target:** 8h (28_800s) personal default — not a clinical prescription.
@@ -22,7 +23,8 @@
 
 use bio_spec::{
     ExplanationFactor, Feature, FeatureValue, Observation, TimeWindow, DATA_TYPE_SLEEP_INTERVAL,
-    SLEEP_STAGE_ASLEEP, SLEEP_STAGE_AWAKE, SLEEP_STAGE_IN_BED, SLEEP_STAGE_UNKNOWN,
+    SLEEP_STAGE_ASLEEP, SLEEP_STAGE_ASLEEP_CORE, SLEEP_STAGE_ASLEEP_DEEP, SLEEP_STAGE_ASLEEP_REM,
+    SLEEP_STAGE_AWAKE, SLEEP_STAGE_IN_BED, SLEEP_STAGE_UNKNOWN,
 };
 
 use crate::catalog::confidence::single_family_confidence;
@@ -149,7 +151,13 @@ fn score_window(observations: &[Observation], window: &TimeWindow) -> Option<Fea
 fn qualifies_as_rest(obs: &Observation) -> bool {
     match obs.payload.get("stage").and_then(|v| v.as_str()) {
         None => true,
-        Some(SLEEP_STAGE_ASLEEP | SLEEP_STAGE_IN_BED) => true,
+        Some(
+            SLEEP_STAGE_ASLEEP
+            | SLEEP_STAGE_IN_BED
+            | SLEEP_STAGE_ASLEEP_CORE
+            | SLEEP_STAGE_ASLEEP_DEEP
+            | SLEEP_STAGE_ASLEEP_REM,
+        ) => true,
         Some(SLEEP_STAGE_AWAKE | SLEEP_STAGE_UNKNOWN) => false,
         Some(_) => false,
     }
@@ -173,13 +181,11 @@ fn overlap_secs(a0: i64, a1: i64, b0: i64, b1: i64) -> f64 {
 fn json_i64(v: &serde_json::Value) -> Option<i64> {
     match v {
         serde_json::Value::Number(n) => n.as_i64().or_else(|| {
-            n.as_u64()
-                .and_then(|u| i64::try_from(u).ok())
-                .or_else(|| {
-                    n.as_f64()
-                        .filter(|f| f.is_finite() && f.fract() == 0.0)
-                        .map(|f| f as i64)
-                })
+            n.as_u64().and_then(|u| i64::try_from(u).ok()).or_else(|| {
+                n.as_f64()
+                    .filter(|f| f.is_finite() && f.fract() == 0.0)
+                    .map(|f| f as i64)
+            })
         }),
         _ => None,
     }
@@ -255,5 +261,16 @@ mod tests {
         };
         assert!((v - 50.0).abs() < 0.5, "got {v}");
         assert!(!feat.factors.is_empty());
+    }
+
+    #[test]
+    fn staged_night_counts_as_rest() {
+        let end = 400_000i64;
+        let start = end - 28_800;
+        let feat = last_debt(&[sleep_obs(1, end, start, end, "asleep_core")]);
+        let FeatureValue::Scalar(v) = feat.value else {
+            panic!("scalar");
+        };
+        assert!(v < 0.01, "core sleep should count toward rest, got {v}");
     }
 }

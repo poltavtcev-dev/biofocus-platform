@@ -1,7 +1,10 @@
 //! Immutable append/read API for `observations` (`docs/04-storage.md`).
 
-use bio_spec::{Confidence, DataType, Observation, ObservationId, UnixTimestamp};
-use rusqlite::{params, Connection, ErrorCode, OptionalExtension, Row};
+use bio_spec::{
+    Confidence, DATA_TYPE_LIFE_EVENT, DATA_TYPE_LIFE_EVENT_RETRACTION, DATA_TYPE_SOURCE_DELETION,
+    DataType, Observation, ObservationId, UnixTimestamp,
+};
+use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, params};
 use uuid::Uuid;
 
 use crate::clock::unix_now_secs;
@@ -12,6 +15,35 @@ use crate::{Database, StorageError, StorageResult};
 /// Inserts are append-only; duplicates of primary key are rejected (no UPSERT).
 pub struct ObservationRepository<'db> {
     conn: &'db Connection,
+}
+
+/// SQL predicate (alias-free) hiding retracted Life Events and the retraction
+/// markers themselves. Rows are never deleted — this is a read-side filter.
+///
+/// Data type names are inlined bio-spec constants (closed set, never user input).
+fn retraction_filter_sql() -> String {
+    format!(
+        "data_type <> '{r}'
+         AND NOT (data_type = '{l}' AND id IN (
+             SELECT json_extract(payload, '$.target_id') FROM observations
+             WHERE data_type = '{r}'))",
+        r = DATA_TYPE_LIFE_EVENT_RETRACTION,
+        l = DATA_TYPE_LIFE_EVENT,
+    )
+}
+
+/// Hides `source_deletion` markers and targets that share the marker's provider.
+/// A marker from another provider does not hide the row (ADR-030).
+fn source_deletion_filter_sql() -> String {
+    format!(
+        "data_type <> '{d}'
+         AND NOT EXISTS (
+             SELECT 1 FROM observations AS src_del
+             WHERE src_del.data_type = '{d}'
+               AND json_extract(src_del.payload, '$.target_id') = observations.id
+               AND src_del.provider_id = observations.provider_id)",
+        d = DATA_TYPE_SOURCE_DELETION,
+    )
 }
 
 impl<'db> ObservationRepository<'db> {
@@ -48,9 +80,9 @@ impl<'db> ObservationRepository<'db> {
 
         match result {
             Ok(_) => Ok(()),
-            Err(err) if is_primary_key_constraint(&err) => Err(StorageError::DuplicateObservation {
-                id: observation.id,
-            }),
+            Err(err) if is_primary_key_constraint(&err) => {
+                Err(StorageError::DuplicateObservation { id: observation.id })
+            }
             Err(err) => Err(StorageError::Sqlite(err)),
         }
     }
@@ -75,8 +107,70 @@ impl<'db> ObservationRepository<'db> {
     }
 
     /// Lists Observations with `timestamp` in inclusive `[start, end]`, ordered by time then id.
+    ///
+    /// Retracted Life Events and `life_event_retraction` markers are excluded
+    /// (append-only undo; see [`Self::list_by_time_range_raw`] for every row).
     pub fn list_by_time_range(
         &self,
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+    ) -> StorageResult<Vec<Observation>> {
+        self.list_by_time_range_inner(start, end, true)
+    }
+
+    /// Like [`Self::list_by_time_range`] but returns every stored row,
+    /// including retracted Life Events and retraction markers (audit/export).
+    pub fn list_by_time_range_raw(
+        &self,
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+    ) -> StorageResult<Vec<Observation>> {
+        self.list_by_time_range_inner(start, end, false)
+    }
+
+    fn list_by_time_range_inner(
+        &self,
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+        hide_retracted: bool,
+    ) -> StorageResult<Vec<Observation>> {
+        if end.as_secs() < start.as_secs() {
+            return Err(StorageError::InvalidTimeRange {
+                start: start.as_secs(),
+                end: end.as_secs(),
+            });
+        }
+
+        let filter = if hide_retracted {
+            format!(
+                " AND {} AND {}",
+                retraction_filter_sql(),
+                source_deletion_filter_sql()
+            )
+        } else {
+            String::new()
+        };
+        let sql = format!(
+            "SELECT id, timestamp, provider_id, data_type, payload, confidence
+             FROM observations
+             WHERE timestamp >= ?1 AND timestamp <= ?2{filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(
+            params![start.as_secs(), end.as_secs()],
+            read_observation_columns,
+        )?;
+        collect_observations(rows)
+    }
+
+    /// Lists one `data_type` inside an inclusive timestamp range.
+    ///
+    /// Retracted Life Events and deleted wearable rows are excluded, same as
+    /// [`Self::list_by_time_range`].
+    pub fn list_by_data_type_in_range(
+        &self,
+        data_type: &str,
         start: UnixTimestamp,
         end: UnixTimestamp,
     ) -> StorageResult<Vec<Observation>> {
@@ -86,27 +180,63 @@ impl<'db> ObservationRepository<'db> {
                 end: end.as_secs(),
             });
         }
-
-        let mut stmt = self.conn.prepare(
+        let mut filter = String::new();
+        if data_type != DATA_TYPE_LIFE_EVENT_RETRACTION {
+            filter.push_str(" AND ");
+            filter.push_str(&retraction_filter_sql());
+        }
+        if data_type != DATA_TYPE_SOURCE_DELETION {
+            filter.push_str(" AND ");
+            filter.push_str(&source_deletion_filter_sql());
+        }
+        let sql = format!(
             "SELECT id, timestamp, provider_id, data_type, payload, confidence
              FROM observations
-             WHERE timestamp >= ?1 AND timestamp <= ?2
-             ORDER BY timestamp ASC, id ASC",
+             WHERE data_type = ?1 AND timestamp >= ?2 AND timestamp <= ?3{filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(
+            params![data_type, start.as_secs(), end.as_secs()],
+            read_observation_columns,
         )?;
-        let rows = stmt.query_map(params![start.as_secs(), end.as_secs()], read_observation_columns)?;
         collect_observations(rows)
     }
 
     /// Lists Observations matching `data_type`, ordered by time then id.
+    ///
+    /// For `life_event`, retracted events are excluded. Asking for
+    /// `life_event_retraction` explicitly returns the markers.
     pub fn list_by_data_type(&self, data_type: &str) -> StorageResult<Vec<Observation>> {
-        let mut stmt = self.conn.prepare(
+        let mut filter = String::new();
+        if data_type != DATA_TYPE_LIFE_EVENT_RETRACTION {
+            filter.push_str(" AND ");
+            filter.push_str(&retraction_filter_sql());
+        }
+        if data_type != DATA_TYPE_SOURCE_DELETION {
+            filter.push_str(" AND ");
+            filter.push_str(&source_deletion_filter_sql());
+        }
+        let sql = format!(
             "SELECT id, timestamp, provider_id, data_type, payload, confidence
              FROM observations
-             WHERE data_type = ?1
-             ORDER BY timestamp ASC, id ASC",
-        )?;
+             WHERE data_type = ?1{filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let mut stmt = self.conn.prepare(&sql)?;
         let rows = stmt.query_map(params![data_type], read_observation_columns)?;
         collect_observations(rows)
+    }
+
+    /// `true` when a `life_event_retraction` marker targets `id`.
+    pub fn is_retracted(&self, id: ObservationId) -> StorageResult<bool> {
+        let n: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM observations
+             WHERE data_type = ?1 AND json_extract(payload, '$.target_id') = ?2",
+            params![DATA_TYPE_LIFE_EVENT_RETRACTION, id.to_string()],
+            |row| row.get(0),
+        )?;
+        Ok(n > 0)
     }
 
     /// Highest `(created_at, id)` cursor in the table, if any rows exist.
@@ -120,9 +250,60 @@ impl<'db> ObservationRepository<'db> {
              LIMIT 1",
         )?;
         let row = stmt
-            .query_row([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
+            .query_row([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })
             .optional()?;
         Ok(row)
+    }
+
+    /// Wearable rows in `[start, end]` plus the append-time `created_at`.
+    ///
+    /// `source_deletion` targets are hidden. Schema is unchanged: this only reads
+    /// the existing `created_at` column. `data_types` are bound parameters.
+    pub fn list_with_created_in_range(
+        &self,
+        data_types: &[&str],
+        start: UnixTimestamp,
+        end: UnixTimestamp,
+    ) -> StorageResult<Vec<ObservationCreated>> {
+        if data_types.is_empty() {
+            return Ok(Vec::new());
+        }
+        if end.as_secs() < start.as_secs() {
+            return Err(StorageError::InvalidTimeRange {
+                start: start.as_secs(),
+                end: end.as_secs(),
+            });
+        }
+        let placeholders = (0..data_types.len())
+            .map(|index| format!("?{}", index + 3))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let filter = source_deletion_filter_sql();
+        let sql = format!(
+            "SELECT id, timestamp, provider_id, data_type, payload, confidence, created_at
+             FROM observations
+             WHERE timestamp >= ?1 AND timestamp <= ?2
+               AND data_type IN ({placeholders})
+               AND {filter}
+             ORDER BY timestamp ASC, id ASC"
+        );
+        let start_secs = start.as_secs();
+        let end_secs = end.as_secs();
+        let mut params: Vec<rusqlite::types::Value> = vec![
+            rusqlite::types::Value::Integer(start_secs),
+            rusqlite::types::Value::Integer(end_secs),
+        ];
+        for data_type in data_types {
+            params.push(rusqlite::types::Value::Text((*data_type).to_owned()));
+        }
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(
+            rusqlite::params_from_iter(params.iter()),
+            read_observation_created_columns,
+        )?;
+        collect_observations_created(rows)
     }
 
     /// Lists Observations strictly after `(after_created_at, after_id)` in
@@ -130,7 +311,8 @@ impl<'db> ObservationRepository<'db> {
     ///
     /// Empty when no newer rows (idle-friendly). `limit == 0` → empty `Ok`.
     /// Does not mutate rows. Enables incremental Feature Worker polls without
-    /// a new SQLite table.
+    /// a new SQLite table. **Raw**: retraction markers are returned so the
+    /// worker can drop the target from its in-memory window.
     pub fn list_after_created_cursor(
         &self,
         after_created_at: i64,
@@ -212,10 +394,11 @@ struct ObservationColumns {
 
 impl ObservationColumns {
     fn into_observation(self) -> StorageResult<Observation> {
-        let id = Uuid::parse_str(&self.id).map_err(|source| StorageError::InvalidObservationId {
-            value: self.id,
-            source,
-        })?;
+        let id =
+            Uuid::parse_str(&self.id).map_err(|source| StorageError::InvalidObservationId {
+                value: self.id,
+                source,
+            })?;
         let payload = serde_json::from_str(&self.payload)
             .map_err(|source| StorageError::PayloadDeserialize { source })?;
         let confidence = Confidence::try_new(self.confidence)?;

@@ -70,19 +70,17 @@ pub fn validate_calendar_event_payload(payload: &JsonValue) -> SpecResult<()> {
     Ok(())
 }
 
-fn required_i64(
-    obj: &serde_json::Map<String, JsonValue>,
-    key: &str,
-) -> SpecResult<i64> {
+fn required_i64(obj: &serde_json::Map<String, JsonValue>, key: &str) -> SpecResult<i64> {
     match obj.get(key) {
         None => Err(SpecError::InvalidCalendarEventPayload {
             reason: format!("missing required field {key}"),
         }),
-        Some(JsonValue::Number(n)) => n.as_i64().ok_or_else(|| {
-            SpecError::InvalidCalendarEventPayload {
-                reason: format!("{key} must be an integer unix timestamp"),
-            }
-        }),
+        Some(JsonValue::Number(n)) => {
+            n.as_i64()
+                .ok_or_else(|| SpecError::InvalidCalendarEventPayload {
+                    reason: format!("{key} must be an integer unix timestamp"),
+                })
+        }
         Some(_) => Err(SpecError::InvalidCalendarEventPayload {
             reason: format!("{key} must be an integer unix timestamp"),
         }),

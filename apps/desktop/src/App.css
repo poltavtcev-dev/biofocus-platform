@@ -564,7 +564,7 @@ body {
 .git-roots-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.2rem 0;
   border-bottom: 1px solid var(--bf-bg-accent);
@@ -575,9 +575,13 @@ body {
 }
 
 .git-roots-path {
+  flex: 1;
+  min-width: 0;
   font-family: "SF Mono", ui-monospace, Menlo, monospace;
   font-size: 0.72rem;
-  word-break: break-all;
+  line-height: 1.35;
+  overflow-wrap: normal;
+  word-break: normal;
   color: var(--bf-fg);
 }
 
@@ -686,4 +690,67 @@ body {
 
 .pairing-lan-label input {
   margin-top: 0.15rem;
+}
+
+.companion-status {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #2a8 35%, var(--bf-retry-border));
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.companion-warning p,
+.companion-status p {
+  margin: 0.25rem 0 0;
+}
+
+.feature-row {
+  display: block;
+}
+
+.feature-details > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.feature-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.feature-row--weak .feature-value {
+  opacity: 0.6;
+}
+
+.feature-badge {
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--bf-retry-border);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--bf-muted);
+}
+
+.feature-unit {
+  font-size: 0.7rem;
+}
+
+.feature-explain {
+  padding: 0.35rem 0 0.25rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.feature-explain p {
+  margin: 0.2rem 0;
+}
+
+.feature-tech-id {
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
 }

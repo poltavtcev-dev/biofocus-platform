@@ -57,12 +57,12 @@ impl InsightRule for SustainedLoadElevatedRule {
 
         Ok(vec![Insight {
             id: Uuid::now_v7(),
-            title: "Prolonged load looked elevated".into(),
-            description: "Prolonged load looked elevated in this window.".into(),
+            title: "Длительная нагрузка была выше обычного".into(),
+            description: "Длительная нагрузка в этом окне была выше обычного.".into(),
             category: PROLONGED_LOAD_CATEGORY.into(),
             evidence_list: evidence,
             action_recommendation: Some(
-                "A shorter stretch or lighter pace later may help when it fits.".into(),
+                "Более короткий отрезок или спокойнее темп позже могут помочь, если это уместно.".into(),
             ),
         }])
     }
@@ -142,8 +142,8 @@ mod tests {
             out[0].action_recommendation.as_deref().unwrap_or("")
         )
         .to_lowercase();
-        assert!(blob.contains("prolonged load"));
-        assert!(blob.contains("elevated"));
+        assert!(blob.contains("длительная нагрузка"));
+        assert!(blob.contains("выше обычного"));
         for banned in [
             "burned out",
             "burnout",

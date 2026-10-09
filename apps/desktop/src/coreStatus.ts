@@ -26,16 +26,16 @@ const COPY: Record<
   { label: string; detail: string }
 > = {
   idle: {
-    label: "Idle",
-    detail: "Waiting for Core.",
+    label: "Ожидание",
+    detail: "Запускаем локальный анализ…",
   },
   ready: {
-    label: "Ready",
-    detail: "Core is available.",
+    label: "Готово",
+    detail: "Работает на этом Mac. Наружу ничего не уходит.",
   },
   error: {
-    label: "Error",
-    detail: "Could not reach Core.",
+    label: "Ошибка",
+    detail: "Локальный анализ не отвечает. Нажмите «Ещё раз» или перезапустите BioFocus.",
   },
 };
 
@@ -65,11 +65,11 @@ export function trayTooltipFor(view: CoreStatusView): string {
 export function alertCopy(level: AlertLevel): { label: string; detail: string } {
   switch (level) {
     case "green":
-      return { label: "Steady", detail: "Load looks steady." };
+      return { label: "Ровно", detail: "Нагрузка на внимание в последнее время ровная." };
     case "yellow":
-      return { label: "Elevated", detail: "Load is elevated." };
+      return { label: "Выше обычного", detail: "Нагрузка на внимание выше обычной — можно сделать короткую паузу." };
     case "red":
-      return { label: "High", detail: "Load is high right now." };
+      return { label: "Высокая", detail: "Нагрузка на внимание уже давно высокая. Откройте панель, чтобы посмотреть почему." };
   }
 }
 

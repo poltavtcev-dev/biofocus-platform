@@ -10,9 +10,23 @@ export type PairingTokenInfo = {
   baseUrlHints: string[];
   fromEnv: boolean;
   qrSvg: string;
+  /** Saved settings ask for LAN (may need a restart to take effect). */
+  lanConfigured: boolean;
+  /** Saved settings differ from the running listener — restart BioFocus. */
+  restartRequired: boolean;
+  /** Ingest listener is up. */
+  ingestRunning: boolean;
+  /** Why ingest is not running (UI-safe). */
+  ingestError: string | null;
+  /** SHA-256 of the LAN certificate. Empty on loopback. */
+  certFingerprint: string | null;
 };
 
 type PairingPayload = {
+  lanConfigured?: boolean;
+  restartRequired?: boolean;
+  ingestRunning?: boolean;
+  ingestError?: string | null;
   token?: string;
   ingestBaseUrl?: string;
   ingest_base_url?: string;
@@ -24,6 +38,8 @@ type PairingPayload = {
   from_env?: boolean;
   qrSvg?: string;
   qr_svg?: string;
+  certFingerprint?: string | null;
+  cert_fingerprint?: string | null;
 };
 
 export type PairingView =
@@ -62,6 +78,12 @@ function normalize(payload: PairingPayload): PairingTokenInfo | null {
     baseUrlHints: baseUrlHints.length > 0 ? baseUrlHints : [ingestBaseUrl],
     fromEnv: Boolean(payload.fromEnv ?? payload.from_env),
     qrSvg,
+    lanConfigured: Boolean(payload.lanConfigured ?? bindMode === "lan"),
+    restartRequired: Boolean(payload.restartRequired),
+    ingestRunning: payload.ingestRunning ?? true,
+    ingestError: payload.ingestError?.trim() || null,
+    certFingerprint:
+      (payload.certFingerprint ?? payload.cert_fingerprint ?? "").trim() || null,
   };
 }
 
@@ -107,65 +129,192 @@ export function needsLanHintFallback(info: PairingTokenInfo): boolean {
   return isLoopbackBaseUrl(info.ingestBaseUrl);
 }
 
-/** Calm warning when physical phone cannot use the shown base URL. */
-export function companionLoopbackWarning(info: PairingTokenInfo): string | null {
-  if (info.bindMode === "loopback") {
-    return "Physical iPhone needs LAN — enable LAN below, restart BioFocus, then copy the LAN Base URL (not 127.0.0.1).";
+/** One clear phone-connection state for the Companion panel. */
+export type CompanionNetworkStatus =
+  | "ingest_off"
+  | "restart_needed"
+  | "lan_off"
+  | "lan_no_address"
+  | "lan_ready";
+
+export function companionNetworkStatus(info: PairingTokenInfo): CompanionNetworkStatus {
+  if (!info.ingestRunning) {
+    return "ingest_off";
   }
-  return null;
+  if (info.restartRequired) {
+    return "restart_needed";
+  }
+  if (info.bindMode !== "lan") {
+    return "lan_off";
+  }
+  if (needsLanHintFallback(info)) {
+    return "lan_no_address";
+  }
+  return "lan_ready";
 }
 
-/** Error when LAN is on but no usable address was discovered. */
-export function companionLanAddressError(info: PairingTokenInfo): string | null {
-  if (!needsLanHintFallback(info)) {
-    return null;
+/** Plain-language headline + next step for each state. */
+export function companionStatusCopy(info: PairingTokenInfo): {
+  tone: "ok" | "info" | "warn" | "error";
+  title: string;
+  detail: string;
+} {
+  switch (companionNetworkStatus(info)) {
+    case "ingest_off":
+      return {
+        tone: "error",
+        title: "Синхронизация с телефоном не запущена",
+        detail:
+          info.ingestError ??
+          "Локальный сервер синхронизации не стартовал. Перезапустите BioFocus. Если повторится, это стоит сообщить.",
+      };
+    case "restart_needed":
+      return {
+        tone: "warn",
+        title: "Перезапустите BioFocus",
+        detail: info.lanConfigured
+          ? "LAN включён в настройках, но этот Mac всё ещё слушает только себя. Закройте и снова откройте BioFocus, затем нажмите «Обновить»."
+          : "LAN выключен в настройках, но Mac останется доступен в сети, пока вы не закроете и не откроете BioFocus снова.",
+      };
+    case "lan_off":
+      return {
+        tone: "info",
+        title: "LAN выключен — только этот Mac",
+        detail:
+          "Симулятор iOS на этом Mac подключится. Для настоящего iPhone включите «LAN для iPhone» ниже, перезапустите BioFocus и нажмите «Обновить».",
+      };
+    case "lan_no_address":
+      return {
+        tone: "error",
+        title: "LAN включён, но адрес сети не найден",
+        detail:
+          "Проверьте Wi‑Fi и нажмите «Обновить». Если не поможет, задайте BIOFOCUS_INGEST_BIND_HOST равным IPv4 этого Mac (Системные настройки → Wi‑Fi → Подробнее) и перезапустите.",
+      };
+    case "lan_ready":
+      return {
+        tone: "ok",
+        title: "Можно подключать телефон",
+        detail:
+          "iPhone должен быть в той же сети Wi‑Fi. Адрес — https. В QR токен и отпечаток сертификата. Чужой сертификат телефон отклонит.",
+      };
   }
-  return "LAN bind is on, but no usable network address was found. Set this Mac’s LAN IPv4 (Companion → enable LAN, or BIOFOCUS_INGEST_BIND_HOST), restart, then Reload.";
+}
+
+/** @deprecated Use {@link companionStatusCopy}. Kept for older imports. */
+export function companionLoopbackWarning(info: PairingTokenInfo): string | null {
+  return companionNetworkStatus(info) === "lan_off" ? companionStatusCopy(info).detail : null;
+}
+
+/** @deprecated Use {@link companionStatusCopy}. */
+export function companionLanAddressError(info: PairingTokenInfo): string | null {
+  return companionNetworkStatus(info) === "lan_no_address"
+    ? companionStatusCopy(info).detail
+    : null;
 }
 
 /** Whether the primary base URL is safe to copy for a physical phone. */
 export function isPrimaryUrlCopyable(info: PairingTokenInfo): boolean {
-  if (info.bindMode === "loopback") {
-    return false;
+  return companionNetworkStatus(info) === "lan_ready";
+}
+
+/** Text shown in place of the Base URL when it is not usable for a phone. */
+export function baseUrlPlaceholder(info: PairingTokenInfo): string {
+  switch (companionNetworkStatus(info)) {
+    case "lan_ready":
+      return primaryBaseUrl(info);
+    case "lan_off":
+      return `${primaryBaseUrl(info)} (только этот Mac / симулятор)`;
+    case "restart_needed":
+      return "Перезапустите BioFocus, затем «Обновить».";
+    case "lan_no_address":
+      return "Адрес сети не найден — проверьте Wi‑Fi и нажмите «Обновить».";
+    case "ingest_off":
+      return "Синхронизация с телефоном не запущена.";
   }
-  return !needsLanHintFallback(info);
 }
 
 /** Short reachability label under the base URL. */
 export function networkModeLabel(info: PairingTokenInfo): string {
   if (info.bindMode !== "lan") {
-    return "This Mac";
+    return "Этот Mac";
   }
   if (needsLanHintFallback(info)) {
-    return "Local network (address unavailable)";
+    return "Локальная сеть (адрес недоступен)";
   }
-  return "Local network";
+  return "Локальная сеть";
 }
 
 /** Calm, non-evaluative network copy (LAN opt-in / local only). */
 export function networkModeDetail(info: PairingTokenInfo): string {
-  if (needsLanHintFallback(info)) {
-    return "LAN bind is on, but no usable network address was found. Showing loopback for Simulator. Restart Desktop with BIOFOCUS_INGEST_BIND_HOST set to this Mac’s LAN IPv4, then reload pairing.";
-  }
   if (info.bindMode === "lan") {
-    return "LAN reachability is opt-in on this Mac. Use this URL on a phone on the same Wi‑Fi — local network only.";
+    return "Только локальная сеть, по TLS. За пределы Wi‑Fi ничего не уходит. Каждый запрос всё равно с токеном, а телефон сверяет отпечаток сертификата из QR.";
   }
-  return "Same-machine / Simulator. For a physical phone, enable LAN bind on Desktop, restart, then reload pairing.";
+  return "Пока LAN выключен, другие устройства достучаться не могут.";
+}
+
+/** QA: `?mockPairing=ready|lan_off|restart|no_address|ingest_off` (layout / screenshots). */
+export function mockPairingFromLocation(
+  search: string = typeof window !== "undefined" ? window.location.search : "",
+): PairingView | null {
+  const raw = new URLSearchParams(search).get("mockPairing");
+  if (!raw) {
+    return null;
+  }
+  const lan = raw !== "lan_off";
+  const info: PairingTokenInfo = {
+    token: "0000000000000000000000000000000000000000000000000000000000mock",
+    ingestBaseUrl: lan && raw !== "no_address" ? "https://192.168.0.37:8787" : "http://127.0.0.1:8787",
+    bindMode: raw === "lan_off" || raw === "restart" ? "loopback" : "lan",
+    baseUrlHints: raw === "no_address" ? [] : [lan ? "https://192.168.0.37:8787" : "http://127.0.0.1:8787"],
+    fromEnv: false,
+    qrSvg: "<svg xmlns='http://www.w3.org/2000/svg' width='168' height='168'/>",
+    lanConfigured: lan,
+    restartRequired: raw === "restart",
+    ingestRunning: raw !== "ingest_off",
+    ingestError: raw === "ingest_off" ? "Синхронизация с телефоном выключена: порт 8787 уже занят." : null,
+    certFingerprint:
+      lan && raw !== "no_address" && raw !== "lan_off" && raw !== "restart"
+        ? "ab".repeat(32)
+        : null,
+  };
+  return { kind: "ready", info };
 }
 
 export async function fetchPairingToken(): Promise<PairingView> {
+  const mocked = mockPairingFromLocation();
+  if (mocked) {
+    return mocked;
+  }
   try {
     const payload = await invoke<PairingPayload>("get_pairing_token");
     const info = normalize(payload);
     if (!info) {
-      return { kind: "error", detail: "Pairing data was incomplete." };
+      return { kind: "error", detail: "Данные подключения неполные." };
     }
     return { kind: "ready", info };
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err);
     return {
       kind: "error",
-      detail: text.trim() || "Could not load pairing token.",
+      detail: text.trim() || "Не удалось загрузить токен.",
+    };
+  }
+}
+
+/** Replaces the pairing token. The QR changes; the phone must pair again. */
+export async function rotatePairingToken(): Promise<PairingView> {
+  try {
+    const payload = await invoke<PairingPayload>("rotate_pairing_token");
+    const info = normalize(payload);
+    if (!info) {
+      return { kind: "error", detail: "Данные подключения неполные." };
+    }
+    return { kind: "ready", info };
+  } catch (err) {
+    const text = err instanceof Error ? err.message : String(err);
+    return {
+      kind: "error",
+      detail: text.trim() || "Не удалось сменить токен.",
     };
   }
 }

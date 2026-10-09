@@ -1,5 +1,12 @@
 # 06. Feature Catalog & Derived Metrics
 
+
+> **Tester-ready recalibration (switch curve).** All `CSR × 50` clamps were replaced by
+> `switch_load(csr) = 100 × (1 − e^(−csr/1.5))` (`crates/feature-engine/src/catalog/switch_curve.rs`).
+> The old mapping saturated at 2 switches/min (30 app changes per 15 min), which pinned
+> FocusScore at 0 and CognitiveLoad at 100 for ordinary multi-app work. Reference points:
+> 0.5/min → 28, 1/min → 49, 2/min → 74, 4/min → 93.
+
 ## 1. Feature Specifications
 
 ### 1.1 `ContextSwitchRate`
@@ -18,7 +25,7 @@
 - **Inputs (catalog):** `ContextSnapshot.keystrokes`, `ContextSnapshot.app_category`, `BioSnapshot.hrv_ms`.
 - **Inputs (v1 implementation):** `keystrokes` (`rate_per_min`), upstream `ContextSwitchRate` (вместо taxonomy `app_category`), `hrv` (RMSSD ms).
 - **Formula Strategy:** Высокая стабильная скорость ввода + целевая категория приложения + нормализованный HRV без резких аномалий.
-- **Formula Strategy (v1):** Weighted (renormalized if missing): typing `mean(rate_per_min)/200*100` (0.40) + stability from CSR `100 - rate*50` (0.35) + HRV comfort peak 100 @ 45 ms RMSSD (0.25). Output clamped 0–100.
+- **Formula Strategy (v1):** Weighted (renormalized if missing): typing `50 + 50 × min(rate/80, 1)` (0.25; low typing = neutral 50) + stability from CSR `100 − switch_load(rate)` (0.50) + HRV comfort peak 100 @ 45 ms RMSSD (0.25). Output clamped 0–100.
 - **Output:** Float (0.0 — 100.0).
 - **Provenance:** union Observation IDs keystrokes / hrv / context в окне.
 - **Confidence (ADR-007):** expected slots = 3 (typing / stability / HRV); `confidence = coverage × mean(evidence Observation.confidence)`. Thin windows (missing HRV/context) → lower confidence; empty → omit Feature.
@@ -90,7 +97,7 @@
 - **Formula Strategy (v1):** Weighted (renormalized if CSR absent):
   - **Category mix (0.55):** equal mean of label weights — `work` 10, `reference` 20, `communication` 45, `shopping` 75, `entertainment` 90 (`unknown` excluded from mix).
   - **Category churn (0.25):** consecutive label changes (incl. `unknown`) → `min(100, switches × 25)`.
-  - **CSR (0.20, optional):** `min(100, ContextSwitchRate × 50)`.
+  - **CSR (0.20, optional):** `switch_load(ContextSwitchRate)`.
   - Output clamped 0–100. Higher ≈ more fragmented browser/context mix in-window.
 - **Omit policy:** empty window, no `browser_category`, or **only-`unknown`** thin windows → **omit** Feature (OS probe without URL mapping often emits `unknown` — Feature waits for closed-set labels / richer mapping).
 - **Output:** Float (0.0 — 100.0).
@@ -208,7 +215,7 @@
 - **Goal:** Calm **combined demand** proxy for a window from schedule density + app switching + interruption intensity. “Combined demand in this window” — **not** clinical cognitive overload / ADHD / burnout diagnosis; **not** workplace productivity scoring; **not** “you are overloaded.”
 - **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR / NotificationPressure; series may coarsen.
 - **Inputs (Feature-level):** upstream **`MeetingDensity`**, **`ContextSwitchRate`**, **`NotificationPressure`** for the same window (ADR-021). **Not** a raw Observation mix in v1.
-- **Formula Strategy (v1):** Normalize present inputs to 0–100 (`MeetingDensity × 100`; `clamp(CSR × 50, 0, 100)`; `NotificationPressure` as-is). Equal weights (⅓ each). **Missing-input policy:** if **none** present → **omit**; if **one or more** present → **renormalize** weights over present components (not omit-unless-all-three). Output clamped 0–100.
+- **Formula Strategy (v1):** Normalize present inputs to 0–100 (`MeetingDensity × 100`; `switch_load(CSR)`; `NotificationPressure` as-is). Equal weights (⅓ each). **Missing-input policy:** if **none** present → **omit**; if **one or more** present → **renormalize** weights over present components (not omit-unless-all-three). Output clamped 0–100.
 - **Omit policy:** empty step (no upstream Features) → omit. Partial windows emit with lower ADR-007 confidence.
 - **Output:** Float (0.0 — 100.0).
 - **Units:** dimensionless combined-demand score.
@@ -223,7 +230,7 @@
 - **Goal:** Calm **sustained-focus** intensity for a window from Focus depth + low app-switching. “Sustained focus in this window” — **not** clinical flow state / ADHD / burnout diagnosis; **not** workplace productivity scoring; **not** “you are in flow.”
 - **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR; series may coarsen.
 - **Inputs (Feature-level):** upstream **`FocusScore`** (**required**) + **`ContextSwitchRate`** (**optional** stability term) for the same window (ADR-022). Backlog “idle” **dropped** for v1. **Not** a raw Observation mix; **not** a parallel FocusScore.
-- **Formula Strategy (v1):** `focus = FocusScore`; `stability = clamp(100 - CSR × 50, 0, 100)`. Weights Focus 0.60 / stability 0.40. **Missing-input policy:** omit without FocusScore; if Focus present and CSR absent → **renormalize** (Focus-only). Output clamped 0–100.
+- **Formula Strategy (v1):** `focus = FocusScore`; `stability = 100 − switch_load(CSR)`. Weights Focus 0.60 / stability 0.40. **Missing-input policy:** omit without FocusScore; if Focus present and CSR absent → **renormalize** (Focus-only). Output clamped 0–100.
 - **Omit policy:** no FocusScore for the step → omit (windows driven from FocusScore ends — CSR-only cannot emit). Focus-only windows emit with lower ADR-007 confidence.
 - **Output:** Float (0.0 — 100.0).
 - **Units:** dimensionless sustained-focus score.
@@ -238,7 +245,7 @@
 - **Goal:** Calm **focus stability** proxy for a window from Focus consistency (low in-window Focus range) + low app-switching. “Focus stability in this window” — **not** ADHD / “you can’t focus” / burnout diagnosis; **not** workplace productivity scoring; **not** DeepWorkScore “sustained focus” intensity.
 - **Window:** 15 minutes (sliding window, шаг 1 мин) — как у Focus / CSR; series may coarsen.
 - **Inputs (Feature-level):** upstream **`FocusScore`** (**required**) + **`ContextSwitchRate`** (**optional**) for the same window (ADR-023). **Not** a raw Observation mix; **not** a parallel FocusScore; **do not** redefine DeepWorkScore.
-- **Formula Strategy (v1):** `focus_samples` = FocusScore scalars whose Feature ends lie in `[window_start, window_end]`. If ≥2 samples: `focus_stability = clamp(100 - (max−min), 0, 100)`; if exactly one: `focus_stability = 100` (no swing — **not** Focus-level intensity). `switch_stability = clamp(100 - CSR × 50, 0, 100)`. Weights focus_stability 0.50 / switch_stability 0.50. **Missing-input policy:** omit without FocusScore; if Focus present and CSR absent → **renormalize** (Focus-stability only). Output clamped 0–100.
+- **Formula Strategy (v1):** `focus_samples` = FocusScore scalars whose Feature ends lie in `[window_start, window_end]`. If ≥2 samples: `focus_stability = clamp(100 - (max−min), 0, 100)`; if exactly one: `focus_stability = 100` (no swing — **not** Focus-level intensity). `switch_stability = 100 − switch_load(CSR)`. Weights focus_stability 0.50 / switch_stability 0.50. **Missing-input policy:** omit without FocusScore; if Focus present and CSR absent → **renormalize** (Focus-stability only). Output clamped 0–100.
 - **Omit policy:** no FocusScore for the step → omit (windows driven from FocusScore ends — CSR-only cannot emit). Focus-only windows emit with lower ADR-007 confidence.
 - **Output:** Float (0.0 — 100.0).
 - **Units:** dimensionless focus-stability score.

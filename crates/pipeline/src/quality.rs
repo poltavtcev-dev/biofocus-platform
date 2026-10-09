@@ -2,10 +2,11 @@
 
 use bio_spec::Observation;
 
-use crate::dedupe::{dedupe_accepted, DedupeState};
-use crate::intake::accept_owned;
-use crate::normalize::{normalize_deduped, NormalizedBatch};
 use crate::PipelineResult;
+use crate::dedupe::{DedupeState, dedupe_accepted};
+use crate::intake::accept_owned;
+use crate::normalize::{NormalizedBatch, normalize_deduped};
+use crate::source_select::{SourcePriority, select_sources};
 
 /// Run intake → dedupe → normalize on an owned Observation batch.
 ///
@@ -15,9 +16,23 @@ pub fn run_quality_pipeline(
     observations: Vec<Observation>,
     dedupe: &mut DedupeState,
 ) -> PipelineResult<NormalizedBatch> {
+    run_quality_pipeline_with(observations, dedupe, &SourcePriority::default())
+}
+
+/// Same as [`run_quality_pipeline`] with an explicit source order.
+pub fn run_quality_pipeline_with(
+    observations: Vec<Observation>,
+    dedupe: &mut DedupeState,
+    priority: &SourcePriority,
+) -> PipelineResult<NormalizedBatch> {
     let accepted = accept_owned(observations)?;
     let deduped = dedupe_accepted(dedupe, accepted)?;
-    normalize_deduped(deduped)
+    let normalized = normalize_deduped(deduped)?;
+    let skipped = normalized.skipped_count();
+    Ok(NormalizedBatch::from_selected(
+        select_sources(normalized.into_observations(), priority),
+        skipped,
+    ))
 }
 
 #[cfg(test)]
@@ -47,7 +62,7 @@ mod tests {
         let mut dedupe = DedupeState::new();
         let out = run_quality_pipeline(Vec::new(), &mut dedupe).expect("empty");
         assert!(out.is_empty());
-        assert_eq!(out.stage(), PipelineStage::Normalized);
+        assert_eq!(out.stage(), PipelineStage::SourceSelected);
     }
 
     #[test]
@@ -62,7 +77,7 @@ mod tests {
         )
         .expect("ok");
         assert_eq!(out.len(), 2);
-        assert_eq!(out.stage(), PipelineStage::Normalized);
+        assert_eq!(out.stage(), PipelineStage::SourceSelected);
         assert_eq!(out.observations()[0].payload["bpm"], 61.0);
     }
 }

@@ -6,7 +6,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use bio_spec::{Observation, UnixTimestamp};
 use http::header::AUTHORIZATION;
-use ingest::{ingest_router, spawn_persist_worker, IngestResponse, IngestState};
+use ingest::{IngestResponse, IngestState, ingest_router, spawn_persist_worker};
 use runtime::observation_channel;
 use serde_json::json;
 use storage::{Database, ObservationRepository};
@@ -58,10 +58,7 @@ async fn http_ingest_persists_to_sqlite_round_trip() {
     let state = IngestState::new(TOKEN, tx.clone());
     let app = ingest_router(state);
 
-    let body = json!([
-        observation_json(ID_A, 74.0),
-        observation_json(ID_B, 76.0)
-    ]);
+    let body = json!([observation_json(ID_A, 74.0), observation_json(ID_B, 76.0)]);
 
     let response = app
         .oneshot(
@@ -94,9 +91,7 @@ async fn http_ingest_persists_to_sqlite_round_trip() {
 
     let db = Database::open(&db_path).expect("list db");
     let repo = ObservationRepository::new(&db);
-    let listed = repo
-        .list_by_data_type("heart_rate")
-        .expect("list");
+    let listed = repo.list_by_data_type("heart_rate").expect("list");
     assert_eq!(listed.len(), 2);
 
     let ranged = repo

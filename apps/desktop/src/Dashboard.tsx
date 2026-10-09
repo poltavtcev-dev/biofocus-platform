@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,10 +11,11 @@ import {
 } from "recharts";
 import {
   buildChartPoints,
-  CHART_SERIES_META,
+  defaultSelectedSeries,
   formatChartTime,
   presentSeriesIds,
   SCORE_SERIES_IDS,
+  seriesColor,
   type ChartFeatureId,
   type ChartPoint,
 } from "./featureChart";
@@ -22,8 +23,20 @@ import {
   fetchFeatureSnapshot,
   formatFeatureValue,
   loadingView,
+  type FeatureDto,
   type SnapshotView,
 } from "./featureSnapshot";
+import {
+  directionHint,
+  HEADLINE_FOURTH,
+  HEADLINE_IDS,
+  latestPerFeature,
+  isStaleFeature,
+  metricInfo,
+  reliabilityOf,
+  reliabilityText,
+  statTone,
+} from "./metricInfo";
 import {
   CHART_RANGES,
   fetchFeatureSeries,
@@ -54,24 +67,55 @@ import {
   type ReportView,
 } from "./report";
 import {
+  fetchLifeEventsBetween,
+  formatClock,
+  lifeEventIcon,
+  lifeEventLabel,
+  type LifeEventInfo,
+} from "./lifeEvents";
+import "./lifeEventsActions.css";
+import {
   fetchLocalLlmStatus,
   loadingLlmProviderView,
   llmProviderDotKind,
   mockLlmProviderFromLocation,
   type LlmProviderView,
 } from "./llmProvider";
+import { DataSourcesPanel, mockDataSourcesFromLocation } from "./dataSources";
 
 /** Soft refresh — idle-safe; no busy-loop. Does not regenerate reports. */
 const SNAPSHOT_POLL_MS = 30_000;
+
+const SERIES_PREF_KEY = "biofocus.chartSeries.v1";
+
+function loadSeriesPref(): ChartFeatureId[] | null {
+  try {
+    const raw = window.localStorage.getItem(SERIES_PREF_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? (parsed.filter((x) => typeof x === "string") as ChartFeatureId[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSeriesPref(ids: ChartFeatureId[]) {
+  try {
+    window.localStorage.setItem(SERIES_PREF_KEY, JSON.stringify(ids));
+  } catch {
+    // Storage unavailable — selection just won't persist.
+  }
+}
 
 function ChartSlot({
   seriesView,
   range,
   onRangeChange,
+  lifeEvents,
 }: {
   seriesView: SeriesView;
   range: ChartRange;
   onRangeChange: (next: ChartRange) => void;
+  lifeEvents: LifeEventInfo[];
 }) {
   const features = seriesView.series?.features ?? [];
   const empty =
@@ -79,30 +123,40 @@ function ChartSlot({
     seriesView.kind === "error" ||
     seriesView.kind === "empty";
   const points = empty ? [] : buildChartPoints(features);
-  const series = presentSeriesIds(points);
-  const scoreSeries = series.filter((id) => SCORE_SERIES_IDS.includes(id));
-  const showCsr = series.includes("ContextSwitchRate");
+  const present = presentSeriesIds(points);
+  const [picked, setPicked] = useState<ChartFeatureId[] | null>(() => loadSeriesPref());
+  const selected = (picked ?? defaultSelectedSeries(present)).filter((id) =>
+    present.includes(id),
+  );
+  const effective = selected.length > 0 ? selected : defaultSelectedSeries(present);
+  const scoreSeries = effective.filter((id) => SCORE_SERIES_IDS.includes(id));
+  const showCsr = effective.includes("ContextSwitchRate");
 
-  let placeholder = "No Feature series yet.";
+  const toggle = (id: ChartFeatureId) => {
+    const next = effective.includes(id)
+      ? effective.filter((x) => x !== id)
+      : [...effective, id];
+    if (next.length === 0) {
+      return; // keep at least one line
+    }
+    setPicked(next);
+    saveSeriesPref(next);
+  };
+
+  let placeholder = "На графике пока нет данных.";
   if (seriesView.kind === "loading") {
-    placeholder = "Loading Feature series…";
+    placeholder = "Загрузка…";
   } else if (seriesView.kind === "error") {
     placeholder = seriesView.detail;
   } else if (seriesView.kind === "empty") {
-    placeholder = "No Feature series for this range yet.";
-  } else if (points.length === 0) {
-    placeholder = "No chartable Feature values in this series.";
+    placeholder = "За этот диапазон данных ещё нет. Оставьте BioFocus запущенным на несколько минут.";
   }
 
   return (
-    <section className="chart-slot" aria-label="Feature charts">
+    <section className="chart-slot" aria-label="Динамика">
       <div className="chart-slot-header">
-        <p className="chart-slot-title">Features</p>
-        <div
-          className="range-picker"
-          role="group"
-          aria-label="Chart range"
-        >
+        <p className="chart-slot-title">Динамика</p>
+        <div className="range-picker" role="group" aria-label="Диапазон графика">
           {CHART_RANGES.map((r) => (
             <button
               key={r}
@@ -116,6 +170,34 @@ function ChartSlot({
           ))}
         </div>
       </div>
+      {present.length > 0 && (
+        <div className="series-chips" role="group" aria-label="Какие линии показать">
+          {present.map((id) => {
+            const on = effective.includes(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`series-chip${on ? " series-chip--on" : ""}`}
+                aria-pressed={on}
+                onClick={() => toggle(id)}
+                title={metricInfo(id).what}
+              >
+                <span
+                  className="series-swatch"
+                  style={{
+                    background: on ? seriesColor(id) : "transparent",
+                    borderColor: seriesColor(id),
+                    borderStyle: id === "ContextSwitchRate" ? "dashed" : "solid",
+                  }}
+                  aria-hidden
+                />
+                {metricInfo(id).name}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div
         className={`chart-slot-body${points.length > 0 ? " chart-slot-body--chart" : ""}`}
       >
@@ -126,48 +208,78 @@ function ChartSlot({
             points={points}
             scoreSeries={scoreSeries}
             showCsr={showCsr}
+            lifeEvents={markersInRange(points, lifeEvents)}
           />
         )}
       </div>
       {points.length > 0 && (
         <p className="chart-slot-units" aria-hidden>
-          Scores 0–100
-          {showCsr ? " · Context switches per window minute (right)" : ""}
+          Левая ось: оценка 0–100
+          {showCsr ? " · Правая ось (пунктир): переключения в минуту" : ""} · Нажмите
+          имя выше, чтобы показать или скрыть линию.
+        </p>
+      )}
+      {points.length > 0 && markersInRange(points, lifeEvents).length > 0 && (
+        <p className="chart-events-legend" aria-label="События дня на графике">
+          <span>Пунктир — записанные события дня:</span>
+          {markersInRange(points, lifeEvents).map((e) => (
+            <span key={e.id}>
+              {lifeEventIcon(e.kind)} {lifeEventLabel(e.kind)} {formatClock(e.timestamp)}
+            </span>
+          ))}
         </p>
       )}
     </section>
   );
 }
 
+/** Life Events inside the plotted x-range (oldest first, max 40 to stay readable). */
+function markersInRange(points: ChartPoint[], events: LifeEventInfo[]): LifeEventInfo[] {
+  if (points.length === 0) return [];
+  const lo = points[0].t;
+  const hi = points[points.length - 1].t;
+  return events
+    .filter((e) => e.timestamp >= lo && e.timestamp <= hi)
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .slice(-40);
+}
+
 function FeatureSeriesChart({
   points,
   scoreSeries,
   showCsr,
+  lifeEvents,
 }: {
   points: ChartPoint[];
   scoreSeries: ChartFeatureId[];
   showCsr: boolean;
+  lifeEvents: LifeEventInfo[];
 }) {
+  const axisTick = { fill: "var(--c-fg-3)", fontSize: 11 };
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={240}>
       <LineChart
         data={points}
-        margin={{ top: 8, right: showCsr ? 12 : 4, left: 0, bottom: 0 }}
+        margin={{ top: lifeEvents.length > 0 ? 22 : 8, right: showCsr ? 4 : 12, left: -4, bottom: 0 }}
       >
-        <CartesianGrid stroke="var(--bf-bg-accent)" strokeDasharray="3 3" />
+        <CartesianGrid stroke="var(--c-border)" vertical={false} />
         <XAxis
           dataKey="t"
+          type="number"
+          scale="time"
+          domain={["dataMin", "dataMax"]}
           tickFormatter={formatChartTime}
-          tick={{ fill: "var(--bf-meta)", fontSize: 11 }}
-          axisLine={{ stroke: "var(--bf-retry-border)" }}
+          tick={axisTick}
+          axisLine={{ stroke: "var(--c-border-strong)" }}
           tickLine={false}
-          minTickGap={28}
+          minTickGap={48}
         />
         <YAxis
           yAxisId="score"
           domain={[0, 100]}
-          width={36}
-          tick={{ fill: "var(--bf-meta)", fontSize: 11 }}
+          ticks={[0, 25, 50, 75, 100]}
+          width={34}
+          tick={axisTick}
           axisLine={false}
           tickLine={false}
         />
@@ -175,42 +287,48 @@ function FeatureSeriesChart({
           <YAxis
             yAxisId="csr"
             orientation="right"
-            width={36}
-            tick={{ fill: "var(--bf-meta)", fontSize: 11 }}
+            width={34}
+            tick={axisTick}
             axisLine={false}
             tickLine={false}
             allowDecimals
+            tickFormatter={(v: number) => `${v}/m`}
           />
         )}
         <Tooltip
           contentStyle={{
-            background: "var(--bf-bg)",
-            border: "1px solid var(--bf-retry-border)",
+            background: "var(--c-surface-2)",
+            border: "1px solid var(--c-border-strong)",
             borderRadius: 8,
             fontSize: 12,
+            color: "var(--c-fg)",
           }}
+          labelStyle={{ color: "var(--c-fg-3)", marginBottom: 4 }}
           labelFormatter={(label) =>
             typeof label === "number" ? formatChartTime(label) : String(label)
           }
           formatter={(value: number, name: string) => {
             const id = name as ChartFeatureId;
-            const meta = CHART_SERIES_META[id];
             const display =
               typeof value === "number"
                 ? Number.isInteger(value)
                   ? String(value)
                   : value.toFixed(1)
                 : String(value);
-            return [display, meta?.label ?? name];
+            return [display, metricInfo(id).name];
           }}
         />
-        <Legend
-          formatter={(value) => {
-            const id = value as ChartFeatureId;
-            return CHART_SERIES_META[id]?.label ?? value;
-          }}
-          wrapperStyle={{ fontSize: 12, color: "var(--bf-muted)" }}
-        />
+        {lifeEvents.map((e) => (
+          <ReferenceLine
+            key={e.id}
+            x={e.timestamp}
+            yAxisId="score"
+            stroke="var(--c-fg-3)"
+            strokeDasharray="2 3"
+            ifOverflow="discard"
+            label={{ value: lifeEventIcon(e.kind), position: "top", fontSize: 14 }}
+          />
+        ))}
         {scoreSeries.map((id) => (
           <Line
             key={id}
@@ -218,10 +336,10 @@ function FeatureSeriesChart({
             type="monotone"
             dataKey={id}
             name={id}
-            stroke={CHART_SERIES_META[id].color}
-            strokeWidth={2}
-            dot={{ r: 2.5, strokeWidth: 0 }}
-            activeDot={{ r: 4 }}
+            stroke={seriesColor(id)}
+            strokeWidth={2.25}
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0 }}
             connectNulls
             isAnimationActive={false}
           />
@@ -232,11 +350,11 @@ function FeatureSeriesChart({
             type="monotone"
             dataKey="ContextSwitchRate"
             name="ContextSwitchRate"
-            stroke={CHART_SERIES_META.ContextSwitchRate.color}
-            strokeWidth={2}
-            strokeDasharray="4 3"
-            dot={{ r: 2.5, strokeWidth: 0 }}
-            activeDot={{ r: 4 }}
+            stroke={seriesColor("ContextSwitchRate")}
+            strokeWidth={1.75}
+            strokeDasharray="5 4"
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0 }}
             connectNulls
             isAnimationActive={false}
           />
@@ -250,8 +368,8 @@ function InsightsSlot({ view }: { view: InsightsView }) {
   const showList = view.kind === "ready" && view.insights.length > 0;
 
   return (
-    <section className="insights-slot" aria-label="Insights" aria-live="polite">
-      <p className="chart-slot-title">Insights</p>
+    <section className="insights-slot" aria-label="Наблюдения" aria-live="polite">
+      <p className="chart-slot-title">Наблюдения</p>
       {showList ? (
         <ul className="insight-rows">
           {view.insights.map((insight) => {
@@ -265,7 +383,7 @@ function InsightsSlot({ view }: { view: InsightsView }) {
                 <p className="insight-description">{insight.description}</p>
                 {insight.evidenceList.length > 0 && (
                   <p className="insight-evidence">
-                    Evidence:{" "}
+                    Основание:{" "}
                     {insight.evidenceList.map(formatEvidenceRef).join(" · ")}
                   </p>
                 )}
@@ -296,16 +414,16 @@ function RecommendationsSlot({ view }: { view: RecommendationsView }) {
   return (
     <section
       className="recommendations-slot"
-      aria-label="Suggestions"
+      aria-label="Подсказки"
       aria-live="polite"
     >
-      <p className="chart-slot-title">Suggestions</p>
+      <p className="chart-slot-title">Подсказки</p>
       {showList ? (
         <ul className="insight-rows">
           {view.recommendations.map((item) => {
             const categoryLabel = formatRecommendationCategory(item.category);
             return (
-              <li key={item.id} className="insight-row">
+              <li key={item.id} className="insight-row insight-row--suggestion">
                 {categoryLabel && (
                   <p className="insight-category">{categoryLabel}</p>
                 )}
@@ -313,7 +431,7 @@ function RecommendationsSlot({ view }: { view: RecommendationsView }) {
                 <p className="insight-description">{item.suggestion}</p>
                 {item.evidenceList.length > 0 && (
                   <p className="insight-evidence">
-                    Evidence:{" "}
+                    Основание:{" "}
                     {item.evidenceList.map(formatEvidenceRef).join(" · ")}
                   </p>
                 )}
@@ -351,11 +469,11 @@ function ReportSlot({
   const packMeta = `${llmProvider.packId} @ ${llmProvider.packVersion}`;
 
   return (
-    <section className="report-slot" aria-label="Report" aria-live="polite">
-      <p className="chart-slot-title">Report</p>
+    <section className="report-slot" aria-label="Отчёт" aria-live="polite">
+      <p className="chart-slot-title">Отчёт</p>
       <div
         className="llm-provider-row"
-        aria-label="Local AI provider status"
+        aria-label="Статус локальной модели"
       >
         <span
           className={`status-dot status-dot--${llmProviderDotKind(llmProvider.status)}`}
@@ -365,8 +483,8 @@ function ReportSlot({
           <p className="status-label">{llmProvider.label}</p>
           <p className="status-meta">{llmProvider.detail}</p>
           <p className="status-meta">
-            Report pack: {packMeta}
-            {llmProvider.model ? ` · model ${llmProvider.model}` : ""}
+            Пакет отчёта: {packMeta}
+            {llmProvider.model ? ` · модель ${llmProvider.model}` : ""}
           </p>
         </div>
       </div>
@@ -377,8 +495,8 @@ function ReportSlot({
         <p className="status-meta">{view.detail}</p>
       )}
       <p className="report-ai-note">
-        Local AI is optional and never runs automatically. Offline markdown is
-        always available — interpretation only after you generate a report.
+        Локальный ИИ необязателен и сам не запускается. Локальный текст отчёта
+        всегда доступен — пояснение появляется только после сборки отчёта.
       </p>
       <button
         type="button"
@@ -386,14 +504,14 @@ function ReportSlot({
         onClick={onGenerate}
         disabled={busy || view.kind === "loading"}
       >
-        {view.kind === "loading" ? "Generating…" : "Generate report"}
+        {view.kind === "loading" ? "Собираем…" : "Собрать отчёт"}
       </button>
 
       {showBody && (
         <div className="report-body">
           <pre className="report-markdown">{report.markdown}</pre>
           <details className="report-prompt">
-            <summary>Prompt for local AI</summary>
+            <summary>Запрос для локального ИИ</summary>
             <pre className="report-markdown report-markdown--prompt">
               {report.llmPrompt}
             </pre>
@@ -401,7 +519,7 @@ function ReportSlot({
           <p className="status-meta">{llmStatusDetail(report)}</p>
           {report.interpretation && (
             <div className="report-interpretation">
-              <p className="chart-slot-title">Local AI (optional)</p>
+              <p className="chart-slot-title">Локальный ИИ (необязательно)</p>
               <pre className="report-markdown">{report.interpretation}</pre>
             </div>
           )}
@@ -417,6 +535,7 @@ export function Dashboard() {
     loadingSeriesView(),
   );
   const [chartRange, setChartRange] = useState<ChartRange>("1d");
+  const [chartEvents, setChartEvents] = useState<LifeEventInfo[]>([]);
   const [insightsView, setInsightsView] = useState<InsightsView>(() =>
     loadingInsightsView(),
   );
@@ -430,6 +549,9 @@ export function Dashboard() {
   );
   const [busy, setBusy] = useState(true);
   const [reportBusy, setReportBusy] = useState(false);
+  const [tab, setTab] = useState<"overview" | "sources">(() =>
+    mockDataSourcesFromLocation() ? "sources" : "overview",
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -476,17 +598,18 @@ export function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     setSeriesView(loadingSeriesView());
-    void fetchFeatureSeries(chartRange).then((next) => {
-      if (!cancelled) {
+    // Series first, then the Life Events inside the same window (chart markers).
+    const loadSeries = () =>
+      fetchFeatureSeries(chartRange).then(async (next) => {
+        if (cancelled) return;
         setSeriesView(next);
-      }
-    });
-    const timer = window.setInterval(() => {
-      void fetchFeatureSeries(chartRange).then((next) => {
-        if (!cancelled) {
-          setSeriesView(next);
-        }
+        const w = next.series?.window;
+        const events = w ? await fetchLifeEventsBetween(w.start, w.end) : [];
+        if (!cancelled) setChartEvents(events);
       });
+    void loadSeries();
+    const timer = window.setInterval(() => {
+      void loadSeries();
     }, SNAPSHOT_POLL_MS);
     return () => {
       cancelled = true;
@@ -529,18 +652,18 @@ export function Dashboard() {
     setChartRange(next);
   };
 
-  const features = view.snapshot?.features ?? [];
+  const features = latestPerFeature(view.snapshot?.features ?? []);
   const signals = view.snapshot?.signals ?? [];
   const isReady = view.kind === "ready";
 
   return (
     <main className="shell shell--dashboard" data-snapshot={view.kind}>
-      <header className="brand brand--dashboard">
-        <h1>BioFocus</h1>
-        <p className="brand-sub">Dashboard</p>
-      </header>
-
-      <section className="status-block" aria-live="polite">
+      <header className="dash-header">
+        <div className="brand brand--dashboard">
+          <h1>BioFocus</h1>
+          <p className="brand-sub">Последние 15 минут · всё остаётся на этом Mac</p>
+        </div>
+      <section className="status-block status-block--inline" aria-live="polite">
         <div className="status-row">
           <span
             className={`status-dot status-dot--${
@@ -553,11 +676,37 @@ export function Dashboard() {
             aria-hidden
           />
           <p className="status-label">
-            {busy && view.kind === "loading" ? "Loading" : view.label}
+            {busy && view.kind === "loading" ? "Загрузка" : view.label}
           </p>
         </div>
         <p className="status-detail">{view.detail}</p>
       </section>
+      </header>
+
+      <nav className="dash-tabs" aria-label="Разделы">
+        <button
+          type="button"
+          className={tab === "overview" ? "dash-tab dash-tab--on" : "dash-tab"}
+          aria-pressed={tab === "overview"}
+          onClick={() => setTab("overview")}
+        >
+          Обзор
+        </button>
+        <button
+          type="button"
+          className={tab === "sources" ? "dash-tab dash-tab--on" : "dash-tab"}
+          aria-pressed={tab === "sources"}
+          onClick={() => setTab("sources")}
+        >
+          Источники данных
+        </button>
+      </nav>
+
+      {tab === "sources" ? (
+        <DataSourcesPanel />
+      ) : (
+        <>
+      {isReady && features.length > 0 && <StatCards features={features} />}
 
       {view.kind === "error" && (
         <button
@@ -566,7 +715,7 @@ export function Dashboard() {
           onClick={onRetry}
           disabled={busy}
         >
-          Try again
+          Ещё раз
         </button>
       )}
 
@@ -574,30 +723,35 @@ export function Dashboard() {
         seriesView={seriesView}
         range={chartRange}
         onRangeChange={onRangeChange}
+        lifeEvents={chartEvents}
       />
 
       {isReady && features.length > 0 && (
-        <section className="feature-list" aria-label="Feature snapshot">
-          <p className="chart-slot-title">Snapshot</p>
+        <section className="feature-list" aria-label="Снимок метрик">
+          <p className="chart-slot-title">Снимок</p>
+          <p className="status-meta">
+            Последнее окно в 15 минут. Нажмите метрику, чтобы увидеть, что она
+            значит. Пометки «грубо» и «один источник» — подсказки, не выводы.
+          </p>
           <ul className="feature-rows">
-            {features.map((f) => (
-              <li key={`${f.featureId}-${f.timeWindow.end}`} className="feature-row">
-                <span className="feature-id">{f.featureId}</span>
-                <span className="feature-value">{formatFeatureValue(f.value)}</span>
-              </li>
+            {[...features]
+              .sort((a, b) => metricInfo(a.featureId).name.localeCompare(metricInfo(b.featureId).name))
+              .map((f) => (
+              <FeatureRow key={`${f.featureId}-${f.timeWindow.end}`} f={f} />
             ))}
           </ul>
           {signals.length > 0 && (
             <p className="status-meta">
-              Signals: {signals.map((s) => s.type).join(", ")}
+              Сигналы: {signals.map((s) => s.type).join(", ")}
             </p>
           )}
         </section>
       )}
 
-      <InsightsSlot view={insightsView} />
-
-      <RecommendationsSlot view={recommendationsView} />
+      <div className="dash-two-col">
+        <InsightsSlot view={insightsView} />
+        <RecommendationsSlot view={recommendationsView} />
+      </div>
 
       <ReportSlot
         view={reportView}
@@ -605,6 +759,99 @@ export function Dashboard() {
         onGenerate={onGenerateReport}
         llmProvider={llmProvider}
       />
+        </>
+      )}
     </main>
+  );
+}
+
+function FeatureRow({ f }: { f: FeatureDto }) {
+  const info = metricInfo(f.featureId);
+  const rel = reliabilityOf(f);
+  const relText = reliabilityText(rel, f.factors);
+  const stale = isStaleFeature(f.timeWindow.end);
+  return (
+    <li
+      className={`feature-row${rel === "ok" ? "" : " feature-row--weak"}`}
+      title={info.what}
+    >
+      <details className="feature-details">
+        <summary>
+          <span className="feature-id">
+            {info.name}
+            {rel === "low" && <span className="feature-badge">грубо</span>}
+            {rel === "single_input" && (
+              <span className="feature-badge">один источник</span>
+            )}
+            {stale && <span className="feature-badge">устарело</span>}
+          </span>
+          <span className="feature-value">
+            {formatFeatureValue(f.value)}
+            {info.unit ? <span className="feature-unit"> {info.unit}</span> : null}
+          </span>
+        </summary>
+        <div className="feature-explain">
+          <p>{info.what}</p>
+          <p className="status-meta">Из чего: {info.from}</p>
+          <p className="status-meta">{directionHint(info.direction)}</p>
+          {f.factors && f.factors.length > 0 && (
+            <p className="status-meta">
+              Это окно:{" "}
+              {f.factors
+                .map((x) => `${x.label} ${Math.round(x.share * 100)}%`)
+                .join(" · ")}
+            </p>
+          )}
+          {typeof f.confidence === "number" && (
+            <p className="status-meta">
+              Покрытие данными: {Math.round(f.confidence * 100)}%
+            </p>
+          )}
+          {stale && (
+            <p className="status-meta">Это окно закончилось больше 18 часов назад.</p>
+          )}
+          {relText && <p className="status-meta">{relText}</p>}
+          <p className="status-meta feature-tech-id">Идентификатор: {f.featureId}</p>
+        </div>
+      </details>
+    </li>
+  );
+}
+
+function StatCards({ features }: { features: FeatureDto[] }) {
+  const byId = new Map(features.map((f) => [f.featureId, f]));
+  const fourth = HEADLINE_FOURTH.find((id) => byId.has(id));
+  const ids = [...HEADLINE_IDS, ...(fourth ? [fourth] : [])];
+  return (
+    <section className="stat-cards" aria-label="Ключевые метрики">
+      {ids.map((id) => {
+        const f = byId.get(id);
+        const info = metricInfo(id);
+        if (!f) {
+          return (
+            <div key={id} className="stat-card stat-card--empty">
+              <p className="stat-name">{info.name}</p>
+              <p className="stat-value">—</p>
+              <p className="stat-foot">Данных пока нет</p>
+            </div>
+          );
+        }
+        const { tone, word } = statTone(f);
+        const stale = isStaleFeature(f.timeWindow.end);
+        return (
+          <div key={id} className={`stat-card stat-card--${tone}`} title={info.what}>
+            <p className="stat-name">{info.name}</p>
+            <p className="stat-value">
+              {formatFeatureValue(f.value)}
+              {info.unit && <span className="stat-unit">{info.unit === "0–100" ? "/100" : info.unit}</span>}
+            </p>
+            <p className="stat-foot">
+              <span className={`tone-chip tone-chip--${tone}`}>{word}</span>
+              {stale ? " · stale" : ""}
+            </p>
+          </div>
+        );
+      })}
+    </section>
   );
 }

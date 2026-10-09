@@ -3,11 +3,12 @@
 //! # v1 formula (documented simplifications)
 //!
 //! - **Window / step:** 15 minutes / 1 minute (aligned with Focus catalog).
-//! - **Inputs:** normalized `hrv` payloads (`rmssd_ms` required; optional
-//!   `sdnn_ms`, `pnn50` averaged in when present).
+//! - **Inputs:** normalized `hrv` payloads with RMSSD (`rmssd_ms`). SDNN is a
+//!   different method and does not enter this map. Optional `pnn50` may
+//!   average in when present.
 //! - **RMSSD → stress:** linear map — **100** at RMSSD ≤ 15 ms, **0** at
-//!   RMSSD ≥ 70 ms (low HRV ⇒ high stress). Same map for optional SDNN.
-//!   `pnn50` (0–100) contributes `100 - pnn50`.
+//!   RMSSD ≥ 70 ms (low RMSSD ⇒ higher index). Those anchors are not applied
+//!   to SDNN. `pnn50` (0–100) contributes `100 - pnn50`.
 //! - **Provenance:** Observation IDs of `hrv` inside the window.
 //! - **Confidence (ADR-007):** single family (HRV); when emitted,
 //!   `confidence = mean(hrv Observation.confidence)`. Empty HRV → omit.
@@ -84,10 +85,7 @@ impl FeatureNode for StressIndexNode {
         }
 
         let signals = high_stress_signals(&features);
-        Ok(NodeOutput {
-            features,
-            signals,
-        })
+        Ok(NodeOutput { features, signals })
     }
 }
 
@@ -117,7 +115,7 @@ fn score_window(observations: &[Observation], window: &bio_spec::TimeWindow) -> 
 fn stress_from_hrv(hrv: &[&Observation]) -> Option<f64> {
     let mut parts: Vec<f64> = Vec::new();
 
-    // ADR-016: prefer RMSSD, else SDNN — do not average both when both present.
+    // RMSSD only. SDNN never uses these 15/70 ms anchors.
     if let Some(ms) = super::hrv::mean_hrv_ms(hrv) {
         parts.push(hrv_ms_to_stress(ms));
     }
@@ -376,5 +374,48 @@ mod tests {
         let out = engine.run(&batch).expect("run");
         assert!(out.features.is_empty());
         assert!(out.signals.is_empty());
+    }
+
+    fn sdnn_obs(id: u128, ts: i64, sdnn_ms: f64) -> Observation {
+        Observation::try_new(
+            Uuid::from_u128(id),
+            UnixTimestamp::from_secs(ts),
+            "test.provider",
+            DATA_TYPE_HRV,
+            json!({ "method": "sdnn", "sdnn_ms": sdnn_ms }),
+            1.0,
+        )
+        .expect("obs")
+    }
+
+    #[test]
+    fn sdnn_does_not_use_rmssd_anchors() {
+        let mut engine = FeatureEngine::new();
+        engine.register(StressIndexNode::new()).expect("reg");
+        let out = engine.run(&[sdnn_obs(1, 1500, 15.0)]).expect("run");
+        assert!(
+            out.features.iter().all(|f| f.feature_id != FEATURE_ID),
+            "SDNN alone must omit StressIndex, not emit 0"
+        );
+    }
+
+    #[test]
+    fn mixed_methods_follow_rmssd_only() {
+        // RMSSD 70 maps to stress 0. SDNN 15 would map to 100 if it were mixed in.
+        let batch = vec![hrv_obs(1, 1500, 70.0), sdnn_obs(2, 1600, 15.0)];
+        let mut engine = FeatureEngine::new();
+        engine.register(StressIndexNode::new()).expect("reg");
+        let last = engine
+            .run(&batch)
+            .expect("run")
+            .features
+            .into_iter()
+            .filter(|f| f.feature_id == FEATURE_ID)
+            .next_back()
+            .expect("StressIndex from RMSSD");
+        let FeatureValue::Scalar(v) = last.value else {
+            panic!("scalar");
+        };
+        assert!(v < 1.0, "mixed window must follow RMSSD only, got {v}");
     }
 }

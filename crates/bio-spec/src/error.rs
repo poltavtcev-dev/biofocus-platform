@@ -59,4 +59,8 @@ pub enum SpecError {
     /// Oxygen saturation Observation payload failed contract validation (ADR-018).
     #[error("invalid oxygen_saturation payload: {reason}")]
     InvalidOxygenSaturationPayload { reason: String },
+
+    /// Wearables v2 payload failed contract validation (ADR-030).
+    #[error("invalid wearable payload: {reason}")]
+    InvalidWearablePayload { reason: String },
 }

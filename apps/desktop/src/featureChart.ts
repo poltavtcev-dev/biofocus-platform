@@ -43,72 +43,72 @@ export const CHART_SERIES_META: Record<
   { label: string; unit: string; color: string }
 > = {
   FocusScore: {
-    label: "Focus",
+    label: "Фокус",
     unit: "0–100",
     color: "#5b6b8c",
   },
   StressIndex: {
-    label: "Stress index",
+    label: "Индекс напряжения",
     unit: "0–100",
     color: "#8a7a5c",
   },
   FatigueIndex: {
-    label: "Fatigue index",
+    label: "Усталость",
     unit: "0–100",
     color: "#6e7a86",
   },
   ContextSwitchRate: {
-    label: "Context switches",
-    unit: "per window min",
+    label: "Переключения",
+    unit: "в минуту",
     color: "#7a8a7a",
   },
   ActivityBalance: {
-    label: "Activity",
+    label: "Движение",
     unit: "0–100",
     color: "#6a8f7a",
   },
   EnergyScore: {
-    label: "Energy",
+    label: "Энергия",
     unit: "0–100",
     color: "#8c7a5b",
   },
   SleepDebt: {
-    label: "Sleep shortfall",
+    label: "Недосып",
     unit: "0–100",
     color: "#6b7088",
   },
   RecoveryScore: {
-    label: "Recovery",
+    label: "Восстановление",
     unit: "0–100",
     color: "#7a6b8c",
   },
   CognitiveLoad: {
-    label: "Combined demand",
+    label: "Общая нагрузка",
     unit: "0–100",
     color: "#6b7a8a",
   },
   DeepWorkScore: {
-    label: "Sustained focus",
+    label: "Глубокая работа",
     unit: "0–100",
     color: "#5c7a6b",
   },
   AttentionStability: {
-    label: "Focus stability",
+    label: "Устойчивость внимания",
     unit: "0–100",
     color: "#5b7a8c",
   },
   DeskAwayPresence: {
-    label: "Away from desk",
+    label: "Вдали от стола",
     unit: "0–100",
     color: "#7a6b5c",
   },
   CircadianOffset: {
-    label: "Schedule alignment",
+    label: "Совпадение с ритмом",
     unit: "0–100",
     color: "#5c6b7a",
   },
   SustainedLoadIndicator: {
-    label: "Prolonged load",
+    label: "Длительная нагрузка",
     unit: "0–100",
     color: "#8a6b5c",
   },
@@ -182,4 +182,45 @@ export function formatChartTime(unixSecs: number): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/** Distinct, calm series colours for dark + light surfaces (design system v2). */
+export const SERIES_COLORS: Partial<Record<ChartFeatureId, string>> = {
+  FocusScore: "#8f9bff",
+  CognitiveLoad: "#d9ad62",
+  StressIndex: "#e08c8c",
+  ContextSwitchRate: "#6fc3c9",
+  DeepWorkScore: "#6fbf98",
+  RecoveryScore: "#b493e6",
+  FatigueIndex: "#c9a27a",
+  AttentionStability: "#7fb1e8",
+  EnergyScore: "#e6c25c",
+  ActivityBalance: "#8cc76f",
+  SleepDebt: "#9aa0c8",
+  DeskAwayPresence: "#a3a8b3",
+  CircadianOffset: "#d39bc4",
+  SustainedLoadIndicator: "#d08a6a",
+};
+
+export function seriesColor(id: ChartFeatureId): string {
+  return SERIES_COLORS[id] ?? CHART_SERIES_META[id].color;
+}
+
+/** Shown by default (first up to 3 present, in this order). */
+export const DEFAULT_SERIES_ORDER: ChartFeatureId[] = [
+  "FocusScore",
+  "CognitiveLoad",
+  "StressIndex",
+  "DeepWorkScore",
+  "RecoveryScore",
+];
+
+export const MAX_DEFAULT_SERIES = 3;
+
+export function defaultSelectedSeries(present: ChartFeatureId[]): ChartFeatureId[] {
+  const picks = DEFAULT_SERIES_ORDER.filter((id) => present.includes(id)).slice(
+    0,
+    MAX_DEFAULT_SERIES,
+  );
+  return picks.length > 0 ? picks : present.slice(0, MAX_DEFAULT_SERIES);
 }

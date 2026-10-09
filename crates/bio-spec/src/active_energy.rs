@@ -22,9 +22,11 @@ pub fn validate_active_energy_payload(payload: &JsonValue) -> SpecResult<()> {
             reason: "missing required field kcal".to_owned(),
         }),
         Some(JsonValue::Number(n)) => {
-            let kcal = n.as_f64().ok_or_else(|| SpecError::InvalidActiveEnergyPayload {
-                reason: "kcal must be a finite number ≥ 0".to_owned(),
-            })?;
+            let kcal = n
+                .as_f64()
+                .ok_or_else(|| SpecError::InvalidActiveEnergyPayload {
+                    reason: "kcal must be a finite number ≥ 0".to_owned(),
+                })?;
             if !kcal.is_finite() || kcal < 0.0 {
                 return Err(SpecError::InvalidActiveEnergyPayload {
                     reason: "kcal must be a finite number ≥ 0".to_owned(),

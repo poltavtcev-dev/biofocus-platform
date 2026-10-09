@@ -107,7 +107,8 @@
 //!
 //! Explicit user action only — never call on app / Dashboard open. Builds an
 //! offline report from the cached Feature snapshot + evaluate-on-read Insights
-//! + Recommendations via `report_engine::build_report_with_pack`
+//! + Recommendations (+ last 8h of non-retracted Life Events) via
+//! `report_engine::build_report_with_pack_and_life_events`
 //! (`biofocus.default` @ `1`). When `BIOFOCUS_LOCAL_LLM` is enabled,
 //! optionally runs `interpret_report` (local HTTP). When disabled, returns
 //! deterministic markdown/prompt with `llmStatus: "disabled"` and **no**
@@ -143,6 +144,11 @@
 //! `bio_spec`, appends through [`storage::ObservationRepository`] (same store
 //! as ingest — no parallel table). UI never opens SQLite.
 //!
+//! `retract_life_event` / `restore_life_event` / `retime_life_event` are
+//! append-only: removal writes a `life_event_retraction` marker that storage
+//! readers honour; nothing is deleted. `list_life_events_between` feeds chart
+//! markers. `timestamp` = happened at, payload `logged_at` = when tapped.
+//!
 //! ## `get_git_watched_roots` / `set_git_watched_roots` (P14-E3-T1 / ADR-014)
 //!
 //! Menubar editor for personal Git watched folders. Host reads/writes
@@ -169,6 +175,7 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 mod alert_state;
+mod data_sources_ipc;
 mod feature_host;
 mod git_watched_roots_ipc;
 mod ingest_host;
@@ -183,13 +190,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bio_spec::{EvidenceRef, Insight, Recommendation};
 use feature_engine::{AlertLevel, Feature, FeatureSnapshot, FeatureValue, Signal};
 use knowledge_engine::{
-    register_insights_v1, register_recommendations_v1, KnowledgeEngine, PatternInputs,
+    KnowledgeEngine, PatternInputs, register_insights_v1, register_recommendations_v1,
 };
-use qrcode::render::svg;
 use qrcode::QrCode;
+use qrcode::render::svg;
 use report_engine::{
-    build_report_with_pack, interpret_report, LocalLlmConfig, ReportDocument, ReportEngineError,
-    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION,
+    DEFAULT_PROMPT_PACK_ID, DEFAULT_PROMPT_PACK_VERSION, LocalLlmConfig, ReportDocument,
+    ReportEngineError, ReportLifeEvent, build_report_with_pack_and_life_events, interpret_report,
 };
 use serde::Serialize;
 use serde_json::Value as JsonValue;
@@ -199,9 +206,9 @@ use thiserror::Error;
 use tracing::warn;
 
 use crate::alert_state::{AlertState, SnapshotState};
-use crate::pattern_host::{load_focus_baseline_series, BaselineMemoState};
+use crate::pattern_host::{BaselineMemoState, load_focus_baseline_series};
 use crate::series_host::{
-    latest_features_per_id, load_feature_series, FeatureSeriesResult, SeriesMemoState,
+    FeatureSeriesResult, SeriesMemoState, latest_features_per_id, load_feature_series,
 };
 
 /// Process-lifetime Knowledge Engine with v1 Insight + Recommendation rules.
@@ -345,13 +352,13 @@ impl From<&Feature> for FeatureDto {
                 end: feature.time_window.end.as_secs(),
             },
             value: FeatureValueDto::from(&feature.value),
-            provenance: feature
-                .provenance
-                .iter()
-                .map(|id| id.to_string())
-                .collect(),
+            provenance: feature.provenance.iter().map(|id| id.to_string()).collect(),
             confidence: feature.confidence.get(),
-            factors: feature.factors.iter().map(ExplanationFactorDto::from).collect(),
+            factors: feature
+                .factors
+                .iter()
+                .map(ExplanationFactorDto::from)
+                .collect(),
         }
     }
 }
@@ -408,7 +415,7 @@ fn series_to_dto(series: &FeatureSeriesResult) -> FeatureSeriesDto {
     }
 }
 
-/// Evidence ref on the IPC wire (`feature` | `signal` | `insight` + id string).
+/// Evidence ref on the IPC wire (`feature` | `signal` | `insight` | `observation` + id string).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct EvidenceRefDto {
@@ -429,6 +436,10 @@ impl From<&EvidenceRef> for EvidenceRefDto {
             },
             EvidenceRef::Insight(id) => Self {
                 kind: "insight".into(),
+                id: id.to_string(),
+            },
+            EvidenceRef::Observation(id) => Self {
+                kind: "observation".into(),
                 id: id.to_string(),
             },
         }
@@ -455,7 +466,11 @@ impl From<&Insight> for InsightDto {
             title: insight.title.clone(),
             description: insight.description.clone(),
             category: insight.category.clone(),
-            evidence_list: insight.evidence_list.iter().map(EvidenceRefDto::from).collect(),
+            evidence_list: insight
+                .evidence_list
+                .iter()
+                .map(EvidenceRefDto::from)
+                .collect(),
             action_recommendation: insight.action_recommendation.clone(),
         }
     }
@@ -491,8 +506,48 @@ fn pattern_inputs_for_insights(app: &AppHandle, snapshot: &FeatureSnapshot) -> P
         .unwrap_or_else(unix_now_secs);
     let memo = app.try_state::<BaselineMemoState>();
     let series = load_focus_baseline_series(memo.as_deref(), reference_ts);
-    PatternInputs::with_baseline_series(series)
+    let pattern = PatternInputs::with_baseline_series(series);
+
+    // Life Events (retracted ones already hidden by storage) + recent stepped
+    // Focus / CognitiveLoad series for the before/after rule. Only recompute the
+    // 8h series when a comparable event exists.
+    let now = unix_now_secs();
+    let marks = life_event_ipc::life_event_marks_between(now - LIFE_EVENT_LOOKBACK_SECS, now);
+    let comparable = marks
+        .iter()
+        .any(|m| knowledge_engine::LIFE_EVENT_EFFECT_KINDS.contains(&m.kind.as_str()));
+    let recent = if comparable {
+        let memo = app.try_state::<LifeEventSeriesMemo>();
+        let ids = ["FocusScore".to_string(), "CognitiveLoad".to_string()];
+        load_feature_series(memo.as_deref().map(|m| &m.0), "8h", Some(&ids), now).features
+    } else {
+        Vec::new()
+    };
+    pattern.with_life_events(marks, recent)
 }
+
+/// Non-retracted Life Events for the offline report (soft-fails to empty).
+fn report_life_events(start: i64, end: i64) -> Vec<ReportLifeEvent> {
+    life_event_ipc::list_life_events_between(start, end)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|dto| {
+            Some(ReportLifeEvent {
+                id: uuid::Uuid::parse_str(&dto.id).ok()?,
+                kind: dto.kind,
+                happened_at: dto.timestamp,
+                logged_at: dto.logged_at,
+            })
+        })
+        .collect()
+}
+
+/// Life Event lookback for insights + report (matches the 8h chart range).
+const LIFE_EVENT_LOOKBACK_SECS: i64 = 8 * 3600;
+
+/// Separate single-entry memo so the Life Event series does not evict the
+/// chart's memo entry.
+struct LifeEventSeriesMemo(SeriesMemoState);
 
 fn evaluate_insights_list(
     engine: &KnowledgeEngine,
@@ -581,9 +636,7 @@ fn evaluate_recommendations_dto(
     snapshot: &FeatureSnapshot,
     insights: &[Insight],
 ) -> RecommendationsDto {
-    recommendations_to_dto(&evaluate_recommendations_list(
-        engine, snapshot, insights,
-    ))
+    recommendations_to_dto(&evaluate_recommendations_list(engine, snapshot, insights))
 }
 
 /// IPC payload for [`get_local_llm_status`] (P11-E3-T1).
@@ -610,7 +663,7 @@ fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusD
     if !config.enabled {
         return LocalLlmProviderStatusDto {
             status: "disabled".into(),
-            detail: "Local AI is optional and currently off.".into(),
+            detail: "Локальный ИИ необязателен и сейчас выключен.".into(),
             model: None,
             pack_id,
             pack_version,
@@ -622,7 +675,7 @@ fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusD
     if url_ok && model_ok {
         LocalLlmProviderStatusDto {
             status: "ready".into(),
-            detail: "Local AI is configured. Interpretation runs only when you generate a report."
+            detail: "Локальный ИИ настроен. Пояснение появляется только когда вы собираете отчёт."
                 .into(),
             model: Some(config.model.clone()),
             pack_id,
@@ -631,7 +684,7 @@ fn local_llm_provider_status(config: &LocalLlmConfig) -> LocalLlmProviderStatusD
     } else {
         LocalLlmProviderStatusDto {
             status: "error".into(),
-            detail: "Local AI is enabled but the endpoint config looks unusable.".into(),
+            detail: "Локальный ИИ включён, но адрес выглядит непригодным.".into(),
             model: None,
             pack_id,
             pack_version,
@@ -680,22 +733,14 @@ fn append_source_section(doc: &mut ReportDocument, source_section: &str) {
 
 fn calm_llm_error(err: &ReportEngineError) -> String {
     match err {
-        ReportEngineError::LocalLlmTimeout { .. } => {
-            "Local AI did not respond in time.".into()
-        }
-        ReportEngineError::LocalLlmHttp { .. } => {
-            "Could not reach the local AI endpoint.".into()
-        }
+        ReportEngineError::LocalLlmTimeout { .. } => "Локальный ИИ не ответил вовремя.".into(),
+        ReportEngineError::LocalLlmHttp { .. } => "Could not reach the local AI endpoint.".into(),
         ReportEngineError::LocalLlmResponse { .. } => {
-            "Local AI returned an unusable response.".into()
+            "Локальный ИИ вернул непригодный ответ.".into()
         }
-        ReportEngineError::LocalLlmDisabled => {
-            "Local AI is optional and currently off.".into()
-        }
+        ReportEngineError::LocalLlmDisabled => "Локальный ИИ необязателен и сейчас выключен.".into(),
         ReportEngineError::BuildFailed { .. } => "Could not build the report.".into(),
-        ReportEngineError::UnknownPromptPack { .. } => {
-            "That report pack is not available.".into()
-        }
+        ReportEngineError::UnknownPromptPack { .. } => "That report pack is not available.".into(),
     }
 }
 
@@ -703,15 +748,17 @@ async fn assemble_report_dto(
     features: &[Feature],
     insights: &[Insight],
     recommendations: &[Recommendation],
+    life_events: &[ReportLifeEvent],
     config: &LocalLlmConfig,
     source_section: &str,
 ) -> Result<ReportDto, String> {
-    let mut doc = build_report_with_pack(
+    let mut doc = build_report_with_pack_and_life_events(
         DEFAULT_PROMPT_PACK_ID,
         DEFAULT_PROMPT_PACK_VERSION,
         features,
         insights,
         recommendations,
+        life_events,
     )
     .map_err(|err| err.to_string())?;
     append_source_section(&mut doc, source_section);
@@ -775,9 +822,15 @@ struct IngestLanPreferenceDto {
 fn build_ingest_lan_preference(needs_restart: bool) -> Result<IngestLanPreferenceDto, String> {
     let from_env = ingest::lan_preference_overridden_by_env();
     let persisted = ingest::read_persisted_lan_enabled();
-    let effective_lan = ingest::resolve_bind_host()
+    let configured_lan = ingest::resolve_bind_host()
         .map(|host| !host.is_loopback())
         .map_err(|_| "Could not resolve ingest bind host.".to_string())?;
+    // Prefer what is actually listening; fall back to config before startup.
+    let effective_lan = match ingest_host::ingest_run_state() {
+        ingest_host::IngestRunState::Running { bind_host } => !bind_host.is_loopback(),
+        _ => configured_lan,
+    };
+    let needs_restart = needs_restart || configured_lan != effective_lan;
     Ok(IngestLanPreferenceDto {
         persisted,
         from_env,
@@ -796,14 +849,10 @@ fn get_ingest_lan_preference() -> Result<IngestLanPreferenceDto, String> {
 #[tauri::command]
 fn set_ingest_lan_preference(enabled: bool) -> Result<IngestLanPreferenceDto, String> {
     if ingest::lan_preference_overridden_by_env() {
-        return Err(
-            "LAN bind is controlled by environment variables for this launch.".into(),
-        );
+        return Err("LAN bind is controlled by environment variables for this launch.".into());
     }
     ingest::write_persisted_lan_enabled(enabled).map_err(|err| match err {
-        ingest::IngestError::HomeDirUnavailable => {
-            "Could not locate local BioFocus config.".into()
-        }
+        ingest::IngestError::HomeDirUnavailable => "Could not locate local BioFocus config.".into(),
         ingest::IngestError::TokenIo { .. } => "Could not save LAN preference.".into(),
         other => other.to_string(),
     })?;
@@ -824,20 +873,40 @@ struct PairingTokenInfo {
     base_url_hints: Vec<String>,
     /// `true` when `BIOFOCUS_INGEST_TOKEN` overrides the on-disk file.
     from_env: bool,
-    /// SVG markup for a QR encoding the token (phone camera → paste / scan).
+    /// SVG markup for a QR encoding URL, token, and certificate fingerprint.
     qr_svg: String,
+    /// SHA-256 of the LAN certificate, when this listener speaks TLS. Absent on loopback.
+    cert_fingerprint: Option<String>,
+    /// Settings (env / saved toggle) ask for LAN on the next launch.
+    lan_configured: bool,
+    /// Saved settings differ from the running listener → restart BioFocus.
+    restart_required: bool,
+    /// Ingest listener is up (false if it failed or has not started).
+    ingest_running: bool,
+    /// Short UI-safe reason when ingest is not running.
+    ingest_error: Option<String>,
+}
+
+/// Running listener vs. configured bind (pure; unit-tested).
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PairingRuntime {
+    running_bind: Option<std::net::Ipv4Addr>,
+    configured_bind: std::net::Ipv4Addr,
+    ingest_error: Option<String>,
 }
 
 /// Maps token resolve errors to short UI-safe strings (no filesystem paths).
 fn pairing_error_message(err: ingest::IngestError) -> String {
     match err {
-        ingest::IngestError::HomeDirUnavailable => {
-            "Could not locate local pairing data.".into()
+        ingest::IngestError::HomeDirUnavailable => "Не удалось найти локальные данные подключения.".into(),
+        ingest::IngestError::TokenIo { .. } => "Не удалось прочитать токен.".into(),
+        ingest::IngestError::EmptyTokenFile { .. } => "Токен пустой.".into(),
+        ingest::IngestError::TokenEntropy(_) => "Не удалось создать токен.".into(),
+        ingest::IngestError::TokenFromEnv => {
+            "В этом запуске токен задан окружением.".into()
         }
-        ingest::IngestError::TokenIo { .. } => "Could not read pairing token.".into(),
-        ingest::IngestError::EmptyTokenFile { .. } => "Pairing token is empty.".into(),
-        ingest::IngestError::TokenEntropy(_) => "Could not create pairing token.".into(),
-        _ => "Could not load pairing token.".into(),
+        ingest::IngestError::Tls(_) => "Не удалось подготовить сертификат для LAN.".into(),
+        _ => "Не удалось загрузить токен.".into(),
     }
 }
 
@@ -858,12 +927,31 @@ fn bind_mode_label(mode: ingest::BindMode) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn build_pairing_info(
     token: String,
     from_env: bool,
     advertise: &ingest::AdvertiseInfo,
 ) -> Result<PairingTokenInfo, String> {
-    let qr_svg = render_token_qr_svg(&token)?;
+    let runtime = PairingRuntime {
+        running_bind: None,
+        configured_bind: if advertise.bind_mode == ingest::BindMode::Lan {
+            ingest::INGEST_LAN_BIND_HOST
+        } else {
+            ingest::INGEST_BIND_HOST
+        },
+        ingest_error: None,
+    };
+    build_pairing_info_with(token, from_env, advertise, &runtime, None)
+}
+
+fn build_pairing_info_with(
+    token: String,
+    from_env: bool,
+    advertise: &ingest::AdvertiseInfo,
+    runtime: &PairingRuntime,
+    cert_fingerprint: Option<String>,
+) -> Result<PairingTokenInfo, String> {
     // Prefer primary LAN/loopback hint; fall back to loopback so Simulator path stays usable.
     let ingest_base_url = advertise
         .primary_base_url()
@@ -871,6 +959,11 @@ fn build_pairing_info(
         .unwrap_or_else(|| {
             ingest::http_base_url(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT)
         });
+    let qr_svg = render_token_qr_svg(&ingest::pairing_qr_payload(
+        &ingest_base_url,
+        &token,
+        cert_fingerprint.as_deref(),
+    ))?;
     Ok(PairingTokenInfo {
         token,
         ingest_base_url,
@@ -878,29 +971,64 @@ fn build_pairing_info(
         base_url_hints: advertise.base_url_hints.clone(),
         from_env,
         qr_svg,
+        cert_fingerprint,
+        lan_configured: !runtime.configured_bind.is_loopback(),
+        restart_required: runtime
+            .running_bind
+            .is_some_and(|running| running.is_loopback() != runtime.configured_bind.is_loopback()),
+        ingest_running: runtime.ingest_error.is_none(),
+        ingest_error: runtime.ingest_error.clone(),
     })
 }
 
-fn resolve_pairing_advertise() -> Result<ingest::AdvertiseInfo, String> {
-    let bind_host = ingest::resolve_bind_host().map_err(|err| match err {
+fn resolve_configured_bind() -> Result<std::net::Ipv4Addr, String> {
+    ingest::resolve_bind_host().map_err(|err| match err {
         ingest::IngestError::InvalidBindHost { value } => {
             format!("Invalid ingest bind host: {value}")
         }
         _ => "Could not resolve ingest bind host.".into(),
-    })?;
+    })
+}
+
+/// Advertise hints from the **configured** bind (tests).
+#[cfg(test)]
+fn resolve_pairing_advertise() -> Result<ingest::AdvertiseInfo, String> {
     Ok(ingest::AdvertiseInfo::for_bind(
-        bind_host,
+        resolve_configured_bind()?,
         ingest::DEFAULT_INGEST_PORT,
     ))
 }
 
+/// Builds pairing info from the listener that is actually running. LAN address
+/// discovery runs fresh on every call, so the UI "Reload" re-detects it.
 fn resolve_pairing_info() -> Result<PairingTokenInfo, String> {
     let from_env = std::env::var(ingest::INGEST_TOKEN_ENV)
         .map(|value| !value.trim().is_empty())
         .unwrap_or(false);
     let token = ingest::resolve_ingest_token().map_err(pairing_error_message)?;
-    let advertise = resolve_pairing_advertise()?;
-    build_pairing_info(token, from_env, &advertise)
+    let configured_bind = resolve_configured_bind()?;
+    let (running_bind, ingest_error) = match ingest_host::ingest_run_state() {
+        ingest_host::IngestRunState::Running { bind_host } => (Some(bind_host), None),
+        ingest_host::IngestRunState::Failed { reason } => (None, Some(reason)),
+        ingest_host::IngestRunState::NotStarted => (None, None),
+    };
+    let advertise_bind = running_bind.unwrap_or(configured_bind);
+    let advertise = ingest::AdvertiseInfo::for_bind(advertise_bind, ingest::DEFAULT_INGEST_PORT);
+    let cert_fingerprint = if advertise_bind.is_loopback() {
+        None
+    } else {
+        Some(
+            ingest::load_or_create_tls_identity()
+                .map_err(pairing_error_message)?
+                .fingerprint_hex,
+        )
+    };
+    let runtime = PairingRuntime {
+        running_bind,
+        configured_bind,
+        ingest_error,
+    };
+    build_pairing_info_with(token, from_env, &advertise, &runtime, cert_fingerprint)
 }
 
 /// Probes a DB path (create + WAL + migrate-on-open). Soft-fail via `Err`.
@@ -1038,10 +1166,13 @@ async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
         None => (Vec::new(), Vec::new()),
     };
     let config = LocalLlmConfig::from_env();
+    let now = unix_now_secs();
+    let life_events = report_life_events(now - LIFE_EVENT_LOOKBACK_SECS, now);
     assemble_report_dto(
         &snapshot.features,
         &insights,
         &recommendations,
+        &life_events,
         &config,
         &source_report::render_source_section(),
     )
@@ -1054,9 +1185,7 @@ fn open_dashboard(app: AppHandle) -> Result<(), String> {
     let Some(window) = app.get_webview_window("dashboard") else {
         return Err("Dashboard window is not available.".into());
     };
-    window
-        .unminimize()
-        .map_err(|err| err.to_string())?;
+    window.unminimize().map_err(|err| err.to_string())?;
     window.show().map_err(|err| err.to_string())?;
     window.set_focus().map_err(|err| err.to_string())?;
     Ok(())
@@ -1081,12 +1210,52 @@ fn get_pairing_token() -> Result<PairingTokenInfo, String> {
     resolve_pairing_info()
 }
 
+/// Replaces the on-disk pairing token and the live bearer. The phone must scan again.
+#[tauri::command]
+fn rotate_pairing_token() -> Result<PairingTokenInfo, String> {
+    ingest::rotate_live_pairing_token().map_err(pairing_error_message)?;
+    resolve_pairing_info()
+}
+
 /// Logs a v1 Life Event Observation from the Menubar (P6-E2-T1 / ADR-006).
 ///
 /// Persists via [`storage::ObservationRepository`] — UI ↛ SQLite. Calm errors.
+///
+/// `happened_at` (Unix secs, optional) back-dates the event up to 24 h; payload
+/// keeps `logged_at` = now.
 #[tauri::command]
-fn log_life_event(kind: String) -> Result<life_event_ipc::LifeEventDto, String> {
-    life_event_ipc::log_life_event(&kind)
+fn log_life_event(
+    kind: String,
+    happened_at: Option<i64>,
+) -> Result<life_event_ipc::LifeEventDto, String> {
+    life_event_ipc::log_life_event(&kind, happened_at)
+}
+
+/// Removes a Life Event by appending a retraction marker (append-only; nothing deleted).
+#[tauri::command]
+fn retract_life_event(id: String) -> Result<life_event_ipc::LifeEventRetractionDto, String> {
+    life_event_ipc::retract_life_event(&id)
+}
+
+/// Undo a removal (appends a copy with the same happened-at / logged-at).
+#[tauri::command]
+fn restore_life_event(id: String) -> Result<life_event_ipc::LifeEventDto, String> {
+    life_event_ipc::restore_life_event(&id)
+}
+
+/// Change when a Life Event happened (re-timed copy + retraction of the old row).
+#[tauri::command]
+fn retime_life_event(id: String, happened_at: i64) -> Result<life_event_ipc::LifeEventDto, String> {
+    life_event_ipc::retime_life_event(&id, happened_at)
+}
+
+/// Non-retracted Life Events with happened-at in `[start, end]` (chart markers).
+#[tauri::command]
+fn list_life_events_between(
+    start: i64,
+    end: i64,
+) -> Result<Vec<life_event_ipc::LifeEventDto>, String> {
+    life_event_ipc::list_life_events_between(start, end)
 }
 
 /// Recent Life Events for Menubar confirmation (newest first). Soft-fails to Err string.
@@ -1095,6 +1264,18 @@ fn list_recent_life_events(
     limit: Option<u32>,
 ) -> Result<Vec<life_event_ipc::LifeEventDto>, String> {
     life_event_ipc::list_recent_life_events(limit)
+}
+
+/// Wearable sources for the Dashboard tab. No raw payloads.
+#[tauri::command]
+fn get_data_sources() -> data_sources_ipc::DataSourcesDto {
+    data_sources_ipc::get_data_sources()
+}
+
+/// Saves source priority order (`source-priority.toml`). Returns the refreshed list.
+#[tauri::command]
+fn set_source_priority(order: Vec<String>) -> Result<data_sources_ipc::DataSourcesDto, String> {
+    data_sources_ipc::set_source_priority(order)
 }
 
 /// Load personal Git watched folders from the ADR-014 config file (P14-E3-T1).
@@ -1128,7 +1309,7 @@ pub fn run() -> DesktopResult<()> {
             TrayIconBuilder::with_id("main")
                 .icon(icon)
                 .icon_as_template(true)
-                .tooltip("BioFocus — Idle")
+                .tooltip("BioFocus — Ожидание")
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
@@ -1162,6 +1343,7 @@ pub fn run() -> DesktopResult<()> {
             app.manage(InsightsEngineState::new());
             app.manage(BaselineMemoState::new());
             app.manage(SeriesMemoState::new());
+            app.manage(LifeEventSeriesMemo(SeriesMemoState::new()));
 
             Ok(())
         })
@@ -1176,12 +1358,19 @@ pub fn run() -> DesktopResult<()> {
             open_dashboard,
             core_ping,
             get_pairing_token,
+            rotate_pairing_token,
             get_ingest_lan_preference,
             set_ingest_lan_preference,
             log_life_event,
             list_recent_life_events,
+            retract_life_event,
+            restore_life_event,
+            retime_life_event,
+            list_life_events_between,
             get_git_watched_roots,
-            set_git_watched_roots
+            set_git_watched_roots,
+            get_data_sources,
+            set_source_priority
         ])
         .build(tauri::generate_context!())?;
 
@@ -1317,9 +1506,11 @@ mod tests {
 
     #[test]
     fn non_empty_feature_snapshot_dto_has_provenance_no_biometrics() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![Feature {
                 feature_id: "FocusScore".into(),
@@ -1374,10 +1565,7 @@ mod tests {
         let s = signals[0].as_object().expect("signal obj");
         assert_eq!(s.get("type").and_then(|v| v.as_str()), Some("High_Stress"));
         assert_eq!(s.get("severity").and_then(|v| v.as_str()), Some("high"));
-        assert_eq!(
-            s.get("timestampStart").and_then(|v| v.as_i64()),
-            Some(900)
-        );
+        assert_eq!(s.get("timestampStart").and_then(|v| v.as_i64()), Some(900));
 
         let raw = serde_json::to_string(&dto).expect("string");
         assert!(!raw.contains("/Users"));
@@ -1387,9 +1575,11 @@ mod tests {
 
     #[test]
     fn feature_snapshot_dto_exposes_factors_when_present() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![Feature {
                 feature_id: "FocusScore".into(),
@@ -1408,7 +1598,10 @@ mod tests {
         let dto = snapshot_to_dto(&snap);
         let json = serde_json::to_value(&dto).expect("serialize");
         let f = json["features"][0].as_object().expect("feature");
-        let factors = f.get("factors").and_then(|v| v.as_array()).expect("factors");
+        let factors = f
+            .get("factors")
+            .and_then(|v| v.as_array())
+            .expect("factors");
         assert_eq!(factors.len(), 1);
         assert_eq!(factors[0]["id"].as_str(), Some("typing"));
         assert_eq!(factors[0]["label"].as_str(), Some("Typing activity"));
@@ -1418,12 +1611,16 @@ mod tests {
 
     #[test]
     fn snapshot_dto_collapses_to_latest_per_feature_id() {
-        let older =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
-        let newer =
-            TimeWindow::try_new(UnixTimestamp::from_secs(1100), UnixTimestamp::from_secs(2000))
-                .expect("window");
+        let older = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
+        let newer = TimeWindow::try_new(
+            UnixTimestamp::from_secs(1100),
+            UnixTimestamp::from_secs(2000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![
                 Feature {
@@ -1474,9 +1671,11 @@ mod tests {
 
     #[test]
     fn non_empty_feature_series_dto_has_wire_shape_no_biometrics() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let series = FeatureSeriesResult {
             range: "1h".into(),
             step_secs: 60,
@@ -1496,10 +1695,16 @@ mod tests {
         let obj = json.as_object().expect("object");
         assert_eq!(obj.get("range").and_then(|v| v.as_str()), Some("1h"));
         assert_eq!(obj.get("stepSecs").and_then(|v| v.as_i64()), Some(60));
-        let tw = obj.get("window").and_then(|v| v.as_object()).expect("window");
+        let tw = obj
+            .get("window")
+            .and_then(|v| v.as_object())
+            .expect("window");
         assert_eq!(tw.get("start").and_then(|v| v.as_i64()), Some(0));
         assert_eq!(tw.get("end").and_then(|v| v.as_i64()), Some(3600));
-        let features = obj.get("features").and_then(|v| v.as_array()).expect("features");
+        let features = obj
+            .get("features")
+            .and_then(|v| v.as_array())
+            .expect("features");
         assert_eq!(features.len(), 1);
         assert_eq!(
             features[0].get("featureId").and_then(|v| v.as_str()),
@@ -1531,16 +1736,18 @@ mod tests {
     #[test]
     fn unregistered_engine_insights_are_empty() {
         let engine = KnowledgeEngine::new();
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let snap = FeatureSnapshot {
             features: vec![Feature {
                 feature_id: "ContextSwitchRate".into(),
                 time_window: window,
                 value: FeatureValue::Scalar(2.5),
                 provenance: vec![Uuid::from_u128(2)],
-            confidence: bio_spec::Confidence::ONE,
+                confidence: bio_spec::Confidence::ONE,
                 factors: Vec::new(),
             }],
             signals: vec![Signal {
@@ -1559,9 +1766,11 @@ mod tests {
     fn registered_engine_emits_insights_with_evidence_refs() {
         let mut engine = KnowledgeEngine::new();
         register_insights_v1(&mut engine).expect("register");
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let signal_id = Uuid::from_u128(9);
         let snap = FeatureSnapshot {
             features: vec![
@@ -1570,16 +1779,16 @@ mod tests {
                     time_window: window.clone(),
                     value: FeatureValue::Scalar(2.5),
                     provenance: vec![Uuid::from_u128(2)],
-                confidence: bio_spec::Confidence::ONE,
-                factors: Vec::new(),
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
                 },
                 Feature {
                     feature_id: "StressIndex".into(),
                     time_window: window,
                     value: FeatureValue::Scalar(80.0),
                     provenance: vec![Uuid::from_u128(3)],
-                confidence: bio_spec::Confidence::ONE,
-                factors: Vec::new(),
+                    confidence: bio_spec::Confidence::ONE,
+                    factors: Vec::new(),
                 },
             ],
             signals: vec![Signal {
@@ -1637,9 +1846,11 @@ mod tests {
 
         let focus = |end: i64, value: f64| {
             let start = end.saturating_sub(900);
-            let window =
-                TimeWindow::try_new(UnixTimestamp::from_secs(start), UnixTimestamp::from_secs(end))
-                    .expect("window");
+            let window = TimeWindow::try_new(
+                UnixTimestamp::from_secs(start),
+                UnixTimestamp::from_secs(end),
+            )
+            .expect("window");
             Feature {
                 feature_id: "FocusScore".into(),
                 time_window: window,
@@ -1664,7 +1875,7 @@ mod tests {
             .iter()
             .find(|i| i.category == "pattern")
             .expect("pattern insight");
-        assert!(pattern_insight.description.contains("lower"));
+        assert!(pattern_insight.description.contains("ниже"));
 
         let dto = evaluate_recommendations_dto(&engine, &snap, &insights);
         assert_eq!(dto.recommendations.len(), 1);
@@ -1701,7 +1912,7 @@ mod tests {
 
     #[tokio::test]
     async fn assemble_report_disabled_has_no_interpretation() {
-        let dto = assemble_report_dto(&[], &[], &[], &LocalLlmConfig::disabled(), "")
+        let dto = assemble_report_dto(&[], &[], &[], &[], &LocalLlmConfig::disabled(), "")
             .await
             .expect("offline report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1710,8 +1921,8 @@ mod tests {
         assert!(dto.markdown.contains("BioFocus"));
         assert!(!dto.llm_prompt.is_empty());
         // Empty Evidence → calm minimal default-pack summary (not an error).
-        assert!(dto.markdown.contains("Nothing to summarize"));
-        assert!(dto.llm_prompt.contains("Do not invent"));
+        assert!(dto.markdown.contains("нечего обобщать"));
+        assert!(dto.llm_prompt.contains("Не выдумывай"));
 
         let json = serde_json::to_value(&dto).expect("serialize");
         let obj = json.as_object().expect("object");
@@ -1728,9 +1939,11 @@ mod tests {
 
     #[tokio::test]
     async fn assemble_report_with_features_keeps_deterministic_markdown() {
-        let window =
-            TimeWindow::try_new(UnixTimestamp::from_secs(100), UnixTimestamp::from_secs(1000))
-                .expect("window");
+        let window = TimeWindow::try_new(
+            UnixTimestamp::from_secs(100),
+            UnixTimestamp::from_secs(1000),
+        )
+        .expect("window");
         let features = vec![Feature {
             feature_id: "FocusScore".into(),
             time_window: window,
@@ -1739,7 +1952,7 @@ mod tests {
             confidence: bio_spec::Confidence::ONE,
             factors: Vec::new(),
         }];
-        let dto = assemble_report_dto(&features, &[], &[], &LocalLlmConfig::disabled(), "")
+        let dto = assemble_report_dto(&features, &[], &[], &[], &LocalLlmConfig::disabled(), "")
             .await
             .expect("report");
         assert_eq!(dto.llm_status, "disabled");
@@ -1751,6 +1964,24 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn assemble_report_includes_life_events_section() {
+        let ev = ReportLifeEvent {
+            id: Uuid::from_u128(77),
+            kind: "coffee".into(),
+            happened_at: 1_700_000_000,
+            logged_at: 1_700_000_900,
+        };
+        let dto = assemble_report_dto(&[], &[], &[], &[ev], &LocalLlmConfig::disabled(), "")
+            .await
+            .expect("report");
+        assert!(dto.markdown.contains("## События дня"));
+        assert!(
+            dto.markdown
+                .contains("| coffee | 1700000000 | 1700000900 |")
+        );
+    }
+
+    #[tokio::test]
     async fn assemble_report_includes_recommendations_section() {
         let rec = Recommendation {
             id: Uuid::from_u128(42),
@@ -1759,10 +1990,10 @@ mod tests {
             category: "pace".into(),
             evidence_list: vec![EvidenceRef::Feature("FocusScore".into())],
         };
-        let dto = assemble_report_dto(&[], &[], &[rec], &LocalLlmConfig::disabled(), "")
+        let dto = assemble_report_dto(&[], &[], &[rec], &[], &LocalLlmConfig::disabled(), "")
             .await
             .expect("report");
-        assert!(dto.markdown.contains("## Recommendations"));
+        assert!(dto.markdown.contains("## Подсказки"));
         assert!(dto.markdown.contains("A gentler pace may help"));
         assert!(dto.llm_prompt.contains("A gentler pace may help"));
         assert_eq!(dto.llm_status, "disabled");
@@ -1863,23 +2094,31 @@ mod tests {
         );
         let info = build_pairing_info("tok".into(), true, &advertise).expect("qr");
         assert_eq!(info.bind_mode, "lan");
-        assert_eq!(info.ingest_base_url, "http://192.168.1.40:8787");
+        assert_eq!(info.ingest_base_url, "https://192.168.1.40:8787");
         assert_eq!(
             info.base_url_hints,
-            vec!["http://192.168.1.40:8787".to_owned()]
+            vec!["https://192.168.1.40:8787".to_owned()]
         );
         assert!(info.from_env);
     }
 
     #[test]
     fn resolve_pairing_advertise_loopback_by_default() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        // Isolate from the developer's real ~/.biofocus (LAN opt-in file).
+        let home = tempfile::tempdir().expect("tempdir");
         // SAFETY: serialized by ENV_LOCK; restore LAN knobs before unlock.
         unsafe {
             std::env::remove_var(ingest::INGEST_LAN_ENV);
             std::env::remove_var(ingest::INGEST_BIND_HOST_ENV);
+            std::env::set_var("BIOFOCUS_HOME", home.path());
         }
         let advertise = resolve_pairing_advertise().expect("advertise");
+        unsafe {
+            std::env::remove_var("BIOFOCUS_HOME");
+        }
         assert_eq!(advertise.bind_mode, ingest::BindMode::Loopback);
         assert_eq!(
             advertise.base_url_hints,
@@ -1889,7 +2128,9 @@ mod tests {
 
     #[test]
     fn resolve_pairing_advertise_lan_flag_is_lan_mode() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         unsafe {
             std::env::set_var(ingest::INGEST_LAN_ENV, "1");
             std::env::remove_var(ingest::INGEST_BIND_HOST_ENV);
@@ -1898,13 +2139,49 @@ mod tests {
         assert_eq!(advertise.bind_mode, ingest::BindMode::Lan);
         // Primary hint may be empty if OS discovery fails in CI; mode must still be lan.
         for url in &advertise.base_url_hints {
-            assert!(url.starts_with("http://"), "hint={url}");
+            assert!(url.starts_with("https://"), "hint={url}");
             assert!(url.contains(":8787"), "hint={url}");
-            assert!(!url.contains("127.0.0.1"), "LAN hint should not be loopback");
+            assert!(
+                !url.contains("127.0.0.1"),
+                "LAN hint should not be loopback"
+            );
         }
         unsafe {
             std::env::remove_var(ingest::INGEST_LAN_ENV);
         }
+    }
+
+    #[test]
+    fn pairing_flags_restart_when_lan_enabled_but_running_loopback() {
+        let advertise =
+            ingest::AdvertiseInfo::for_bind(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT);
+        let runtime = PairingRuntime {
+            running_bind: Some(ingest::INGEST_BIND_HOST),
+            configured_bind: ingest::INGEST_LAN_BIND_HOST,
+            ingest_error: None,
+        };
+        let info =
+            build_pairing_info_with("tok".into(), false, &advertise, &runtime, None).expect("qr");
+        assert_eq!(info.bind_mode, "loopback");
+        assert!(info.lan_configured);
+        assert!(info.restart_required);
+        assert!(info.ingest_running);
+    }
+
+    #[test]
+    fn pairing_reports_ingest_failure_reason() {
+        let advertise =
+            ingest::AdvertiseInfo::for_bind(ingest::INGEST_BIND_HOST, ingest::DEFAULT_INGEST_PORT);
+        let runtime = PairingRuntime {
+            running_bind: None,
+            configured_bind: ingest::INGEST_BIND_HOST,
+            ingest_error: Some("Phone sync is off: port 8787 is already in use.".into()),
+        };
+        let info =
+            build_pairing_info_with("tok".into(), false, &advertise, &runtime, None).expect("qr");
+        assert!(!info.ingest_running);
+        assert!(!info.restart_required);
+        assert!(info.ingest_error.unwrap().contains("8787"));
     }
 
     #[test]
@@ -1920,7 +2197,9 @@ mod tests {
 
     #[test]
     fn resolve_pairing_info_from_env_override() {
-        let _guard = ENV_LOCK.lock().expect("env lock");
+        let _guard = ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // SAFETY: serialized by ENV_LOCK; restored before unlock.
         unsafe {
             std::env::set_var(ingest::INGEST_TOKEN_ENV, "ux-test-pairing-token");

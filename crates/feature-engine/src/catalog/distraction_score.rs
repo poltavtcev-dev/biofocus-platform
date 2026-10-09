@@ -48,7 +48,6 @@ const EXPECTED_INPUT_SLOTS: usize = 2;
 /// Maps one category switch onto the churn component scale.
 const CHURN_PER_SWITCH: f64 = 25.0;
 /// Maps CSR (switches/min) onto the optional CSR component scale.
-const CSR_SCORE_SCALE: f64 = 50.0;
 
 const FACTOR_MIX: &str = "browser_mix";
 const FACTOR_CHURN: &str = "category_churn";
@@ -143,7 +142,7 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
 
     let mut present_slots = 1usize;
     if let Some(csr) = upstream_csr(ctx, window) {
-        let csr_comp = (csr * CSR_SCORE_SCALE).clamp(0.0, 100.0);
+        let csr_comp = crate::catalog::switch_curve::switch_load(csr);
         weighted.push((FACTOR_CSR, LABEL_CSR, WEIGHT_CSR, csr_comp));
         present_slots += 1;
     }

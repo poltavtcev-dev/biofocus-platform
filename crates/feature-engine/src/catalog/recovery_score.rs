@@ -4,11 +4,11 @@
 //! # v1 formula (documented simplifications)
 //!
 //! - **Window / step:** 15 minutes / 1 minute (aligned with Focus / Stress).
-//! - **Inputs:** `hrv` (`rmssd_ms` or `sdnn_ms` required to emit — ADR-016); optional `heart_rate`
-//!   (`bpm`). Sleep Observations are **not** required for v1.
+//! - **Inputs:** `hrv` with RMSSD (`rmssd_ms`) required to emit; optional `heart_rate`
+//!   (`bpm`). SDNN does not use this map. Sleep Observations are **not** required for v1.
 //! - **HRV component:** linear map — **0** at RMSSD ≤ 15 ms, **100** at
-//!   RMSSD ≥ 70 ms (higher variability ⇒ higher short-term recovery proxy).
-//!   Inverse anchors of `StressIndex` RMSSD map.
+//!   RMSSD ≥ 70 ms (higher RMSSD ⇒ higher short-term recovery proxy).
+//!   Inverse anchors of `StressIndex` RMSSD map. Not applied to SDNN.
 //! - **HR component (optional):** vs early-snapshot baseline BPM —
 //!   `100 - clamp((mean_bpm - baseline) / 20 * 100, 0, 100)`. Elevated HR
 //!   vs baseline lowers the component; at/below baseline ⇒ 100.
@@ -142,11 +142,7 @@ fn score_window(
     if w_sum <= 0.0 {
         return None;
     }
-    let value = weighted
-        .iter()
-        .map(|(_, _, w, s)| w * s)
-        .sum::<f64>()
-        / w_sum;
+    let value = weighted.iter().map(|(_, _, w, s)| w * s).sum::<f64>() / w_sum;
 
     let factors: Vec<ExplanationFactor> = weighted
         .iter()
@@ -316,7 +312,10 @@ mod tests {
             panic!("scalar");
         };
         assert!(v >= 99.0, "expected high recovery, got {v}");
-        assert!((feat.confidence.get() - 0.5).abs() < 1e-12, "HRV-only coverage");
+        assert!(
+            (feat.confidence.get() - 0.5).abs() < 1e-12,
+            "HRV-only coverage"
+        );
         assert_eq!(feat.factors.len(), 1);
         assert_eq!(feat.factors[0].id, FACTOR_HRV);
         assert!((feat.factors[0].share - 1.0).abs() < 1e-12);
@@ -324,22 +323,26 @@ mod tests {
     }
 
     #[test]
-    fn sdnn_only_emits_recovery() {
+    fn sdnn_only_omits_recovery() {
         let batch = vec![Observation::try_new(
             Uuid::from_u128(9),
             UnixTimestamp::from_secs(1500),
             "test.provider",
             DATA_TYPE_HRV,
-            json!({ "sdnn_ms": 70.0 }),
+            json!({ "method": "sdnn", "sdnn_ms": 70.0 }),
             1.0,
         )
         .expect("obs")];
-        let feat = last_recovery(&batch);
-        let FeatureValue::Scalar(v) = feat.value else {
-            panic!("scalar");
-        };
-        assert!(v >= 99.0, "SDNN-only should map like high HRV, got {v}");
-        assert_eq!(feat.factors[0].id, FACTOR_HRV);
+        let mut engine = FeatureEngine::new();
+        engine.register(RecoveryScoreNode::new()).expect("reg");
+        let out = engine.run(&batch).expect("run");
+        assert!(
+            out.features.iter().all(|f| f.feature_id != FEATURE_ID),
+            "SDNN must not use the RMSSD recovery map"
+        );
+        assert!(out.features.iter().all(|f| {
+            !matches!(f.value, FeatureValue::Scalar(v) if v == 0.0 && f.feature_id == FEATURE_ID)
+        }));
     }
 
     #[test]
@@ -370,12 +373,12 @@ mod tests {
         assert_eq!(feat.factors.len(), 2);
         let share_sum: f64 = feat.factors.iter().map(|f| f.share).sum();
         assert!((share_sum - 1.0).abs() < 1e-12);
-        let hrv_f = feat.factors.iter().find(|f| f.id == FACTOR_HRV).expect("hrv");
-        let hr_f = feat
+        let hrv_f = feat
             .factors
             .iter()
-            .find(|f| f.id == FACTOR_HR)
-            .expect("hr");
+            .find(|f| f.id == FACTOR_HRV)
+            .expect("hrv");
+        let hr_f = feat.factors.iter().find(|f| f.id == FACTOR_HR).expect("hr");
         assert!((hrv_f.share - WEIGHT_HRV).abs() < 1e-12);
         assert!((hr_f.share - WEIGHT_HR).abs() < 1e-12);
         assert!(feat.provenance.contains(&Uuid::from_u128(2)));
@@ -433,9 +436,6 @@ mod tests {
             "RecoveryScore must be registered via register_catalog_v1"
         );
         // StressIndex also present from same HRV; RecoveryScore is independent.
-        assert!(out
-            .features
-            .iter()
-            .any(|f| f.feature_id == "StressIndex"));
+        assert!(out.features.iter().any(|f| f.feature_id == "StressIndex"));
     }
 }

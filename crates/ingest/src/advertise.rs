@@ -24,7 +24,7 @@ pub enum BindMode {
 pub struct AdvertiseInfo {
     /// Loopback vs LAN opt-in bind.
     pub bind_mode: BindMode,
-    /// Usable `http://<host>:<port>` URLs (no trailing slash). First is primary.
+    /// Usable base URLs (no trailing slash). `http` on loopback, `https` on LAN. First is primary.
     pub base_url_hints: Vec<String>,
 }
 
@@ -44,17 +44,17 @@ impl AdvertiseInfo {
         if bind_host.is_loopback() {
             return Self {
                 bind_mode: BindMode::Loopback,
-                base_url_hints: vec![http_base_url(INGEST_BIND_HOST, port)],
+                base_url_hints: vec![base_url_for(bind_host, INGEST_BIND_HOST, port)],
             };
         }
 
         let mut hints = Vec::new();
         if bind_host != INGEST_LAN_BIND_HOST && !bind_host.is_unspecified() {
-            hints.push(http_base_url(bind_host, port));
+            hints.push(base_url_for(bind_host, bind_host, port));
         } else {
             for ip in discover() {
                 if !ip.is_loopback() && !ip.is_unspecified() {
-                    let url = http_base_url(ip, port);
+                    let url = base_url_for(bind_host, ip, port);
                     if !hints.contains(&url) {
                         hints.push(url);
                     }
@@ -75,17 +75,92 @@ impl AdvertiseInfo {
     }
 }
 
-/// Formats `http://<ipv4>:<port>` (no trailing slash).
+/// Formats `http://<ipv4>:<port>` (no trailing slash). Loopback only.
 #[must_use]
 pub fn http_base_url(host: Ipv4Addr, port: u16) -> String {
     format!("http://{host}:{port}")
 }
 
-/// Best-effort primary LAN IPv4 via UDP connect trick (no packets sent).
+/// URL for a listener. Non-loopback binds use `https`.
+#[must_use]
+pub fn base_url_for(bind_host: Ipv4Addr, host: Ipv4Addr, port: u16) -> String {
+    let scheme = if bind_host.is_loopback() {
+        "http"
+    } else {
+        "https"
+    };
+    format!("{scheme}://{host}:{port}")
+}
+
+/// Best-effort LAN IPv4 discovery.
 ///
-/// Idle-safe: one socket bind/connect; no retry loop.
+/// 1. UDP connect trick toward 8.8.8.8 (no packets sent) — picks the outbound NIC.
+/// 2. If that fails (offline Wi-Fi, no default route, captive portal), list
+///    interface addresses via `ifconfig` and keep usable private/LAN IPv4s.
+///
+/// Runs on each call (no caching) so a UI "Reload" re-detects the address.
 fn discover_lan_ipv4s() -> Vec<Ipv4Addr> {
-    primary_lan_ipv4().into_iter().collect()
+    let mut out: Vec<Ipv4Addr> = primary_lan_ipv4().into_iter().collect();
+    for ip in interface_ipv4s() {
+        if !out.contains(&ip) {
+            out.push(ip);
+        }
+    }
+    out
+}
+
+/// Interface IPv4s from `ifconfig` (macOS / BSD; also present on many Linux boxes).
+/// Missing tool or failure → empty (soft-fail).
+fn interface_ipv4s() -> Vec<Ipv4Addr> {
+    let output = ["/sbin/ifconfig", "/usr/sbin/ifconfig", "ifconfig"]
+        .iter()
+        .find_map(|bin| std::process::Command::new(bin).output().ok())
+        .filter(|o| o.status.success());
+    match output {
+        Some(o) => parse_ifconfig_ipv4s(&String::from_utf8_lossy(&o.stdout)),
+        None => Vec::new(),
+    }
+}
+
+/// Parses `inet a.b.c.d` lines; keeps addresses a phone on the same network could
+/// reach. Private ranges first, then other non-link-local addresses.
+pub(crate) fn parse_ifconfig_ipv4s(text: &str) -> Vec<Ipv4Addr> {
+    let mut private = Vec::new();
+    let mut other = Vec::new();
+    for line in text.lines() {
+        let mut parts = line.split_whitespace();
+        if parts.next() != Some("inet") {
+            continue;
+        }
+        let Some(raw) = parts.next() else { continue };
+        // Linux `ifconfig` may print `addr:1.2.3.4`; `ip`-style may print `1.2.3.4/24`.
+        let raw = raw.trim_start_matches("addr:");
+        let raw = raw.split('/').next().unwrap_or(raw);
+        let Ok(ip) = raw.parse::<Ipv4Addr>() else {
+            continue;
+        };
+        if !is_usable_lan_ipv4(ip) {
+            continue;
+        }
+        let bucket = if ip.is_private() {
+            &mut private
+        } else {
+            &mut other
+        };
+        if !bucket.contains(&ip) {
+            bucket.push(ip);
+        }
+    }
+    private.extend(other);
+    private
+}
+
+fn is_usable_lan_ipv4(ip: Ipv4Addr) -> bool {
+    !ip.is_loopback()
+        && !ip.is_unspecified()
+        && !ip.is_link_local()
+        && !ip.is_broadcast()
+        && !ip.is_multicast()
 }
 
 fn primary_lan_ipv4() -> Option<Ipv4Addr> {
@@ -93,7 +168,7 @@ fn primary_lan_ipv4() -> Option<Ipv4Addr> {
     // Destination need not be reachable; connect selects the outbound interface.
     socket.connect((Ipv4Addr::new(8, 8, 8, 8), 80)).ok()?;
     match socket.local_addr().ok()?.ip() {
-        IpAddr::V4(ip) if !ip.is_loopback() && !ip.is_unspecified() => Some(ip),
+        IpAddr::V4(ip) if is_usable_lan_ipv4(ip) => Some(ip),
         _ => None,
     }
 }
@@ -123,7 +198,7 @@ mod tests {
         assert_eq!(info.bind_mode, BindMode::Lan);
         assert_eq!(
             info.base_url_hints,
-            vec!["http://192.168.1.40:8787".to_owned()]
+            vec!["https://192.168.1.40:8787".to_owned()]
         );
     }
 
@@ -134,7 +209,10 @@ mod tests {
             panic!("discovery must not run for concrete bind host")
         });
         assert_eq!(info.bind_mode, BindMode::Lan);
-        assert_eq!(info.base_url_hints, vec!["http://10.0.0.5:9000".to_owned()]);
+        assert_eq!(
+            info.base_url_hints,
+            vec!["https://10.0.0.5:9000".to_owned()]
+        );
     }
 
     #[test]
@@ -166,5 +244,34 @@ mod tests {
         assert!(!raw.contains("/Users"));
         assert!(!raw.contains("token"));
         assert!(!raw.contains("observation"));
+    }
+
+    #[test]
+    fn parse_ifconfig_macos_output_skips_loopback_and_link_local() {
+        let text = "lo0: flags=8049<UP,LOOPBACK>\n\tinet 127.0.0.1 netmask 0xff000000\n\
+en0: flags=8863<UP>\n\tinet 169.254.10.2 netmask 0xffff0000\n\
+\tinet 192.168.0.37 netmask 0xffffff00 broadcast 192.168.0.255\n\
+utun4: flags=8051<UP>\n\tinet 100.64.1.5 --> 100.64.1.5 netmask 0xffffffff\n";
+        let ips = super::parse_ifconfig_ipv4s(text);
+        assert_eq!(
+            ips,
+            vec![Ipv4Addr::new(192, 168, 0, 37), Ipv4Addr::new(100, 64, 1, 5)]
+        );
+    }
+
+    #[test]
+    fn parse_ifconfig_linux_styles() {
+        let text = "inet addr:10.0.0.4  Bcast:10.0.0.255\n    inet 172.16.3.9/24 brd x\n";
+        let ips = super::parse_ifconfig_ipv4s(text);
+        assert_eq!(
+            ips,
+            vec![Ipv4Addr::new(10, 0, 0, 4), Ipv4Addr::new(172, 16, 3, 9)]
+        );
+    }
+
+    #[test]
+    fn parse_ifconfig_empty_or_garbage_is_empty() {
+        assert!(super::parse_ifconfig_ipv4s("").is_empty());
+        assert!(super::parse_ifconfig_ipv4s("inet not-an-ip\ninet6 ::1").is_empty());
     }
 }

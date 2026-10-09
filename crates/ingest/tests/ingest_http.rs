@@ -7,8 +7,8 @@ use axum::http::{Request, StatusCode};
 use bio_spec::Observation;
 use http::header::AUTHORIZATION;
 use ingest::{
-    bind_host, bind_loopback, ingest_router, AdvertiseInfo, BindMode, IngestConfig, IngestResponse,
-    IngestState, QueuePressureBody, StatusResponse, INGEST_BIND_HOST, INGEST_LAN_BIND_HOST,
+    AdvertiseInfo, BindMode, INGEST_BIND_HOST, INGEST_LAN_BIND_HOST, IngestConfig, IngestResponse,
+    IngestState, QueuePressureBody, StatusResponse, bind_host, bind_loopback, ingest_router,
 };
 use runtime::observation_channel;
 use serde_json::json;
@@ -55,9 +55,7 @@ async fn bind_lan_opt_in_accepts_on_unspecified() {
 #[tokio::test]
 async fn live_server_on_lan_bind_still_requires_bearer() {
     let (tx, mut rx) = observation_channel(8).expect("channel");
-    let (listener, addr) = bind_host(INGEST_LAN_BIND_HOST, 0)
-        .await
-        .expect("bind LAN");
+    let (listener, addr) = bind_host(INGEST_LAN_BIND_HOST, 0).await.expect("bind LAN");
 
     let state = IngestState::new(TOKEN, tx);
     let app = ingest_router(state);
@@ -255,7 +253,64 @@ async fn post_ingest_rejects_malformed_life_event() {
         .expect("body");
     let parsed: serde_json::Value = serde_json::from_slice(&bytes).expect("json");
     assert_eq!(parsed["error"], json!("invalid_life_event"));
-    assert!(rx.try_recv().is_err(), "malformed life event must not enqueue");
+    assert!(
+        rx.try_recv().is_err(),
+        "malformed life event must not enqueue"
+    );
+}
+
+#[tokio::test]
+async fn post_ingest_rejects_life_event_retraction_from_network() {
+    let (state, mut rx) = test_state(8);
+    let app = ingest_router(state);
+    let body = json!([{
+        "id": "0190ecb5-7c2a-7123-8901-23456789abce",
+        "timestamp": 1721990400,
+        "provider_id": "com.biofocus.applehealth",
+        "data_type": "life_event_retraction",
+        "payload": { "target_id": "0190ecb5-7c2a-7123-8901-23456789abcd" },
+        "confidence": 1.0
+    }]);
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(body.to_string()))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    let bytes = axum::body::to_bytes(response.into_body(), 1024)
+        .await
+        .expect("body");
+    let parsed: serde_json::Value = serde_json::from_slice(&bytes).expect("json");
+    assert_eq!(parsed["error"], json!("forbidden_data_type"));
+    assert!(rx.try_recv().is_err());
+}
+
+#[tokio::test]
+async fn post_ingest_rejects_batch_over_1000() {
+    let (state, _rx) = test_state(8);
+    let app = ingest_router(state);
+    let one = sample_observation_json();
+    let batch = vec![one; 1001];
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&batch).expect("json")))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
 }
 
 #[tokio::test]
@@ -435,13 +490,28 @@ async fn live_server_accepts_over_loopback_http() {
 }
 
 #[test]
-fn default_config_documents_port_and_test_token() {
-    let cfg = IngestConfig::default();
+fn with_token_config_documents_port_and_loopback() {
+    let cfg = IngestConfig::with_token("local-test-token");
     assert_eq!(cfg.port, ingest::DEFAULT_INGEST_PORT);
-    assert_eq!(cfg.token, ingest::DEFAULT_TEST_TOKEN);
     assert_eq!(cfg.bind_host, INGEST_BIND_HOST);
     assert!(!cfg.is_lan_bind());
-    assert_eq!(ingest::DEFAULT_SKELETON_TOKEN, ingest::DEFAULT_TEST_TOKEN);
+}
+
+#[tokio::test]
+async fn lan_bind_refuses_dev_token_before_listening() {
+    let (tx, _rx) = runtime::observation_channel(4).expect("channel");
+    let mut cfg = IngestConfig::with_token("biofocus-dev-ingest-token");
+    cfg.port = 0;
+    cfg.bind_host = ingest::INGEST_LAN_BIND_HOST;
+    let state = ingest::IngestState::new(cfg.token.clone(), tx);
+    let (_shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+    let err = ingest::serve_with_shutdown(cfg, state, shutdown_rx)
+        .await
+        .expect_err("LAN + dev token must refuse to serve");
+    assert!(
+        matches!(err, ingest::IngestError::InsecureToken { .. }),
+        "{err:?}"
+    );
 }
 
 #[tokio::test]
@@ -634,7 +704,7 @@ async fn get_status_lan_advertise_shape() {
     assert_eq!(parsed.bind_mode, BindMode::Lan);
     assert_eq!(
         parsed.base_url_hints,
-        vec!["http://10.0.0.8:8787".to_owned()]
+        vec!["https://10.0.0.8:8787".to_owned()]
     );
     assert_eq!(parsed.db_status, "ok");
     let value: serde_json::Value = serde_json::from_slice(&bytes).expect("value");
@@ -642,4 +712,48 @@ async fn get_status_lan_advertise_shape() {
     assert!(!obj.contains_key("observations"));
     assert!(!obj.contains_key("token"));
     assert!(!obj.contains_key("path"));
+}
+
+#[tokio::test]
+async fn companion_status_stores_progress_and_rejects_health_fields() {
+    let (state, _rx) = test_state(4);
+    let app = ingest_router(state.clone());
+
+    let ok = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/companion/status")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"phase":"recent","types_ok":2,"types_empty":1,"types_total":18,"pending":4}"#,
+                ))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(ok.status(), StatusCode::OK);
+    let stored = state.companion_status.snapshot().expect("stored");
+    assert_eq!(stored.phase, "recent");
+    assert_eq!(stored.types_ok, 2);
+    assert_eq!(stored.pending, 4);
+    assert!(stored.received_at > 0);
+
+    let leaked = ingest_router(state)
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/companion/status")
+                .header(AUTHORIZATION, format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"phase":"recent","types_ok":1,"types_empty":0,"types_total":1,"pending":0,"bpm":72}"#,
+                ))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(leaked.status(), StatusCode::BAD_REQUEST);
 }

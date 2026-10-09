@@ -8,10 +8,10 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use bio_spec::{
-    Observation, UnixTimestamp, DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_OXYGEN_SATURATION,
-    DATA_TYPE_SLEEP_INTERVAL, DATA_TYPE_STEP_COUNT,
+    DATA_TYPE_ACTIVE_ENERGY, DATA_TYPE_OXYGEN_SATURATION, DATA_TYPE_SLEEP_INTERVAL,
+    DATA_TYPE_STEP_COUNT, Observation, UnixTimestamp,
 };
-use ingest::{IngestResponse, StatusResponse, DEFAULT_INGEST_PORT};
+use ingest::{DEFAULT_INGEST_PORT, IngestResponse, StatusResponse};
 use serde_json::json;
 use thiserror::Error;
 use uuid::Uuid;
@@ -64,6 +64,18 @@ pub enum CompanionError {
     /// Response body was not the expected queued JSON.
     #[error("unexpected ingest response body: {0}")]
     BadResponse(String),
+
+    /// Plain HTTP is only allowed to loopback. LAN must be https.
+    #[error("plain HTTP is only allowed for 127.0.0.1")]
+    PlainHttpOffLoopback,
+
+    /// https ingest needs the certificate fingerprint from the pairing QR.
+    #[error("https ingest requires a certificate fingerprint")]
+    PinRequired,
+
+    /// Fingerprint was not 64 hex characters, or rustls rejected the pin config.
+    #[error("could not pin the ingest certificate")]
+    PinRejected,
 }
 
 /// Result alias for companion operations.
@@ -187,22 +199,47 @@ pub struct CompanionClient {
 impl CompanionClient {
     /// Creates a client. `base_url` should be like `http://127.0.0.1:8787` (no trailing slash).
     pub fn new(base_url: impl Into<String>, token: impl Into<String>) -> CompanionResult<Self> {
-        Self::with_timeout(base_url, token, INGEST_REQUEST_TIMEOUT)
+        Self::with_timeout(base_url, token, INGEST_REQUEST_TIMEOUT, None)
     }
 
     /// Client tuned for status preflight (shorter timeout).
-    pub fn for_status(base_url: impl Into<String>, token: impl Into<String>) -> CompanionResult<Self> {
-        Self::with_timeout(base_url, token, STATUS_REQUEST_TIMEOUT)
+    pub fn for_status(
+        base_url: impl Into<String>,
+        token: impl Into<String>,
+    ) -> CompanionResult<Self> {
+        Self::with_timeout(base_url, token, STATUS_REQUEST_TIMEOUT, None)
+    }
+
+    /// Like [`Self::new`], plus the SHA-256 certificate fingerprint for https.
+    pub fn with_pin(
+        base_url: impl Into<String>,
+        token: impl Into<String>,
+        pin: Option<&str>,
+    ) -> CompanionResult<Self> {
+        Self::with_timeout(base_url, token, INGEST_REQUEST_TIMEOUT, pin)
     }
 
     fn with_timeout(
         base_url: impl Into<String>,
         token: impl Into<String>,
         timeout: Duration,
+        pin: Option<&str>,
     ) -> CompanionResult<Self> {
-        let http = reqwest::Client::builder().timeout(timeout).build()?;
+        let base_url = base_url.into().trim_end_matches('/').to_string();
+        enforce_ingest_transport(&base_url, pin)?;
+        let mut builder = reqwest::Client::builder().timeout(timeout);
+        if base_url.starts_with("https://") {
+            let pin = pin
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .ok_or(CompanionError::PinRequired)?;
+            let config =
+                ingest::pinned_client_config(pin).map_err(|_| CompanionError::PinRejected)?;
+            builder = builder.use_preconfigured_tls(config);
+        }
+        let http = builder.build()?;
         Ok(Self {
-            base_url: base_url.into().trim_end_matches('/').to_string(),
+            base_url,
             token: token.into(),
             http,
         })
@@ -275,7 +312,47 @@ impl CompanionClient {
     }
 }
 
+/// Loopback may use plain HTTP. Any other host must be https with a fingerprint.
+pub fn enforce_ingest_transport(base_url: &str, pin: Option<&str>) -> CompanionResult<()> {
+    if let Some(rest) = base_url.strip_prefix("http://") {
+        let host = rest.split([':', '/']).next().unwrap_or("");
+        if host == "127.0.0.1" || host == "localhost" {
+            return Ok(());
+        }
+        return Err(CompanionError::PlainHttpOffLoopback);
+    }
+    if base_url.starts_with("https://") {
+        let present = pin.map(str::trim).is_some_and(|value| !value.is_empty());
+        if present {
+            return Ok(());
+        }
+        return Err(CompanionError::PinRequired);
+    }
+    Err(CompanionError::BadResponse(
+        "base URL must start with http:// or https://".into(),
+    ))
+}
+
 /// Default ingest port constant (re-export for CLI/docs).
 pub fn default_ingest_port() -> u16 {
     DEFAULT_INGEST_PORT
+}
+
+#[cfg(test)]
+mod transport_tests {
+    use super::*;
+
+    #[test]
+    fn plain_http_off_loopback_is_rejected_and_https_needs_a_pin() {
+        assert!(matches!(
+            enforce_ingest_transport("http://192.168.1.10:8787", None),
+            Err(CompanionError::PlainHttpOffLoopback)
+        ));
+        assert!(enforce_ingest_transport("http://127.0.0.1:8787", None).is_ok());
+        assert!(matches!(
+            enforce_ingest_transport("https://10.0.0.8:8787", None),
+            Err(CompanionError::PinRequired)
+        ));
+        assert!(enforce_ingest_transport("https://10.0.0.8:8787", Some("ab")).is_ok());
+    }
 }

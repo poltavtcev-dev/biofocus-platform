@@ -61,12 +61,12 @@ impl InsightRule for CognitiveLoadElevatedRule {
 
         Ok(vec![Insight {
             id: Uuid::now_v7(),
-            title: "Combined demand looked elevated".into(),
-            description: "Combined demand looked elevated in this window.".into(),
+            title: "Общая нагрузка была выше обычного".into(),
+            description: "Общая нагрузка в этом окне была выше обычного.".into(),
             category: DEMAND_CATEGORY.into(),
             evidence_list: evidence,
             action_recommendation: Some(
-                "If it fits, easing parallel demands for a stretch may help.".into(),
+                "Если это уместно, на время можно убавить параллельные дела.".into(),
             ),
         }])
     }
@@ -142,8 +142,8 @@ mod tests {
             out[0].action_recommendation.as_deref().unwrap_or("")
         )
         .to_lowercase();
-        assert!(blob.contains("combined demand"));
-        assert!(blob.contains("elevated"));
+        assert!(blob.contains("общая нагрузка"));
+        assert!(blob.contains("выше обычного"));
         for banned in [
             "overload",
             "burnout",

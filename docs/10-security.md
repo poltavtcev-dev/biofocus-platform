@@ -15,6 +15,8 @@
 
 **ADR-005:** opt-in LAN for companion dogfood; default remains loopback. Restart Desktop after changing knobs. Bind mode + base URL hints are exposed via `GET /v1/status` and IPC `get_pairing_token` (no Observation / DB paths / tokens in status). Companion UI shows copyable Base URL + token/QR (P5-E2-T1). No anonymous ingest on LAN — Bearer still required.
 
+**ADR-031 (wearables P7):** loopback stays plain HTTP. A non-loopback bind serves TLS with a self-signed certificate stored as `ingest_cert.pem` / `ingest_key.pem` under `~/.biofocus/` (key mode `0600`). The fingerprint is SHA-256 of the certificate DER. The pairing QR is four lines (`biofocus:1`, URL, token, fingerprint). The companion pins that fingerprint and rejects a mismatch. `rotate_pairing_token` writes a new bearer and the running server drops the old one. The certificate is not rotated with the token.
+
 ## 2. Pairing token (local secret)
 
 | Item | Value |

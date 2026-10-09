@@ -6,6 +6,10 @@ export type FeatureDto = {
   timeWindow: { start: number; end: number };
   value: number | Record<string, unknown>;
   provenance: string[];
+  /** Data-quality confidence 0–1 (not clinical). */
+  confidence?: number;
+  /** "Why this value" factors; shares sum to 1. */
+  factors?: { id: string; label: string; share: number }[];
 };
 
 /** Wire Signal from `get_feature_snapshot`. */
@@ -41,16 +45,16 @@ const COPY: Record<
   { label: string; detail: string }
 > = {
   empty: {
-    label: "No features yet",
-    detail: "Waiting for Feature evidence from Core.",
+    label: "Метрик пока нет",
+    detail: "Данных ещё нет. Оставьте BioFocus запущенным и работайте как обычно — метрики появятся через несколько минут.",
   },
   ready: {
-    label: "Features available",
-    detail: "Latest snapshot from Core.",
+    label: "Метрики есть",
+    detail: "Последние значения за 15 минут.",
   },
   error: {
-    label: "Could not load",
-    detail: "Could not reach the Feature snapshot.",
+    label: "Не удалось загрузить",
+    detail: "Не удалось получить метрики из локального анализа. Попробуйте ещё раз; если повторится, перезапустите BioFocus.",
   },
 };
 
@@ -72,8 +76,8 @@ export function snapshotView(
 export function loadingView(): SnapshotView {
   return {
     kind: "loading",
-    label: "Loading",
-    detail: "Fetching Feature snapshot…",
+    label: "Загрузка",
+    detail: "Загружаем снимок метрик…",
     source: "get_feature_snapshot",
   };
 }
@@ -120,6 +124,8 @@ export function mockSnapshotFromLocation(
           featureId: "StressIndex",
           timeWindow: tw,
           value: stress[i],
+          // QA: one thin metric so the "rough" marking is visible in mocks.
+          confidence: 0.35,
           provenance: ["00000000-0000-0000-0000-000000000002"],
         },
         {
@@ -282,6 +288,69 @@ export async function fetchFeatureSnapshot(): Promise<SnapshotView> {
 export function formatFeatureValue(value: number | Record<string, unknown>): string {
   if (typeof value === "number") {
     return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  }
+  return formatVitalObject(value);
+}
+
+function finite(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function signed(n: number): string {
+  const body = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  return n > 0 ? `+${body}` : body;
+}
+
+function formatHours(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  if (h <= 0) return `${m}m`;
+  return `${h}h ${m}m`;
+}
+
+function formatVitalObject(value: Record<string, unknown>): string {
+  const bpm = finite(value.bpm);
+  if (bpm != null && value.method == null && value.mean_percent == null) {
+    const delta = finite(value.delta_bpm);
+    const text = `${Math.round(bpm)} bpm`;
+    return delta == null ? text : `${text} (${signed(delta)} vs usual)`;
+  }
+  const ms = finite(value.ms);
+  if ((value.method === "sdnn" || value.method === "rmssd") && ms != null) {
+    const label = value.method === "sdnn" ? "SDNN" : "RMSSD";
+    const delta = finite(value.delta_ms);
+    const text = `${label} ${Math.round(ms)} ms`;
+    return delta == null ? text : `${text} (${signed(delta)} vs usual)`;
+  }
+  const total = finite(value.total_min);
+  if (value.stages === false && total != null) {
+    return `${formatHours(total)} · total sleep only`;
+  }
+  if (value.stages === true && total != null) {
+    const parts = [formatHours(total)];
+    const deep = finite(value.deep_share);
+    const rem = finite(value.rem_share);
+    const core = finite(value.core_share);
+    if (deep != null) parts.push(`deep ${Math.round(deep * 100)}%`);
+    if (rem != null) parts.push(`REM ${Math.round(rem * 100)}%`);
+    if (core != null) parts.push(`core ${Math.round(core * 100)}%`);
+    return parts.join(" · ");
+  }
+  const meanPct = finite(value.mean_percent);
+  const minPct = finite(value.min_percent);
+  if (meanPct != null && minPct != null) {
+    return `mean ${Math.round(meanPct)}% · min ${Math.round(minPct)}%`;
+  }
+  const meanBreath = finite(value.mean_per_min);
+  const minBreath = finite(value.min_per_min);
+  if (meanBreath != null && minBreath != null) {
+    return `mean ${meanBreath.toFixed(1)} · min ${minBreath.toFixed(1)}`;
+  }
+  const celsius = finite(value.celsius);
+  if (celsius != null) {
+    const delta = finite(value.delta_celsius);
+    const text = `${signed(celsius)} °C`;
+    return delta == null ? text : `${text} (${signed(delta)} vs usual)`;
   }
   try {
     return JSON.stringify(value);

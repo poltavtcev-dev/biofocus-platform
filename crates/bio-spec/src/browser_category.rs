@@ -110,7 +110,10 @@ mod tests {
             "category": "social"
         }))
         .expect_err("not in v1 set");
-        assert!(matches!(err, SpecError::InvalidBrowserCategoryPayload { .. }));
+        assert!(matches!(
+            err,
+            SpecError::InvalidBrowserCategoryPayload { .. }
+        ));
     }
 
     #[test]
@@ -120,6 +123,9 @@ mod tests {
             "browser_bundle_id": 1
         }))
         .expect_err("bundle type");
-        assert!(matches!(err, SpecError::InvalidBrowserCategoryPayload { .. }));
+        assert!(matches!(
+            err,
+            SpecError::InvalidBrowserCategoryPayload { .. }
+        ));
     }
 }

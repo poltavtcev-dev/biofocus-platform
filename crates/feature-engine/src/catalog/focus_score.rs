@@ -4,11 +4,14 @@
 //!
 //! - **Window / step:** 15 minutes / 1 minute.
 //! - **Inputs (catalog → v1 mapping):**
-//!   - `keystrokes.rate_per_min` → typing score (`mean_rate / 200 * 100`, clamped 0–100).
+//!   - `keystrokes.rate_per_min` → typing score `50 + 50 × min(rate / 80, 1)`.
+//!     Low typing is **neutral (50)**, not 0 — reading/thinking is not "unfocused".
+//!     (v1 used `rate / 200 × 100`, which pushed quiet focus toward 0.)
 //!   - App category → **not** a taxonomy yet; use upstream [`super::ContextSwitchRateNode`]
-//!     stability: `100 - rate * 50` (clamped). Lower switch rate ⇒ higher stability.
-//!   - `hrv` → comfort score from mean `rmssd_ms` else `sdnn_ms` (peak 100 at 45 ms, falloff to 0 at 0 / 120 ms; ADR-016).
-//! - **Weights:** typing 0.40, stability 0.35, HRV 0.25 — **renormalized** over
+//!     stability: `100 − switch_load(rate)` (smooth curve, `switch_curve.rs`;
+//!     v1 `100 − rate × 50` hit 0 at 2 switches/min).
+//!   - `hrv` → comfort score from mean RMSSD only (peak 100 at 45 ms, falloff to 0 at 0 / 120 ms). SDNN does not fill this slot.
+//! - **Weights:** typing 0.25, stability 0.50, HRV 0.25 — **renormalized** over
 //!   components that have data in the window.
 //! - **Provenance:** Observation IDs of `keystrokes`, `hrv`, and `context_window`
 //!   inside the window (union).
@@ -27,9 +30,7 @@ use crate::catalog::context_switch_rate;
 use crate::catalog::window::{
     in_window, sliding_window_ends_for, snapshot_time_span, window_ending_at,
 };
-use crate::{
-    ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput,
-};
+use crate::{ComputeContext, FeatureEngineResult, FeatureNode, NodeId, NodeOutput};
 
 /// Stable Feature / node id (`docs/06-feature-catalog.md`).
 pub const FEATURE_ID: &str = "FocusScore";
@@ -38,13 +39,16 @@ const DATA_TYPE_KEYSTROKES: &str = "keystrokes";
 const DATA_TYPE_HRV: &str = "hrv";
 const DATA_TYPE_CONTEXT_WINDOW: &str = "context_window";
 
-const WEIGHT_TYPING: f64 = 0.40;
-const WEIGHT_STABILITY: f64 = 0.35;
+const WEIGHT_TYPING: f64 = 0.25;
+const WEIGHT_STABILITY: f64 = 0.50;
 const WEIGHT_HRV: f64 = 0.25;
 /// Catalog input families for ADR-007 coverage (typing / stability / HRV).
 const EXPECTED_INPUT_SLOTS: usize = 3;
-/// Reference typing rate (keys/min) that maps to typing score 100.
-const TYPING_RATE_REF: f64 = 200.0;
+/// Typing rate (keys/min) at which the typing component reaches 100.
+const TYPING_RATE_REF: f64 = 80.0;
+/// Floor for the typing component: low typing (reading, thinking, reviewing)
+/// is treated as neutral, not as "no focus".
+const TYPING_NEUTRAL_FLOOR: f64 = 50.0;
 
 const FACTOR_TYPING: &str = "typing";
 const FACTOR_STABILITY: &str = "stability";
@@ -129,13 +133,13 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
     let mut present_slots = 0usize;
 
     if let Some(mean_rate) = mean_keystroke_rate(&keystrokes) {
-        let typing = (mean_rate / TYPING_RATE_REF * 100.0).clamp(0.0, 100.0);
+        let typing = typing_score(mean_rate);
         weighted.push((FACTOR_TYPING, LABEL_TYPING, WEIGHT_TYPING, typing));
         present_slots += 1;
     }
 
     if let Some(csr) = upstream_csr(ctx, window) {
-        let stability = (100.0 - csr * 50.0).clamp(0.0, 100.0);
+        let stability = crate::catalog::switch_curve::switch_stability(csr);
         weighted.push((
             FACTOR_STABILITY,
             LABEL_STABILITY,
@@ -145,22 +149,12 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
         present_slots += 1;
     } else if !context.is_empty() {
         // CSR node skipped empty steps; treat present context with 0 switches as full stability.
-        weighted.push((
-            FACTOR_STABILITY,
-            LABEL_STABILITY,
-            WEIGHT_STABILITY,
-            100.0,
-        ));
+        weighted.push((FACTOR_STABILITY, LABEL_STABILITY, WEIGHT_STABILITY, 100.0));
         present_slots += 1;
     }
 
     if let Some(hrv_ms) = super::hrv::mean_hrv_ms(&hrv) {
-        weighted.push((
-            FACTOR_HRV,
-            LABEL_HRV,
-            WEIGHT_HRV,
-            hrv_comfort_score(hrv_ms),
-        ));
+        weighted.push((FACTOR_HRV, LABEL_HRV, WEIGHT_HRV, hrv_comfort_score(hrv_ms)));
         present_slots += 1;
     }
 
@@ -172,11 +166,7 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
     if w_sum <= 0.0 {
         return None;
     }
-    let value = weighted
-        .iter()
-        .map(|(_, _, w, s)| w * s)
-        .sum::<f64>()
-        / w_sum;
+    let value = weighted.iter().map(|(_, _, w, s)| w * s).sum::<f64>() / w_sum;
 
     let factors: Vec<ExplanationFactor> = weighted
         .iter()
@@ -189,11 +179,7 @@ fn score_window(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<Feature
 
     let mut provenance = Vec::new();
     let mut evidence: Vec<&Observation> = Vec::new();
-    for obs in keystrokes
-        .iter()
-        .chain(hrv.iter())
-        .chain(context.iter())
-    {
+    for obs in keystrokes.iter().chain(hrv.iter()).chain(context.iter()) {
         provenance.push(obs.id);
         evidence.push(*obs);
     }
@@ -214,9 +200,7 @@ fn upstream_csr(ctx: &ComputeContext<'_>, window: &TimeWindow) -> Option<f64> {
     ctx.features()
         .iter()
         .rev()
-        .find(|f| {
-            f.feature_id == context_switch_rate::FEATURE_ID && f.time_window == *window
-        })
+        .find(|f| f.feature_id == context_switch_rate::FEATURE_ID && f.time_window == *window)
         .and_then(|f| match f.value {
             FeatureValue::Scalar(v) => Some(v),
             _ => None,
@@ -244,6 +228,15 @@ fn mean_keystroke_rate(obs: &[&Observation]) -> Option<f64> {
     }
 }
 
+/// Typing component: neutral floor for quiet work, up to 100 for steady typing.
+pub(crate) fn typing_score(rate_per_min: f64) -> f64 {
+    if !rate_per_min.is_finite() || rate_per_min <= 0.0 {
+        return TYPING_NEUTRAL_FLOOR;
+    }
+    TYPING_NEUTRAL_FLOOR
+        + (100.0 - TYPING_NEUTRAL_FLOOR) * (rate_per_min / TYPING_RATE_REF).min(1.0)
+}
+
 /// Peak comfort at 45 ms HRV proxy (RMSSD or SDNN); linear falloff to 0 at 0 ms and 120 ms.
 fn hrv_comfort_score(rmssd_ms: f64) -> f64 {
     if !rmssd_ms.is_finite() || rmssd_ms <= 0.0 {
@@ -266,12 +259,7 @@ mod tests {
     use crate::catalog::register_focus_v1;
     use crate::FeatureEngine;
 
-    fn obs(
-        id: u128,
-        ts: i64,
-        data_type: &str,
-        payload: serde_json::Value,
-    ) -> Observation {
+    fn obs(id: u128, ts: i64, data_type: &str, payload: serde_json::Value) -> Observation {
         Observation::try_new(
             Uuid::from_u128(id),
             UnixTimestamp::from_secs(ts),
@@ -305,12 +293,7 @@ mod tests {
                 DATA_TYPE_KEYSTROKES,
                 json!({ "count": 180, "window_secs": 60, "rate_per_min": 180.0 }),
             ),
-            obs(
-                4,
-                1500,
-                DATA_TYPE_HRV,
-                json!({ "rmssd_ms": 45.0 }),
-            ),
+            obs(4, 1500, DATA_TYPE_HRV, json!({ "rmssd_ms": 45.0 })),
             obs(
                 5,
                 1800,
@@ -345,15 +328,15 @@ mod tests {
         let share_sum: f64 = last.factors.iter().map(|f| f.share).sum();
         assert!((share_sum - 1.0).abs() < 1e-12);
         assert_eq!(last.factors[0].id, "typing");
-        assert!((last.factors[0].share - 0.40).abs() < 1e-12);
+        assert!((last.factors[0].share - WEIGHT_TYPING).abs() < 1e-12);
         assert_eq!(last.factors[1].id, "stability");
-        assert!((last.factors[1].share - 0.35).abs() < 1e-12);
+        assert!((last.factors[1].share - WEIGHT_STABILITY).abs() < 1e-12);
         assert_eq!(last.factors[2].id, "hrv");
         assert!((last.factors[2].share - 0.25).abs() < 1e-12);
     }
 
     #[test]
-    fn sdnn_only_fills_hrv_focus_slot() {
+    fn sdnn_only_does_not_fill_hrv_focus_slot() {
         let batch = vec![
             obs(
                 1,
@@ -373,7 +356,12 @@ mod tests {
                 DATA_TYPE_KEYSTROKES,
                 json!({ "count": 180, "window_secs": 60, "rate_per_min": 180.0 }),
             ),
-            obs(4, 1500, DATA_TYPE_HRV, json!({ "sdnn_ms": 45.0 })),
+            obs(
+                4,
+                1500,
+                DATA_TYPE_HRV,
+                json!({ "method": "sdnn", "sdnn_ms": 45.0 }),
+            ),
         ];
         let mut engine = FeatureEngine::new();
         register_focus_v1(&mut engine).expect("register");
@@ -386,8 +374,8 @@ mod tests {
             .find(|f| f.feature_id == FEATURE_ID)
             .expect("FocusScore");
         assert!(
-            last.factors.iter().any(|f| f.id == "hrv"),
-            "SDNN-only HRV should fill hrv factor"
+            last.factors.iter().all(|f| f.id != "hrv"),
+            "SDNN must not fill the RMSSD focus slot"
         );
     }
 
@@ -426,11 +414,17 @@ mod tests {
         assert_eq!(last.factors.len(), 2);
         let share_sum: f64 = last.factors.iter().map(|f| f.share).sum();
         assert!((share_sum - 1.0).abs() < 1e-12);
-        // typing 0.40 + stability 0.35 = 0.75 → shares 0.40/0.75 and 0.35/0.75
+        // typing + stability only → shares renormalize over the two present weights
         assert_eq!(last.factors[0].id, "typing");
-        assert!((last.factors[0].share - 0.40 / 0.75).abs() < 1e-12);
+        assert!(
+            (last.factors[0].share - WEIGHT_TYPING / (WEIGHT_TYPING + WEIGHT_STABILITY)).abs()
+                < 1e-12
+        );
         assert_eq!(last.factors[1].id, "stability");
-        assert!((last.factors[1].share - 0.35 / 0.75).abs() < 1e-12);
+        assert!(
+            (last.factors[1].share - WEIGHT_STABILITY / (WEIGHT_TYPING + WEIGHT_STABILITY)).abs()
+                < 1e-12
+        );
         assert!(!last.factors.iter().any(|f| f.id == "hrv"));
     }
 
@@ -537,17 +531,20 @@ mod tests {
     #[test]
     fn missing_context_and_hrv_lowers_confidence_further() {
         // Typing only → 1/3 coverage.
-        let typing_only = vec![obs(
-            1,
-            1200,
-            DATA_TYPE_KEYSTROKES,
-            json!({ "count": 100, "window_secs": 60, "rate_per_min": 100.0 }),
-        ), obs(
-            2,
-            1800,
-            DATA_TYPE_KEYSTROKES,
-            json!({ "count": 100, "window_secs": 60, "rate_per_min": 100.0 }),
-        )];
+        let typing_only = vec![
+            obs(
+                1,
+                1200,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 100, "window_secs": 60, "rate_per_min": 100.0 }),
+            ),
+            obs(
+                2,
+                1800,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 100, "window_secs": 60, "rate_per_min": 100.0 }),
+            ),
+        ];
 
         let mut engine = FeatureEngine::new();
         register_focus_v1(&mut engine).expect("reg");
@@ -657,5 +654,83 @@ mod tests {
                 _ => None,
             })
             .expect("FocusScore")
+    }
+
+    /// 31 context observations alternating apps across [900, 1800] → 30 switches
+    /// in 15 min = 2.0 switches/min (the old saturation point).
+    fn busy_switching(id_base: u128) -> Vec<Observation> {
+        (0..=30i64)
+            .map(|i| {
+                let bundle = if i % 2 == 0 { "a" } else { "b" };
+                obs(
+                    id_base + i as u128,
+                    900 + i * 30,
+                    DATA_TYPE_CONTEXT_WINDOW,
+                    json!({ "bundle_id": bundle, "app_name": bundle }),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn saturation_two_switches_per_min_without_typing_is_not_zero() {
+        // Old behaviour: stability = 100 - 2*50 = 0, sole input → FocusScore 0.
+        let mut eng = FeatureEngine::new();
+        register_focus_v1(&mut eng).expect("reg");
+        let score = last_focus(&eng.run(&busy_switching(100)).expect("run"));
+        assert!(score > 15.0 && score < 40.0, "got {score}");
+    }
+
+    #[test]
+    fn saturation_more_switching_still_lowers_score() {
+        let mut calm = busy_switching(100);
+        calm.truncate(8); // ~7 switches → lower rate
+        let mut e1 = FeatureEngine::new();
+        register_focus_v1(&mut e1).expect("reg");
+        let mut e2 = FeatureEngine::new();
+        register_focus_v1(&mut e2).expect("reg");
+        let calm_score = last_focus(&e1.run(&calm).expect("run"));
+        let busy_score = last_focus(&e2.run(&busy_switching(200)).expect("run"));
+        assert!(
+            calm_score > busy_score,
+            "calm {calm_score} vs busy {busy_score}"
+        );
+    }
+
+    #[test]
+    fn low_typing_is_neutral_not_penalised() {
+        assert!((typing_score(0.0) - 50.0).abs() < 1e-12);
+        assert!((typing_score(5.0) - typing_score(0.0)) >= 0.0);
+        assert!((typing_score(80.0) - 100.0).abs() < 1e-12);
+        assert!((typing_score(500.0) - 100.0).abs() < 1e-12);
+        assert!((typing_score(f64::NAN) - 50.0).abs() < 1e-12);
+        // Stable app + zero typing (reading) must not fall below neutral.
+        let batch = vec![
+            obs(
+                1,
+                900,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "a" }),
+            ),
+            obs(
+                2,
+                1800,
+                DATA_TYPE_CONTEXT_WINDOW,
+                json!({ "bundle_id": "a" }),
+            ),
+            obs(
+                3,
+                1200,
+                DATA_TYPE_KEYSTROKES,
+                json!({ "count": 0, "window_secs": 60, "rate_per_min": 0.0 }),
+            ),
+        ];
+        let mut eng = FeatureEngine::new();
+        register_focus_v1(&mut eng).expect("reg");
+        let score = last_focus(&eng.run(&batch).expect("run"));
+        assert!(
+            score >= 75.0,
+            "quiet stable reading should score well, got {score}"
+        );
     }
 }

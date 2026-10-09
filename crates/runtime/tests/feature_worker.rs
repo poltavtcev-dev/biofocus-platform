@@ -7,7 +7,7 @@ use std::time::Duration;
 use bio_spec::{Observation, UnixTimestamp};
 use pipeline::NormalizedBatch;
 use runtime::{
-    spawn_feature_worker, FeatureHook, FeatureWorkerConfig, ObservationSource, RuntimeError,
+    FeatureHook, FeatureWorkerConfig, ObservationSource, RuntimeError, spawn_feature_worker,
 };
 use serde_json::json;
 use uuid::Uuid;
