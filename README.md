@@ -20,6 +20,15 @@ Local-First open-source platform for productivity, physiological stress, and rec
 
 BioFocus is a **personal self-tracking** Local-First tool (AGPLv3 Core). It is **not** workplace employee monitoring and **not** a clinical diagnosis product. Zero telemetry by default; packaging ≠ secret Feature math.
 
+
+## Install Rust and Cargo if you haven't
+
+On Linux and macOS systems, this is done as follows:
+
+```bash
+curl https://sh.rustup.rs -sSf | sh
+```
+
 ## Quick start (Core)
 
 ```bash
@@ -28,6 +37,14 @@ cargo check
 cargo test
 cargo test -p storage
 cargo test -p desktop
+```
+
+## Install PNPM
+
+On Linux and macOS systems, this is done as follows:
+
+```bash
+curl -fsSL https://get.pnpm.io | sh -
 ```
 
 ## Quick start (Desktop)
