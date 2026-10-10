@@ -102,7 +102,20 @@ const MOCK_PACE_RECOMMENDATION: RecommendationDto = {
   ],
 };
 
-/** QA: `?mockRecommendations=empty|ready|pace|error` forces state without Core. */
+/** Sample `combined_demand_pace_hint_v1` (mirrors Core calm pace copy). */
+const MOCK_DEMAND_PACE_RECOMMENDATION: RecommendationDto = {
+  id: "01900000-0000-7000-8000-0000000000a2",
+  title: "Можно ненадолго сбавить темп",
+  suggestion:
+    "Если это вписывается в день, короткая пауза или меньше параллельных дел могут помочь, когда общая нагрузка выше обычного.",
+  category: "pace",
+  evidenceList: [
+    { kind: "insight", id: "01900000-0000-7000-8000-000000000005" },
+    { kind: "feature", id: "CognitiveLoad" },
+  ],
+};
+
+/** QA: `?mockRecommendations=empty|ready|pace|demand|error` forces state without Core. */
 export function mockRecommendationsFromLocation(
   search: string = typeof window !== "undefined" ? window.location.search : "",
 ): RecommendationsView | null {
@@ -112,6 +125,9 @@ export function mockRecommendationsFromLocation(
   }
   if (raw === "error") {
     return recommendationsView("error", "mock");
+  }
+  if (raw === "demand") {
+    return recommendationsView("ready", "mock", [MOCK_DEMAND_PACE_RECOMMENDATION]);
   }
   if (raw === "pace" || raw === "ready") {
     return recommendationsView("ready", "mock", [MOCK_PACE_RECOMMENDATION]);

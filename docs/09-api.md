@@ -234,7 +234,7 @@ Success shape:
 - **Empty:** `{ "insights": [] }` when idle / no matching rules / thin baseline history / evaluate soft-fail / engine not managed. An empty/`new()` engine without registration also yields `[]`. Dashboard shows a calm empty state (no error noise).
 - **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM text. No SQLite on the command path (UI ↛ DB).
 
-**Pattern Discovery v1 (ADR-008 + ADR-028):** Baseline / multi-day rules stay on this IPC. Core may recompute a **bounded** Feature series from local Observations for comparison (recompute-on-read); optional in-process memo only — **no** Feature-history SQLite table and **no** UI→DB. Thin history or low confidence → omit the Insight. Copy remains calm personal observation (not clinical). Shipped rules include: `focus_vs_recent_baseline_v1` (current `FocusScore` vs mean of ≤7 prior UTC afternoon windows; category `pattern`); `cognitive_load_elevated_v1` (latest `CognitiveLoad` ≥ 60; category `demand`); `sustained_load_elevated_v1` (latest `SustainedLoadIndicator` ≥ 60; category `prolonged_load`). Dashboard lists Insights as returned and shows a calm category affordance (`Pattern` / `Focus` / `Stress` / demand & prolonged-load labels as surfaced).
+**Pattern Discovery v1 (ADR-008 + ADR-028):** Baseline / multi-day rules stay on this IPC. Core may recompute a **bounded** Feature series from local Observations for comparison (recompute-on-read); optional in-process memo only — **no** Feature-history SQLite table and **no** UI→DB. Thin history or low confidence → omit the Insight. Copy remains calm personal observation (not clinical, not workplace scoring, not burnout). Shipped rules include: `focus_vs_recent_baseline_v1` (current `FocusScore` vs mean of ≤7 prior UTC afternoon windows; category `pattern`); `cognitive_load_elevated_v1` (latest `CognitiveLoad` ≥ 60; category `demand`); `sustained_load_elevated_v1` (latest `SustainedLoadIndicator` ≥ 60; category `prolonged_load`). Dashboard lists Insights as returned. Category chrome: **Закономерность** / **Фокус** / **Напряжение** / **Общая нагрузка** (`demand`) / **Длительная нагрузка** (`prolonged_load`). Empty list stays the calm empty state. QA: `?mockInsights=empty|ready|pattern|demand|prolonged|error`.
 
 Example (non-empty):
 
@@ -262,7 +262,7 @@ Example (non-empty):
 | `insights[].id` | string | Insight UUID |
 | `insights[].title` | string | Calm, non-clinical title |
 | `insights[].description` | string | Short explanatory copy |
-| `insights[].category` | string | e.g. `pattern`, `stress`, `focus` |
+| `insights[].category` | string | e.g. `pattern`, `stress`, `focus`, `demand`, `prolonged_load` |
 | `insights[].evidenceList[]` | object | `kind`: `"feature"` \| `"signal"`; `id`: Feature id or Signal UUID |
 | `insights[].actionRecommendation` | string? | Optional gentle suggestion (thin hint — **not** L4; see ADR-009 / `get_recommendations`) |
 
@@ -283,7 +283,7 @@ let insights = engine.evaluate_with_pattern(&features, &signals, &pattern)?;
 - **Source:** Evaluate-on-read in `knowledge-engine` after Insights on the same in-memory Feature snapshot (+ pattern baseline inputs as `get_insights`). Host registers `register_insights_v1` + `register_recommendations_v1` at startup. Empty / no-match / low confidence / soft-fail → `{ "recommendations": [] }`.
 - **Never returns** raw Observation biometric payloads, absolute filesystem paths, or LLM-invented actions. No SQLite on the command path (UI ↛ DB). No Recommendation persistence (ADR-009).
 - **Shipped rules:** `focus_dip_pace_hint_v1` — when pattern Insight `focus_vs_recent_baseline_v1` indicates Focus lower than recent average (and FocusScore confidence gate passes), emit a pace/pause hint with Evidence `Feature FocusScore` + `Insight <id>`. `combined_demand_pace_hint_v1` (ADR-028) — when Insight from `cognitive_load_elevated_v1` is present, emit a gentle pace/pause hint with Evidence `Insight <id>` (+ optional `Feature CognitiveLoad`).
-- **Dashboard:** Suggestions section (Insights-adjacent); title/suggestion as Core returns. QA mocks: `?mockRecommendations=empty|ready|pace|error` (see `apps/desktop/README.md`).
+- **Dashboard:** Suggestions section (Insights-adjacent); title/suggestion as Core returns. Category `pace` chrome: **Темп**. Empty list stays the calm empty state. QA mocks: `?mockRecommendations=empty|ready|pace|demand|error` (`demand` = `combined_demand_pace_hint_v1` sample; see `apps/desktop/README.md`).
 
 Example (non-empty, illustrative):
 

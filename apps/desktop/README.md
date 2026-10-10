@@ -41,9 +41,11 @@ cache; Pattern Discovery baseline rules included when history supports them;
 calm empty state when none / thin history). Suggestions (Recommendations)
 via `get_recommendations` — evaluate-on-read after Insights on the same
 snapshot (ADR-009); calm empty state when none. Soft refresh ~30s. Insight
-rows show a calm category label (`Pattern` / `Focus` / `Stress`); suggestion
-rows use Core title/suggestion as returned (optional personal hints — not
-medical advice; no clinical UI chrome).
+rows show a calm category label (`Закономерность` / `Фокус` / `Напряжение` /
+`Общая нагрузка` for `demand` / `Длительная нагрузка` for `prolonged_load`);
+suggestion rows use Core title/suggestion as returned, with `pace` labeled
+`Темп` (optional personal hints — not medical advice; no clinical or burnout
+UI chrome). Empty Insights / Suggestions stay quiet.
 
 Report slot (P4-E3-T3 / P11-E3-T1): calm **Local AI** provider status via
 `get_local_llm_status` (`disabled` / `ready` / `error` from host env — no HTTP
@@ -56,11 +58,14 @@ or soft poll.
 QA mocks:
 - `?view=dashboard&mockSnapshot=empty|ready|error`
   (`ready` includes a multi-window series for chart smoke)
-- `?view=dashboard&mockInsights=empty|ready|pattern|error`
+- `?view=dashboard&mockInsights=empty|ready|pattern|demand|prolonged|error`
   (`ready` includes pattern + stress + focus sample Insights;
-  `pattern` is a single `focus_vs_recent_baseline_v1`-shaped Insight)
-- `?view=dashboard&mockRecommendations=empty|ready|pace|error`
-  (`ready` / `pace` = sample `focus_dip_pace_hint_v1`-shaped Recommendation)
+  `pattern` is a single `focus_vs_recent_baseline_v1`-shaped Insight;
+  `demand` / `prolonged` mirror `cognitive_load_elevated_v1` /
+  `sustained_load_elevated_v1` calm copy)
+- `?view=dashboard&mockRecommendations=empty|ready|pace|demand|error`
+  (`ready` / `pace` = sample `focus_dip_pace_hint_v1`-shaped Recommendation;
+  `demand` = sample `combined_demand_pace_hint_v1`)
 - `?view=dashboard&mockReport=idle|ready|disabled|ok|error`
 - `?view=dashboard&mockLlmStatus=disabled|ready|error`
 

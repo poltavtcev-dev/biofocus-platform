@@ -60,6 +60,8 @@
 
 **Just closed:** **P27-E2-T1** (2026-08-12) — shipped `cognitive_load_elevated_v1`, `sustained_load_elevated_v1`, `combined_demand_pace_hint_v1` in `knowledge-engine` (QA Pass · 46/46).
 
+**Bug closed (not a phase task):** **BUG-dashboard-fullscreen-frame** (2026-10-10) — QA Pass with notes. Fullscreen close or minimize restores the last windowed frame (`dashboard_window.rs`). **P27-E3 stays Ready.** Evidence: `docs/handoffs/BUG-dashboard-fullscreen-frame-qa-to-pm.md`. Live macOS window clicks were not driven.
+
 **Ops note:** **PR freeze until 2026-09-01** — no PR. Phase 27 on `phase/27-pattern-rules`. Phase 26 cluster stays on `phase/26-oss-public-launch`. **Public launch not Done** (OSS layers 2–3 parked after freeze).
 
 ---
