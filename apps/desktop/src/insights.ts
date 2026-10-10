@@ -95,7 +95,8 @@ export function formatEvidenceRef(ref: EvidenceRefDto): string {
 
 /**
  * Calm category label for list rows (Core `category` as returned).
- * No clinical framing — personal pattern / focus / stress only.
+ * Personal pattern / focus / stress / demand / prolonged load only —
+ * not clinical, workplace, or burnout framing.
  */
 export function formatInsightCategory(category: string): string {
   const key = category.trim().toLowerCase();
@@ -110,6 +111,12 @@ export function formatInsightCategory(category: string): string {
   }
   if (key === "life_event") {
     return "События дня";
+  }
+  if (key === "demand") {
+    return "Общая нагрузка";
+  }
+  if (key === "prolonged_load") {
+    return "Длительная нагрузка";
   }
   if (!key) {
     return "";
@@ -142,7 +149,29 @@ const MOCK_LIFE_EVENT_INSIGHT: InsightDto = {
   ],
 };
 
-/** QA: `?mockInsights=empty|ready|pattern|error` forces Insights state without Core. */
+/** Sample `cognitive_load_elevated_v1` Insight (mirrors Core calm copy). */
+const MOCK_DEMAND_INSIGHT: InsightDto = {
+  id: "01900000-0000-7000-8000-000000000005",
+  title: "Общая нагрузка была выше обычного",
+  description: "Общая нагрузка в этом окне была выше обычного.",
+  category: "demand",
+  evidenceList: [{ kind: "feature", id: "CognitiveLoad" }],
+  actionRecommendation:
+    "Если это уместно, на время можно убавить параллельные дела.",
+};
+
+/** Sample `sustained_load_elevated_v1` Insight (mirrors Core calm copy). */
+const MOCK_PROLONGED_LOAD_INSIGHT: InsightDto = {
+  id: "01900000-0000-7000-8000-000000000006",
+  title: "Длительная нагрузка была выше обычного",
+  description: "Длительная нагрузка в этом окне была выше обычного.",
+  category: "prolonged_load",
+  evidenceList: [{ kind: "feature", id: "SustainedLoadIndicator" }],
+  actionRecommendation:
+    "Более короткий отрезок или спокойнее темп позже могут помочь, если это уместно.",
+};
+
+/** QA: `?mockInsights=empty|ready|pattern|demand|prolonged|error` forces Insights state without Core. */
 export function mockInsightsFromLocation(
   search: string = typeof window !== "undefined" ? window.location.search : "",
 ): InsightsView | null {
@@ -155,6 +184,12 @@ export function mockInsightsFromLocation(
   }
   if (raw === "pattern") {
     return insightsView("ready", "mock", [MOCK_PATTERN_INSIGHT]);
+  }
+  if (raw === "demand") {
+    return insightsView("ready", "mock", [MOCK_DEMAND_INSIGHT]);
+  }
+  if (raw === "prolonged") {
+    return insightsView("ready", "mock", [MOCK_PROLONGED_LOAD_INSIGHT]);
   }
   if (raw === "ready") {
     return insightsView("ready", "mock", [

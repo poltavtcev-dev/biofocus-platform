@@ -126,7 +126,8 @@
 //! ## `open_dashboard` (P4-E1-T2)
 //!
 //! Shows the preconfigured `dashboard` webview (hide-on-close). Menubar shell
-//! invokes this; no SQLite.
+//! invokes this; no SQLite. A fullscreen or zoomed close/minimize on macOS
+//! collapses the AppKit frame; show restores the last windowed size.
 //!
 //! ## `core_ping`
 //!
@@ -175,6 +176,7 @@
 #![cfg_attr(not(test), forbid(unsafe_code))]
 
 mod alert_state;
+mod dashboard_window;
 mod data_sources_ipc;
 mod feature_host;
 mod git_watched_roots_ipc;
@@ -201,7 +203,7 @@ use report_engine::{
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
+use tauri::{AppHandle, Manager, RunEvent};
 use thiserror::Error;
 use tracing::warn;
 
@@ -1182,13 +1184,7 @@ async fn generate_report(app: AppHandle) -> Result<ReportDto, String> {
 /// Shows the Dashboard window (P4-E1-T2). Soft-fail if the window is missing.
 #[tauri::command]
 fn open_dashboard(app: AppHandle) -> Result<(), String> {
-    let Some(window) = app.get_webview_window("dashboard") else {
-        return Err("Dashboard window is not available.".into());
-    };
-    window.unminimize().map_err(|err| err.to_string())?;
-    window.show().map_err(|err| err.to_string())?;
-    window.set_focus().map_err(|err| err.to_string())?;
-    Ok(())
+    dashboard_window::show(&app)
 }
 
 /// Trivial Core link check (T1). Does not open SQLite or expose Observation rows.
@@ -1328,15 +1324,8 @@ pub fn run() -> DesktopResult<()> {
                 .build(app)?;
 
             // Dashboard closes hide the window so reopen stays cheap (P4-E1-T2).
-            if let Some(dashboard) = app.get_webview_window("dashboard") {
-                let hide_target = dashboard.clone();
-                dashboard.on_window_event(move |event| {
-                    if let WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        let _ = hide_target.hide();
-                    }
-                });
-            }
+            // Also restores the frame after a fullscreen close or minimize.
+            dashboard_window::install(app.handle());
 
             ingest_host::start_ingest_host(app.handle());
             feature_host::start_feature_host(app.handle());
