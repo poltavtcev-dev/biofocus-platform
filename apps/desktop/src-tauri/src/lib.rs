@@ -185,6 +185,7 @@ mod life_event_ipc;
 mod pattern_host;
 mod series_host;
 mod source_report;
+mod timeline_ipc;
 
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -1274,6 +1275,12 @@ fn set_source_priority(order: Vec<String>) -> Result<data_sources_ipc::DataSourc
     data_sources_ipc::set_source_priority(order)
 }
 
+/// «Динамика»: coverage calendar plus week / month cards for one metric.
+#[tauri::command]
+fn get_timeline(metric: String) -> timeline_ipc::TimelineDto {
+    timeline_ipc::get_timeline(&metric)
+}
+
 /// Load personal Git watched folders from the ADR-014 config file (P14-E3-T1).
 #[tauri::command]
 fn get_git_watched_roots() -> Result<git_watched_roots_ipc::GitWatchedRootsDto, String> {
@@ -1359,7 +1366,8 @@ pub fn run() -> DesktopResult<()> {
             get_git_watched_roots,
             set_git_watched_roots,
             get_data_sources,
-            set_source_priority
+            set_source_priority,
+            get_timeline
         ])
         .build(tauri::generate_context!())?;
 

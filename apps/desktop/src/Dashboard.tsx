@@ -82,6 +82,7 @@ import {
   type LlmProviderView,
 } from "./llmProvider";
 import { DataSourcesPanel, mockDataSourcesFromLocation } from "./dataSources";
+import { TimelinePanel } from "./timeline";
 
 /** Soft refresh — idle-safe; no busy-loop. Does not regenerate reports. */
 const SNAPSHOT_POLL_MS = 30_000;
@@ -549,7 +550,7 @@ export function Dashboard() {
   );
   const [busy, setBusy] = useState(true);
   const [reportBusy, setReportBusy] = useState(false);
-  const [tab, setTab] = useState<"overview" | "sources">(() =>
+  const [tab, setTab] = useState<"overview" | "sources" | "timeline">(() =>
     mockDataSourcesFromLocation() ? "sources" : "overview",
   );
 
@@ -700,10 +701,20 @@ export function Dashboard() {
         >
           Источники данных
         </button>
+        <button
+          type="button"
+          className={tab === "timeline" ? "dash-tab dash-tab--on" : "dash-tab"}
+          aria-pressed={tab === "timeline"}
+          onClick={() => setTab("timeline")}
+        >
+          Динамика
+        </button>
       </nav>
 
       {tab === "sources" ? (
         <DataSourcesPanel />
+      ) : tab === "timeline" ? (
+        <TimelinePanel />
       ) : (
         <>
       {isReady && features.length > 0 && <StatCards features={features} />}
