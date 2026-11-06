@@ -35,6 +35,7 @@ mod intake;
 mod normalize;
 mod quality;
 mod source_select;
+pub mod timeline;
 
 pub use data_sources::{SourceSample, SourceSummary, SourcesReport, summarize_sources};
 pub use dedupe::{DedupeState, DedupedBatch, dedupe_accepted, dedupe_observations, dedupe_owned};

@@ -130,6 +130,12 @@ impl SourcePriority {
         default_priority_path()
     }
 
+    /// Position of `kind` in the order (lower wins). Unknown kinds sort last.
+    #[must_use]
+    pub fn rank_of(&self, kind: &str) -> usize {
+        self.rank(Some(kind))
+    }
+
     fn rank(&self, kind: Option<&str>) -> usize {
         let Some(kind) = kind else {
             return self.order.len();
