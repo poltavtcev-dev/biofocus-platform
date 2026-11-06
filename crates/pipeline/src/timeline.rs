@@ -310,7 +310,7 @@ pub fn daily_totals(
     }
 
     out.extend(focus_totals(&context_ts, focus_windows));
-    out.sort_by(|a, b| (a.metric, a.day).cmp(&(b.metric, b.day)));
+    out.sort_by_key(|t| (t.metric, t.day));
     out
 }
 
@@ -377,7 +377,7 @@ pub fn median(values: &[f64]) -> Option<f64> {
     }
     sorted.sort_by(f64::total_cmp);
     let mid = sorted.len() / 2;
-    Some(if sorted.len() % 2 == 0 {
+    Some(if sorted.len().is_multiple_of(2) {
         (sorted[mid - 1] + sorted[mid]) / 2.0
     } else {
         sorted[mid]
@@ -898,10 +898,12 @@ fn comparison_text(
             .map(src_kind_label)
             .unwrap_or("");
         text.push_str(&format!(" Источники различаются: сейчас {a}, раньше {b}."));
-    } else if let Some(kind) = current.main_src_kind.as_deref() {
-        if kind != "apple_watch" {
-            text.push_str(&format!(" Источник в основном {}.", src_kind_label(kind)));
-        }
+    } else if let Some(kind) = current
+        .main_src_kind
+        .as_deref()
+        .filter(|kind| *kind != "apple_watch")
+    {
+        text.push_str(&format!(" Источник в основном {}.", src_kind_label(kind)));
     }
     text
 }
