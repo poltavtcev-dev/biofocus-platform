@@ -754,3 +754,36 @@ body {
   font-family: "SF Mono", ui-monospace, Menlo, monospace;
   font-size: 0.7rem;
 }
+
+/* «Динамика» — coverage calendar (timeline slice A). */
+.timeline-calendar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.timeline-month-title {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+}
+.timeline-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.timeline-day {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+}
+.timeline-day--on {
+  background: currentColor;
+  opacity: 0.75;
+  border-color: transparent;
+}
+.timeline-cards {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
